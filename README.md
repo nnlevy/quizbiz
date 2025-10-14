@@ -82,6 +82,17 @@ Monitor your workers:
 npx wrangler tail
 ```
 
+### Required Secrets & Bindings
+
+Before deploying, make sure the following bindings are configured in Cloudflare (or via `wrangler secret put` for local use):
+
+- `OPEN_API_KEY_NEW` – OpenAI API key
+- `OPENAI_ORG_ID` – OpenAI organization ID
+- `Google-Service-Account-FINAL` – Google service-account JSON used for Document AI
+- `Google_Document_AI_Processor_Prediction_Endpoint` – Fully-qualified Document AI processor prediction endpoint URL
+
+These are declared in `wrangler.json` so the Worker can validate they are present at runtime.
+
 ## Additional Resources
 
 - [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)

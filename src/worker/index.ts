@@ -63,30 +63,25 @@ app.post("/api/location", async (c) => {
       );
     }
 
-    const prompt = `As a personal assistant, provide a concise (50 words max) summary about the local water/sewage provider for "${location}" using minimal markdown (no code blocks).
-1) Mention the authority name and present it as a working link labeled for downloading their water bill.
-2) Mention a phone number for the water authority.
-3) Provide important context before they view their bill like typical residential cost and if certain, provide a link to info about grants and elected officials with oversight over the water utility rates.
-Each sentance, no more than nine words, should be a seperate line.`;
+    const prompt = buildLocationPrompt(location.trim());
 
     const openAiData = await analyzeTextWithOpenAI(c.env, {
       content: prompt,
       includeWaterContext: false,
     });
 
-    let content =
-      openAiData.choices?.[0]?.message?.content || "No info found.";
+    const locationContent = openAiData.choices?.[0]?.message?.content || "";
+    const locationHtml = transformLocationAssistantContent(locationContent);
 
-    content = content
-      .replace(/\n/g, "<br>")
-      .replace(
-        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
-      )
-      .replace(/```+/g, "")
-      .replace(/`([^`]+)`/g, "<code>$1</code>");
+    if (!locationHtml.success) {
+      console.error("Location assistant validation failed:", locationHtml.error);
+      return c.json(
+        { error: locationHtml.error || "Location lookup failed." },
+        502,
+      );
+    }
 
-    return c.html(content);
+    return c.html(locationHtml.html);
   } catch (error) {
     console.error("Error in handleLocationQuery:", error);
     return c.json(
@@ -377,6 +372,17 @@ function renderAnalysisResponse(data: ChatCompletionResponse): string {
   `;
 }
 
+type LocationAssistantPayload = {
+  departmentName?: string | null;
+  billPaymentUrl?: string | null;
+  phoneNumber?: string | null;
+  departmentWebsiteUrl?: string | null;
+  oversightDepartment?: string | null;
+  oversightUrl?: string | null;
+  grantsOrAidUrl?: string | null;
+  summaryLines?: unknown;
+};
+
 function validateFile(file: File): boolean {
   if (
     !file ||
@@ -401,4 +407,264 @@ function validateEnv(env: WorkerEnv): void {
       throw new Error(`Missing env var: ${key}`);
     }
   });
+}
+
+function buildLocationPrompt(location: string): string {
+  return `You are a municipal utilities researcher helping residents access their water bills.
+For the location "${location}" return ONLY valid JSON (no prose, no markdown) that matches this schema:
+{
+  "departmentName": string,
+  "billPaymentUrl": string,
+  "phoneNumber": string,
+  "departmentWebsiteUrl": string | null,
+  "oversightDepartment": string | null,
+  "oversightUrl": string | null,
+  "grantsOrAidUrl": string | null,
+  "summaryLines": string[]
+}
+Rules:
+- Provide the department or agency residents contact for water/sewer billing questions.
+- billPaymentUrl must open a working public page to view or pay the water bill (http or https).
+- phoneNumber must include an area code and dialable characters only.
+- Use null when you cannot confirm a value.
+- summaryLines should contain up to three short (<=9 word) helpful facts about rates, assistance, or oversight.
+- Mention grantsOrAidUrl only when a real aid program exists.
+Return JSON only.`;
+}
+
+function transformLocationAssistantContent(content: string):
+  | { success: true; html: string }
+  | { success: false; error: string } {
+  const jsonBlock = extractJsonObject(content);
+  if (!jsonBlock) {
+    return {
+      success: false,
+      error: "No structured location details were returned.",
+    };
+  }
+
+  let parsed: LocationAssistantPayload | undefined;
+  try {
+    parsed = JSON.parse(jsonBlock) as LocationAssistantPayload;
+  } catch (error) {
+    console.error("Failed to parse location JSON:", error, jsonBlock);
+    return {
+      success: false,
+      error: "Received invalid location data from assistant.",
+    };
+  }
+
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      success: false,
+      error: "Assistant response was empty.",
+    };
+  }
+
+  const departmentName = sanitizeText(parsed.departmentName);
+  const paymentUrl = sanitizeHttpUrl(parsed.billPaymentUrl);
+  const phoneDetails = normalizePhone(parsed.phoneNumber);
+
+  if (!departmentName) {
+    return {
+      success: false,
+      error: "Missing department information for the water bill.",
+    };
+  }
+
+  if (!paymentUrl) {
+    return {
+      success: false,
+      error: "Assistant did not return a valid bill payment link.",
+    };
+  }
+
+  if (!phoneDetails) {
+    return {
+      success: false,
+      error: "Assistant did not return a valid phone number.",
+    };
+  }
+
+  const detailBlocks: string[] = [];
+
+  detailBlocks.push(
+    `<p><strong>Department:</strong> ${escapeHtml(departmentName)}</p>`,
+  );
+  detailBlocks.push(
+    `<p><strong>Phone:</strong> <a href="${escapeHtml(phoneDetails.href)}">${escapeHtml(phoneDetails.display)}</a></p>`,
+  );
+  detailBlocks.push(
+    `<p><a href="${escapeHtml(paymentUrl)}" target="_blank" rel="noopener noreferrer">View or pay your water bill</a></p>`,
+  );
+
+  const departmentSite = sanitizeHttpUrl(parsed.departmentWebsiteUrl);
+  if (departmentSite && departmentSite !== paymentUrl) {
+    detailBlocks.push(
+      `<p><a href="${escapeHtml(departmentSite)}" target="_blank" rel="noopener noreferrer">Department website</a></p>`,
+    );
+  }
+
+  const oversightName = sanitizeText(parsed.oversightDepartment);
+  const oversightUrl = sanitizeHttpUrl(parsed.oversightUrl);
+  if (oversightName) {
+    const oversightLabel = `<strong>Oversight:</strong> ${escapeHtml(oversightName)}`;
+    if (oversightUrl) {
+      detailBlocks.push(
+        `<p>${oversightLabel} - <a href="${escapeHtml(oversightUrl)}" target="_blank" rel="noopener noreferrer">Learn more</a></p>`,
+      );
+    } else {
+      detailBlocks.push(`<p>${oversightLabel}</p>`);
+    }
+  }
+
+  const grantsUrl = sanitizeHttpUrl(parsed.grantsOrAidUrl);
+  if (grantsUrl) {
+    detailBlocks.push(
+      `<p><a href="${escapeHtml(grantsUrl)}" target="_blank" rel="noopener noreferrer">Bill assistance or grants information</a></p>`,
+    );
+  }
+
+  const summaryLines = Array.isArray(parsed.summaryLines)
+    ? parsed.summaryLines
+    : [];
+  const sanitizedSummaries = summaryLines
+    .map((line) => sanitizeText(line))
+    .filter((line): line is string => Boolean(line))
+    .slice(0, 3);
+
+  if (sanitizedSummaries.length) {
+    detailBlocks.push(
+      '<div class="location-context">' +
+        sanitizedSummaries
+          .map((line) => `<p>${escapeHtml(line)}</p>`)
+          .join("") +
+        "</div>",
+    );
+  }
+
+  return {
+    success: true,
+    html: `<div class="location-result-block">${detailBlocks.join("")}</div>`,
+  };
+}
+
+function extractJsonObject(raw: string): string | null {
+  if (!raw) {
+    return null;
+  }
+
+  const withoutFences = raw.replace(/```json|```/gi, "").trim();
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let start = -1;
+
+  for (let i = 0; i < withoutFences.length; i++) {
+    const char = withoutFences[i];
+
+    if (inString) {
+      if (escape) {
+        escape = false;
+      } else if (char === "\\") {
+        escape = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{") {
+      if (depth === 0) {
+        start = i;
+      }
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0 && start !== -1) {
+        const candidate = withoutFences.slice(start, i + 1);
+        try {
+          JSON.parse(candidate);
+          return candidate;
+        } catch (error) {
+          console.error("JSON candidate parse failed:", error, candidate);
+        }
+        start = -1;
+      }
+    }
+  }
+
+  return null;
+}
+
+function sanitizeText(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  return trimmed || null;
+}
+
+function sanitizeHttpUrl(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  let normalized = trimmed;
+  if (/^www\./i.test(normalized)) {
+    normalized = `https://${normalized}`;
+  }
+
+  try {
+    const url = new URL(normalized);
+    if (!/^https?:$/i.test(url.protocol)) {
+      return null;
+    }
+    return url.toString();
+  } catch (error) {
+    console.error("Invalid URL from assistant:", value, error);
+    return null;
+  }
+}
+
+function normalizePhone(value: unknown): { display: string; href: string } | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const digits = trimmed.replace(/[^0-9+]/g, "");
+  const numericDigits = digits.replace(/[^0-9]/g, "");
+
+  if (numericDigits.length < 7) {
+    return null;
+  }
+
+  const telValue = digits.startsWith("+") ? digits : numericDigits;
+  return {
+    display: trimmed,
+    href: `tel:${telValue}`,
+  };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
