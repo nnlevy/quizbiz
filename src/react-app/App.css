@@ -232,7 +232,34 @@ button:hover {
   display: block;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  white-space: pre-wrap;
+}
+
+.location-result-block {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  padding: 1rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.location-result-block p {
+  margin: 0.35rem 0;
+}
+
+.location-result-block a {
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
+.location-result-block a:hover,
+.location-result-block a:focus {
+  color: var(--link-hover-color);
+}
+
+.location-context {
+  margin-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 0.75rem;
 }
 
 .location-status {
