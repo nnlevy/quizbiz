@@ -84,14 +84,14 @@ npx wrangler tail
 
 ### Required Secrets & Bindings
 
-Before deploying, make sure the following bindings are configured in Cloudflare (or via `wrangler secret put` for local use):
+Before deploying, make sure the following bindings are configured in Cloudflare (or via `wrangler secret put` for local development):
 
 - `OPEN_API_KEY_NEW` – OpenAI API key
 - `OPENAI_ORG_ID` – OpenAI organization ID
 - `Google-Service-Account-FINAL` – Google service-account JSON used for Document AI
 - `Google_Document_AI_Processor_Prediction_Endpoint` – Fully-qualified Document AI processor prediction endpoint URL
 
-These are declared in `wrangler.json` so the Worker can validate they are present at runtime.
+The Worker validates that each secret is available before servicing API requests. When running locally you can populate them by executing `npx wrangler secret put <NAME>` for each binding listed above.
 
 ## Additional Resources
 

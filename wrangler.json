@@ -11,16 +11,5 @@
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"
-  },
-  "unsafe": {
-    "bindings": [
-      { "name": "OPEN_API_KEY_NEW", "type": "secret_text" },
-      { "name": "OPENAI_ORG_ID", "type": "secret_text" },
-      { "name": "Google-Service-Account-FINAL", "type": "secret_text" },
-      {
-        "name": "Google_Document_AI_Processor_Prediction_Endpoint",
-        "type": "secret_text"
-      }
-    ]
   }
 }
