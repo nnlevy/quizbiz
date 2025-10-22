@@ -44,17 +44,13 @@ type DocumentAIResponse = {
 
 const app = new Hono<{ Bindings: WorkerEnv }>();
 
-app.use("/api/*", async (c, next) => {
-  validateEnv(c.env);
-  await next();
-});
-
 app.get("/ads.txt", (c) =>
   c.text("google.com, pub-1860356577073395, DIRECT, f08c47fec0942fa0"),
 );
 
 app.post("/api/location", async (c) => {
   try {
+    validateLocationEnv(c.env);
     const { location } = await c.req.json<{ location?: string }>();
     if (!location || !location.trim()) {
       return c.json(
@@ -93,6 +89,7 @@ app.post("/api/location", async (c) => {
 
 app.post("/api/upload", async (c) => {
   try {
+    validateUploadEnv(c.env);
     const contentType = c.req.header("content-type") || "";
     if (!contentType.includes("multipart/form-data")) {
       return c.json(
@@ -396,10 +393,17 @@ function validateFile(file: File): boolean {
   return true;
 }
 
-function validateEnv(env: WorkerEnv): void {
+function validateLocationEnv(env: WorkerEnv): void {
+  ["OPEN_API_KEY_NEW", "OPENAI_ORG_ID"].forEach((key) => {
+    if (!env[key as keyof WorkerEnv]) {
+      throw new Error(`Missing env var: ${key}`);
+    }
+  });
+}
+
+function validateUploadEnv(env: WorkerEnv): void {
+  validateLocationEnv(env);
   [
-    "OPEN_API_KEY_NEW",
-    "OPENAI_ORG_ID",
     "Google_Document_AI_Processor_Prediction_Endpoint",
     "Google-Service-Account-FINAL",
   ].forEach((key) => {
