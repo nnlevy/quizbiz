@@ -330,7 +330,7 @@ async function analyzeTextWithOpenAI(
       "OpenAI-Organization": env.OPENAI_ORG_ID,
     },
     body: JSON.stringify({
-      model: "o1-mini",
+      model: "gpt-4o-mini",
       max_tokens: 2000,
       messages: [
         {
