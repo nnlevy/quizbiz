@@ -331,7 +331,7 @@ async function analyzeTextWithOpenAI(
     },
     body: JSON.stringify({
       model: "o1-mini",
-      max_completion_tokens: 2000,
+      max_tokens: 2000,
       messages: [
         {
           role: "user",
