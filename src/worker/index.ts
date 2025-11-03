@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { buildFallbackLocationPayload } from "./locationFallback";
+import { LocationAssistantPayload } from "./locationTypes";
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -50,7 +52,6 @@ app.get("/ads.txt", (c) =>
 
 app.post("/api/location", async (c) => {
   try {
-    validateLocationEnv(c.env);
     const { location } = await c.req.json<{ location?: string }>();
     if (!location || !location.trim()) {
       return c.json(
@@ -59,25 +60,51 @@ app.post("/api/location", async (c) => {
       );
     }
 
-    const prompt = buildLocationPrompt(location.trim());
+    const trimmedLocation = location.trim();
+    const openAiEnabled = isOpenAiConfigured(c.env);
+    let htmlResult: ReturnType<typeof transformLocationAssistantContent> | null =
+      null;
 
-    const openAiData = await analyzeTextWithOpenAI(c.env, {
-      content: prompt,
-      includeWaterContext: false,
-    });
+    if (openAiEnabled) {
+      try {
+        const prompt = buildLocationPrompt(trimmedLocation);
+        const openAiData = await analyzeTextWithOpenAI(c.env, {
+          content: prompt,
+          includeWaterContext: false,
+        });
+        const locationContent =
+          openAiData.choices?.[0]?.message?.content || "";
+        htmlResult = transformLocationAssistantContent(locationContent);
+        if (!htmlResult.success) {
+          console.warn(
+            "Location assistant returned invalid data, switching to fallback.",
+            htmlResult.error,
+          );
+          htmlResult = null;
+        }
+      } catch (error) {
+        console.warn("OpenAI lookup failed, using fallback:", error);
+        htmlResult = null;
+      }
+    }
 
-    const locationContent = openAiData.choices?.[0]?.message?.content || "";
-    const locationHtml = transformLocationAssistantContent(locationContent);
+    if (!htmlResult) {
+      const fallbackPayload = buildFallbackLocationPayload(trimmedLocation);
+      htmlResult = renderLocationPayload(fallbackPayload, {
+        fallbackLocation: trimmedLocation,
+      });
+    }
 
-    if (!locationHtml.success) {
-      console.error("Location assistant validation failed:", locationHtml.error);
+    if (!htmlResult.success) {
       return c.json(
-        { error: locationHtml.error || "Location lookup failed." },
+        {
+          error: htmlResult.error || "Location lookup failed.",
+        },
         502,
       );
     }
 
-    return c.html(locationHtml.html);
+    return c.html(htmlResult.html);
   } catch (error) {
     console.error("Error in handleLocationQuery:", error);
     return c.json(
@@ -369,17 +396,6 @@ function renderAnalysisResponse(data: ChatCompletionResponse): string {
   `;
 }
 
-type LocationAssistantPayload = {
-  departmentName?: string | null;
-  billPaymentUrl?: string | null;
-  phoneNumber?: string | null;
-  departmentWebsiteUrl?: string | null;
-  oversightDepartment?: string | null;
-  oversightUrl?: string | null;
-  grantsOrAidUrl?: string | null;
-  summaryLines?: unknown;
-};
-
 function validateFile(file: File): boolean {
   if (
     !file ||
@@ -399,6 +415,10 @@ function validateLocationEnv(env: WorkerEnv): void {
       throw new Error(`Missing env var: ${key}`);
     }
   });
+}
+
+function isOpenAiConfigured(env: WorkerEnv): boolean {
+  return Boolean(env.OPEN_API_KEY_NEW && env.OPENAI_ORG_ID);
 }
 
 function validateUploadEnv(env: WorkerEnv): void {
@@ -465,28 +485,36 @@ function transformLocationAssistantContent(content: string):
     };
   }
 
-  const departmentName = sanitizeText(parsed.departmentName);
+  return renderLocationPayload(parsed);
+}
+
+function renderLocationPayload(
+  parsed: LocationAssistantPayload,
+  options?: { fallbackLocation?: string },
+): { success: true; html: string } | { success: false; error: string } {
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      success: false,
+      error: "Assistant response was empty.",
+    };
+  }
+
+  const departmentName =
+    sanitizeText(parsed.departmentName) ||
+    (options?.fallbackLocation
+      ? `${toTitleCase(options.fallbackLocation)} water billing office`
+      : "Local water billing office");
   const paymentUrl = sanitizeHttpUrl(parsed.billPaymentUrl);
   const phoneDetails = normalizePhone(parsed.phoneNumber);
+  const departmentSite = sanitizeHttpUrl(parsed.departmentWebsiteUrl);
+  const oversightName = sanitizeText(parsed.oversightDepartment);
+  const oversightUrl = sanitizeHttpUrl(parsed.oversightUrl);
+  const grantsUrl = sanitizeHttpUrl(parsed.grantsOrAidUrl);
 
-  if (!departmentName) {
+  if (!paymentUrl && !departmentSite && !phoneDetails) {
     return {
       success: false,
-      error: "Missing department information for the water bill.",
-    };
-  }
-
-  if (!paymentUrl) {
-    return {
-      success: false,
-      error: "Assistant did not return a valid bill payment link.",
-    };
-  }
-
-  if (!phoneDetails) {
-    return {
-      success: false,
-      error: "Assistant did not return a valid phone number.",
+      error: "Location assistant did not return usable contact details.",
     };
   }
 
@@ -495,22 +523,37 @@ function transformLocationAssistantContent(content: string):
   detailBlocks.push(
     `<p><strong>Department:</strong> ${escapeHtml(departmentName)}</p>`,
   );
-  detailBlocks.push(
-    `<p><strong>Phone:</strong> <a href="${escapeHtml(phoneDetails.href)}">${escapeHtml(phoneDetails.display)}</a></p>`,
-  );
-  detailBlocks.push(
-    `<p><a href="${escapeHtml(paymentUrl)}" target="_blank" rel="noopener noreferrer">View or pay your water bill</a></p>`,
-  );
 
-  const departmentSite = sanitizeHttpUrl(parsed.departmentWebsiteUrl);
+  if (phoneDetails) {
+    detailBlocks.push(
+      `<p><strong>Phone:</strong> <a href="${escapeHtml(phoneDetails.href)}">${escapeHtml(phoneDetails.display)}</a></p>`,
+    );
+  } else {
+    detailBlocks.push(
+      `<p><strong>Phone:</strong> Contact your local 311 or city hall.</p>`,
+    );
+  }
+
+  if (paymentUrl) {
+    detailBlocks.push(
+      `<p><a href="${escapeHtml(paymentUrl)}" target="_blank" rel="noopener noreferrer">View or pay your water bill</a></p>`,
+    );
+  } else if (departmentSite) {
+    detailBlocks.push(
+      `<p><a href="${escapeHtml(departmentSite)}" target="_blank" rel="noopener noreferrer">Visit the utility website for payment options</a></p>`,
+    );
+  } else {
+    detailBlocks.push(
+      `<p><strong>Tip:</strong> Ask the department above for the payment portal.</p>`,
+    );
+  }
+
   if (departmentSite && departmentSite !== paymentUrl) {
     detailBlocks.push(
       `<p><a href="${escapeHtml(departmentSite)}" target="_blank" rel="noopener noreferrer">Department website</a></p>`,
     );
   }
 
-  const oversightName = sanitizeText(parsed.oversightDepartment);
-  const oversightUrl = sanitizeHttpUrl(parsed.oversightUrl);
   if (oversightName) {
     const oversightLabel = `<strong>Oversight:</strong> ${escapeHtml(oversightName)}`;
     if (oversightUrl) {
@@ -522,7 +565,6 @@ function transformLocationAssistantContent(content: string):
     }
   }
 
-  const grantsUrl = sanitizeHttpUrl(parsed.grantsOrAidUrl);
   if (grantsUrl) {
     detailBlocks.push(
       `<p><a href="${escapeHtml(grantsUrl)}" target="_blank" rel="noopener noreferrer">Bill assistance or grants information</a></p>`,
@@ -671,4 +713,14 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.replace(/[^a-z0-9']/gi, ""))
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
