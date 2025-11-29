@@ -505,6 +505,7 @@ function App() {
             <a href="#upload">Upload &amp; Analyze</a>
             <a href="#top-ways">Savings Tips</a>
             <a href="#news">News</a>
+            <a href="/leak-patrol">Play Leak Patrol</a>
           </nav>
         </div>
       </header>
