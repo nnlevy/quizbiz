@@ -1,101 +1,49 @@
-# React + Vite + Hono + Cloudflare Workers
+# WaterShortcut.com
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/vite-react-template)
+WaterShortcut pairs a Vite + React experience with a Hono + Cloudflare Workers backend to decode water bills, surface leak risks, and deliver privacy-aware analytics and advertising. The app now includes dedicated learning pages, cookie consent handling, and SEO assets like `sitemap.xml` and `robots.txt`.
 
-This template provides a minimal setup for building a React application with TypeScript and Vite, designed to run on Cloudflare Workers. It features hot module replacement, ESLint integration, and the flexibility of Workers deployments.
+## Analytics and advertising
+- **GA4**: Measurement ID `G-98170RDCDD` is wired into `index.html`. The helper in `src/react-app/analytics.ts` exposes `logEvent` so you can record custom events (for example `logEvent('upload_started')`).
+- **AdSense**: The client script lives in `index.html` with reserved ad spaces in the UI. Set your client and slot IDs in `index.html`, `src/react-app/components/AdUnit.tsx`, and where the components are used. Ads load only after consent for EU visitors.
 
-![React + TypeScript + Vite + Cloudflare Workers](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/fc7b4b62-442b-4769-641b-ad4422d74300/public)
+## Updating site content
+- **Learn pages**: Long-form guides live in `src/pages` and are rendered both client-side and via Hono routes for SEO. Update or add pages here, then register them in the worker routes and the sitemap list.
+- **Privacy and terms**: Content sits in `src/pages/PrivacyPage.tsx` and `src/pages/TermsPage.tsx` and is linked in the site footer.
+- **Navigation**: Shared navigation/footer components are in `src/react-app/components`.
 
-<!-- dash-content-start -->
+## Sitemap and robots
+`src/worker/index.ts` serves `/sitemap.xml` and `/robots.txt`. When adding new routes, append the path to the `urls` array in the sitemap handler so search engines discover them.
 
-🚀 Supercharge your web development with this powerful stack:
-
-- [**React**](https://react.dev/) - A modern UI library for building interactive interfaces
-- [**Vite**](https://vite.dev/) - Lightning-fast build tooling and development server
-- [**Hono**](https://hono.dev/) - Ultralight, modern backend framework
-- [**Cloudflare Workers**](https://developers.cloudflare.com/workers/) - Edge computing platform for global deployment
-
-### ✨ Key Features
-
-- 🔥 Hot Module Replacement (HMR) for rapid development
-- 📦 TypeScript support out of the box
-- 🛠️ ESLint configuration included
-- ⚡ Zero-config deployment to Cloudflare's global network
-- 🎯 API routes with Hono's elegant routing
-- 🔄 Full-stack development setup
-- 🔎 Built-in Observability to monitor your Worker
-
-Get started in minutes with local development or deploy directly via the Cloudflare dashboard. Perfect for building modern, performant web applications at the edge.
-
-<!-- dash-content-end -->
-
-## Getting Started
-
-To start a new project with this template, run:
-
-```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/vite-react-template
-```
-
-A live deployment of this template is available at:
-[https://react-vite-template.templates.workers.dev](https://react-vite-template.templates.workers.dev)
-
-## Development
-
-Install dependencies:
-
+## Running locally
 ```bash
 npm install
+npm run dev     # Vite dev server
+npm run build   # Build front-end bundle
+npm run preview # Preview the production build
 ```
 
-Start the development server with:
-
+To dry-run the Worker deployment and type generation:
 ```bash
-npm run dev
+npm run check
 ```
 
-Your application will be available at [http://localhost:5173](http://localhost:5173).
+## Deploying the Worker
+Ensure Wrangler bindings are configured (Document AI credentials, OpenAI keys, and D1 database). Then deploy:
+```bash
+npm run deploy
+```
 
-## Production
+## Ad identifiers to set
+- **GA Measurement ID:** `G-98170RDCDD` (already baked into `index.html`).
+- **AdSense client ID:** Replace `ca-pub-1860356577073395` in `index.html` and `AdUnit.tsx` with your production account if it changes.
+- **AdSense slot IDs:** Update the `slot` props passed to `AdUnit` in `src/react-app/App.tsx` once your placements are live.
 
-Build your project for production:
-
+## Running the Worker locally
+Use Wrangler to emulate the Worker routes (including the new SEO pages):
 ```bash
 npm run build
-```
-
-Preview your build locally:
-
-```bash
 npm run preview
+# or run `wrangler dev` if you prefer the Worker-first workflow
 ```
 
-Deploy your project to Cloudflare Workers:
-
-```bash
-npm run build && npm run deploy
-```
-
-Monitor your workers:
-
-```bash
-npx wrangler tail
-```
-
-### Required Secrets & Bindings
-
-Before deploying, make sure the following bindings are configured in Cloudflare (or via `wrangler secret put` for local development):
-
-- `OPEN_API_KEY_NEW` – OpenAI API key
-- `OPENAI_ORG_ID` – OpenAI organization ID
-- `Google-Service-Account-FINAL` – Google service-account JSON used for Document AI
-- `Google_Document_AI_Processor_Prediction_Endpoint` – Fully-qualified Document AI processor prediction endpoint URL
-
-The Worker validates that each secret is available before servicing API requests. When running locally you can populate them by executing `npx wrangler secret put <NAME>` for each binding listed above.
-
-## Additional Resources
-
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Vite Documentation](https://vitejs.dev/guide/)
-- [React Documentation](https://reactjs.org/)
-- [Hono Documentation](https://hono.dev/)
+Comments in the code explain how each change boosts ad viewability, adds organic entry points, and keeps analytics/privacy compliant.

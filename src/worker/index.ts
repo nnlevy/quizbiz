@@ -1,4 +1,13 @@
 import { Hono } from "hono";
+import React from "react";
+import { renderToString } from "react-dom/server";
+import HiddenLeaksPage from "../pages/HiddenLeaksPage";
+import LeakDetectionPage from "../pages/LeakDetectionPage";
+import PrivacyPage from "../pages/PrivacyPage";
+import ReadWaterBillPage from "../pages/ReadWaterBillPage";
+import TermsPage from "../pages/TermsPage";
+import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
+import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
 
@@ -48,6 +57,48 @@ const app = new Hono<{ Bindings: WorkerEnv }>();
 
 app.get("/ads.txt", (c) =>
   c.text("google.com, pub-1860356577073395, DIRECT, f08c47fec0942fa0"),
+);
+
+app.get("/learn/read-water-bill", (c) =>
+  c.html(renderToString(React.createElement(ReadWaterBillPage))),
+);
+app.get("/learn/leak-detection", (c) =>
+  c.html(renderToString(React.createElement(LeakDetectionPage))),
+);
+app.get("/learn/water-saving-tips", (c) =>
+  c.html(renderToString(React.createElement(WaterSavingTipsPage))),
+);
+app.get("/learn/water-bill-spikes", (c) =>
+  c.html(renderToString(React.createElement(WaterBillSpikesPage))),
+);
+app.get("/learn/hidden-leaks", (c) =>
+  c.html(renderToString(React.createElement(HiddenLeaksPage))),
+);
+app.get("/privacy", (c) => c.html(renderToString(React.createElement(PrivacyPage))));
+app.get("/terms", (c) => c.html(renderToString(React.createElement(TermsPage))));
+
+app.get("/sitemap.xml", (c) => {
+  const urls = [
+    "/",
+    "/upload",
+    "/privacy",
+    "/terms",
+    "/learn/read-water-bill",
+    "/learn/leak-detection",
+    "/learn/water-saving-tips",
+    "/learn/water-bill-spikes",
+    "/learn/hidden-leaks",
+  ];
+  const xml =
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls
+      .map((u) => `<url><loc>https://watershortcut.com${u}</loc></url>`)
+      .join("\n") +
+    "\n</urlset>";
+  return c.text(xml, 200, { "Content-Type": "application/xml" });
+});
+app.get("/robots.txt", (c) =>
+  c.text(`User-agent: *\nDisallow:\nSitemap: https://watershortcut.com/sitemap.xml`),
 );
 
 app.post("/api/location", async (c) => {
