@@ -1,13 +1,5 @@
 import { Hono } from "hono";
-import React from "react";
-import { renderToString } from "react-dom/server";
-import HiddenLeaksPage from "../pages/HiddenLeaksPage";
-import LeakDetectionPage from "../pages/LeakDetectionPage";
-import PrivacyPage from "../pages/PrivacyPage";
-import ReadWaterBillPage from "../pages/ReadWaterBillPage";
-import TermsPage from "../pages/TermsPage";
-import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
-import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
+import { stylesCss, appJs } from "./assets";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
 
@@ -53,53 +45,1069 @@ type DocumentAIResponse = {
   };
 };
 
+type SiteRoute = {
+  path: string;
+  title: string;
+  description: string;
+  body: string;
+  pageCssClass?: string;
+  breadcrumbs?: Array<{ name: string; path: string }>; 
+};
+
+const DOMAIN = "https://www.watershortcut.com";
+const BUILD_DATE = new Date().toISOString().split("T")[0];
+
+const navLinks = [
+  { label: "Analyze", href: "/analyze-water-bill" },
+  { label: "Plan", href: "/savings-plan" },
+  { label: "Calculators", href: "/calculators" },
+  { label: "Leaks", href: "/leak-check" },
+  { label: "Rebates", href: "/rebates" },
+  { label: "Guides", href: "/guides" },
+  { label: "About", href: "/about" },
+];
+
+const footerLinks = [
+  { label: "Privacy", href: "/privacy", modal: "privacy-modal" },
+  { label: "Terms", href: "/terms", modal: "terms-modal" },
+  { label: "Affiliate", href: "/affiliate", modal: "affiliate-modal" },
+  { label: "Disclaimer", href: "/disclaimer", modal: "disclaimer-modal" },
+  { label: "Contact", href: "/contact" },
+  { label: "Sitemap", href: "/sitemap", modal: "sitemap-modal" },
+];
+
+const modalCopy: Record<string, { title: string; body: string[]; footer?: string }> = {
+  "privacy-modal": {
+    title: "Privacy",
+    body: [
+      "We use cookies for analytics and ads.",
+      "If you upload a bill, we process it to generate results.",
+      "We don’t sell personal data.",
+    ],
+    footer: `Last updated: ${BUILD_DATE}`,
+  },
+  "terms-modal": {
+    title: "Terms",
+    body: [
+      "Use at your own risk.",
+      "Estimates are not guarantees.",
+      "Follow local rules and manufacturer instructions.",
+    ],
+  },
+  "affiliate-modal": {
+    title: "Affiliate disclosure",
+    body: [
+      "Some links are affiliate links.",
+      "You pay the same price.",
+      "It helps keep WaterShortcut free.",
+    ],
+  },
+  "disclaimer-modal": {
+    title: "Disclaimer",
+    body: [
+      "Not legal, financial, or plumbing advice.",
+      "For emergencies, contact a licensed professional.",
+    ],
+  },
+  "sitemap-modal": {
+    title: "Sitemap",
+    body: ["Tools", "Calculators", "Guides", "Trust pages"],
+  },
+};
+
+const siteRoutes: SiteRoute[] = [
+  {
+    path: "/",
+    title: "WaterShortcut | Save water. Save money.",
+    description:
+      "Upload a water bill for a clear breakdown and a savings plan. Or use fast calculators for showers, toilets, leaks, laundry, and outdoor watering.",
+    body: renderHome(),
+    pageCssClass: "home",
+  },
+  {
+    path: "/analyze-water-bill",
+    title: "Analyze a water bill PDF | WaterShortcut",
+    description:
+      "Upload a water bill PDF to get a plain-English breakdown, usage clues, and prioritized savings moves.",
+    body: renderBillAnalyzer(),
+  },
+  {
+    path: "/find-water-provider",
+    title: "Find your water provider | WaterShortcut",
+    description:
+      "Enter your city to find your water authority, bill portal, and contact details.",
+    body: renderProviderFinder(),
+  },
+  {
+    path: "/savings-plan",
+    title: "Build a water savings plan | WaterShortcut",
+    description:
+      "Answer a few questions to get a personalized, prioritized plan to lower your water bill.",
+    body: renderSavingsPlan(),
+  },
+  {
+    path: "/calculators",
+    title: "Water saving calculators | WaterShortcut",
+    description:
+      "Fast, no-login calculators for showers, faucets, toilets, laundry, leaks, and outdoor watering.",
+    body: renderCalculatorsHub(),
+  },
+  {
+    path: "/calculators/shower",
+    title: "Shower savings calculator | WaterShortcut",
+    description:
+      "Estimate water (and money) savings from a WaterSense showerhead and shorter showers.",
+    body: renderShowerCalculator(),
+  },
+  {
+    path: "/calculators/faucet",
+    title: "Faucet savings calculator | WaterShortcut",
+    description:
+      "Estimate savings from WaterSense bathroom faucets/aerators and small habit changes.",
+    body: renderFaucetCalculator(),
+  },
+  {
+    path: "/calculators/toilet",
+    title: "Toilet savings calculator | WaterShortcut",
+    description: "Estimate savings from upgrading toilets and fixing silent leaks.",
+    body: renderToiletCalculator(),
+  },
+  {
+    path: "/calculators/laundry",
+    title: "Laundry savings calculator | WaterShortcut",
+    description: "Estimate savings from switching to an ENERGY STAR clothes washer.",
+    body: renderLaundryCalculator(),
+  },
+  {
+    path: "/calculators/outdoor",
+    title: "Outdoor watering savings | WaterShortcut",
+    description:
+      "Build a smarter outdoor watering plan and estimate waste from overwatering.",
+    body: renderOutdoorCalculator(),
+  },
+  {
+    path: "/leak-check",
+    title: "Leak check | WaterShortcut",
+    description:
+      "A fast, guided checklist to find common household leaks and what to do next.",
+    body: renderLeakCheck(),
+  },
+  {
+    path: "/rebates",
+    title: "Find water rebates | WaterShortcut",
+    description: "Find official rebates for WaterSense and ENERGY STAR products in minutes.",
+    body: renderRebatesWizard(),
+  },
+  {
+    path: "/guides",
+    title: "Water saving guides | WaterShortcut",
+    description:
+      "Short guides for showerheads, leaks, toilets, outdoor watering, and reading your bill.",
+    body: renderGuidesHub(),
+  },
+  {
+    path: "/guides/showerheads",
+    title: "WaterSense showerheads | WaterShortcut",
+    description: "What to buy, what to expect, and how to calculate savings.",
+    body: renderGuideShowerheads(),
+  },
+  {
+    path: "/guides/find-fix-leaks",
+    title: "Find and fix household leaks | WaterShortcut",
+    description: "The fastest way to lower your water bill is stopping silent waste.",
+    body: renderGuideLeaks(),
+  },
+  {
+    path: "/guides/toilets",
+    title: "WaterSense toilets | WaterShortcut",
+    description: "How to spot a running toilet and when an upgrade is worth it.",
+    body: renderGuideToilets(),
+  },
+  {
+    path: "/guides/water-bill",
+    title: "Water bill basics | WaterShortcut",
+    description: "How to read your usage, units, tiers, and common fees.",
+    body: renderGuideWaterBill(),
+  },
+  {
+    path: "/guides/outdoor-watering",
+    title: "Outdoor watering basics | WaterShortcut",
+    description:
+      "A simple checklist to reduce outdoor waste and keep plants healthy.",
+    body: renderGuideOutdoor(),
+  },
+  {
+    path: "/about",
+    title: "About WaterShortcut",
+    description:
+      "WaterShortcut turns confusing bills into simple next steps—fast.",
+    body: renderAbout(),
+  },
+  {
+    path: "/contact",
+    title: "Contact WaterShortcut",
+    description: "Questions, feedback, or corrections? Send a note.",
+    body: renderContact(),
+  },
+  {
+    path: "/privacy",
+    title: "Privacy | WaterShortcut",
+    description: "How we handle analytics, uploads, and data.",
+    body: renderTrustPage("privacy"),
+  },
+  {
+    path: "/terms",
+    title: "Terms | WaterShortcut",
+    description: "Use at your own risk. Estimates only.",
+    body: renderTrustPage("terms"),
+  },
+  {
+    path: "/affiliate",
+    title: "Affiliate disclosure | WaterShortcut",
+    description: "Some links may pay a commission that keeps the site free.",
+    body: renderTrustPage("affiliate"),
+  },
+  {
+    path: "/disclaimer",
+    title: "Disclaimer | WaterShortcut",
+    description: "Not legal, financial, or plumbing advice.",
+    body: renderTrustPage("disclaimer"),
+  },
+  {
+    path: "/sitemap",
+    title: "Sitemap | WaterShortcut",
+    description: "Browse every WaterShortcut page, tool, and guide.",
+    body: "",
+  },
+];
+
 const app = new Hono<{ Bindings: WorkerEnv }>();
+
+app.get("/assets/styles.css", (c) =>
+  c.text(stylesCss, 200, {
+    "Content-Type": "text/css; charset=utf-8",
+    "Cache-Control": "public, max-age=31536000, immutable",
+  }),
+);
+
+app.get("/assets/app.js", (c) =>
+  c.text(appJs, 200, {
+    "Content-Type": "application/javascript; charset=utf-8",
+    "Cache-Control": "public, max-age=31536000, immutable",
+  }),
+);
 
 app.get("/ads.txt", (c) =>
   c.text("google.com, pub-1860356577073395, DIRECT, f08c47fec0942fa0"),
 );
 
-app.get("/learn/read-water-bill", (c) =>
-  c.html(renderToString(React.createElement(ReadWaterBillPage))),
-);
-app.get("/learn/leak-detection", (c) =>
-  c.html(renderToString(React.createElement(LeakDetectionPage))),
-);
-app.get("/learn/water-saving-tips", (c) =>
-  c.html(renderToString(React.createElement(WaterSavingTipsPage))),
-);
-app.get("/learn/water-bill-spikes", (c) =>
-  c.html(renderToString(React.createElement(WaterBillSpikesPage))),
-);
-app.get("/learn/hidden-leaks", (c) =>
-  c.html(renderToString(React.createElement(HiddenLeaksPage))),
-);
-app.get("/privacy", (c) => c.html(renderToString(React.createElement(PrivacyPage))));
-app.get("/terms", (c) => c.html(renderToString(React.createElement(TermsPage))));
+siteRoutes.forEach((route) => {
+  app.get(route.path, (c) =>
+    c.html(
+      layout({
+        title: route.title,
+        description: route.description,
+        canonicalPath: route.path,
+        bodyHtml: route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body,
+        pageCssClass: route.pageCssClass,
+        breadcrumbs: route.breadcrumbs,
+      }),
+    ),
+  );
+});
 
 app.get("/sitemap.xml", (c) => {
-  const urls = [
-    "/",
-    "/upload",
-    "/privacy",
-    "/terms",
-    "/learn/read-water-bill",
-    "/learn/leak-detection",
-    "/learn/water-saving-tips",
-    "/learn/water-bill-spikes",
-    "/learn/hidden-leaks",
-  ];
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls
-      .map((u) => `<url><loc>https://watershortcut.com${u}</loc></url>`)
+    siteRoutes
+      .map(
+        (u) => `<url><loc>${DOMAIN}${u.path}</loc></url>`,
+      )
       .join("\n") +
     "\n</urlset>";
   return c.text(xml, 200, { "Content-Type": "application/xml" });
 });
+
 app.get("/robots.txt", (c) =>
-  c.text(`User-agent: *\nDisallow:\nSitemap: https://watershortcut.com/sitemap.xml`),
+  c.text(
+    `User-agent: *\nAllow: /\nSitemap: ${DOMAIN}/sitemap.xml`,
+    200,
+    { "Content-Type": "text/plain; charset=utf-8" },
+  ),
 );
+
+function layout(options: {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  bodyHtml: string;
+  pageCssClass?: string;
+  breadcrumbs?: Array<{ name: string; path: string }>;
+}): string {
+  const { title, description, canonicalPath, bodyHtml, pageCssClass, breadcrumbs } = options;
+  const canonicalUrl = `${DOMAIN}${canonicalPath}`;
+  const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
+  const breadcrumbJson = crumbList.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: crumbList.map((crumb, idx) => ({
+          '@type': 'ListItem',
+          position: idx + 1,
+          name: crumb.name,
+          item: `${DOMAIN}${crumb.path}`,
+        })),
+      }
+    : null;
+
+  const jsonLd: Array<Record<string, unknown>> = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'WaterShortcut',
+      url: DOMAIN,
+      sameAs: [DOMAIN],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'WaterShortcut',
+      url: DOMAIN,
+    },
+  ];
+
+  if (breadcrumbJson) {
+    jsonLd.push(breadcrumbJson);
+  }
+
+  return `<!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${escapeHtml(title)}</title>
+      <meta name="description" content="${escapeHtml(description)}" />
+      <link rel="canonical" href="${canonicalUrl}" />
+      <meta property="og:title" content="${escapeHtml(title)}" />
+      <meta property="og:description" content="${escapeHtml(description)}" />
+      <meta property="og:url" content="${canonicalUrl}" />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:title" content="${escapeHtml(title)}" />
+      <meta name="twitter:description" content="${escapeHtml(description)}" />
+      <link rel="preload" href="/assets/styles.css" as="style" />
+      <link rel="stylesheet" href="/assets/styles.css" />
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-98170RDCDD"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);} 
+        gtag('js', new Date());
+        gtag('config', 'G-98170RDCDD');
+      </script>
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395" crossorigin="anonymous"></script>
+      <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+      <script defer src="/assets/app.js"></script>
+    </head>
+    <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
+      <div class="app-shell">
+        <header class="site-header">
+          <div class="nav-bar">
+            <div class="brand"><a href="/"><span>WS</span>WaterShortcut</a></div>
+            <nav class="nav-links" aria-label="Main navigation">
+              ${navLinks
+                .map(
+                  (link) =>
+                    `<a href="${link.href}"${link.href === canonicalPath ? " aria-current=\"page\"" : ""}>${link.label}</a>`,
+                )
+                .join("")}
+              <a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>
+            </nav>
+          </div>
+        </header>
+        ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
+        <main>${bodyHtml}</main>
+        <div class="section">
+          <div class="ad-slot-placeholder" aria-label="Ad placeholder">Ad space reserved</div>
+        </div>
+        <footer class="footer">
+          <div class="footer-inner">
+            <div>
+              <div class="footnote">Estimates, not guarantees.</div>
+              <div class="footnote">Sources you can click.</div>
+            </div>
+            <div class="footer-links">
+              ${footerLinks
+                .map((link) => {
+                  const modalAttr = link.modal ? ` data-modal-target="${link.modal}"` : "";
+                  return `<a href="${link.href}"${modalAttr}>${link.label}</a>`;
+                })
+                .join("")}
+            </div>
+          </div>
+        </footer>
+      </div>
+      ${renderModals()}
+    </body>
+  </html>`;
+}
+
+function renderBreadcrumbs(crumbs: Array<{ name: string; path: string }>): string {
+  const items = crumbs
+    .map((crumb, idx) => {
+      const isLast = idx === crumbs.length - 1;
+      return isLast
+        ? `<span aria-current="page">${escapeHtml(crumb.name)}</span>`
+        : `<a href="${crumb.path}">${escapeHtml(crumb.name)}</a>`;
+    })
+    .join("<span>/</span>");
+  return `<div class="section breadcrumbs" aria-label="Breadcrumbs">${items}</div>`;
+}
+
+function buildBreadcrumbs(path: string): Array<{ name: string; path: string }> {
+  const parts = path.split("/").filter(Boolean);
+  const crumbs: Array<{ name: string; path: string }> = [{ name: "Home", path: "/" }];
+  let current = "";
+  parts.forEach((part) => {
+    current += `/${part}`;
+    crumbs.push({
+      name: part.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()),
+      path: current,
+    });
+  });
+  return crumbs;
+}
+
+function renderModals(): string {
+  return Object.entries(modalCopy)
+    .map(([id, modal]) => {
+      const body = modal.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+      const footer = modal.footer ? `<p class="muted">${escapeHtml(modal.footer)}</p>` : "";
+      return `<dialog id="${id}" aria-labelledby="${id}-title">
+        <div class="modal-inner">
+          <h2 id="${id}-title">${escapeHtml(modal.title)}</h2>
+          ${body}
+          ${footer}
+          <div class="modal-actions"><button class="btn secondary" data-close-modal>Close</button></div>
+        </div>
+      </dialog>`;
+    })
+    .join("");
+}
+
+function section(title: string, content: string): string {
+  return `<section class="section"><h2>${escapeHtml(title)}</h2>${content}</section>`;
+}
+
+function sourcesList(items: string[]): string {
+  const list = items
+    .map((src, idx) => `<li>[${idx + 1}] <a href="${src}" rel="noopener" target="_blank">${src}</a></li>`)
+    .join("");
+  return `<div class="section sources"><strong>Sources</strong><ul class="bullet-list">${list}</ul></div>`;
+}
+
+function renderHome(): string {
+  return `
+    <section class="hero">
+      <div>
+        <p class="badge">Fast. Clear. Helpful.</p>
+        <h1>Save water. Save money.</h1>
+        <p>Upload a bill—or build a plan in 3 minutes.</p>
+        <div class="actions">
+          <a class="btn primary" href="/analyze-water-bill">Analyze my bill</a>
+          <a class="btn secondary" href="/savings-plan">Build my plan</a>
+        </div>
+      </div>
+      <div class="layout-slab">
+        <p class="meta-line">Estimates, not guarantees.</p>
+        <p class="meta-line">Sources you can click.</p>
+      </div>
+    </section>
+    ${section(
+      "Pick a shortcut.",
+      `<div class="cards">
+        <div class="card"><h3>Bill analyzer</h3><p>Turn line items into actions.</p><a class="btn secondary" href="/analyze-water-bill">Open</a></div>
+        <div class="card"><h3>Savings plan</h3><p>Answer a few questions. Get a checklist.</p><a class="btn secondary" href="/savings-plan">Start</a></div>
+        <div class="card"><h3>Quick calculators</h3><p>See gallons. Then dollars.</p><a class="btn secondary" href="/calculators">Browse</a></div>
+      </div>`,
+    )}
+    ${section(
+      "Quick wins (today).",
+      `<ul class="bullet-list">
+        <li><a href="/leak-check">Fix a sneaky leak</a></li>
+        <li><a href="/calculators/shower">Right-size your shower flow</a></li>
+        <li><a href="/calculators/outdoor">Water outdoors on purpose</a></li>
+      </ul>`,
+    )}
+    ${section(
+      "Built for trust.",
+      `<ul class="bullet-list">
+        <li>Sources you can click</li>
+        <li>Fast on mobile</li>
+        <li>No account needed</li>
+      </ul>`,
+    )}
+    ${section(
+      "Popular tools.",
+      `<div class="grid">
+        <a class="inline-list" href="/calculators/shower">Shower calculator</a>
+        <a class="inline-list" href="/calculators/toilet">Toilet calculator</a>
+        <a class="inline-list" href="/leak-check">Leak check</a>
+        <a class="inline-list" href="/rebates">Rebates wizard</a>
+        <a class="inline-list" href="/calculators/laundry">Laundry calculator</a>
+      </div>`,
+    )}
+    <section class="section faq">
+      <h2>FAQ</h2>
+      <div class="faq-item">
+        <button type="button">Do I need an account? <span aria-hidden="true">＋</span></button>
+        <div class="answer">Nope. Start with a bill or a calculator.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button">Is this official advice? <span aria-hidden="true">＋</span></button>
+        <div class="answer">We summarize public guidance and link sources. You decide what to do next.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button">Can you guarantee savings? <span aria-hidden="true">＋</span></button>
+        <div class="answer">No. But we can help you find the biggest, easiest opportunities.</div>
+      </div>
+    </section>
+  `;
+}
+
+function renderBillAnalyzer(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Your bill, explained.</h1>
+        <p>Upload a PDF. Get a plan you can act on.</p>
+        <div class="actions">
+          <a class="btn primary" href="#bill-form">Analyze my bill</a>
+          <a class="btn secondary" href="/guides/water-bill">Prefer not to upload? See bill basics</a>
+        </div>
+      </div>
+      <div class="layout-slab">
+        <div class="wizard-steps">
+          <div class="step-pill active">1 Upload</div>
+          <div class="step-pill">2 We read it</div>
+          <div class="step-pill">3 Your plan</div>
+        </div>
+      </div>
+    </section>
+    <section class="section layout-slab">
+      <h2>Upload your bill (PDF)</h2>
+      <p class="muted">Tip: cover your account number if you want.</p>
+      <form id="bill-form" aria-label="Upload water bill">
+        <div class="form-row">
+          <label for="bill-file">Choose PDF</label>
+          <input id="bill-file" type="file" name="file" accept="application/pdf" />
+        </div>
+        <div class="wizard-actions">
+          <button class="btn primary" type="submit">Analyze my bill</button>
+          <a class="btn secondary" href="/guides/water-bill">See bill basics</a>
+        </div>
+      </form>
+      <div id="bill-status" class="callout" aria-live="polite"></div>
+    </section>
+    ${section(
+      "Your top 3 moves",
+      `<p class="muted">We highlight quick actions first.</p><div class="ad-slot-placeholder" aria-label="Ad placeholder">Reserved</div>`,
+    )}
+    ${section(
+      "What your bill is really charging for",
+      `<p class="muted">Usage, tiers, sewer, and fees broken down in plain language.</p>`,
+    )}
+    ${section(
+      "Your next best step",
+      `<div class="inline-list"><a class="btn secondary" href="/savings-plan">Build a savings plan</a><a class="btn secondary" href="/calculators">Try a 2‑minute calculator</a></div>`,
+    )}
+    <section class="section">
+      <p class="muted">Estimates only. Always follow local rules and manufacturer instructions.</p>
+    </section>
+  `;
+}
+
+function renderProviderFinder(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Find your water provider.</h1>
+        <p>We’ll point you to the official portal.</p>
+      </div>
+    </section>
+    <section class="section layout-slab">
+      <form id="provider-form" aria-label="Find provider">
+        <div class="form-row">
+          <label for="location-input">City / area</label>
+          <input id="location-input" name="location" placeholder="e.g., “Atlanta, GA” or “Berlin”" />
+        </div>
+        <button class="btn primary" type="submit">Find it</button>
+      </form>
+      <p class="muted">We can’t verify every utility link. Double-check the domain before paying.</p>
+      <div id="provider-result" class="callout" aria-live="polite"></div>
+    </section>
+  `;
+}
+
+function renderSavingsPlan(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Your WaterShortcut plan.</h1>
+        <p>A few answers → fewer wasted gallons.</p>
+      </div>
+    </section>
+    <section class="section layout-slab wizard" data-wizard="savings">
+      <div class="wizard-steps">
+        <div class="step-pill active" data-step="1">1/4 Basics</div>
+        <div class="step-pill" data-step="2">2/4 Habits</div>
+        <div class="step-pill" data-step="3">3/4 Upgrades</div>
+        <div class="step-pill" data-step="4">4/4 Your plan</div>
+      </div>
+      <div class="wizard-step active" data-step="1" data-step-index="1">
+        <h3>Basics</h3>
+        <p>Where do you want to save?</p>
+        <div class="inline-list">
+          <label class="tag"><input type="radio" name="focus-area" value="Indoor" /> Indoor</label>
+          <label class="tag"><input type="radio" name="focus-area" value="Outdoor" /> Outdoor</label>
+          <label class="tag"><input type="radio" name="focus-area" value="Both" checked /> Both</label>
+        </div>
+        <div class="form-inline">
+          <div class="form-row"><label>Household size (1–10)</label><input id="household-size" type="number" min="1" max="10" value="2" /></div>
+          <div class="form-row"><label>Home type</label><select id="home-type"><option>House</option><option>Apartment</option><option>Condo</option></select></div>
+        </div>
+        <div class="wizard-actions"><button class="btn primary" data-action="next">Next: Habits</button></div>
+      </div>
+      <div class="wizard-step" data-step="2" data-step-index="2">
+        <h3>Habits</h3>
+        <p>Give us your best guess.</p>
+        <div class="form-inline">
+          <div class="form-row"><label>Showers per day</label><input id="showers-per-day" type="number" value="2" /></div>
+          <div class="form-row"><label>Minutes per shower</label><input id="minutes-per-shower" type="number" value="8" /></div>
+          <div class="form-row"><label>Laundry loads per week</label><input id="laundry-loads" type="number" value="5" /></div>
+          <div class="form-row"><label>Water rate ($ per 1,000 gallons)</label><input id="water-rate" type="number" step="0.01" placeholder="Optional" /><p class="muted">Find it on your bill as “rate”, “unit cost”, or “$/CCF”.</p></div>
+        </div>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next: Upgrades</button></div>
+      </div>
+      <div class="wizard-step" data-step="3" data-step-index="3">
+        <h3>Upgrades</h3>
+        <p>What are you open to?</p>
+        <div class="bullet-list">
+          <label><input type="checkbox" name="upgrade" value="showerhead" checked /> WaterSense showerhead — <span class="muted">Small swap. Daily impact.</span></label>
+          <label><input type="checkbox" name="upgrade" value="faucet" checked /> Faucet aerators — <span class="muted">Cheap hardware. Fast win.</span></label>
+          <label><input type="checkbox" name="upgrade" value="toilet-fix" /> Toilet fix (flapper/leak) — <span class="muted">Most common silent waste.</span></label>
+          <label><input type="checkbox" name="upgrade" value="washer" /> High-efficiency washer — <span class="muted">Savings over years.</span></label>
+          <label><input type="checkbox" name="upgrade" value="outdoor" /> Smarter outdoor watering — <span class="muted">Less waste. Healthier plants.</span></label>
+        </div>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Build my plan</button></div>
+      </div>
+      <div class="wizard-step" data-step="4" data-step-index="4">
+        <h3>Your plan</h3>
+        <div class="plan-output"></div>
+        <p class="muted">Estimates only. Your rates and usage vary.</p>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button></div>
+      </div>
+    </section>
+  `;
+}
+
+function renderCalculatorsHub(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Fast calculators.</h1>
+        <p>See gallons. Then decide.</p>
+      </div>
+    </section>
+    ${section(
+      "Pick a tool",
+      `<div class="cards">
+        <div class="card"><h3>Shower</h3><p>Flow swaps and shorter showers.</p><a class="btn secondary" href="/calculators/shower">Open</a></div>
+        <div class="card"><h3>Faucet</h3><p>Aerators and habits.</p><a class="btn secondary" href="/calculators/faucet">Open</a></div>
+        <div class="card"><h3>Toilet</h3><p>Upgrades and leaks.</p><a class="btn secondary" href="/calculators/toilet">Open</a></div>
+        <div class="card"><h3>Laundry</h3><p>ENERGY STAR vs standard.</p><a class="btn secondary" href="/calculators/laundry">Open</a></div>
+        <div class="card"><h3>Outdoor</h3><p>Watering guidance.</p><a class="btn secondary" href="/calculators/outdoor">Open</a></div>
+        <div class="card"><h3>Leak check</h3><p>Chase drips fast.</p><a class="btn secondary" href="/leak-check">Open</a></div>
+      </div>`,
+    )}
+  `;
+}
+
+function calculatorForm(title: string, subtitle: string, formHtml: string, resultSources: string[]): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>${escapeHtml(title)}</h1>
+        <p>${escapeHtml(subtitle)}</p>
+      </div>
+    </section>
+    <section class="section layout-slab">
+      <form data-calc="${title.toLowerCase().split(" ")[0]}">${formHtml}</form>
+      <div class="calc-result" aria-live="polite"></div>
+    </section>
+    ${sourcesList(resultSources)}
+  `;
+}
+
+function renderShowerCalculator(): string {
+  const form = `
+    <div class="form-inline">
+      <div class="form-row"><label>Current flow (gpm)</label><input name="current-flow" type="number" step="0.1" value="2.5" /></div>
+      <div class="form-row"><label>New flow (gpm)</label><input name="new-flow" type="number" step="0.1" value="2.0" /></div>
+      <div class="form-row"><label>Minutes per shower</label><input name="minutes" type="number" value="8" /></div>
+      <div class="form-row"><label>Showers per day</label><input name="showers" type="number" value="2" /></div>
+      <div class="form-row"><label>People</label><input name="people" type="number" value="2" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+    </div>
+    <p class="muted">WaterSense showerheads are ≤2.0 gpm [1]. Standard showerheads are 2.5 gpm [1].</p>
+    <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button></div>
+  `;
+  return calculatorForm("Shower savings.", "Same shower. Less flow.", form, [
+    "https://www.epa.gov/watersense/showerheads",
+  ]);
+}
+
+function renderFaucetCalculator(): string {
+  const form = `
+    <div class="form-inline">
+      <div class="form-row"><label>Current flow (gpm)</label><input name="current-flow" type="number" step="0.1" value="2.2" /></div>
+      <div class="form-row"><label>New flow (gpm)</label><input name="new-flow" type="number" step="0.1" value="1.5" /></div>
+      <div class="form-row"><label>Minutes per person per day</label><input name="minutes" type="number" value="5" /></div>
+      <div class="form-row"><label>People</label><input name="people" type="number" value="2" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+    </div>
+    <p class="muted">WaterSense bathroom faucets target 1.5 gpm [1].</p>
+    <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button></div>
+  `;
+  return calculatorForm("Faucet savings.", "Small hardware. Big habit.", form, [
+    "https://www.epa.gov/watersense/bathroom-faucets",
+  ]);
+}
+
+function renderToiletCalculator(): string {
+  const form = `
+    <div class="form-inline">
+      <div class="form-row"><label>Toilets count</label><input name="toilets" type="number" value="2" /></div>
+      <div class="form-row"><label>Current gallons/flush (gpf)</label><select name="current-gpf"><option value="3.5">3.5</option><option value="1.6">1.6</option><option value="1.28" selected>1.28</option></select></div>
+      <div class="form-row"><label>New gpf</label><input name="new-gpf" type="number" step="0.01" value="1.28" /></div>
+      <div class="form-row"><label>Flushes per person per day</label><input name="flushes" type="number" value="5" /></div>
+      <div class="form-row"><label>People</label><input name="people" type="number" value="2" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+      <div class="form-row"><label><input type="checkbox" name="leak" /> Also suspect a leak (running toilet)</label><p class="muted">If checked, head to the leak check.</p></div>
+    </div>
+    <p class="muted">WaterSense toilets are 1.28 gpf or less [1]. A drip per second wastes 3,000+ gallons/year [2].</p>
+    <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button><a class="btn secondary" href="/leak-check">Check for leaks</a></div>
+  `;
+  return calculatorForm("Toilet savings.", "One swap. Years of savings.", form, [
+    "https://www.epa.gov/watersense/residential-toilets",
+    "https://www.epa.gov/watersense/fix-leak-week",
+  ]);
+}
+
+function renderLaundryCalculator(): string {
+  const form = `
+    <div class="form-inline">
+      <div class="form-row"><label>Loads per week</label><input name="loads" type="number" value="6" /></div>
+      <div class="form-row"><label>Washer type</label><select name="washer"><option>Standard</option><option>ENERGY STAR</option></select></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+    </div>
+    <p class="muted">ENERGY STAR washers use about 30% less water. [1]</p>
+    <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button></div>
+  `;
+  return calculatorForm("Laundry savings.", "Clean clothes. Less water.", form, [
+    "https://www.energystar.gov/products/clothes_washers",
+  ]);
+}
+
+function renderOutdoorCalculator(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Outdoor savings.</h1>
+        <p>Water roots, not sidewalks.</p>
+      </div>
+    </section>
+    <section class="section layout-slab wizard" data-wizard="outdoor">
+      <div class="wizard-steps">
+        <div class="step-pill active" data-step="1">1/3 Your setup</div>
+        <div class="step-pill" data-step="2">2/3 Your schedule</div>
+        <div class="step-pill" data-step="3">3/3 Tighten it</div>
+      </div>
+      <div class="wizard-step active" data-step="1" data-step-index="1">
+        <h3>Your setup</h3>
+        <div class="form-row"><label>Watering method</label><select><option>Sprinklers</option><option>Hose</option><option>Drip</option></select></div>
+        <div class="form-row"><label>Zones or areas</label><input type="number" value="3" /></div>
+        <div class="wizard-actions"><button class="btn primary" data-action="next">Next</button></div>
+      </div>
+      <div class="wizard-step" data-step="2" data-step-index="2">
+        <h3>Your schedule</h3>
+        <div class="form-row"><label>Days per week</label><input type="number" value="3" /></div>
+        <div class="form-row"><label>Minutes per day</label><input type="number" value="15" /></div>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next</button></div>
+      </div>
+      <div class="wizard-step" data-step="3" data-step-index="3">
+        <h3>Tighten it</h3>
+        <p>Try: 2 days/week × 10 minutes. Watch: puddles, runoff, fungus.</p>
+        <div class="callout">
+          <strong>Smart upgrade</strong>
+          A WaterSense labeled irrigation controller can save an average home up to 15,000 gallons/year. [1]
+        </div>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button></div>
+      </div>
+    </section>
+    ${sourcesList(["https://www.epa.gov/watersense/about-watersense"])}
+  `;
+}
+
+function renderLeakCheck(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Find leaks fast.</h1>
+        <p>Chase drips before they chase dollars.</p>
+      </div>
+    </section>
+    <section class="section layout-slab wizard" data-wizard="leak">
+      <div class="wizard-steps">
+        <div class="step-pill active" data-step="1">1/3 What changed?</div>
+        <div class="step-pill" data-step="2">2/3 Quick checks</div>
+        <div class="step-pill" data-step="3">3/3 Your next steps</div>
+      </div>
+      <div class="wizard-step active" data-step="1" data-step-index="1">
+        <h3>What changed?</h3>
+        <div class="bullet-list">
+          <label><input type="radio" name="leak-trigger" /> My bill jumped</label>
+          <label><input type="radio" name="leak-trigger" /> I hear running water</label>
+          <label><input type="radio" name="leak-trigger" /> I see wet spots</label>
+          <label><input type="radio" name="leak-trigger" /> I’m just checking</label>
+        </div>
+        <div class="wizard-actions"><button class="btn primary" data-action="next">Next</button></div>
+      </div>
+      <div class="wizard-step" data-step="2" data-step-index="2">
+        <h3>Quick checks</h3>
+        <ul class="bullet-list">
+          <li>Toilet dye test</li>
+          <li>Check faucet drips</li>
+          <li>Check showerhead drips</li>
+          <li>Check irrigation leaks</li>
+        </ul>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next</button></div>
+      </div>
+      <div class="wizard-step" data-step="3" data-step-index="3">
+        <h3>Your next steps</h3>
+        <div class="bullet-list">
+          <li>Most likely: toilet flapper</li>
+          <li>Next: faucet aerator / washer</li>
+          <li>Also: irrigation line</li>
+        </div>
+        <p>A drip per second can waste 3,000+ gallons/year. [1]</p>
+        <p>Household leaks can waste thousands of gallons/year. [2]</p>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><a class="btn primary" href="/calculators/toilet">Run the toilet calculator</a></div>
+      </div>
+    </section>
+    ${sourcesList([
+      "https://www.epa.gov/watersense/fix-leak-week",
+      "https://www.epa.gov/watersense/statistics-and-facts",
+    ])}
+  `;
+}
+
+function renderRebatesWizard(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Find rebates.</h1>
+        <p>Start with the official finders.</p>
+      </div>
+    </section>
+    <section class="section layout-slab wizard" data-wizard="rebates">
+      <div class="wizard-steps">
+        <div class="step-pill active" data-step="1">1/2 Basics</div>
+        <div class="step-pill" data-step="2">2/2 Links</div>
+      </div>
+      <div class="wizard-step active" data-step="1" data-step-index="1">
+        <div class="form-row"><label>Zip/postal code (optional)</label><input type="text" placeholder="Optional" /></div>
+        <div class="form-row">
+          <label>Product interests</label>
+          <div class="chip-list">
+            <label class="tag"><input type="checkbox" /> showerhead</label>
+            <label class="tag"><input type="checkbox" /> toilet</label>
+            <label class="tag"><input type="checkbox" /> faucet</label>
+            <label class="tag"><input type="checkbox" /> washer</label>
+            <label class="tag"><input type="checkbox" /> irrigation controller</label>
+          </div>
+        </div>
+        <div class="wizard-actions"><button class="btn primary" data-action="next">Next</button></div>
+      </div>
+      <div class="wizard-step" data-step="2" data-step-index="2">
+        <div class="cards">
+          <a class="card" href="https://lookforwatersense.epa.gov/Rebate-Finder.html" target="_blank" rel="noopener">
+            <h3>WaterSense Rebate Finder</h3>
+          </a>
+          <a class="card" href="https://www.energystar.gov/rebate-finder" target="_blank" rel="noopener">
+            <h3>ENERGY STAR Rebate Finder</h3>
+          </a>
+          <a class="card" href="https://lookforwatersense.epa.gov/" target="_blank" rel="noopener">
+            <h3>WaterSense Product Search</h3>
+          </a>
+        </div>
+        <p class="muted">WaterSense lists rebates, but doesn’t provide them. Your utility does. [1]</p>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button></div>
+      </div>
+    </section>
+    ${sourcesList(["https://lookforwatersense.epa.gov/Rebate-Finder.html"])}
+  `;
+}
+
+function renderGuidesHub(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Guides, not guilt.</h1>
+        <p>Short reads. Practical fixes.</p>
+      </div>
+    </section>
+    ${section(
+      "Topics",
+      `<div class="cards">
+        <div class="card"><h3>Showerheads</h3><p>What to buy and why.</p><a class="btn secondary" href="/guides/showerheads">Read</a></div>
+        <div class="card"><h3>Find & fix leaks</h3><p>Stop silent waste.</p><a class="btn secondary" href="/guides/find-fix-leaks">Read</a></div>
+        <div class="card"><h3>Toilets</h3><p>Fix or replace.</p><a class="btn secondary" href="/guides/toilets">Read</a></div>
+        <div class="card"><h3>Water bill basics</h3><p>Know the charges.</p><a class="btn secondary" href="/guides/water-bill">Read</a></div>
+        <div class="card"><h3>Outdoor watering</h3><p>Less waste outdoors.</p><a class="btn secondary" href="/guides/outdoor-watering">Read</a></div>
+      </div>`,
+    )}
+  `;
+}
+
+function guideLayout(title: string, subtitle: string, sectionsHtml: string, sources: string[]): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>${escapeHtml(title)}</h1>
+        <p>${escapeHtml(subtitle)}</p>
+      </div>
+    </section>
+    ${sectionsHtml}
+    ${sourcesList(sources)}
+  `;
+}
+
+function renderGuideShowerheads(): string {
+  const sections = `
+    ${section("What to buy", `<p>Look for WaterSense. [1]</p>`)}
+    ${section("What to expect", `<p>Standard is 2.5 gpm. WaterSense is ≤2.0 gpm. [1]</p>`)}
+    ${section("Do it today", `<p>Pick a model → install → rerun the calculator.</p><a class="btn secondary" href="/calculators/shower">Open calculator</a>`)}
+    <section class="section faq">
+      <h2>FAQ</h2>
+      <div class="faq-item"><button type="button">Will it feel weaker? <span aria-hidden="true">＋</span></button><div class="answer">WaterSense models must meet performance criteria. [1]</div></div>
+      <div class="faq-item"><button type="button">How much can I save? <span aria-hidden="true">＋</span></button><div class="answer">Use the calculator. Your minutes matter most.</div></div>
+    </section>
+  `;
+  return guideLayout("Shower better.", "A small swap that pays back.", sections, [
+    "https://www.epa.gov/watersense/showerheads",
+  ]);
+}
+
+function renderGuideLeaks(): string {
+  const sections = `
+    ${section("The 10‑minute checks", `<ul class="bullet-list"><li>Toilet dye test</li><li>Meter check (if you have access)</li><li>Irrigation walk</li></ul>`)}
+    ${section("The common culprits", `<ul class="bullet-list"><li>Flappers</li><li>Washers/gaskets</li><li>Sprinkler heads</li></ul>`)}
+    ${section("Why hurry?", `<div class="callout">A drip per second can waste 3,000+ gallons/year. [1]</div>`)}
+    ${section("Act now", `<a class="btn secondary" href="/leak-check">Take the leak check</a>`)}
+  `;
+  return guideLayout("Stop silent waste.", "Leaks hide. Bills don’t.", sections, [
+    "https://www.epa.gov/watersense/fix-leak-week",
+  ]);
+}
+
+function renderGuideToilets(): string {
+  const sections = `
+    ${section("Fix first", `<p>Most running toilets are a flapper problem.</p><a class="btn secondary" href="/leak-check">Check leaks</a>`)}
+    ${section("Upgrade when it’s time", `<p>Look for WaterSense. [1]</p>`)}
+    ${section("Plan the swap", `<a class="btn secondary" href="/calculators/toilet">Run the toilet calculator</a>`)}
+  `;
+  return guideLayout("Toilets: fix or replace.", "The biggest indoor saver.", sections, [
+    "https://www.epa.gov/watersense/residential-toilets",
+  ]);
+}
+
+function renderGuideWaterBill(): string {
+  const sections = `
+    ${section("Start with usage", `<p>Bills may show gallons, CCF, or HCF. [1]</p>`)}
+    ${section("Find your rate", `<p>Look for $/unit or a tier table. [1]</p>`)}
+    ${section("Sewer is often tied to water", `<p>Check your bill’s sewer line item.</p>`)}
+    ${section("Next", `<a class="btn secondary" href="/analyze-water-bill">Analyze a bill PDF</a>`)}
+  `;
+  return guideLayout("Read your bill.", "Know what you’re paying for.", sections, [
+    "https://www.epa.gov/watersense/understanding-your-water-bill",
+  ]);
+}
+
+function renderGuideOutdoor(): string {
+  const sections = `
+    ${section("Spot waste", `<ul class="bullet-list"><li>Runoff</li><li>Puddles</li><li>Water on pavement</li></ul>`)}
+    ${section("Try a smarter controller", `<p>A WaterSense controller can save up to 15,000 gallons/year. [1]</p>`)}
+    ${section("Act now", `<a class="btn secondary" href="/calculators/outdoor">Use the outdoor tool</a>`)}
+  `;
+  return guideLayout("Water outdoors with intent.", "Less waste. Healthier plants.", sections, [
+    "https://www.epa.gov/watersense/about-watersense",
+  ]);
+}
+
+function renderAbout(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>About WaterShortcut.</h1>
+        <p>Less guessing. More saving.</p>
+      </div>
+    </section>
+    ${section("What we do", `<p>WaterShortcut helps you translate a water bill into actions you can take.</p><p>We link sources so you can verify claims.</p><p>We may earn from affiliate links. See Affiliate.</p>`)}
+    ${section("Start", `<div class="inline-list"><a class="btn primary" href="/analyze-water-bill">Start with a bill</a><a class="btn secondary" href="/savings-plan">Build a plan</a></div>`)}
+  `;
+}
+
+function renderContact(): string {
+  return `
+    <section class="hero">
+      <div>
+        <h1>Contact.</h1>
+        <p>Feedback makes this better.</p>
+      </div>
+    </section>
+    ${section(
+      "Say hi",
+      `<p>Have a correction, a better source, or a feature request?</p>
+      <p>Email: <a href="mailto:hello@watershortcut.com">hello@watershortcut.com</a></p>
+      <p>We don’t provide emergency plumbing help.</p>`,
+    )}
+  `;
+}
+
+function renderTrustPage(kind: "privacy" | "terms" | "affiliate" | "disclaimer"): string {
+  const modal = modalCopy[`${kind}-modal`];
+  const body = modal.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+  const footer = modal.footer ? `<p class="muted">${escapeHtml(modal.footer)}</p>` : "";
+  return `
+    <section class="hero"><div><h1>${escapeHtml(modal.title)}</h1><p>${escapeHtml(modal.body[0])}</p></div></section>
+    <section class="section layout-slab">${body}${footer}<div class="wizard-actions"><a class="btn secondary" href="/">Back home</a></div></section>
+  `;
+}
+
+function renderHumanSitemap(routes: SiteRoute[]): string {
+  const links = routes
+    .map((route) => `<li><a href="${route.path}">${escapeHtml(route.title)}</a></li>`)
+    .join("");
+  return `
+    <section class="hero">
+      <div>
+        <h1>Sitemap</h1>
+        <p>Browse every WaterShortcut page, tool, and guide.</p>
+      </div>
+    </section>
+    <section class="section layout-slab"><ul class="bullet-list">${links}</ul></section>
+  `;
+}
 
 app.post("/api/location", async (c) => {
   try {
@@ -165,7 +1173,9 @@ app.post("/api/location", async (c) => {
   }
 });
 
-app.post("/api/upload", async (c) => {
+// The worker runtime supplies the context; using any keeps the shared handler flexible.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const handleAnalyzeBill = async (c: any) => {
   try {
     validateUploadEnv(c.env);
     const contentType = c.req.header("content-type") || "";
@@ -237,7 +1247,11 @@ app.post("/api/upload", async (c) => {
       500,
     );
   }
-});
+};
+
+app.post("/api/analyze-bill", handleAnalyzeBill);
+app.post("/api/upload", handleAnalyzeBill);
+app.post("/", handleAnalyzeBill);
 
 app.get("/api/usage-defaults", (c) =>
   c.json({
