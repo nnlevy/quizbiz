@@ -277,7 +277,7 @@ const siteRoutes: SiteRoute[] = [
     path: "/sitemap",
     title: "Sitemap | WaterShortcut",
     description: "Browse every WaterShortcut page, tool, and guide.",
-    body: renderHumanSitemap(),
+    body: "",
   },
 ];
 
@@ -308,7 +308,7 @@ siteRoutes.forEach((route) => {
         title: route.title,
         description: route.description,
         canonicalPath: route.path,
-        bodyHtml: route.body,
+        bodyHtml: route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body,
         pageCssClass: route.pageCssClass,
         breadcrumbs: route.breadcrumbs,
       }),
@@ -1094,8 +1094,8 @@ function renderTrustPage(kind: "privacy" | "terms" | "affiliate" | "disclaimer")
   `;
 }
 
-function renderHumanSitemap(): string {
-  const links = siteRoutes
+function renderHumanSitemap(routes: SiteRoute[]): string {
+  const links = routes
     .map((route) => `<li><a href="${route.path}">${escapeHtml(route.title)}</a></li>`)
     .join("");
   return `
