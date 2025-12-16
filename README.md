@@ -46,4 +46,12 @@ npm run preview
 # or run `wrangler dev` if you prefer the Worker-first workflow
 ```
 
+## Worker environment and secrets
+- The Document AI processor endpoint is prefilled in `wrangler.json` (`Google_Document_AI_Processor_Prediction_Endpoint`). Update this value if you swap processors or regions.
+- Add secrets via Wrangler before deploying:
+  - `Google-Service-Account-FINAL`: full service account JSON (must include `client_email` and `private_key`) used to fetch OAuth tokens for Document AI.
+  - `OPEN_API_KEY_NEW`: required for the OpenAI analysis calls. `OPENAI_ORG_ID` is optional but recommended if your OpenAI account enforces it.
+  - `Cloudflare_User_API_Token` (if required for your pipelines) and any other private values should also be stored as secrets, not in source control.
+- With those bindings in place, the `/api/upload` route will authenticate to Google Document AI, OCR the PDF, and return analysis results from OpenAI.
+
 Comments in the code explain how each change boosts ad viewability, adds organic entry points, and keeps analytics/privacy compliant.

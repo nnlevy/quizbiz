@@ -8,6 +8,9 @@
     "enabled": true
   },
   "upload_source_maps": true,
+  "vars": {
+    "Google_Document_AI_Processor_Prediction_Endpoint": "https://us-documentai.googleapis.com/v1/projects/32766728438/locations/us/processors/dc3fed4aeef15611:process"
+  },
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"
