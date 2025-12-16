@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  TouchEvent,
 } from "react";
 import "./App.css";
 import AdUnit from "./components/AdUnit";
@@ -183,6 +184,7 @@ type Droplet = {
 const SLIDE_COUNT = 3;
 const MOBILE_BREAKPOINT = 768;
 const OVERFLOW_TOLERANCE = 1;
+const SLIDE_SWIPE_THRESHOLD = 48;
 
 type CollapsibleSectionProps = {
   id: string;
@@ -253,6 +255,8 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const slideTouchStartX = useRef<number | null>(null);
+  const slideTouchStartY = useRef<number | null>(null);
 
   const initialIsMobile =
     typeof window !== "undefined" &&
@@ -343,6 +347,33 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const handleOpenLocationStep = () => {
     handleScrollTo("location-intel");
     setIsMobileFlowOpen(false);
+  };
+
+  const handleSlideTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    slideTouchStartX.current = touch.clientX;
+    slideTouchStartY.current = touch.clientY;
+  };
+
+  const handleSlideTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const startX = slideTouchStartX.current;
+    const startY = slideTouchStartY.current;
+    slideTouchStartX.current = null;
+    slideTouchStartY.current = null;
+    if (startX === null || startY === null) {
+      return;
+    }
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    if (Math.abs(dx) <= Math.abs(dy) || Math.abs(dx) < SLIDE_SWIPE_THRESHOLD) {
+      return;
+    }
+    if (dx < 0) {
+      setCurrentSlide((prev) => Math.min(prev + 1, SLIDE_COUNT - 1));
+    } else {
+      setCurrentSlide((prev) => Math.max(prev - 1, 0));
+    }
   };
 
   useEffect(() => {
@@ -1144,7 +1175,12 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               </p>
             </div>
             <div className="dual-slider">
-              <div className="slides-wrapper" ref={slidesWrapperRef}>
+              <div
+                className="slides-wrapper"
+                ref={slidesWrapperRef}
+                onTouchStart={handleSlideTouchStart}
+                onTouchEnd={handleSlideTouchEnd}
+              >
                 <div className="slide" id="slide1">
                   <h3>Water Flow &amp; Cost Basics</h3>
                   <ul>
