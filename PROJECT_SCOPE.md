@@ -1,12 +1,20 @@
 # Project Scope Tracker
 
 ## Completed
-- Ported legacy Worker logic to the new Hono-based Cloudflare Worker, preserving PDF upload handling, Google Document AI OCR, and OpenAI analysis endpoints.
-- Rebuilt the homepage in React with the original layout, copy, calculators, sliders, canvas animation, upload workflow, and third-party embeds (Stripe buy button placeholder, Google Ads, Google Analytics, Disqus).
-- Added quick navigation, accessibility refinements, and responsive styling while aligning the new Vite setup with legacy branding and assets.
+- Built a multi-page, sitemap-driven Cloudflare Worker using Hono with canonical metadata, JSON-LD, modals, and trust/legal routes.
+- Implemented cached static assets for shared CSS/JS powering calculators, wizards, modals, copy/print helpers, and GA/AdSense hooks.
+- Preserved legacy upload and location flows by routing POST `/` to the new `/api/analyze-bill` handler with Document AI + OpenAI calls.
+- Generated `/sitemap.xml`, `/robots.txt`, and a human sitemap page from a single `siteRoutes` source of truth.
 
 ## Outstanding / Follow Up Items
-- Replace the placeholder Stripe publishable key (`pk_live_dummy`) in the React app with the production key used in the previous deployment once available.
-- Confirm that the configured environment bindings (`OPEN_API_KEY_NEW`, `OPENAI_ORG_ID`, `Google_Document_AI_Processor_Prediction_Endpoint`, `Google-Service-Account-FINAL`) are populated in Cloudflare and that the new Worker has access to the `domains-db` D1 database (not yet consumed by the ported code).
-- Re-run end-to-end verification in the deployed environment to ensure Google Document AI and OpenAI calls succeed with the new bindings.
-- Populate any remaining sitemap or footer links that were placeholders in the legacy implementation (e.g., the “Site Map” anchor currently points to `#`).
+- Validate Document AI and OpenAI bindings in the target Cloudflare environment to confirm bill analysis works end-to-end.
+- Add real provider lookup data in `locationFallback` or connect a live data source so `/api/location` can return utility details beyond the placeholder payload.
+- Harden calculator and wizard analytics by verifying GA events in production and adding any missing events for new routes.
+- Expand tests or linting to cover Worker render helpers and client-side JS to catch regressions before deploy.
+
+## Next prompt for continuation
+Use this prompt with the next agent to focus on research and copy depth:
+
+```
+Audit each route in src/worker/index.ts for accuracy against the authoritative EPA/ENERGY STAR sources. Expand any missing numerical citations with inline [n] markers and add concise, source-backed copy where the current content is thin. Ensure the human sitemap and XML sitemap stay in sync after edits.
+```
