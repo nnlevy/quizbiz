@@ -8,6 +8,10 @@ import {
   useState,
 } from "react";
 import "./App.css";
+import AdUnit from "./components/AdUnit";
+import SiteFooter from "./components/SiteFooter";
+import SiteNav from "./components/SiteNav";
+import { logEvent } from "./analytics";
 
 declare global {
   interface Window {
@@ -65,7 +69,12 @@ const StripeBuyButton = ({
     } as Record<string, unknown>,
   );
 
-function App() {
+type AppProps = {
+  adsEnabled?: boolean;
+  focusUpload?: boolean;
+};
+
+function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -101,6 +110,12 @@ function App() {
   useEffect(() => {
     setCurrentSlide(0);
   }, []);
+
+  useEffect(() => {
+    if (focusUpload) {
+      handleScrollTo("upload");
+    }
+  }, [focusUpload]);
 
   useEffect(() => {
     const wrapper = slidesWrapperRef.current;
@@ -301,39 +316,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const scriptUrl =
-      "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395";
-    if (document.querySelector(`script[src='${scriptUrl}']`)) {
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = scriptUrl;
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  useEffect(() => {
-    const gtagUrl = "https://www.googletagmanager.com/gtag/js?id=G-98170RDCDD";
-    if (!document.querySelector(`script[src='${gtagUrl}']`)) {
-      const script = document.createElement("script");
-      script.src = gtagUrl;
-      script.async = true;
-      document.body.appendChild(script);
-    }
-    const inlineScriptId = "gtag-inline";
-    if (!document.getElementById(inlineScriptId)) {
-      const script = document.createElement("script");
-      script.id = inlineScriptId;
-      script.innerHTML = `window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-98170RDCDD');`;
-      document.body.appendChild(script);
-    }
-  }, []);
-
-  useEffect(() => {
     window.disqus_config = (function disqusConfig(this: {
       page: { url: string; identifier: string };
     }) {
@@ -404,6 +386,7 @@ function App() {
       setLocationStatus("Please enter a location.");
       return;
     }
+    logEvent("location_search", { query_length: locationInput.trim().length });
     setLocationHtml("");
     setLocationStatus("Searching...");
     setLocationCountdown(5);
@@ -428,6 +411,7 @@ function App() {
       const htmlResponse = await response.text();
       setLocationHtml(htmlResponse);
       setLocationStatus("Results ready.");
+      logEvent("location_results_ready");
     } catch (error) {
       console.error("Location lookup failed:", error);
       setLocationCountdown(null);
@@ -448,6 +432,7 @@ function App() {
       setResponseMessage("File size exceeds 10MB. Please upload a smaller file.");
       return;
     }
+    logEvent("upload_started", { file_size: file.size, file_type: file.type });
     setIsUploading(true);
     setResponseMessage("Uploading file...");
     setAnalysisHtml("");
@@ -479,6 +464,7 @@ function App() {
       setResponseMessage("Success!");
       setAnalysisHtml(result);
       setCountdownLabel("Analysis complete.");
+      logEvent("upload_completed", { file_size: file.size, status: "success" });
     } catch (error) {
       console.error("Upload failed:", error);
       setAnalysisCountdown(null);
@@ -486,6 +472,7 @@ function App() {
       setResponseMessage(
         "An error occurred during the upload. Please try again.",
       );
+      logEvent("upload_failed", { message: String(error) });
     } finally {
       setIsUploading(false);
     }
@@ -493,22 +480,8 @@ function App() {
 
   return (
     <div className="app">
+      <SiteNav />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
-      <header className="app-header">
-        <div className="nav-container">
-          <a className="brand" href="#top">
-            WaterShortcut
-          </a>
-          <nav className="global-nav">
-            <a href="#location-intel">Find My Bill</a>
-            <a href="#dynamic-sliders">Usage Calculator</a>
-            <a href="#upload">Upload &amp; Analyze</a>
-            <a href="#top-ways">Savings Tips</a>
-            <a href="#news">News</a>
-            <a href="/leak-patrol">Play Leak Patrol</a>
-          </nav>
-        </div>
-      </header>
 
       <main className="main-wrapper">
         <section className="hero" id="top">
@@ -579,6 +552,12 @@ function App() {
             </svg>
           </div>
         </section>
+
+        {adsEnabled && (
+          <div className="ad-wrapper" aria-label="Top ad unit">
+            <AdUnit slot="1234567890" />
+          </div>
+        )}
 
         <section className="feature-grid" aria-label="Feature highlights">
           <article className="feature-card">
@@ -739,6 +718,12 @@ function App() {
             </div>
           </div>
         </section>
+
+        {adsEnabled && (
+          <div className="ad-wrapper" aria-label="Mid-page ad unit">
+            <AdUnit slot="0987654321" />
+          </div>
+        )}
 
         <section className="container" id="dynamic-sliders">
           <h2>Instant Water Usage Calculator</h2>
@@ -1104,14 +1089,7 @@ function App() {
           </p>
         </section>
 
-        <footer className="site-footer">
-          <p>
-            &copy; 2025 WaterShortcut. All Rights Reserved.{" "}
-            <a href="#" id="footerSiteMapLink">
-              Site Map
-            </a>
-          </p>
-        </footer>
+        <SiteFooter />
       </div>
     </div>
   );

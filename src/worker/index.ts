@@ -1,4 +1,13 @@
 import { Hono } from "hono";
+import React from "react";
+import { renderToString } from "react-dom/server";
+import HiddenLeaksPage from "../pages/HiddenLeaksPage";
+import LeakDetectionPage from "../pages/LeakDetectionPage";
+import PrivacyPage from "../pages/PrivacyPage";
+import ReadWaterBillPage from "../pages/ReadWaterBillPage";
+import TermsPage from "../pages/TermsPage";
+import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
+import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
 
@@ -20,10 +29,10 @@ const subtle = (() => {
 
 type WorkerEnv = {
   OPEN_API_KEY_NEW: string;
-  OPENAI_ORG_ID: string;
+  OPENAI_ORG_ID?: string;
   Google_Document_AI_Processor_Prediction_Endpoint: string;
   "Google-Service-Account-FINAL": string;
-  "domains-db": D1Database;
+  "domains-db"?: D1Database;
 };
 
 type ChatCompletionResponse = {
@@ -48,6 +57,48 @@ const app = new Hono<{ Bindings: WorkerEnv }>();
 
 app.get("/ads.txt", (c) =>
   c.text("google.com, pub-1860356577073395, DIRECT, f08c47fec0942fa0"),
+);
+
+app.get("/learn/read-water-bill", (c) =>
+  c.html(renderToString(React.createElement(ReadWaterBillPage))),
+);
+app.get("/learn/leak-detection", (c) =>
+  c.html(renderToString(React.createElement(LeakDetectionPage))),
+);
+app.get("/learn/water-saving-tips", (c) =>
+  c.html(renderToString(React.createElement(WaterSavingTipsPage))),
+);
+app.get("/learn/water-bill-spikes", (c) =>
+  c.html(renderToString(React.createElement(WaterBillSpikesPage))),
+);
+app.get("/learn/hidden-leaks", (c) =>
+  c.html(renderToString(React.createElement(HiddenLeaksPage))),
+);
+app.get("/privacy", (c) => c.html(renderToString(React.createElement(PrivacyPage))));
+app.get("/terms", (c) => c.html(renderToString(React.createElement(TermsPage))));
+
+app.get("/sitemap.xml", (c) => {
+  const urls = [
+    "/",
+    "/upload",
+    "/privacy",
+    "/terms",
+    "/learn/read-water-bill",
+    "/learn/leak-detection",
+    "/learn/water-saving-tips",
+    "/learn/water-bill-spikes",
+    "/learn/hidden-leaks",
+  ];
+  const xml =
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls
+      .map((u) => `<url><loc>https://watershortcut.com${u}</loc></url>`)
+      .join("\n") +
+    "\n</urlset>";
+  return c.text(xml, 200, { "Content-Type": "application/xml" });
+});
+app.get("/robots.txt", (c) =>
+  c.text(`User-agent: *\nDisallow:\nSitemap: https://watershortcut.com/sitemap.xml`),
 );
 
 app.post("/api/location", async (c) => {
@@ -175,8 +226,14 @@ app.post("/api/upload", async (c) => {
     return c.html(renderAnalysisResponse(openAiData));
   } catch (error) {
     console.error("Error handling file upload:", error);
+    const configIssue =
+      error instanceof Error &&
+      /service account|OAuth token|Document AI/i.test(error.message);
+    const errorMessage = configIssue
+      ? "File processing is temporarily unavailable due to Google Document AI credentials. Please verify the service account secret and try again."
+      : "An error occurred during file upload.";
     return c.json(
-      { error: "An error occurred during file upload." },
+      { error: errorMessage },
       500,
     );
   }
@@ -241,13 +298,74 @@ function preprocessText(txt: unknown): string {
   return txt.replace(/[^\x20-\x7E]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function normalizePrivateKey(key: unknown): string | null {
+  if (!key || typeof key !== "string") return null;
+  const trimmed = key.trim();
+  if (!trimmed) return null;
+
+  const hasPemMarkers =
+    trimmed.includes("BEGIN PRIVATE KEY") ||
+    trimmed.includes("END PRIVATE KEY");
+  if (hasPemMarkers) {
+    let withMarkers = trimmed;
+    if (!withMarkers.startsWith("-----BEGIN PRIVATE KEY-----")) {
+      withMarkers = `-----BEGIN PRIVATE KEY-----\n${withMarkers}`;
+    }
+    if (!withMarkers.includes("-----END PRIVATE KEY-----")) {
+      withMarkers = `${withMarkers}\n-----END PRIVATE KEY-----`;
+    }
+    return withMarkers;
+  }
+
+  const base64ish = /^[A-Za-z0-9+/=\s]+$/.test(trimmed);
+  if (base64ish) {
+    return `-----BEGIN PRIVATE KEY-----\n${trimmed}\n-----END PRIVATE KEY-----`;
+  }
+
+  return null;
+}
+
+function parseServiceAccount(raw: string): {
+  clientEmail: string;
+  privateKey: string;
+} {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    console.error("Invalid Google service account JSON:", error);
+    throw new Error(
+      "Google service account credentials are not valid JSON.",
+    );
+  }
+
+  const candidate =
+    (parsed as { type?: string; private_key?: string; client_email?: string }) || {};
+  const source =
+    candidate.type === "service_account" || candidate.private_key
+      ? candidate
+      : (parsed as { web?: { private_key?: string; client_email?: string } }).web ||
+        {};
+
+  const privateKey = normalizePrivateKey(source.private_key);
+  const clientEmail = source.client_email;
+
+  if (!clientEmail || !privateKey) {
+    throw new Error(
+      "Google service account is missing client_email or private_key. Update the Google-Service-Account-FINAL secret with the full service account JSON.",
+    );
+  }
+
+  return { clientEmail, privateKey };
+}
+
 async function getOAuthToken(env: WorkerEnv): Promise<string> {
   const tokenUri = "https://oauth2.googleapis.com/token";
-  const creds = JSON.parse(env["Google-Service-Account-FINAL"]);
+  const creds = parseServiceAccount(env["Google-Service-Account-FINAL"]);
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
-    iss: creds.client_email,
+    iss: creds.clientEmail,
     scope: "https://www.googleapis.com/auth/cloud-platform",
     aud: tokenUri,
     exp: now + 3600,
@@ -256,13 +374,7 @@ async function getOAuthToken(env: WorkerEnv): Promise<string> {
   const encodedHeader = btoa(JSON.stringify(header));
   const encodedClaim = btoa(JSON.stringify(claim));
 
-  let privateKey: string = creds.private_key.trim();
-  if (!privateKey.startsWith("-----BEGIN PRIVATE KEY-----")) {
-    privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}`;
-  }
-  if (!privateKey.endsWith("-----END PRIVATE KEY-----")) {
-    privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
-  }
+  const privateKey = creds.privateKey;
 
   try {
     const keyData = privateKey.replace(/-----[^-]+-----|\n/g, "");
@@ -349,13 +461,18 @@ async function analyzeTextWithOpenAI(
     ? `You are a world-leading expert in water conservation and efficiency.\nProvide a concise set of location-based or usage-based recommendations.\n\nHere is the user content:\n${content}`
     : content;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
+  };
+
+  if (env.OPENAI_ORG_ID) {
+    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
+  }
+
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
-      "OpenAI-Organization": env.OPENAI_ORG_ID,
-    },
+    headers,
     body: JSON.stringify({
       model: "gpt-4o-mini",
       max_tokens: 2000,
@@ -410,15 +527,13 @@ function validateFile(file: File): boolean {
 }
 
 function validateLocationEnv(env: WorkerEnv): void {
-  ["OPEN_API_KEY_NEW", "OPENAI_ORG_ID"].forEach((key) => {
-    if (!env[key as keyof WorkerEnv]) {
-      throw new Error(`Missing env var: ${key}`);
-    }
-  });
+  if (!env.OPEN_API_KEY_NEW) {
+    throw new Error("Missing env var: OPEN_API_KEY_NEW");
+  }
 }
 
 function isOpenAiConfigured(env: WorkerEnv): boolean {
-  return Boolean(env.OPEN_API_KEY_NEW && env.OPENAI_ORG_ID);
+  return Boolean(env.OPEN_API_KEY_NEW);
 }
 
 function validateUploadEnv(env: WorkerEnv): void {
@@ -431,6 +546,7 @@ function validateUploadEnv(env: WorkerEnv): void {
       throw new Error(`Missing env var: ${key}`);
     }
   });
+  parseServiceAccount(env["Google-Service-Account-FINAL"]);
 }
 
 function buildLocationPrompt(location: string): string {

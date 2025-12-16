@@ -4,10 +4,10 @@
 declare namespace Cloudflare {
         interface Env {
                 OPEN_API_KEY_NEW: string;
-                OPENAI_ORG_ID: string;
+                OPENAI_ORG_ID?: string;
                 "Google-Service-Account-FINAL": string;
                 Google_Document_AI_Processor_Prediction_Endpoint: string;
-                "domains-db": D1Database;
+                "domains-db"?: D1Database;
         }
 }
 interface Env extends Cloudflare.Env {}
