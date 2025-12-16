@@ -1,6 +1,7 @@
 
 import {
   FormEvent,
+  ReactNode,
   createElement,
   useEffect,
   useMemo,
@@ -25,6 +26,133 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
+
+type SavingTip = {
+  id: string;
+  title: string;
+  summary: string;
+  fact: string;
+  source: string;
+  sourceHref: string;
+  products?: Array<{ label: string; href: string }>;
+  quote?: string;
+};
+
+const SAVING_TIPS: SavingTip[] = [
+  {
+    id: "showerheads",
+    title: "Install Low-Flow Showerheads",
+    summary:
+      "Drop water use without losing pressure—swap your showerhead and reclaim gallons every session.",
+    fact:
+      "Showering accounts for nearly 17% of residential indoor water use—about 40 gallons per day for many homes.",
+    source: "EPA WaterSense",
+    sourceHref: "https://www.epa.gov/watersense/showerheads",
+    products: [
+      {
+        label: "High-Pressure Low-Flow Showerhead by WASSA",
+        href: "https://www.amazon.com/gp/product/B01MFGGH8A",
+      },
+    ],
+    quote:
+      "If there's magic on this planet, it lives in water. If there's savings in your budget, it comes from not wasting it!",
+  },
+  {
+    id: "aerators",
+    title: "Use Faucet Aerators",
+    summary:
+      "Screw-on aerators tame flow while keeping a steady stream, so you rinse and wash with less.",
+    fact: "Aerators can save households up to 700 gallons of water annually.",
+    source: "ENERGY STAR / DOE",
+    sourceHref: "https://www.energy.gov/energysaver/faucet-aerators",
+    products: [
+      {
+        label: "Faucet Aerators (multi-pack)",
+        href: "https://www.amazon.com/gp/product/B01EVXAWP0",
+      },
+    ],
+  },
+  {
+    id: "leaks",
+    title: "Fix Leaky Toilets and Faucets",
+    summary:
+      "A silent trickle wastes hundreds of gallons per month—replace flappers and washers before the drip adds up.",
+    fact: "A faucet dripping once per second can waste more than 3,000 gallons per year.",
+    source: "EPA Fix a Leak Week",
+    sourceHref: "https://www.epa.gov/watersense/fix-leak-week",
+    products: [
+      {
+        label: "Fluidmaster K-400H-039 Fill Valve & Flapper Kit",
+        href: "https://amzn.to/40GCCMb",
+      },
+      {
+        label: "DANCO Assorted Flat Washer PRO Set",
+        href: "https://amzn.to/42xQY4j",
+      },
+    ],
+  },
+  {
+    id: "dual-flush",
+    title: "Install Dual-Flush or Water-Saving Toilets",
+    summary:
+      "Dual-flush systems match the flush to the job, trimming gallons every trip to the bathroom.",
+    fact: "Replacing an older toilet with a WaterSense model can save up to 13,000 gallons per year.",
+    source: "EPA WaterSense",
+    sourceHref: "https://www.epa.gov/watersense/toilets",
+    products: [
+      {
+        label: "Fluidmaster 550DFRK-3 DuoFlush Conversion System",
+        href: "https://amzn.to/42DGEIa",
+      },
+    ],
+    quote: "Flush wisely—your wallet prefers fewer waterworks.",
+  },
+  {
+    id: "appliances",
+    title: "Switch to Water-Efficient Appliances",
+    summary:
+      "ENERGY STAR dishwashers and washers sip water and energy, slashing utility costs without extra effort.",
+    fact: "Modern ENERGY STAR washing machines use about 40% less water than conventional models.",
+    source: "ENERGY STAR",
+    sourceHref: "https://www.energystar.gov/products/products-list",
+    products: [
+      {
+        label: "Finish Quantum Dishwasher Detergent Tabs",
+        href: "https://www.amazon.com/gp/product/B01MG8F3ST",
+      },
+      {
+        label: "Affresh Washing Machine Cleaner Tablets",
+        href: "https://www.amazon.com/gp/product/B00C91Q86I",
+      },
+    ],
+  },
+];
+
+type NewsItem = {
+  id: string;
+  title: string;
+  summary: string;
+  insight: string;
+};
+
+const NEWS_ITEMS: NewsItem[] = [
+  {
+    id: "restrictions",
+    title: "Major Cities Plan New Water Restrictions",
+    summary:
+      "Dry spells are pushing metros to tighten lawn watering, car washing, and commercial usage rules.",
+    insight:
+      "Experts anticipate 5–10% rate increases to cover drought responses and infrastructure upgrades—plan conservation now to soften the impact.",
+  },
+  {
+    id: "smart-metering",
+    title: "Smart Metering Gains Popularity",
+    summary:
+      "Utilities are rolling out advanced meters that surface hourly usage and leaks early.",
+    insight:
+      "Check if your utility offers free or subsidized meter upgrades; pairing them with our leak checklist makes small drips obvious before bills spike.",
+  },
+];
 
 function formatCurrency(value: number): string {
   return value.toFixed(2);
@@ -53,6 +181,53 @@ type Droplet = {
 };
 
 const SLIDE_COUNT = 3;
+const MOBILE_BREAKPOINT = 768;
+const OVERFLOW_TOLERANCE = 1;
+
+type CollapsibleSectionProps = {
+  id: string;
+  title: string;
+  isMobile: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+};
+
+const CollapsibleSection = ({
+  children,
+  id,
+  isMobile,
+  isOpen,
+  onToggle,
+  title,
+}: CollapsibleSectionProps) => {
+  return (
+    <section className={`collapsible-shell ${isOpen ? "open" : ""}`} id={id}>
+      {isMobile && (
+        <div className="collapsible-header">
+          <h3>{title}</h3>
+          <button
+            type="button"
+            className="collapsible-toggle"
+            aria-expanded={isOpen}
+            aria-controls={`${id}-panel`}
+            onClick={onToggle}
+          >
+            {isOpen ? "Hide" : "Show"}
+          </button>
+        </div>
+      )}
+      <div
+        id={`${id}-panel`}
+        className={`collapsible-panel ${isOpen ? "open" : ""}`}
+        aria-hidden={isMobile && !isOpen}
+      >
+        {!isMobile && <h2 className="collapsible-inline-title">{title}</h2>}
+        {isOpen || !isMobile ? children : null}
+      </div>
+    </section>
+  );
+};
 
 const StripeBuyButton = ({
   buyButtonId,
@@ -79,6 +254,11 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const initialIsMobile =
+    typeof window !== "undefined" &&
+    window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
+
+  const [isMobile, setIsMobile] = useState(initialIsMobile);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showerReduction, setShowerReduction] = useState(5);
   const [showerLength, setShowerLength] = useState(10);
@@ -98,7 +278,39 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [analysisCountdown, setAnalysisCountdown] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  const [isMobileFlowOpen, setIsMobileFlowOpen] = useState(false);
+  const [flowStep, setFlowStep] = useState(0);
+  const [sectionOpenState, setSectionOpenState] = useState({
+    guides: !initialIsMobile,
+    tools: !initialIsMobile,
+    upload: !initialIsMobile,
+  });
+  const [openTips, setOpenTips] = useState<Record<string, boolean>>(() =>
+    SAVING_TIPS.reduce((acc, tip, index) => {
+      acc[tip.id] = !initialIsMobile && index === 0;
+      return acc;
+    }, {} as Record<string, boolean>),
+  );
+  const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
+    NEWS_ITEMS.reduce((acc, article, index) => {
+      acc[article.id] = !initialIsMobile && index === 0;
+      return acc;
+    }, {} as Record<string, boolean>),
+  );
+
   const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
+
+  const toggleTip = (id: string) =>
+    setOpenTips((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+
+  const toggleNews = (id: string) =>
+    setOpenNews((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
 
   const handleScrollTo = (id: string) => {
     const element = document.getElementById(id);
@@ -106,6 +318,64 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
+
+  const handleMobileStart = () => {
+    if (isMobile) {
+      setIsMobileFlowOpen(true);
+      setFlowStep(0);
+    } else {
+      handleScrollTo("location-intel");
+    }
+  };
+
+  const handleFlowBack = () => setFlowStep((prev) => Math.max(prev - 1, 0));
+  const handleFlowNext = () => setFlowStep((prev) => Math.min(prev + 1, 3));
+  const handleFlowClose = () => {
+    setIsMobileFlowOpen(false);
+    setFlowStep(0);
+  };
+
+  const handleOpenUploadStep = () => {
+    handleScrollTo("upload");
+    setIsMobileFlowOpen(false);
+  };
+
+  const handleOpenLocationStep = () => {
+    handleScrollTo("location-intel");
+    setIsMobileFlowOpen(false);
+  };
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+    updateIsMobile();
+    mediaQuery.addEventListener("change", updateIsMobile);
+    return () => mediaQuery.removeEventListener("change", updateIsMobile);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setSectionOpenState({ guides: false, tools: false, upload: false });
+      return;
+    }
+    setSectionOpenState({ guides: true, tools: true, upload: true });
+  }, [isMobile]);
+
+  useEffect(() => {
+    const setAppHeight = () => {
+      document.documentElement.style.setProperty(
+        "--app-height",
+        `${window.innerHeight}px`,
+      );
+    };
+    setAppHeight();
+    window.addEventListener("resize", setAppHeight, { passive: true });
+    window.addEventListener("orientationchange", setAppHeight);
+    return () => {
+      window.removeEventListener("resize", setAppHeight);
+      window.removeEventListener("orientationchange", setAppHeight);
+    };
+  }, []);
 
   useEffect(() => {
     setCurrentSlide(0);
@@ -118,17 +388,75 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   }, [focusUpload]);
 
   useEffect(() => {
+    if (!isMobile) {
+      setIsMobileFlowOpen(false);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (isMobileFlowOpen) {
+      document.body.classList.add("is-sheet-open");
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.classList.remove("is-sheet-open");
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.classList.remove("is-sheet-open");
+      document.body.style.overflow = "";
+    };
+  }, [isMobileFlowOpen]);
+
+  useEffect(() => {
     const wrapper = slidesWrapperRef.current;
     if (!wrapper) {
       return;
     }
-    wrapper.style.transform = `translateX(-${100 * currentSlide}%)`;
+    const slides = Array.from(wrapper.querySelectorAll<HTMLElement>(".slide"));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const mostVisible = [...entries]
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!mostVisible) {
+          return;
+        }
+        const index = slides.findIndex((slide) => slide === mostVisible.target);
+        if (index >= 0) {
+          setCurrentSlide(index);
+        }
+      },
+      { root: wrapper, threshold: 0.55 },
+    );
+
+    slides.forEach((slide) => observer.observe(slide));
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const wrapper = slidesWrapperRef.current;
+    if (!wrapper) {
+      return;
+    }
+    const slides = wrapper.querySelectorAll<HTMLElement>(".slide");
+    const activeSlide = slides[currentSlide];
+    if (activeSlide) {
+      wrapper.scrollTo({ left: activeSlide.offsetLeft, behavior: "smooth" });
+    }
   }, [currentSlide]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
+    }
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    if (prefersReducedMotion.matches) {
+      canvas.style.display = "none";
+      return undefined;
     }
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -162,7 +490,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     window.addEventListener("mouseleave", handleMouseLeave);
 
     const startTime = Date.now();
-    const duration = 60 * 1000;
+    const duration = 30 * 1000;
 
     const updateDroplet = (droplet: Droplet) => {
       const repelRadius = 100;
@@ -254,7 +582,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
           return droplet;
         })
         .filter((droplet) => !droplet.splash);
-      animationFrame = requestAnimationFrame(animate);
+      if (Date.now() - startTime < duration) {
+        animationFrame = requestAnimationFrame(animate);
+      }
     };
 
     animationFrame = requestAnimationFrame(animate);
@@ -332,6 +662,75 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
     return () => {
       window.disqus_config = undefined;
+    };
+  }, []);
+
+  useEffect(() => {
+    const runOverflowCheck = (label: string) => {
+      const doc = document.documentElement;
+      const scrollWidth = doc.scrollWidth;
+      const viewportWidth = doc.clientWidth + OVERFLOW_TOLERANCE;
+      if (scrollWidth > viewportWidth) {
+        console.warn(`layout overflow (${label}):`, scrollWidth, viewportWidth);
+      }
+
+      ["hero", "location-intel", "dynamic-sliders", "upload"].forEach(
+        (id) => {
+          const el = document.getElementById(id);
+          if (!el) {
+            return;
+          }
+          const rect = el.getBoundingClientRect();
+          if (rect.right - viewportWidth > OVERFLOW_TOLERANCE) {
+            el.classList.add("layout-warning");
+            console.warn("overflow element", id, rect.right, viewportWidth);
+          } else {
+            el.classList.remove("layout-warning");
+          }
+        },
+      );
+    };
+
+    const handleLoad = () => {
+      runOverflowCheck("initial");
+      window.setTimeout(() => runOverflowCheck("post-ads"), 4000);
+    };
+
+    if (document.readyState === "complete") {
+      handleLoad();
+    } else {
+      window.addEventListener("load", handleLoad, { once: true });
+    }
+
+    return () => window.removeEventListener("load", handleLoad);
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+    const highlightOverflow = () => {
+      const viewportWidth = document.documentElement.clientWidth + OVERFLOW_TOLERANCE;
+      const elements = document.querySelectorAll<HTMLElement>("body *");
+      elements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const overflowing = rect.right - viewportWidth > OVERFLOW_TOLERANCE;
+        if (overflowing) {
+          el.dataset.overflowDebug = "true";
+          console.debug("[overflow-debug]", el.tagName, el.className || el.id);
+        } else {
+          delete el.dataset.overflowDebug;
+        }
+      });
+    };
+    const debugTimer = window.setTimeout(highlightOverflow, 800);
+    window.addEventListener("resize", highlightOverflow);
+    return () => {
+      window.clearTimeout(debugTimer);
+      window.removeEventListener("resize", highlightOverflow);
+      document
+        .querySelectorAll<HTMLElement>("[data-overflow-debug]")
+        .forEach((node) => node.removeAttribute("data-overflow-debug"));
     };
   }, []);
 
@@ -498,16 +897,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => handleScrollTo("location-intel")}
+                onClick={handleMobileStart}
               >
-                Find My Utility
+                Start
               </button>
               <button
                 type="button"
                 className="secondary-button"
-                onClick={() => handleScrollTo("upload")}
+                onClick={handleOpenLocationStep}
               >
-                Upload My Bill
+                Explore tools
               </button>
             </div>
           </div>
@@ -553,544 +952,643 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
           </div>
         </section>
 
-        {adsEnabled && (
-          <div className="ad-wrapper" aria-label="Top ad unit">
-            <AdUnit slot="1234567890" />
-          </div>
-        )}
-
-        <section className="feature-grid" aria-label="Feature highlights">
-          <article className="feature-card">
-            <h3>AI Usage Insights</h3>
-            <p>
-              Translate household routines into gallons, dollars, and smarter
-              habits with interactive controls that react instantly.
-            </p>
-          </article>
-          <article className="feature-card">
-            <h3>Bill Abnormality Alerts</h3>
-            <p>
-              Surface unusual spikes, fee changes, and service adjustments before
-              they drain your budget.
-            </p>
-          </article>
-          <article className="feature-card">
-            <h3>Community-Backed Tips</h3>
-            <p>
-              Blend expert recommendations with peer-tested upgrades to maximize
-              conservation results.
-            </p>
-          </article>
-        </section>
-
-        <section className="container discovery-section" id="location-intel">
-          <div className="section-intro">
-            <h2>Find Your Utility &amp; Reveal Savings Pathways</h2>
-            <p>
-              Move through the slides to grasp water cost fundamentals, explore
-              the full burden of waste, and pinpoint your local billing portal.
-            </p>
-          </div>
-          <div className="dual-slider">
-            <div
-              className="slides-wrapper"
-              ref={slidesWrapperRef}
-              style={{ width: `${SLIDE_COUNT * 100}%` }}
-            >
-              <div className="slide" id="slide1">
-                <h3>Water Flow &amp; Cost Basics</h3>
-                <ul>
-                  <li>
-                    Shower flow rate: <strong>2.5 gallons/min</strong>
-                  </li>
-                  <li>
-                    Sink flow rate: <strong>1.5 gallons/min</strong>
-                  </li>
-                  <li>
-                    USA average water cost: ~$0.0058 – $0.009 per gallon
-                  </li>
-                </ul>
-                <p>Local rates may vary. Small adjustments save real money!</p>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => setCurrentSlide(1)}
-                >
-                  Estimate My Savings &raquo;
-                </button>
+        {isMobile && (
+          <div
+            className={`mobile-flow ${isMobileFlowOpen ? "open" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Guided savings flow"
+          >
+            <button
+              type="button"
+              className="mobile-flow__scrim"
+              aria-label="Close guided flow"
+              onClick={handleFlowClose}
+            />
+            <div className="mobile-flow__sheet">
+              <div className="mobile-flow__handle" aria-hidden />
+              <div className="mobile-flow__header">
+                <div>
+                  <p className="eyebrow">Guided mode</p>
+                  <h3>Step {flowStep + 1} of 4</h3>
+                </div>
+                <div className="flow-actions">
+                  {flowStep > 0 && (
+                    <button
+                      type="button"
+                      className="secondary-button ghost"
+                      onClick={handleFlowBack}
+                    >
+                      Back
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="ghost-close"
+                    aria-label="Close guided experience"
+                    onClick={handleFlowClose}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
-
-              <div className="slide" id="slide2">
-                <h3>The Full Cost of Water Waste</h3>
-                <p>
-                  &bull; Sewage Cost: ~$84/year for typical shower &amp; sink usage.
-                  <br />
-                  &bull; Saving: Save ~$94/yr. by upgrading shower and faucets.
-                  <br />
-                  &bull; Example: WaterSense brand products save ~40% less usage.
-                </p>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => setCurrentSlide(2)}
-                >
-                  Look Up My Water Bill &raquo;
-                </button>
-              </div>
-
-              <div className="slide" id="slide3">
-                <h3>Find Your Water Bill</h3>
-                <p>Enter your city or region below:</p>
-                <input
-                  type="text"
-                  id="location-input"
-                  placeholder="Atlanta, GA or Berlin"
-                  value={locationInput}
-                  onChange={(event) => setLocationInput(event.target.value)}
-                />
-                <button
-                  type="button"
-                  id="location-button"
-                  className="primary-button"
-                  onClick={handleLocationSearch}
-                >
-                  Search
-                </button>
-                <div
-                  id="location-result"
-                  aria-live="polite"
-                  dangerouslySetInnerHTML={{ __html: locationHtml }}
-                />
-                <p className="location-status" aria-live="polite">
-                  {locationStatus}
-                </p>
-                {showBillInsights && (
-                  <div className="location-follow-up">
+              <div className="mobile-flow__body">
+                {flowStep === 0 && (
+                  <div className="flow-step">
+                    <h4>Quick estimate</h4>
+                    <p>
+                      Drag to see how a shorter shower affects your yearly bill.
+                    </p>
+                    <label className="flow-label" htmlFor="flow-shower-reduction">
+                      Reduce Shower Length
+                    </label>
+                    <input
+                      type="range"
+                      id="flow-shower-reduction"
+                      min={1}
+                      max={10}
+                      value={showerReduction}
+                      onChange={(event) =>
+                        setShowerReduction(Number(event.target.value))
+                      }
+                    />
+                    <p className="flow-output">{reductionSummary}</p>
+                  </div>
+                )}
+                {flowStep === 1 && (
+                  <div className="flow-step">
+                    <h4>Find my utility</h4>
+                    <p>Search for your city or water district.</p>
+                    <input
+                      type="text"
+                      inputMode="search"
+                      id="flow-location"
+                      placeholder="Austin, TX or Barcelona"
+                      value={locationInput}
+                      onChange={(event) => setLocationInput(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={handleLocationSearch}
+                    >
+                      Search
+                    </button>
+                    <p className="location-status" aria-live="polite">
+                      {locationStatus}
+                    </p>
+                  </div>
+                )}
+                {flowStep === 2 && (
+                  <div className="flow-step">
+                    <h4>Upload your bill</h4>
+                    <p>
+                      We&apos;ll analyze a PDF copy for surcharges, leaks, and
+                      rebate opportunities.
+                    </p>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={handleOpenUploadStep}
+                    >
+                      Open upload form
+                    </button>
                     <button
                       type="button"
                       className="secondary-button"
-                      onClick={() => handleScrollTo("upload")}
+                      onClick={handleOpenLocationStep}
                     >
-                      Upload your bill for an AI abnormality check
+                      Back to finder
                     </button>
-                    <div className="bill-checklist">
-                      <h4>Bill Health Checklist</h4>
-                      <ul>
-                        <li>
-                          Compare base service charges month-to-month for hidden
-                          hikes.
-                        </li>
-                        <li>Spot seasonal surges that don&apos;t match your usage.</li>
-                        <li>
-                          Verify tier pricing thresholds and confirm you&apos;re in the
-                          optimal bracket.
-                        </li>
-                        <li>
-                          Highlight leak alerts, drought surcharges, or
-                          unexpected fines.
-                        </li>
-                        <li>
-                          Capture conservation credits or rebates you&apos;re missing
-                          out on.
-                        </li>
-                      </ul>
-                      <p>
-                        Tip: Pair the findings with low-flow fixtures, mindful
-                        watering schedules, and appliance upgrades to conserve
-                        water and reduce charges.
-                      </p>
-                    </div>
+                  </div>
+                )}
+                {flowStep === 3 && (
+                  <div className="flow-step">
+                    <h4>Next actions</h4>
+                    <ul className="flow-list">
+                      <li>Save your slider settings and send yourself a reminder.</li>
+                      <li>Compare local rebates after upload.</li>
+                      <li>Share results with your household.</li>
+                    </ul>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={handleOpenLocationStep}
+                    >
+                      View my utility results
+                    </button>
                   </div>
                 )}
               </div>
-            </div>
-            <div className="slider-dots" role="tablist" aria-label="Water insight slides">
-              {Array.from({ length: SLIDE_COUNT }).map((_, index) => (
+              <div className="mobile-flow__footer">
                 <button
-                  key={`dot-${index}`}
                   type="button"
-                  className={index === currentSlide ? "dot active" : "dot"}
-                  onClick={() => setCurrentSlide(index)}
-                  aria-label={`Go to slide ${index + 1}`}
-                  aria-pressed={index === currentSlide}
-                />
-              ))}
+                  className="primary-button full"
+                  onClick={flowStep === 3 ? handleFlowClose : handleFlowNext}
+                >
+                  {flowStep === 3 ? "Finish" : "Continue"}
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-
-        {adsEnabled && (
-          <div className="ad-wrapper" aria-label="Mid-page ad unit">
-            <AdUnit slot="0987654321" />
           </div>
         )}
 
-        <section className="container" id="dynamic-sliders">
-          <h2>Instant Water Usage Calculator</h2>
-          <p>
-            Experiment with these sliders to see approximate annual usage and cost
-            for typical shower, sink, and weekly watering habits.
-          </p>
+        <CollapsibleSection
+          id="interactive"
+          title="Step 1 · Explore savings tools"
+          isMobile={isMobile}
+          isOpen={!isMobile || sectionOpenState.tools}
+          onToggle={() =>
+            setSectionOpenState((prev) => ({
+              ...prev,
+              tools: !prev.tools,
+            }))
+          }
+        >
+          {adsEnabled && (
+            <div className="ad-wrapper" aria-label="Top ad unit">
+              <AdUnit slot="1234567890" />
+            </div>
+          )}
 
-          <div className="slider-panel">
-            <div className="slider-group">
-              <h3>Reduce Shower Usage</h3>
+          <section className="feature-grid" aria-label="Feature highlights">
+            <article className="feature-card">
+              <h3>AI Usage Insights</h3>
               <p>
-                Move this slider to see how cutting down your daily shower by
-                certain minutes can impact annual water usage—and approximate cost
-                savings.
+                Translate household routines into gallons, dollars, and smarter
+                habits with interactive controls that react instantly.
               </p>
-              <div className="slider-control">
-                <label htmlFor="shower-reduction-slider">
-                  Reduce Shower Length (minutes)
-                </label>
-                <input
-                  type="range"
-                  id="shower-reduction-slider"
-                  min={1}
-                  max={10}
-                  value={showerReduction}
-                  onChange={(event) =>
-                    setShowerReduction(Number(event.target.value))
-                  }
-                />
-                <p id="shower-reduction-output">{reductionSummary}</p>
-              </div>
-            </div>
-
-            <div className="slider-group">
-              <h3>Upgrade Appliances and Fixtures</h3>
+            </article>
+            <article className="feature-card">
+              <h3>Bill Abnormality Alerts</h3>
               <p>
-                Adjust the sliders below to estimate annual usage and cost across
-                the cost range. <em>(We multiply gallons used by our cost-per-gallon range.)</em>
+                Surface unusual spikes, fee changes, and service adjustments before
+                they drain your budget.
               </p>
+            </article>
+            <article className="feature-card">
+              <h3>Community-Backed Tips</h3>
+              <p>
+                Blend expert recommendations with peer-tested upgrades to maximize
+                conservation results.
+              </p>
+            </article>
+          </section>
 
-              <div className="slider-control">
-                <label htmlFor="shower-slider">Daily Shower Length (minutes)</label>
-                <input
-                  type="range"
-                  id="shower-slider"
-                  min={5}
-                  max={30}
-                  value={showerLength}
-                  onChange={(event) =>
-                    setShowerLength(Number(event.target.value))
-                  }
-                />
-                <p id="shower-output">
-                  Daily shower time: <strong>{applianceSavings.shower.minutes}</strong>,
-                  Estimated annual cost: <strong>{formatCurrencyRange(
-                    applianceSavings.shower.minCost,
-                    applianceSavings.shower.maxCost,
-                  )}</strong>.
-                  <a
-                    href="https://www.amazon.com/gp/product/B01MFGGH8A"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Upgrade with WaterSense Showerheads
-                  </a>
-                </p>
-              </div>
-
-              <div className="slider-control">
-                <label htmlFor="sink-slider">Daily Sink Use (minutes)</label>
-                <input
-                  type="range"
-                  id="sink-slider"
-                  min={5}
-                  max={30}
-                  value={sinkUsage}
-                  onChange={(event) => setSinkUsage(Number(event.target.value))}
-                />
-                <p id="sink-output">
-                  Daily sink use: <strong>{applianceSavings.sink.minutes}</strong>,
-                  Estimated annual cost: <strong>{formatCurrencyRange(
-                    applianceSavings.sink.minCost,
-                    applianceSavings.sink.maxCost,
-                  )}</strong>.
-                  <a
-                    href="https://www.amazon.com/gp/product/B01EVXAWP0"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Upgrade with Faucet Aerators
-                  </a>
-                </p>
-              </div>
-
-              <div className="slider-control">
-                <label htmlFor="watering-slider">Weekly Plants Watered (minutes)</label>
-                <input
-                  type="range"
-                  id="watering-slider"
-                  min={1}
-                  max={20}
-                  value={wateringMinutes}
-                  onChange={(event) =>
-                    setWateringMinutes(Number(event.target.value))
-                  }
-                />
-                <p id="dishwasher-output">
-                  Weekly watering: <strong>{applianceSavings.watering.minutes}</strong>,
-                  Estimated annual cost: <strong>{formatCurrencyRange(
-                    applianceSavings.watering.minCost,
-                    applianceSavings.watering.maxCost,
-                  )}</strong>.
-                  <a
-                    href="https://www.amazon.com/gp/product/B01MG8F3ST"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Get Efficient Detergents
-                  </a>
-                </p>
-              </div>
+          <section className="container discovery-section" id="location-intel">
+            <div className="section-intro">
+              <h2>Find Your Utility &amp; Reveal Savings Pathways</h2>
+              <p>
+                Move through the slides to grasp water cost fundamentals, explore
+                the full burden of waste, and pinpoint your local billing portal.
+              </p>
             </div>
-          </div>
-        </section>
-
-        <section className="container analyzer-col" id="upload">
-          <div className="upload-grid">
-            <div className="image-container">
-              <img
-                src="https://res.cloudinary.com/dlxzgqi9g/image/upload/v1733631746/quizbiz_husband_wife_and_golden_doodle_tighten_an_outdoor_tap_42a5be20-23eb-4352-9493-e39d2bcd8e81_3_kjswaw.png"
-                alt="Family tightening an outdoor tap to conserve water"
-                loading="lazy"
-              />
-            </div>
-            <div className="upload-panel">
-              <h1>Free Water Usage Optimizer</h1>
-              <h2>Upload Your Water Bill</h2>
-              <form id="upload-form" onSubmit={handleUpload} encType="multipart/form-data">
-                <label className="file-label" htmlFor="file">
-                  Attach a PDF statement (max 10MB)
-                </label>
-                <input
-                  type="file"
-                  name="file"
-                  id="file"
-                  accept=".pdf"
-                  ref={fileInputRef}
-                  required
-                  aria-label="Upload water bill PDF"
-                />
-                <button type="submit" disabled={isUploading} className="primary-button">
-                  {isUploading ? "Uploading..." : "Upload and Analyze"}
-                </button>
-                <div id="countdown-timer" aria-live="polite">
-                  {countdownLabel}
+            <div className="dual-slider">
+              <div className="slides-wrapper" ref={slidesWrapperRef}>
+                <div className="slide" id="slide1">
+                  <h3>Water Flow &amp; Cost Basics</h3>
+                  <ul>
+                    <li>
+                      Shower flow rate: <strong>2.5 gallons/min</strong>
+                    </li>
+                    <li>
+                      Sink flow rate: <strong>1.5 gallons/min</strong>
+                    </li>
+                    <li>
+                      USA average water cost: ~$0.0058 – $0.009 per gallon
+                    </li>
+                  </ul>
+                  <p>Local rates may vary. Small adjustments save real money!</p>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => setCurrentSlide(1)}
+                  >
+                    Estimate My Savings &raquo;
+                  </button>
                 </div>
-              </form>
-              <div id="response-message" aria-live="polite">
-                {responseMessage}
+
+                <div className="slide" id="slide2">
+                  <h3>The Full Cost of Water Waste</h3>
+                  <p>
+                    &bull; Sewage Cost: ~$84/year for typical shower &amp; sink usage.
+                    <br />
+                    &bull; Saving: Save ~$94/yr. by upgrading shower and faucets.
+                    <br />
+                    &bull; Example: WaterSense brand products save ~40% less usage.
+                  </p>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => setCurrentSlide(2)}
+                  >
+                    Look Up My Water Bill &raquo;
+                  </button>
+                </div>
+
+                <div className="slide" id="slide3">
+                  <h3>Find Your Water Bill</h3>
+                  <p>Enter your city or region below:</p>
+                  <input
+                    type="text"
+                    id="location-input"
+                    placeholder="Atlanta, GA or Berlin"
+                    value={locationInput}
+                    onChange={(event) => setLocationInput(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    id="location-button"
+                    className="primary-button"
+                    onClick={handleLocationSearch}
+                  >
+                    Search
+                  </button>
+                  <div
+                    id="location-result"
+                    aria-live="polite"
+                    dangerouslySetInnerHTML={{ __html: locationHtml }}
+                  />
+                  <p className="location-status" aria-live="polite">
+                    {locationStatus}
+                  </p>
+                  {showBillInsights && (
+                    <div className="location-follow-up">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => handleScrollTo("upload")}
+                      >
+                        Upload your bill for an AI abnormality check
+                      </button>
+                      <div className="bill-checklist">
+                        <h4>Bill Health Checklist</h4>
+                        <ul>
+                          <li>
+                            Compare base service charges month-to-month for hidden
+                            hikes.
+                          </li>
+                          <li>Spot seasonal surges that don&apos;t match your usage.</li>
+                          <li>
+                            Verify tier pricing thresholds and confirm you&apos;re in the
+                            optimal bracket.
+                          </li>
+                          <li>
+                            Highlight leak alerts, drought surcharges, or
+                            unexpected fines.
+                          </li>
+                          <li>
+                            Capture conservation credits or rebates you&apos;re missing
+                            out on.
+                          </li>
+                        </ul>
+                        <p>
+                          Tip: Pair the findings with low-flow fixtures, mindful
+                          watering schedules, and appliance upgrades to conserve
+                          water and reduce charges.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              {analysisHtml && (
-                <div
-                  className="analysis-html"
-                  dangerouslySetInnerHTML={{ __html: analysisHtml }}
-                />
-              )}
-              <div className="upload-how-it-works">
-                <h3>How It Works</h3>
-                <p>
-                  Upload your recent water bill to our secure platform, and our
-                  advanced AI system will generate specific action
-                  recommendations. Google Document AI extracts the details, and the
-                  OpenAI o1-mini model outlines targeted conservation steps
-                  tailored to your usage.
-                </p>
-              </div>
-              <div className="stripe-wrapper">
-                <StripeBuyButton
-                  buyButtonId="buy_btn_1QLXcFIzTeKgjbPr1afKz0xu"
-                  publishableKey="pk_live_dummy"
-                />
+              <div className="slider-dots" role="tablist" aria-label="Water insight slides">
+                {Array.from({ length: SLIDE_COUNT }).map((_, index) => (
+                  <button
+                    key={`dot-${index}`}
+                    type="button"
+                    className={index === currentSlide ? "dot active" : "dot"}
+                    onClick={() => setCurrentSlide(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                    aria-pressed={index === currentSlide}
+                  />
+                ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+          {adsEnabled && (
+            <div className="ad-wrapper tight" aria-label="Mid-page ad unit">
+              <AdUnit slot="0987654321" />
+            </div>
+          )}
+
+          <section className="container" id="dynamic-sliders">
+            <h2>Instant Water Usage Calculator</h2>
+            <p>
+              Experiment with these sliders to see approximate annual usage and cost
+              for typical shower, sink, and weekly watering habits.
+            </p>
+
+            <div className="slider-panel">
+              <div className="slider-group">
+                <h3>Reduce Shower Usage</h3>
+                <p>
+                  Move this slider to see how cutting down your daily shower by
+                  certain minutes can impact annual water usage—and approximate cost
+                  savings.
+                </p>
+                <div className="slider-control">
+                  <label htmlFor="shower-reduction-slider">
+                    Reduce Shower Length (minutes)
+                  </label>
+                  <input
+                    type="range"
+                    id="shower-reduction-slider"
+                    min={1}
+                    max={10}
+                    value={showerReduction}
+                    onChange={(event) =>
+                      setShowerReduction(Number(event.target.value))
+                    }
+                  />
+                  <p id="shower-reduction-output">{reductionSummary}</p>
+                </div>
+              </div>
+
+              <div className="slider-group">
+                <h3>Upgrade Appliances and Fixtures</h3>
+                <p>
+                  Adjust the sliders below to estimate annual usage and cost across
+                  the cost range. <em>(We multiply gallons used by our cost-per-gallon range.)</em>
+                </p>
+
+                <div className="slider-control">
+                  <label htmlFor="shower-slider">Daily Shower Length (minutes)</label>
+                  <input
+                    type="range"
+                    id="shower-slider"
+                    min={5}
+                    max={30}
+                    value={showerLength}
+                    onChange={(event) =>
+                      setShowerLength(Number(event.target.value))
+                    }
+                  />
+                  <p id="shower-output">
+                    Daily shower time: <strong>{applianceSavings.shower.minutes}</strong>,
+                    Estimated annual cost: <strong>{formatCurrencyRange(
+                      applianceSavings.shower.minCost,
+                      applianceSavings.shower.maxCost,
+                    )}</strong>.
+                    <a
+                      href="https://www.amazon.com/gp/product/B01MFGGH8A"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Upgrade with WaterSense Showerheads
+                    </a>
+                  </p>
+                </div>
+
+                <div className="slider-control">
+                  <label htmlFor="sink-slider">Daily Sink Use (minutes)</label>
+                  <input
+                    type="range"
+                    id="sink-slider"
+                    min={5}
+                    max={30}
+                    value={sinkUsage}
+                    onChange={(event) => setSinkUsage(Number(event.target.value))}
+                  />
+                  <p id="sink-output">
+                    Daily sink use: <strong>{applianceSavings.sink.minutes}</strong>,
+                    Estimated annual cost: <strong>{formatCurrencyRange(
+                      applianceSavings.sink.minCost,
+                      applianceSavings.sink.maxCost,
+                    )}</strong>.
+                    <a
+                      href="https://www.amazon.com/gp/product/B01EVXAWP0"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Upgrade with Faucet Aerators
+                    </a>
+                  </p>
+                </div>
+
+                <div className="slider-control">
+                  <label htmlFor="watering-slider">Weekly Plants Watered (minutes)</label>
+                  <input
+                    type="range"
+                    id="watering-slider"
+                    min={1}
+                    max={20}
+                    value={wateringMinutes}
+                    onChange={(event) =>
+                      setWateringMinutes(Number(event.target.value))
+                    }
+                  />
+                  <p id="dishwasher-output">
+                    Weekly watering: <strong>{applianceSavings.watering.minutes}</strong>,
+                    Estimated annual cost: <strong>{formatCurrencyRange(
+                      applianceSavings.watering.minCost,
+                      applianceSavings.watering.maxCost,
+                    )}</strong>.
+                    <a
+                      href="https://www.amazon.com/gp/product/B01MG8F3ST"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Get Efficient Detergents
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          id="upload-flow"
+          title="Step 2 · Upload &amp; analyze"
+          isMobile={isMobile}
+          isOpen={!isMobile || sectionOpenState.upload}
+          onToggle={() =>
+            setSectionOpenState((prev) => ({
+              ...prev,
+              upload: !prev.upload,
+            }))
+          }
+        >
+          <section className="container analyzer-col" id="upload">
+            <div className="upload-grid">
+              <div className="image-container">
+                <img
+                  src="https://res.cloudinary.com/dlxzgqi9g/image/upload/v1733631746/quizbiz_husband_wife_and_golden_doodle_tighten_an_outdoor_tap_42a5be20-23eb-4352-9493-e39d2bcd8e81_3_kjswaw.png"
+                  alt="Family tightening an outdoor tap to conserve water"
+                  loading="lazy"
+                />
+              </div>
+              <div className="upload-panel">
+                <h1>Free Water Usage Optimizer</h1>
+                <h2>Upload Your Water Bill</h2>
+                <form id="upload-form" onSubmit={handleUpload} encType="multipart/form-data">
+                  <label className="file-label" htmlFor="file">
+                    Attach a PDF statement (max 10MB)
+                  </label>
+                  <input
+                    type="file"
+                    name="file"
+                    id="file"
+                    accept=".pdf"
+                    ref={fileInputRef}
+                    required
+                    aria-label="Upload water bill PDF"
+                  />
+                  <button type="submit" disabled={isUploading} className="primary-button">
+                    {isUploading ? "Uploading..." : "Upload and Analyze"}
+                  </button>
+                  <div id="countdown-timer" aria-live="polite">
+                    {countdownLabel}
+                  </div>
+                </form>
+                <div id="response-message" aria-live="polite">
+                  {responseMessage}
+                </div>
+                {analysisHtml && (
+                  <div
+                    className="analysis-html"
+                    dangerouslySetInnerHTML={{ __html: analysisHtml }}
+                  />
+                )}
+                <div className="upload-how-it-works">
+                  <h3>How It Works</h3>
+                  <p>
+                    Upload your recent water bill to our secure platform, and our
+                    advanced AI system will generate specific action
+                    recommendations. Google Document AI extracts the details, and the
+                    OpenAI o1-mini model outlines targeted conservation steps
+                    tailored to your usage.
+                  </p>
+                </div>
+                <div className="stripe-wrapper">
+                  <StripeBuyButton
+                    buyButtonId="buy_btn_1QLXcFIzTeKgjbPr1afKz0xu"
+                    publishableKey="pk_live_dummy"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        </CollapsibleSection>
       </main>
+      <CollapsibleSection
+        id="guides"
+        title="Step 3 · Guides &amp; resources"
+        isMobile={isMobile}
+        isOpen={!isMobile || sectionOpenState.guides}
+        onToggle={() =>
+          setSectionOpenState((prev) => ({
+            ...prev,
+            guides: !prev.guides,
+          }))
+        }
+      >
+        <div className="container-about">
+          <section id="about" className="story-block">
+            <h2>About Us</h2>
+            <p>
+              At WaterShortcut.com, we help you conserve water and save money. First,
+              Google Vision analyzes your water bill and then the most advanced AI
+              model offered by OpenAI provides recommendations. Our mission is to
+              make water efficiency simple, impactful, and accessible to everyone.
+              Whether you&apos;re a homeowner or a business, our tools provide actionable
+              insights to optimize your water usage.
+            </p>
+          </section>
 
-      <div className="container-about">
-        <section id="about" className="story-block">
-          <h2>About Us</h2>
-          <p>
-            At WaterShortcut.com, we help you conserve water and save money. First,
-            Google Vision analyzes your water bill and then the most advanced AI
-            model offered by OpenAI provides recommendations. Our mission is to
-            make water efficiency simple, impactful, and accessible to everyone.
-            Whether you&apos;re a homeowner or a business, our tools provide actionable
-            insights to optimize your water usage.
-          </p>
-        </section>
+          <section id="top-ways" className="story-block">
+            <h1>Top 5 Ways to Reduce Your Water Bill</h1>
+            <p>
+              Cutting back on water usage isn&apos;t just good for the planet—it’s great
+              for your wallet! Here are five actionable tips to reduce your water
+              bill and related product recommendations.
+            </p>
+            <div className="accordion" role="list">
+              {SAVING_TIPS.map((tip, index) => (
+                <article
+                  key={tip.id}
+                  className={`accordion-item ${openTips[tip.id] ? "open" : ""}`}
+                  role="listitem"
+                >
+                  <button
+                    type="button"
+                    className="accordion-trigger"
+                    aria-expanded={!!openTips[tip.id]}
+                    onClick={() => toggleTip(tip.id)}
+                  >
+                    <div className="accordion-header">
+                      <p className="eyebrow">Move {index + 1}</p>
+                      <h3>{tip.title}</h3>
+                      <p className="accordion-summary">{tip.summary}</p>
+                    </div>
+                    <span aria-hidden>{openTips[tip.id] ? "–" : "+"}</span>
+                  </button>
+                  <div className="accordion-content" hidden={!openTips[tip.id]}>
+                    <p className="accordion-detail">{tip.summary}</p>
+                    <p>
+                      <strong>Fact:</strong> {tip.fact}{" "}
+                      <a href={tip.sourceHref} target="_blank" rel="noopener noreferrer">
+                        ({tip.source})
+                      </a>
+                    </p>
+                    {tip.quote && <blockquote>{tip.quote}</blockquote>}
+                    {tip.products && tip.products.length > 0 && (
+                      <ul className="product-links">
+                        {tip.products.map((product) => (
+                          <li key={product.href}>
+                            <a href={product.href} target="_blank" rel="noopener noreferrer">
+                              {product.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+            <p className="accordion-footer">
+              Start saving water and money today with these simple upgrades and
+              solutions. Your wallet—and the planet—will thank you!
+            </p>
+            <div id="disqus_thread" />
+          </section>
 
-        <section id="top-ways" className="story-block">
-          <h1>Top 5 Ways to Reduce Your Water Bill</h1>
-          <p>
-            Cutting back on water usage isn&apos;t just good for the planet—it’s great
-            for your wallet! Here are five actionable tips to reduce your water
-            bill and related product recommendations.
-          </p>
-
-          <h2>1. Install Low-Flow Showerheads</h2>
-          <p>
-            Low-flow showerheads reduce water usage without sacrificing pressure,
-            saving gallons per minute during showers.
-          </p>
-          <a href="https://www.amazon.com/gp/product/B01MFGGH8A" target="_blank" rel="noopener noreferrer">
-            High-Pressure Low-Flow Showerhead by WASSA
-          </a>
-          <p>
-            <em>
-              “If there’s magic on this planet, it’s contained in water. If there’s
-              a way to save money, it’s in not wasting it!”
-            </em>
-            – A penny-wise homeowner
-          </p>
-          <p>
-            <strong>Insightful Fact:</strong> Showering accounts for nearly 17% of
-            residential indoor water use, with the average American household
-            spending up to 40 gallons per day just for showers!
-            <a href="https://www.epa.gov/watersense/showerheads" target="_blank" rel="noopener noreferrer">
-              [Source]
-            </a>
-          </p>
-
-          <h2>2. Use Faucet Aerators</h2>
-          <p>
-            Faucet aerators limit water flow while maintaining a steady stream,
-            making them a simple and inexpensive fix.
-          </p>
-          <a href="https://www.amazon.com/gp/product/B01EVXAWP0" target="_blank" rel="noopener noreferrer">
-            Neoperl Faucet Aerator Set
-          </a>
-          <p>
-            <em>
-              “I put a faucet aerator on my sink, and now even my kitchen applauds
-              me for saving water.”
-            </em>
-            – Your next dinner guest
-          </p>
-          <p>
-            <strong>Insightful Fact:</strong> Installing faucet aerators can save
-            households up to 700 gallons of water annually.
-            <a href="https://www.energy.gov/energysaver/faucet-aerators" target="_blank" rel="noopener noreferrer">
-              [Source]
-            </a>
-          </p>
-
-          <h2>3. Fix Leaky Toilets and Faucets</h2>
-          <p>
-            Leaking faucets and running toilets waste hundreds of gallons monthly.
-            Replace worn parts like flappers or washers to save water.
-          </p>
-          <ul>
-            <li>
-              <a href="https://amzn.to/40GCCMb" target="_blank" rel="noopener noreferrer">
-                Fluidmaster K-400H-039 High Performance Fill Valve &amp; Flapper Kit
-              </a>
-            </li>
-            <li>
-              <a href="https://amzn.to/42xQY4j" target="_blank" rel="noopener noreferrer">
-                DANCO Assorted Flat Washer PRO Set (100-Piece)
-              </a>
-            </li>
-          </ul>
-          <p>
-            <em>
-              “Drip, drip, drip—there goes your savings. Fix it, and the sound of
-              silence will also bring you peace!”
-            </em>
-          </p>
-          <p>
-            <strong>Insightful Fact:</strong> A leaky faucet dripping at one drip
-            per second can waste more than 3,000 gallons per year.
-            <a href="https://www.epa.gov/watersense/fix-leak-week" target="_blank" rel="noopener noreferrer">
-              [Source]
-            </a>
-          </p>
-
-          <h2>4. Install Dual-Flush or Water-Saving Toilets</h2>
-          <p>
-            Dual-flush systems let you use less water for liquid waste, cutting
-            usage significantly.
-          </p>
-          <a href="https://amzn.to/42DGEIa" target="_blank" rel="noopener noreferrer">
-            Fluidmaster 550DFRK-3 DuoFlush Conversion System
-          </a>
-          <p>
-            <em>“Flush wisely—because your wallet prefers fewer waterworks.”</em> –
-            Sage advice from your plumber
-          </p>
-          <p>
-            <strong>Insightful Fact:</strong> Replacing an older toilet with a
-            WaterSense-labeled model can save up to 13,000 gallons of water per
-            year.
-            <a href="https://www.epa.gov/watersense/toilets" target="_blank" rel="noopener noreferrer">
-              [Source]
-            </a>
-          </p>
-
-          <h2>5. Switch to Water-Efficient Appliances</h2>
-          <p>
-            ENERGY STAR-certified washing machines and dishwashers use less water
-            and energy, maximizing efficiency.
-          </p>
-          <ul>
-            <li>
-              <a href="https://www.amazon.com/gp/product/B01MG8F3ST" target="_blank" rel="noopener noreferrer">
-                Finish Quantum Dishwasher Detergent Tabs
-              </a>
-            </li>
-            <li>
-              <a href="https://www.amazon.com/gp/product/B00C91Q86I" target="_blank" rel="noopener noreferrer">
-                Affresh Washing Machine Cleaner Tablets
-              </a>
-            </li>
-          </ul>
-          <p>
-            <em>“Dishwashers don’t just do dishes—they do savings, too!”</em>
-          </p>
-          <p>
-            <strong>Insightful Fact:</strong> Modern ENERGY STAR washing machines
-            use about 40% less water than conventional models.
-            <a href="https://www.energystar.gov/products/products-list" target="_blank" rel="noopener noreferrer">
-              [Source]
-            </a>
-          </p>
-          <p>
-            Start saving water and money today with these simple upgrades and
-            solutions. Your wallet—and the planet—will thank you!
-          </p>
-          <div id="disqus_thread" />
-        </section>
-
-        <section id="news" className="story-block news-block">
-          <h2>From the News - January 2025</h2>
-          <p>
-            <strong>Major Cities Plan New Water Restrictions Amid Dry Spells</strong>
-            <br />
-            <em>Insider Insight:</em> Many metropolitan areas are enacting stricter
-            guidelines on lawn watering, car washing, and commercial water usage.
-            This directly impacts local water costs, further emphasizing the
-            importance of conservation strategies. Applying the tips above can help
-            offset rising costs—some experts predict water rates could see a 5–10%
-            increase in the coming year due to drought conditions and
-            infrastructure upgrades.
-          </p>
-          <p>
-            <strong>Smart Metering Gains Popularity</strong>
-            <br />
-            <em>Insider Insight:</em> Utilities are rolling out advanced meters that
-            track hourly usage, helping households spot leaks and waste early.
-            Consider checking with your local water authority for programs that
-            offer free or subsidized smart meter installations.
-          </p>
-        </section>
+          <section id="news" className="story-block news-block">
+            <h2>From the News - January 2025</h2>
+            <div className="news-grid" role="list">
+              {NEWS_ITEMS.map((item, index) => (
+                <article
+                  key={item.id}
+                  className={`news-card ${openNews[item.id] ? "open" : ""}`}
+                  role="listitem"
+                >
+                  <button
+                    type="button"
+                    className="accordion-trigger compact"
+                    aria-expanded={!!openNews[item.id]}
+                    onClick={() => toggleNews(item.id)}
+                  >
+                    <div className="accordion-header">
+                      <p className="eyebrow">Brief {index + 1}</p>
+                      <h3>{item.title}</h3>
+                      <p className="accordion-summary">{item.summary}</p>
+                    </div>
+                    <span aria-hidden>{openNews[item.id] ? "–" : "+"}</span>
+                  </button>
+                  <div className="accordion-content" hidden={!openNews[item.id]}>
+                    <p className="accordion-detail">{item.insight}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
         <SiteFooter />
       </div>
+      </CollapsibleSection>
     </div>
   );
 }

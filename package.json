@@ -20,6 +20,7 @@
     "react-dom": "19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.50.1",
     "@cloudflare/vite-plugin": "1.7.5",
     "@eslint/js": "9.29.0",
     "@types/node": "24.0.4",
@@ -42,6 +43,7 @@
     "deploy": "wrangler deploy",
     "dev": "vite",
     "lint": "eslint .",
+    "test:e2e": "playwright test",
     "preview": "npm run build && vite preview"
   },
   "type": "module"
