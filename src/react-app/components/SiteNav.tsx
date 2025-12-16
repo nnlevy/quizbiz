@@ -27,6 +27,22 @@ const SiteNav = () => {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add("nav-open");
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.classList.remove("nav-open");
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.classList.remove("nav-open");
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
+  const closeMenu = () => setIsMobileMenuOpen(false);
+
   return (
     <header className="app-header">
       <div className="nav-container">
@@ -34,30 +50,44 @@ const SiteNav = () => {
           WaterShortcut
         </a>
         <nav className="global-nav" aria-label="Primary navigation">
-          {links.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setIsMobileMenuOpen(false)}>
-              {link.label}
-            </a>
-          ))}
+          <div className="nav-links">
+            {links.map((link) => (
+              <a key={link.href} href={link.href} onClick={closeMenu}>
+                {link.label}
+              </a>
+            ))}
+          </div>
           <button
             type="button"
             className="menu-toggle"
             aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-nav-panel"
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           >
-            ☰
+            <span aria-hidden>☰</span>
+            <span className="sr-only">Toggle menu</span>
           </button>
         </nav>
       </div>
-      {isMobileMenuOpen && (
-        <div className="mobile-nav" role="dialog" aria-label="Mobile navigation">
-          {links.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setIsMobileMenuOpen(false)}>
-              {link.label}
-            </a>
-          ))}
-        </div>
-      )}
+      <button
+        type="button"
+        className={`nav-scrim ${isMobileMenuOpen ? "open" : ""}`}
+        aria-label="Close menu"
+        onClick={closeMenu}
+      />
+      <div
+        id="mobile-nav-panel"
+        className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`}
+        role="dialog"
+        aria-label="Mobile navigation"
+      >
+        <div className="mobile-nav__handle" aria-hidden />
+        {links.map((link) => (
+          <a key={link.href} href={link.href} onClick={closeMenu}>
+            {link.label}
+          </a>
+        ))}
+      </div>
     </header>
   );
 };
