@@ -23,15 +23,16 @@ function clientScript() {
     document.body.classList.add('prefers-reduced-motion');
   }
 
-  const fmt = (num) => (Number.isFinite(num) ? num.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—');
-  const dollars = (num) =>
+  const fmt = (num: number) => (Number.isFinite(num) ? num.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—');
+  const dollars = (num: number) =>
     Number.isFinite(num)
       ? num.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
       : '';
 
-  function track(eventName, params = {}) {
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', eventName, params);
+  function track(eventName: string, params: Record<string, unknown> = {}) {
+    const gtagFn = (window as typeof window & { gtag?: (...args: unknown[]) => void }).gtag;
+    if (typeof gtagFn === 'function') {
+      gtagFn('event', eventName, params);
     }
   }
 
@@ -46,11 +47,11 @@ function clientScript() {
     });
   }
 
-  function showStep(wizard, target) {
-    wizard.querySelectorAll('.wizard-step').forEach((step) => {
+  function showStep(wizard: HTMLElement, target: string) {
+    wizard.querySelectorAll<HTMLElement>('.wizard-step').forEach((step) => {
       const active = step.dataset.step === target;
       step.classList.toggle('active', active);
-      const pill = wizard.querySelector('.step-pill[data-step="' + step.dataset.step + '"]');
+      const pill = wizard.querySelector<HTMLElement>('.step-pill[data-step="' + step.dataset.step + '"]');
       if (pill) pill.classList.toggle('active', active);
       if (active && step.dataset.stepIndex) {
         wizard.dataset.currentStep = step.dataset.stepIndex;
@@ -59,19 +60,21 @@ function clientScript() {
   }
 
   function initWizards() {
-    document.querySelectorAll('.wizard').forEach((wizard) => {
+    document.querySelectorAll<HTMLElement>('.wizard').forEach((wizard) => {
       wizard.dataset.currentStep = '1';
       showStep(wizard, '1');
 
       wizard.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-action]');
+        const target = e.target as Element | null;
+        const btn = target?.closest<HTMLElement>('[data-action]');
         if (!btn) return;
         e.preventDefault();
         const action = btn.dataset.action;
-        const steps = Array.from(wizard.querySelectorAll('.wizard-step'));
+        const steps = Array.from(wizard.querySelectorAll<HTMLElement>('.wizard-step'));
         const currentIndex = steps.findIndex((s) => s.classList.contains('active'));
         if (action === 'next' && currentIndex < steps.length - 1) {
-          showStep(wizard, steps[currentIndex + 1].dataset.step);
+          const nextStep = steps[currentIndex + 1].dataset.step;
+          if (nextStep) showStep(wizard, nextStep);
           if (currentIndex === 0) track('ws_wizard_start', { wizard: wizard.dataset.wizard });
           if (currentIndex === steps.length - 2) {
             if (wizard.dataset.wizard === 'savings') {
@@ -81,30 +84,33 @@ function clientScript() {
           }
         }
         if (action === 'back' && currentIndex > 0) {
-          showStep(wizard, steps[currentIndex - 1].dataset.step);
+          const prevStep = steps[currentIndex - 1].dataset.step;
+          if (prevStep) showStep(wizard, prevStep);
         }
       });
     });
   }
 
-  function buildSavingsPlan(wizard) {
-    const indoorOutdoor = wizard.querySelector('[name="focus-area"]:checked')?.value || 'Both';
-    const household = Number(wizard.querySelector('#household-size')?.value) || 2;
-    const homeType = wizard.querySelector('#home-type')?.value || 'House';
-    const showersPerDay = Number(wizard.querySelector('#showers-per-day')?.value) || 2;
-    const minutesPerShower = Number(wizard.querySelector('#minutes-per-shower')?.value) || 8;
-    const laundryLoads = Number(wizard.querySelector('#laundry-loads')?.value) || 5;
-    const rate = Number(wizard.querySelector('#water-rate')?.value) || 0;
-    const upgrades = Array.from(wizard.querySelectorAll('[name="upgrade"]:checked')).map((c) => c.value);
+  function buildSavingsPlan(wizard: HTMLElement) {
+    const indoorOutdoor = (wizard.querySelector('[name="focus-area"]:checked') as HTMLInputElement | null)?.value || 'Both';
+    const household = Number((wizard.querySelector('#household-size') as HTMLInputElement | null)?.value) || 2;
+    const homeType = (wizard.querySelector('#home-type') as HTMLSelectElement | null)?.value || 'House';
+    const showersPerDay = Number((wizard.querySelector('#showers-per-day') as HTMLInputElement | null)?.value) || 2;
+    const minutesPerShower = Number((wizard.querySelector('#minutes-per-shower') as HTMLInputElement | null)?.value) || 8;
+    const laundryLoads = Number((wizard.querySelector('#laundry-loads') as HTMLInputElement | null)?.value) || 5;
+    const rateInput = wizard.querySelector<HTMLInputElement>('#water-rate');
+    const rate = Number(rateInput?.value) || 0;
+    const upgrades = Array.from(wizard.querySelectorAll<HTMLInputElement>('[name="upgrade"]:checked')).map((c) => c.value);
 
     const showerSavings = Math.max(showersPerDay * minutesPerShower * household * 365 * 0.5, 0);
     const laundrySavings = laundryLoads * 52 * 8;
     const outdoorSavings = indoorOutdoor === 'Outdoor' || indoorOutdoor === 'Both' ? 6000 : 0;
     const leakSavings = upgrades.includes('toilet-fix') ? 3000 : 1500;
 
-    const impact = (g) => (rate ? `≈ ${fmt(g)} gallons/yr (≈ ${dollars((g / 1000) * rate)}/yr)` : `≈ ${fmt(g)} gallons/yr`);
+    const impact = (g: number) =>
+      rate ? `≈ ${fmt(g)} gallons/yr (≈ ${dollars((g / 1000) * rate)}/yr)` : `≈ ${fmt(g)} gallons/yr`;
 
-    const sections = wizard.querySelector('.plan-output');
+    const sections = wizard.querySelector<HTMLElement>('.plan-output');
     if (!sections) return;
     sections.innerHTML = `
       <div>
@@ -137,7 +143,7 @@ function clientScript() {
       </div>
     `;
 
-    const copyBtn = sections.querySelector('[data-copy-plan]');
+    const copyBtn = sections.querySelector<HTMLButtonElement>('[data-copy-plan]');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
         const text = sections.innerText || '';
@@ -147,13 +153,19 @@ function clientScript() {
         });
       });
     }
-    const printBtn = sections.querySelector('[data-print-plan]');
+    const printBtn = sections.querySelector<HTMLButtonElement>('[data-print-plan]');
     if (printBtn) {
       printBtn.addEventListener('click', () => window.print());
     }
   }
 
-  function calculateSavings(config) {
+  type CalcConfig = {
+    type: string;
+    form: HTMLFormElement;
+    resultEl: HTMLElement | null;
+  };
+
+  function calculateSavings(config: CalcConfig) {
     const { type, form } = config;
     if (!form) return;
     form.addEventListener('input', () => runCalc(config));
@@ -165,8 +177,9 @@ function clientScript() {
     runCalc(config);
   }
 
-  function runCalc({ type, resultEl, form }) {
-    const getNum = (selector, fallback = 0) => Number(form.querySelector(selector)?.value) || fallback;
+  function runCalc({ type, resultEl, form }: CalcConfig) {
+    const getNum = (selector: string, fallback = 0) =>
+      Number((form.querySelector(selector) as HTMLInputElement | HTMLSelectElement | null)?.value) || fallback;
     const rate = getNum('[name="rate"]', 0);
     let gallonsDay = 0;
 
@@ -195,7 +208,7 @@ function clientScript() {
     }
     if (type === 'laundry') {
       const loads = getNum('[name="loads"]', 6);
-      const washer = form.querySelector('[name="washer"]')?.value || 'Standard';
+      const washer = (form.querySelector('[name="washer"]') as HTMLSelectElement | null)?.value || 'Standard';
       const baselinePerLoad = 41; // gallons typical top-loader
       const savingsPerLoad = washer === 'ENERGY STAR' ? baselinePerLoad * 0.3 : 0;
       gallonsDay = (savingsPerLoad * loads * 52) / 365;
@@ -213,20 +226,20 @@ function clientScript() {
   }
 
   function initCalculators() {
-    document.querySelectorAll('[data-calc]').forEach((form) => {
-      const type = form.dataset.calc;
-      const resultEl = form.parentElement?.querySelector('.calc-result');
+    document.querySelectorAll<HTMLFormElement>('[data-calc]').forEach((form) => {
+      const type = form.dataset.calc || '';
+      const resultEl = form.parentElement?.querySelector<HTMLElement>('.calc-result') || null;
       calculateSavings({ type, form, resultEl });
     });
   }
 
   function initProviderLookup() {
-    const form = document.querySelector('#provider-form');
-    const result = document.querySelector('#provider-result');
+    const form = document.querySelector<HTMLFormElement>('#provider-form');
+    const result = document.querySelector<HTMLElement>('#provider-result');
     if (!form || !result) return;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const location = form.querySelector('input[name="location"]')?.value || '';
+      const location = (form.querySelector('input[name="location"]') as HTMLInputElement | null)?.value || '';
       if (!location.trim()) return;
       track('ws_provider_search');
       result.innerHTML = '<p class="muted">Searching…</p>';
@@ -245,12 +258,13 @@ function clientScript() {
   }
 
   function initBillUpload() {
-    const form = document.querySelector('#bill-form');
-    const status = document.querySelector('#bill-status');
+    const form = document.querySelector<HTMLFormElement>('#bill-form');
+    const status = document.querySelector<HTMLElement>('#bill-status');
     if (!form || !status) return;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = form.querySelector('input[type="file"]')?.files?.[0];
+      const fileInput = form.querySelector<HTMLInputElement>('input[type="file"]');
+      const file = fileInput?.files?.[0];
       if (!file) {
         status.textContent = 'Please select a PDF.';
         return;
@@ -270,20 +284,20 @@ function clientScript() {
   }
 
   function initModals() {
-    document.querySelectorAll('a[data-modal-target]').forEach((link) => {
+    document.querySelectorAll<HTMLAnchorElement>('a[data-modal-target]').forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const id = link.dataset.modalTarget;
-        const dialog = document.getElementById(id);
+        const dialog = (id ? document.getElementById(id) : null) as HTMLDialogElement | null;
         if (dialog && typeof dialog.showModal === 'function') {
           dialog.showModal();
         }
       });
     });
-    document.querySelectorAll('dialog button[data-close-modal]').forEach((btn) => {
+    document.querySelectorAll<HTMLButtonElement>('dialog button[data-close-modal]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const dialog = btn.closest('dialog');
+        const dialog = btn.closest('dialog') as HTMLDialogElement | null;
         if (dialog && typeof dialog.close === 'function') dialog.close();
       });
     });

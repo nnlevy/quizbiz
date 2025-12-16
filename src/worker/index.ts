@@ -360,7 +360,7 @@ function layout(options: {
       }
     : null;
 
-  const jsonLd = [
+  const jsonLd: Array<Record<string, unknown>> = [
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',
