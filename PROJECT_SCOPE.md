@@ -13,7 +13,7 @@
 - Expand tests or linting to cover Worker render helpers and client-side JS to catch regressions before deploy.
 
 ## Next prompt for continuation
-Use this prompt with the next agent to operationalize the Dec 2025 audit requirements:
+Use this prompt with the next agent to operationalize the Dec 2025 audit requirements while aligning changes to the existing Cloudflare Worker pages, wizards, and bill-analysis flows documented above:
 
 ```
 Hardening tasks
@@ -30,4 +30,5 @@ SEO + monetization directives
 Revenue focus + measurement
 - Ensure AdSense slots never block core content or primary CTAs; define optimal placements for above-the-fold and in-content without harming UX.
 - Specify success metrics for the next iteration: upload conversion rate, ad CTR, and completion rates for the bill analysis flow with tracking guidance.
+- When editing this file, reconcile any removals or replacements with the actual Worker functionality and current scope notes above instead of overwriting blindly.
 ```
