@@ -51,7 +51,8 @@ type SiteRoute = {
   description: string;
   body: string;
   pageCssClass?: string;
-  breadcrumbs?: Array<{ name: string; path: string }>; 
+  breadcrumbs?: Array<{ name: string; path: string }>;
+  extraJsonLd?: Array<Record<string, unknown>>;
 };
 
 const DOMAIN = "https://www.watershortcut.com";
@@ -64,6 +65,8 @@ const navLinks = [
   { label: "Leaks", href: "/leak-check" },
   { label: "Rebates", href: "/rebates" },
   { label: "Guides", href: "/guides" },
+  { label: "Water Eject How-To", href: "/blog-how-to-eject.html" },
+  { label: "Water Eject Safety", href: "/blog-is-it-safe.html" },
   { label: "About", href: "/about" },
 ];
 
@@ -237,6 +240,60 @@ const siteRoutes: SiteRoute[] = [
     body: renderGuideOutdoor(),
   },
   {
+    path: "/blog-how-to-eject.html",
+    title: "How to Eject Water from Your iPhone Speakers Instantly | WaterShortcut",
+    description:
+      "Use the Water Eject Shortcut to clear water from iPhone speakers quickly with safe, low-frequency sound.",
+    body: renderBlogHowToEject(),
+    pageCssClass: "blog-page",
+    extraJsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: 'How to Eject Water from Your iPhone Speakers Instantly (The Safe Way)',
+        description:
+          'Water Eject Shortcut guide: play a 165Hz tone to clear trapped water and fix muffled iPhone speakers fast.',
+        mainEntityOfPage: `${DOMAIN}/blog-how-to-eject.html`,
+        datePublished: BUILD_DATE,
+        dateModified: BUILD_DATE,
+        author: { '@type': 'Organization', name: 'WaterShortcut', url: DOMAIN },
+        publisher: { '@type': 'Organization', name: 'WaterShortcut', url: DOMAIN },
+        keywords: [
+          'Water Eject Shortcut',
+          'Fix wet iPhone speaker',
+          'Remove water from charging port',
+        ],
+      },
+    ],
+  },
+  {
+    path: "/blog-is-it-safe.html",
+    title: "Is the Water Eject Shortcut Safe? | WaterShortcut",
+    description:
+      "Learn how the Water Eject Shortcut works, why it is safe for iPhones, and when to use professional repair.",
+    body: renderBlogIsItSafe(),
+    pageCssClass: "blog-page",
+    extraJsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: 'Is the Water Eject Shortcut Safe? (And Why You Should Stop Using Rice)',
+        description:
+          'Understand the physics behind the Water Eject Shortcut, safety considerations, and when deeper repair is needed.',
+        mainEntityOfPage: `${DOMAIN}/blog-is-it-safe.html`,
+        datePublished: BUILD_DATE,
+        dateModified: BUILD_DATE,
+        author: { '@type': 'Organization', name: 'WaterShortcut', url: DOMAIN },
+        publisher: { '@type': 'Organization', name: 'WaterShortcut', url: DOMAIN },
+        keywords: [
+          'Water Eject Shortcut',
+          'Fix wet iPhone speaker',
+          'Remove water from charging port',
+        ],
+      },
+    ],
+  },
+  {
     path: "/about",
     title: "About WaterShortcut",
     description:
@@ -329,6 +386,7 @@ siteRoutes.forEach((route) => {
         bodyHtml: route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body,
         pageCssClass: route.pageCssClass,
         breadcrumbs: route.breadcrumbs,
+        extraJsonLd: route.extraJsonLd,
       }),
     ),
   );
@@ -361,8 +419,9 @@ function layout(options: {
   bodyHtml: string;
   pageCssClass?: string;
   breadcrumbs?: Array<{ name: string; path: string }>;
+  extraJsonLd?: Array<Record<string, unknown>>;
 }): string {
-  const { title, description, canonicalPath, bodyHtml, pageCssClass, breadcrumbs } = options;
+  const { title, description, canonicalPath, bodyHtml, pageCssClass, breadcrumbs, extraJsonLd } = options;
   const canonicalUrl = `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const breadcrumbJson = crumbList.length
@@ -398,6 +457,8 @@ function layout(options: {
     jsonLd.push(breadcrumbJson);
   }
 
+  const combinedJsonLd = extraJsonLd?.length ? [...jsonLd, ...extraJsonLd] : jsonLd;
+
   return `<!doctype html>
   <html lang="en">
     <head>
@@ -423,7 +484,7 @@ function layout(options: {
         gtag('config', 'G-98170RDCDD');
       </script>
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395" crossorigin="anonymous"></script>
-      <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+      <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
       <script defer src="/assets/app.js"></script>
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
@@ -1070,6 +1131,89 @@ function renderGuideOutdoor(): string {
   return guideLayout("Water outdoors with intent.", "Less waste. Healthier plants.", sections, [
     "https://www.epa.gov/watersense/about-watersense",
   ]);
+}
+
+function blogLayout(title: string, intro: string, sectionsHtml: string): string {
+  return `
+    <div class="blog-shell">
+      <article class="blog-article">
+        <header class="blog-header">
+          <p class="eyebrow">Water Eject Shortcut</p>
+          <h1>${escapeHtml(title)}</h1>
+          <p class="lead">${escapeHtml(intro)}</p>
+        </header>
+        ${sectionsHtml}
+        <footer class="blog-footer">
+          <a class="btn primary" href="/">Download Water Eject Shortcut Now</a>
+        </footer>
+      </article>
+    </div>
+  `;
+}
+
+function renderBlogHowToEject(): string {
+  const sections = `
+    <section class="blog-section">
+      <h2>The safe way to clear a wet speaker</h2>
+      <p>Dropped your iPhone in the sink? Spilled a glass of water on your nightstand? If your audio sounds muffled or crackly, water is likely trapped in the speaker grille. Before you panic or reach for a bag of rice (don't do that!), there is a faster, smarter solution: The Water Eject Shortcut.</p>
+    </section>
+    <section class="blog-section">
+      <h2>What is the Water Eject Shortcut?</h2>
+      <p>The Water Eject shortcut is a third-party iOS automation that mimics the "Water Lock" feature found on the Apple Watch. It works by playing a specific low-frequency tone (approximately 165Hz) at high volume. This sound wave creates intense vibrations inside your phone's speaker chamber, physically pushing water droplets out through the speaker mesh.</p>
+    </section>
+    <section class="blog-section">
+      <h2>How to use it</h2>
+      <ol>
+        <li><strong>Install the Shortcut:</strong> Visit the WaterShortcut.com homepage and tap "Get Shortcut" to add it to your iPhone's shortcut library.</li>
+        <li><strong>Disconnect Headphones:</strong> Ensure no Bluetooth or wired headphones are connected.</li>
+        <li><strong>Run the Shortcut:</strong> Open your Shortcuts app or simply say, "Hey Siri, run Water Eject."</li>
+        <li><strong>Wait for the Bass:</strong> You will hear a low, buzzing sound and feel the phone vibrate. You might actually see small droplets of water spitting out of the bottom speaker.</li>
+        <li><strong>Clean Up:</strong> Wipe the expelled water away with a microfiber cloth. Repeat the process 2-3 times if the audio is still muffled.</li>
+      </ol>
+    </section>
+    <section class="blog-section">
+      <h2>Why not just wait?</h2>
+      <p>Water trapped in your speaker grill can sit there for hours, potentially corroding the delicate mesh or muffling your alarms and calls. Using the shortcut speeds up the drying process significantly, getting your device back to normal in minutes rather than days.</p>
+    </section>
+  `;
+
+  return blogLayout(
+    "How to Eject Water from Your iPhone Speakers Instantly (The Safe Way)",
+    "Learn how to safely blast water out of your iPhone speakers with the Water Eject Shortcut.",
+    sections,
+  );
+}
+
+function renderBlogIsItSafe(): string {
+  const sections = `
+    <section class="blog-section">
+      <h2>The myth of rice (and why to skip it)</h2>
+      <p>We’ve all heard the urban legend: if your phone gets wet, bury it in a bowl of uncooked rice. But ask any repair technician, and they will tell you that rice is actually dangerous for your phone. It introduces starch dust into your charging port and speakers, creating a paste that is harder to clean than the water itself.</p>
+      <p>So, is the Water Eject Shortcut a safe alternative?</p>
+    </section>
+    <section class="blog-section">
+      <h2>The science behind the sound</h2>
+      <p>Yes, the Water Eject shortcut is completely safe for modern iPhones (iPhone 7 and later). It utilizes the exact same physics Apple officially uses in the Apple Watch. By playing a tone at a specific frequency (165Hz), the speaker diaphragm moves in a rhythmic way that pushes air—and water—outward.</p>
+    </section>
+    <section class="blog-section">
+      <h2>Will it blow out my speakers?</h2>
+      <p>No. The shortcut runs for a short duration and uses volume levels that your iPhone is designed to handle. It essentially "coughs" the water out. However, you should not run it continuously for an hour; 2 or 3 cycles is usually enough to clear the grill.</p>
+    </section>
+    <section class="blog-section">
+      <h2>When not to rely on it</h2>
+      <p>The Water Eject shortcut is perfect for speaker grill moisture and fixing muffled audio. However, if your phone was fully submerged in deep water for a long time, or if you dropped it in salt water (ocean), simply ejecting the water isn't enough. In those cases, power off the device immediately and seek professional repair.</p>
+    </section>
+    <section class="blog-section">
+      <h2>The verdict</h2>
+      <p>Stop buying rice. Install the Water Eject shortcut, keep a microfiber cloth handy, and let physics do the work for you.</p>
+    </section>
+  `;
+
+  return blogLayout(
+    "Is the Water Eject Shortcut Safe? (And Why You Should Stop Using Rice)",
+    "Understand how the Water Eject Shortcut works, why it is safe, and when to call a pro.",
+    sections,
+  );
 }
 
 function renderAbout(): string {
