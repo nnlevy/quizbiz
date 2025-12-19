@@ -13,8 +13,22 @@
 - Expand tests or linting to cover Worker render helpers and client-side JS to catch regressions before deploy.
 
 ## Next prompt for continuation
-Use this prompt with the next agent to focus on research and copy depth:
+Use this prompt with the next agent to operationalize the Dec 2025 audit requirements while aligning changes to the existing Cloudflare Worker pages, wizards, and bill-analysis flows documented above:
 
 ```
-Audit each route in src/worker/index.ts for accuracy against the authoritative EPA/ENERGY STAR sources. Expand any missing numerical citations with inline [n] markers and add concise, source-backed copy where the current content is thin. Ensure the human sitemap and XML sitemap stay in sync after edits.
+Hardening tasks
+- Fix the mobile menu overlay so it traps focus, dismisses reliably, and never obscures primary content or ads.
+- Add semantic headings plus SSR/prerendering so every page has crawlable structure, color-contrast-safe palettes, and descriptive alt text for all imagery.
+- Ensure every file/bill upload control has an explicit label, helper copy, and privacy-policy link; surface a persistent privacy policy link in the footer/header.
+- Improve keyboard navigation (skip links, visible focus states, logical tab order) across modals, forms, and menus.
+
+SEO + monetization directives
+- Create unique, descriptive titles and meta descriptions per page; add JSON-LD/FAQ schema where applicable and document XML sitemap submission to search consoles.
+- Optimize bundle size and images (compression, formats, lazy loading) to improve LCP and CLS; note any required prerender paths.
+- Add trust messaging on bill uploads covering data retention, consent, and analysis scope; include clear CTAs to upload bills or start analysis alongside non-blocking AdSense placements.
+
+Revenue focus + measurement
+- Ensure AdSense slots never block core content or primary CTAs; define optimal placements for above-the-fold and in-content without harming UX.
+- Specify success metrics for the next iteration: upload conversion rate, ad CTR, and completion rates for the bill analysis flow with tracking guidance.
+- When editing this file, reconcile any removals or replacements with the actual Worker functionality and current scope notes above instead of overwriting blindly.
 ```
