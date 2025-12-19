@@ -1,5 +1,6 @@
 import {
   useEffect,
+  type KeyboardEvent as ReactKeyboardEvent,
   useRef,
   useState,
   type TouchEvent as ReactTouchEvent,
@@ -21,9 +22,16 @@ const NAV_SWIPE_THRESHOLD = 42;
 type SiteNavProps = {
   credits?: number;
   pulse?: boolean;
+  onCreditsClick?: () => void;
+  onCreditsKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
 };
 
-const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
+const SiteNav = ({
+  credits = 5,
+  pulse = false,
+  onCreditsClick,
+  onCreditsKeyDown,
+}: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -101,7 +109,14 @@ const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
         <a className="brand" href="/">
           WaterShortcut
         </a>
-        <div className={`credit-meter ${pulse ? "is-animating" : ""}`}>
+        <div
+          className={`credit-meter ${pulse ? "is-animating" : ""}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`Credits available: ${credits}. Add more credits.`}
+          onClick={onCreditsClick}
+          onKeyDown={onCreditsKeyDown}
+        >
           <span className="credit-meter__label">Credits</span>
           <span className="credit-meter__value">{credits}</span>
         </div>
