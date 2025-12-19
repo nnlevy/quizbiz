@@ -183,7 +183,7 @@ const NEWS_ITEMS: NewsItem[] = [
 ];
 
 const WATER_EJECT_SHORTCUT_URL =
-  "https://www.icloud.com/shortcuts/18d4cf361b0f458f9f72d77b6a4b2f1f";
+  "https://www.icloud.com/shortcuts/b19b1da619454313b1ad28349c45b066";
 const WATER_EJECT_RUN_URL = "shortcuts://run-shortcut?name=Water%20Eject";
 
 function formatCurrency(value: number): string {
@@ -1438,6 +1438,14 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               >
                 Explore tools
               </button>
+              <a
+                className="secondary-button"
+                href={WATER_EJECT_SHORTCUT_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Play Water Saving Trivia Game
+              </a>
             </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
@@ -1622,6 +1630,126 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             </div>
           </div>
         )}
+
+        <section className="water-eject-banner" aria-labelledby="water-eject">
+          {isIOSDevice ? (
+            <div className="banner-grid">
+              <div className="banner-copy">
+                <p className="eyebrow">Not the other shortcut</p>
+                <h2 id="water-eject">Instant iPhone Water Eject</h2>
+                <p>
+                  Lots of visitors land here looking for the popular "iPhone
+                  Water Eject" shortcut. We&apos;ve got you covered—tap once and the
+                  Shortcuts app will play a speaker-clearing tone (with a quick
+                  haptic buzz) while we keep your conservation journey on track.
+                </p>
+                <ul className="banner-list">
+                  <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
+                  <li>Credits keep the experience calm and spam-free (you start with 5).</li>
+                  <li>Feel a confirmation buzz on iPhone when you fire the eject.</li>
+                  <li>Stay on this page—no mystery links or confusing detours.</li>
+                </ul>
+                <div className="banner-actions">
+                  <button
+                    type="button"
+                    className="primary-button eject-button"
+                    onClick={handleWaterEjectClick}
+                  >
+                    Eject water now
+                    <span className="credit-chip">-1 credit</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button eject-button"
+                    onClick={handleVibrateAgain}
+                  >
+                    Feel the vibration again
+                    <span className="credit-chip">-1 credit</span>
+                  </button>
+                  <p className="credit-note" aria-live="polite">
+                    {creditNotice}
+                  </p>
+                </div>
+              </div>
+              <div className="banner-card" aria-hidden="true">
+                <div className="card-glow" />
+                <div className="card-body">
+                  <p className="eyebrow">Shortcut preview</p>
+                  <h3>Water Eject Launcher</h3>
+                  <p>
+                    Taps the iOS Shortcuts URL:
+                    <br />
+                    <code>shortcuts://run-shortcut?name=Water%20Eject</code>
+                  </p>
+                  <p className="subdued">
+                    If you don&apos;t have Shortcuts installed, we&apos;ll open the
+                    iCloud share link so you can add it in seconds.
+                  </p>
+                  <div className="tone-bars">
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <p className="mini-hint">Uses the classic 165 Hz water-eject pulse.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="banner-grid qr-banner">
+              <div className="banner-copy">
+                <p className="eyebrow">Scan to run on iPhone</p>
+                <h2 id="water-eject">Instant iPhone Water Eject</h2>
+                <p>
+                  This tool runs on iPhone via the Apple Shortcuts app. Aim
+                  your camera at the QR code to open the water-eject shortcut on
+                  your phone and clear your speakers instantly.
+                </p>
+                <ul className="banner-list">
+                  <li>One scan opens the Water Eject shortcut on iPhone.</li>
+                  <li>Includes the 165 Hz tone and confirmation buzz.</li>
+                  <li>Stay in control—no random redirects.</li>
+                </ul>
+                <p className="credit-note" aria-live="polite">
+                  Viewing from a non-iPhone device—scan to eject water from your iPhone.
+                </p>
+              </div>
+              <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
+                <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
+                  <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
+                  <rect
+                    x="12"
+                    y="12"
+                    width="276"
+                    height="276"
+                    rx="12"
+                    fill="#ffffff"
+                    stroke="rgba(79, 155, 255, 0.35)"
+                    strokeWidth="2"
+                  />
+                  <image
+                    xlinkHref={qrShortcutUrl}
+                    x="24"
+                    y="24"
+                    width="252"
+                    height="252"
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                  <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
+                    Scan to eject water
+                  </text>
+                </svg>
+                <p className="qr-hint">
+                  Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
+                  <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
+                    &nbsp;Tap to view the shortcut link.
+                  </a>
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
 
         <CollapsibleSection
           id="interactive"
