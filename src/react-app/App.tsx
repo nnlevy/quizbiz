@@ -905,6 +905,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       logEvent("upload_failed", { message: String(error) });
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -1461,20 +1464,27 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                 <h2>Upload Your Water Bill</h2>
                 <form id="upload-form" onSubmit={handleUpload} encType="multipart/form-data">
                   <label className="file-label" htmlFor="file">
-                    Attach a PDF statement (max 10MB)
+                    Attach a PDF or photo (JPG/PNG) statement (max 10MB)
                   </label>
                   <input
                     type="file"
                     name="file"
                     id="file"
-                    accept=".pdf"
+                    accept=".pdf,image/png,image/jpeg"
                     ref={fileInputRef}
                     required
-                    aria-label="Upload water bill PDF"
+                    aria-label="Upload water bill PDF or photo"
                   />
                   <button type="submit" disabled={isUploading} className="primary-button">
                     {isUploading ? "Uploading..." : "Upload and Analyze"}
                   </button>
+                  <ul className="upload-benefits" aria-label="Upload safeguards and capabilities">
+                    <li>HTTPS / SSL enforced end-to-end</li>
+                    <li>Clear statement: we do not sell data</li>
+                    <li>Auto-deletion of files immediately after analysis</li>
+                    <li>PII redaction before any AI processing</li>
+                    <li>Accepts photos (JPG/PNG) and PDFs</li>
+                  </ul>
                   <div id="countdown-timer" aria-live="polite">
                     {countdownLabel}
                   </div>
