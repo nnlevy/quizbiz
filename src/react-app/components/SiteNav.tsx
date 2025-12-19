@@ -18,7 +18,12 @@ const links = [
 
 const NAV_SWIPE_THRESHOLD = 42;
 
-const SiteNav = () => {
+type SiteNavProps = {
+  credits?: number;
+  pulse?: boolean;
+};
+
+const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -96,6 +101,10 @@ const SiteNav = () => {
         <a className="brand" href="/">
           WaterShortcut
         </a>
+        <div className={`credit-meter ${pulse ? "is-animating" : ""}`}>
+          <span className="credit-meter__label">Credits</span>
+          <span className="credit-meter__value">{credits}</span>
+        </div>
         <nav className="global-nav" aria-label="Primary navigation">
           <div className="nav-links">
             {links.map((link) => (
