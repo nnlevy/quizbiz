@@ -1,19 +1,20 @@
 # WaterShortcut.com
 
-WaterShortcut runs as a Cloudflare Worker with Hono routing. Pages are server-rendered HTML with shared layout, long-lived cached assets, and lightweight client-side JS for calculators and multi-step wizards. GA4 and AdSense load asynchronously and keep reserved space to limit layout shifts.
+WaterShortcut runs as a Cloudflare Worker with Hono routing and a Vite-built React client. Public marketing routes are prerendered to static HTML for crawlability and share the same SEO metadata source of truth. GA4 and AdSense load asynchronously and keep reserved space to limit layout shifts.
 
 ## Architecture
-- **Worker entry:** `src/worker/index.ts` defines all routes, shared layout metadata, sitemap/robots, and API handlers for location lookup and bill analysis (Document AI + OpenAI).
+- **Worker entry:** `src/worker/index.ts` handles API endpoints, legacy HTML routes, and enforces HTTPS + canonical host redirects. Robots and the XML sitemap now draw from the central SEO config.
 - **Static assets:** `src/worker/assets.ts` exports `/assets/styles.css` and `/assets/app.js` with immutable caching headers. The JS powers wizards, calculators, modals, copy/print helpers, and GA events.
-- **Routing/IA:** Every public page path lives in the `siteRoutes` array inside `src/worker/index.ts`. This drives navigation, breadcrumbs, sitemap XML, and the human sitemap page.
-- **Structured data:** Organization/WebSite JSON-LD and per-page breadcrumbs are injected from the layout helper.
+- **SEO source of truth:** `src/seo/seoConfig.js` defines the canonical host plus per-route title, description, canonical paths, OG/Twitter data, and JSON-LD.
+- **Prerendering:** `npm run prerender` clones the built `dist/index.html`, injects metadata and prerendered HTML shells for each public route, and writes `sitemap.xml` + `robots.txt`.
+- **Structured data:** Organization/WebSite JSON-LD lives on `/`; Article JSON-LD is added for each Learn page.
 - **Ads & analytics:** GA4 measurement ID `G-98170RDCDD` and AdSense client `ca-pub-1860356577073395` are wired into the layout head.
 
 ## Developing locally
 ```bash
 npm install
 npm run dev       # Vite dev server for client bundle
-npm run build     # Type-check Worker + build client assets
+npm run build     # Type-check + build client assets + prerender SEO HTML
 npm run preview   # Preview production build
 ```
 
@@ -25,10 +26,27 @@ npm run preview
 ```
 
 ## Adding or editing pages
-1. Update `siteRoutes` in `src/worker/index.ts` with the new path, title, meta description, body HTML, and optional breadcrumbs.
-2. Add page-specific markup via a render helper (see existing render functions near the bottom of `src/worker/index.ts`).
-3. Include internal links so the human sitemap, XML sitemap, and navigation stay in sync.
+1. Update or add entries in `src/seo/seoConfig.js` with the route path, title, description, canonicalPath, and structured data.
+2. If the React page content changes materially, consider adding an HTML snippet to `bodyHtml` so prerendered output stays descriptive.
+3. Run `npm run build` to regenerate prerendered HTML, sitemap.xml, and robots.txt.
 4. Keep copy concise and cite authoritative sources inline when using numeric claims.
+
+### Public route map (prerendered)
+- `/`
+- `/upload`
+- `/learn/read-water-bill`
+- `/learn/leak-detection`
+- `/learn/water-saving-tips`
+- `/learn/water-bill-spikes`
+- `/learn/hidden-leaks`
+- `/game`
+
+## SEO validation checklist
+- Run `npm run seo:check` after a build to verify every prerendered route has `<title>`, description, canonical, OG/Twitter tags, and exactly one H1.
+- Manually open `view-source:https://www.watershortcut.com/<route>` for each public page to confirm metadata renders server-side.
+- Confirm `https://www.watershortcut.com/robots.txt` allows crawling and references the sitemap.
+- Confirm `https://www.watershortcut.com/sitemap.xml` lists the indexable routes and uses the canonical host.
+- Confirm non-`www` hosts redirect to `www.watershortcut.com`.
 
 ## API endpoints
 - `POST /api/location` — location-to-provider helper (preserves legacy POST `/`).

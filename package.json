@@ -36,12 +36,14 @@
     "wrangler": "4.21.x"
   },
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run prerender",
     "cf-typegen": "wrangler types",
     "check": "tsc && vite build && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
     "dev": "vite",
     "lint": "eslint .",
+    "prerender": "node scripts/prerender.mjs",
+    "seo:check": "node scripts/seo-check.mjs",
     "test:e2e": "playwright test",
     "preview": "npm run build && vite preview"
   },

@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { stylesCss, appJs } from "./assets";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
+import { pages as seoPages, site as seoSite, canonicalUrl as seoCanonicalUrl } from "../seo/seoConfig.js";
+import type { PageSeo } from "../seo/seoConfig.js";
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -55,7 +57,7 @@ type SiteRoute = {
   extraJsonLd?: Array<Record<string, unknown>>;
 };
 
-const DOMAIN = "https://www.watershortcut.com";
+const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = new Date().toISOString().split("T")[0];
 
 const navLinks = [
@@ -355,6 +357,18 @@ app.use("*", async (c, next) => {
     return c.redirect(url.toString(), 301);
   }
 
+  if (
+    host &&
+    host !== seoSite.canonicalHost &&
+    !host.startsWith("localhost") &&
+    !host.startsWith("127.")
+  ) {
+    const url = new URL(c.req.url);
+    url.host = seoSite.canonicalHost;
+    url.protocol = "https:";
+    return c.redirect(url.toString(), 301);
+  }
+
   await next();
 });
 
@@ -393,20 +407,18 @@ siteRoutes.forEach((route) => {
 });
 
 app.get("/sitemap.xml", (c) => {
-  const xml =
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    siteRoutes
-      .map(
-        (u) => `<url><loc>${DOMAIN}${u.path}</loc></url>`,
-      )
-      .join("\n") +
-    "\n</urlset>";
+  const lastmod = new Date().toISOString().split("T")[0];
+  const indexable = Object.values(seoPages as Record<string, PageSeo>).filter((page) => (page.robots || "index,follow").includes("index"));
+  const entries = indexable
+    .map((page) => `<url><loc>${seoCanonicalUrl(page.canonicalPath)}</loc><lastmod>${lastmod}</lastmod></url>`)
+    .join("\n");
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>`;
   return c.text(xml, 200, { "Content-Type": "application/xml" });
 });
 
 app.get("/robots.txt", (c) =>
   c.text(
-    `User-agent: *\nAllow: /\nSitemap: ${DOMAIN}/sitemap.xml`,
+    `User-agent: *\nAllow: /\nSitemap: https://${seoSite.canonicalHost}/sitemap.xml`,
     200,
     { "Content-Type": "text/plain; charset=utf-8" },
   ),
