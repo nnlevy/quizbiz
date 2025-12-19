@@ -18,6 +18,7 @@ import { logEvent } from "./analytics";
 declare global {
   interface Window {
     disqus_config?: () => void;
+    webkitAudioContext?: typeof AudioContext;
   }
 }
 
@@ -367,8 +368,54 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return true;
   };
 
+  const triggerDeviceHaptics = () => {
+    const vibrationPattern = [30, 40, 30];
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(vibrationPattern);
+    }
+
+    const AudioContextClass =
+      typeof window !== "undefined" &&
+      (window.AudioContext || window.webkitAudioContext || undefined);
+
+    if (AudioContextClass) {
+      try {
+        const context = new AudioContextClass();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.value = 180;
+        gainNode.gain.value = 0.0008;
+
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.35);
+
+        oscillator.onended = () => {
+          oscillator.disconnect();
+          gainNode.disconnect();
+          context.close().catch(() => undefined);
+        };
+      } catch (error) {
+        console.error("Haptic trigger failed", error);
+      }
+    }
+  };
+
   const handleWaterEjectClick = () => {
     const spent = spendCredit();
+    if (!spent) {
+      logEvent("water_eject", {
+        action: "blocked_no_credit",
+        credits_remaining: credits,
+      });
+      return;
+    }
+
+    triggerDeviceHaptics();
 
     logEvent("water_eject", {
       action: "click",
@@ -966,12 +1013,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               <p>
                 Lots of visitors land here looking for the popular "iPhone
                 Water Eject" shortcut. We&apos;ve got you covered—tap once and the
-                Shortcuts app will play a speaker-clearing tone while we keep
-                your conservation journey on track.
+                Shortcuts app will play a speaker-clearing tone (with a quick
+                haptic buzz) while we keep your conservation journey on track.
               </p>
               <ul className="banner-list">
                 <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
                 <li>Credits keep the experience calm and spam-free (you start with 5).</li>
+                <li>Feel a confirmation buzz on iPhone when you fire the eject.</li>
                 <li>Stay on this page—no mystery links or confusing detours.</li>
               </ul>
               <div className="banner-actions">
