@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 
 const links = [
   { href: "/", label: "Home" },
@@ -11,8 +16,14 @@ const links = [
   { href: "/leak-patrol", label: "Game" },
 ];
 
+const NAV_SWIPE_THRESHOLD = 42;
+
 const SiteNav = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navTouchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const isMobileViewport = () =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
 
   useEffect(() => {
     if (!isMobileMenuOpen) {
@@ -43,8 +54,44 @@ const SiteNav = () => {
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
+  const handleHeaderTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
+    if (!isMobileViewport()) {
+      return;
+    }
+    const touch = event.touches[0];
+    navTouchStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleHeaderTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
+    if (!isMobileViewport()) {
+      navTouchStart.current = null;
+      return;
+    }
+    const start = navTouchStart.current;
+    navTouchStart.current = null;
+    if (!start) {
+      return;
+    }
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dy) <= Math.abs(dx) || Math.abs(dy) < NAV_SWIPE_THRESHOLD) {
+      return;
+    }
+    if (dy > NAV_SWIPE_THRESHOLD && !isMobileMenuOpen) {
+      setIsMobileMenuOpen(true);
+    }
+    if (dy < -NAV_SWIPE_THRESHOLD && isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
-    <header className="app-header">
+    <header
+      className="app-header"
+      onTouchStart={handleHeaderTouchStart}
+      onTouchEnd={handleHeaderTouchEnd}
+    >
       <div className="nav-container">
         <a className="brand" href="/">
           WaterShortcut
