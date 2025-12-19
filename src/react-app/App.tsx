@@ -1,10 +1,8 @@
 
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState, TouchEvent } from "react";
 import {
   CSSProperties,
   FormEvent,
   ReactNode,
-  createElement,
   useEffect,
   useMemo,
   useRef,
@@ -324,6 +322,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   );
 
   const [credits, setCredits] = useState(5);
+  const creditsRef = useRef(credits);
   const [creditPulse, setCreditPulse] = useState(false);
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
@@ -332,6 +331,10 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
     "",
   );
+
+  useEffect(() => {
+    creditsRef.current = credits;
+  }, [credits]);
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
@@ -392,22 +395,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   };
 
   const spendCredit = (successPrefix?: string) => {
-    let nextCredits: number | null = null;
-    setCredits((prev) => {
-      if (prev <= 0) {
-        nextCredits = null;
-        return prev;
-      }
-      const updated = Math.max(prev - 1, 0);
-      nextCredits = updated;
-      return updated;
-    });
-
-    if (nextCredits === null) {
+    const currentCredits = creditsRef.current;
+    if (currentCredits <= 0) {
       setCreditNotice("No credits remain. Check back soon for a refresh.");
       triggerCreditPulse();
       return null;
     }
+
+    const nextCredits = Math.max(currentCredits - 1, 0);
+    creditsRef.current = nextCredits;
+    setCredits(nextCredits);
 
     setCreditNotice(
       successPrefix
@@ -518,9 +515,55 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     });
   };
 
-  const handleOpenUploadStep = () => {
+  const parseErrorResponse = async (response: Response, fallback: string) => {
+    try {
+      const responseClone = response.clone();
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const payload = await responseClone.json();
+        const message =
+          (typeof payload?.error === "string" && payload.error.trim()) ||
+          (typeof payload?.message === "string" && payload.message.trim());
+        if (message) {
+          return message;
+        }
+      }
+
+      const text = await response.text();
+      if (text.trim()) {
+        return text.trim();
+      }
+    } catch (parseError) {
+      console.warn("Unable to parse error response", parseError);
+    }
+
+    return fallback;
+  };
+
+  const openUploadSection = (focusFile = false) => {
+    setSectionOpenState((prev) => ({
+      ...prev,
+      upload: true,
+    }));
     handleScrollTo("upload");
     setIsMobileFlowOpen(false);
+
+    if (focusFile) {
+      const delay =
+        typeof window !== "undefined" ? window.setTimeout : setTimeout;
+      delay(() => {
+        fileInputRef.current?.focus();
+        fileInputRef.current?.click();
+      }, 250);
+    }
+  };
+
+  const handleOpenUploadStep = () => {
+    openUploadSection();
+  };
+
+  const handleUploadCta = () => {
+    openUploadSection(true);
   };
 
   const handleOpenLocationStep = () => {
@@ -620,8 +663,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
   useEffect(() => {
     if (focusUpload) {
-      handleScrollTo("upload");
+      openUploadSection();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusUpload]);
 
   useEffect(() => {
@@ -1146,14 +1190,11 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       });
       setLocationCountdown(null);
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        setLocationStatus(
-          `Error: ${
-            typeof error?.error === "string"
-              ? error.error
-              : "An unexpected error occurred."
-          }`,
+        const errorMessage = await parseErrorResponse(
+          response,
+          "An unexpected error occurred.",
         );
+        setLocationStatus(`Error: ${errorMessage}`);
         return;
       }
       const htmlResponse = await response.text();
@@ -1206,14 +1247,11 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       });
       setAnalysisCountdown(null);
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        setResponseMessage(
-          `Error: ${
-            typeof error?.error === "string"
-              ? error.error
-              : "An unexpected error occurred."
-          }`,
+        const errorMessage = await parseErrorResponse(
+          response,
+          "Unable to process your file right now. Please try again soon.",
         );
+        setResponseMessage(`Error: ${errorMessage}`);
         setCountdownLabel("Analysis should be complete shortly.");
         return;
       }
@@ -1576,14 +1614,23 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                   <div className="slide">
                     <h3>Find Your Water Bill</h3>
                     <p>Enter your city or region above, then tap search.</p>
-                    <button
-                      type="button"
-                      id="location-button"
-                      className="primary-button"
-                      onClick={handleLocationSearch}
-                    >
-                      Search
-                    </button>
+                    <div className="location-inline-actions">
+                      <button
+                        type="button"
+                        id="location-button"
+                        className="primary-button"
+                        onClick={handleLocationSearch}
+                      >
+                        Search
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={handleUploadCta}
+                      >
+                        Upload my bill
+                      </button>
+                    </div>
                     <div
                       id="location-result"
                       aria-live="polite"
@@ -1742,13 +1789,22 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                       value={locationInput}
                       onChange={(event) => setLocationInput(event.target.value)}
                     />
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={handleLocationSearch}
-                    >
-                      Search
-                    </button>
+                    <div className="location-inline-actions">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={handleLocationSearch}
+                      >
+                        Search
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={handleUploadCta}
+                      >
+                        Upload my bill
+                      </button>
+                    </div>
                     <p className="location-status" aria-live="polite">
                       {locationStatus}
                     </p>

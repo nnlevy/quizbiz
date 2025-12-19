@@ -1,4 +1,5 @@
 import {
+  FocusEvent,
   useEffect,
   useRef,
   useState,
@@ -8,12 +9,15 @@ import {
 const links = [
   { href: "/", label: "Home" },
   { href: "/upload", label: "Upload" },
+  { href: "/leak-patrol", label: "Game" },
+];
+
+const learnLinks = [
   { href: "/learn/read-water-bill", label: "Read Your Bill" },
   { href: "/learn/leak-detection", label: "Leak Detection" },
   { href: "/learn/water-saving-tips", label: "Water-Saving Tips" },
   { href: "/learn/water-bill-spikes", label: "Bill Spikes" },
   { href: "/learn/hidden-leaks", label: "Hidden Leaks" },
-  { href: "/leak-patrol", label: "Game" },
 ];
 
 const NAV_SWIPE_THRESHOLD = 42;
@@ -25,7 +29,9 @@ type SiteNavProps = {
 
 const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -58,6 +64,17 @@ const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
   }, [isMobileMenuOpen]);
 
   const closeMenu = () => setIsMobileMenuOpen(false);
+
+  const closeDropdown = () => setIsDropdownOpen(false);
+  const openDropdown = () => setIsDropdownOpen(true);
+
+  const handleDropdownBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!dropdownRef.current?.contains(event.relatedTarget as Node | null)) {
+      closeDropdown();
+    }
+  };
+
+  const mobileLinks = [...links, ...learnLinks];
 
   const handleHeaderTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
     if (!isMobileViewport()) {
@@ -108,10 +125,44 @@ const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
         <nav className="global-nav" aria-label="Primary navigation">
           <div className="nav-links">
             {links.map((link) => (
-              <a key={link.href} href={link.href} onClick={closeMenu}>
+              <a key={link.href} className="nav-link" href={link.href} onClick={closeMenu}>
                 {link.label}
               </a>
             ))}
+            <div
+              ref={dropdownRef}
+              className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
+              onMouseEnter={openDropdown}
+              onMouseLeave={closeDropdown}
+              onFocusCapture={openDropdown}
+              onBlurCapture={handleDropdownBlur}
+            >
+              <button
+                type="button"
+                className="nav-link dropdown-toggle"
+                aria-haspopup="true"
+                aria-expanded={isDropdownOpen}
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+              >
+                Learn
+                <span aria-hidden className="dropdown-caret">
+                  {isDropdownOpen ? "▴" : "▾"}
+                </span>
+              </button>
+              <div className="dropdown-panel" role="menu">
+                {learnLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    className="dropdown-link"
+                    href={link.href}
+                    role="menuitem"
+                    onClick={closeDropdown}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
           <button
             type="button"
@@ -138,7 +189,7 @@ const SiteNav = ({ credits = 5, pulse = false }: SiteNavProps) => {
         aria-label="Mobile navigation"
       >
         <div className="mobile-nav__handle" aria-hidden />
-        {links.map((link) => (
+        {mobileLinks.map((link) => (
           <a key={link.href} href={link.href} onClick={closeMenu}>
             {link.label}
           </a>
