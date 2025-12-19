@@ -357,13 +357,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
   const spendCredit = () => {
     if (credits <= 0) {
-      setCreditNotice("No credits left. Check back soon for a refresh.");
+      setCreditNotice("No credits remain. Check back soon for a refresh.");
       triggerCreditPulse();
       return false;
     }
     const updatedCredits = Math.max(credits - 1, 0);
     setCredits(updatedCredits);
-    setCreditNotice(`Water eject triggered. ${updatedCredits} credits left.`);
+    setCreditNotice(`Water eject triggered. ${updatedCredits} credits remain.`);
     triggerCreditPulse();
     return true;
   };
