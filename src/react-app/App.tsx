@@ -1,4 +1,5 @@
 
+import React from "react";
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState, TouchEvent } from "react";
 import {
   CSSProperties,
@@ -30,6 +31,9 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
+const CREDIT_TOPUP_FLAG = "creditTopUpRequested";
+const STRIPE_BUY_BUTTON_SRC = "https://js.stripe.com/v3/buy-button.js";
+const STRIPE_BUY_BUTTON_SCRIPT_ID = "stripe-buy-button-script";
 const STRIPE_FIVE_CREDIT_LINK = "https://buy.stripe.com/test_7sI8zS8qv55G9iAeUU";
 
 type SavingTip = {
@@ -227,7 +231,7 @@ type CollapsibleSectionProps = {
   isMobile: boolean;
   isOpen: boolean;
   onToggle: () => void;
-  children: ReactNode;
+  children: React.ReactNode;
 };
 
 const CollapsibleSection = ({
@@ -266,33 +270,64 @@ const CollapsibleSection = ({
   );
 };
 
+const StripeBuyButton = ({
+  buyButtonId,
+  publishableKey,
+  elementRef,
+}: {
+  buyButtonId: string;
+  publishableKey?: string;
+  elementRef?: React.RefObject<HTMLElement | null>;
+}) =>
+  React.createElement(
+    "stripe-buy-button",
+    {
+      "buy-button-id": buyButtonId,
+      ...(publishableKey ? { "publishable-key": publishableKey } : {}),
+      ...(elementRef ? { ref: elementRef } : {}),
+    } as Record<string, unknown>,
+  );
+
 type AppProps = {
   adsEnabled?: boolean;
   focusUpload?: boolean;
 };
 
 function App({ adsEnabled = false, focusUpload = false }: AppProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const slideTouchStartX = useRef<number | null>(null);
-  const slideTouchStartY = useRef<number | null>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const slidesWrapperRef = React.useRef<HTMLDivElement | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const slideTouchStartX = React.useRef<number | null>(null);
+  const slideTouchStartY = React.useRef<number | null>(null);
+  const creditBuyButtonRef = React.useRef<HTMLElement | null>(null);
 
   const initialIsMobile =
     typeof window !== "undefined" &&
     window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
 
-  const [isMobile, setIsMobile] = useState(initialIsMobile);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [showerReduction, setShowerReduction] = useState(5);
-  const [showerLength, setShowerLength] = useState(10);
-  const [sinkUsage, setSinkUsage] = useState(10);
-  const [wateringMinutes, setWateringMinutes] = useState(7);
+  const [isMobile, setIsMobile] = React.useState(initialIsMobile);
+  const [currentSlide, setCurrentSlide] = React.useState(0);
+  const [showerReduction, setShowerReduction] = React.useState(5);
+  const [showerLength, setShowerLength] = React.useState(10);
+  const [sinkUsage, setSinkUsage] = React.useState(10);
+  const [wateringMinutes, setWateringMinutes] = React.useState(7);
 
-  const [locationInput, setLocationInput] = useState("");
-  const [locationStatus, setLocationStatus] = useState(
+  const [locationInput, setLocationInput] = React.useState("");
+  const [locationStatus, setLocationStatus] = React.useState(
     "Enter your city or region to begin.",
   );
+  const [locationHtml, setLocationHtml] = React.useState("");
+  const [locationCountdown, setLocationCountdown] = React.useState<number | null>(null);
+
+  const [responseMessage, setResponseMessage] = React.useState("");
+  const [countdownLabel, setCountdownLabel] = React.useState("Awaiting file upload...");
+  const [analysisHtml, setAnalysisHtml] = React.useState("");
+  const [analysisCountdown, setAnalysisCountdown] = React.useState<number | null>(null);
+  const [isUploading, setIsUploading] = React.useState(false);
+
+  const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
+  const [flowStep, setFlowStep] = React.useState(0);
+  const [sectionOpenState, setSectionOpenState] = React.useState({
   const [locationHtml, setLocationHtml] = useState("");
   const [locationCountdown, setLocationCountdown] = useState<number | null>(null);
   const [localResearchPlan, setLocalResearchPlan] = useState<string[]>([]);
@@ -310,24 +345,26 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     tools: !initialIsMobile,
     upload: !initialIsMobile,
   });
-  const [openTips, setOpenTips] = useState<Record<string, boolean>>(() =>
+  const [openTips, setOpenTips] = React.useState<Record<string, boolean>>(() =>
     SAVING_TIPS.reduce((acc, tip, index) => {
       acc[tip.id] = !initialIsMobile && index === 0;
       return acc;
     }, {} as Record<string, boolean>),
   );
-  const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
+  const [openNews, setOpenNews] = React.useState<Record<string, boolean>>(() =>
     NEWS_ITEMS.reduce((acc, article, index) => {
       acc[article.id] = !initialIsMobile && index === 0;
       return acc;
     }, {} as Record<string, boolean>),
   );
 
-  const [credits, setCredits] = useState(5);
-  const [creditPulse, setCreditPulse] = useState(false);
-  const [creditNotice, setCreditNotice] = useState(
+  const [credits, setCredits] = React.useState(5);
+  const [creditPulse, setCreditPulse] = React.useState(false);
+  const [creditNotice, setCreditNotice] = React.useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
+  const [isStripeReady, setIsStripeReady] = React.useState(false);
+  const [isIOSDevice, setIsIOSDevice] = React.useState(
   const [showCreditCelebration, setShowCreditCelebration] = useState(false);
   const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
     "",
@@ -342,8 +379,8 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState<string | null>(null);
 
-  const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
-  const qrShortcutUrl = useMemo(
+  const showBillInsights = React.useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
+  const qrShortcutUrl = React.useMemo(
     () =>
       `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
         WATER_EJECT_SHORTCUT_URL,
@@ -389,6 +426,135 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const triggerCreditPulse = () => {
     setCreditPulse(true);
     setTimeout(() => setCreditPulse(false), 750);
+  };
+
+  React.useEffect(() => {
+    const isCustomElementRegistered =
+      typeof window !== "undefined" &&
+      typeof window.customElements !== "undefined" &&
+      Boolean(window.customElements.get("stripe-buy-button"));
+
+    const existingScript = document.getElementById(
+      STRIPE_BUY_BUTTON_SCRIPT_ID,
+    ) as HTMLScriptElement | null;
+
+    if (existingScript && existingScript.getAttribute("data-ready") === "true") {
+      setIsStripeReady(true);
+      return undefined;
+    }
+
+    if (isCustomElementRegistered && existingScript) {
+      existingScript.setAttribute("data-ready", "true");
+      setIsStripeReady(true);
+      return undefined;
+    }
+
+    const script = existingScript ?? document.createElement("script");
+    script.id = STRIPE_BUY_BUTTON_SCRIPT_ID;
+    script.src = STRIPE_BUY_BUTTON_SRC;
+    script.async = true;
+
+    const handleStripeReady = () => {
+      script.setAttribute("data-ready", "true");
+      setIsStripeReady(true);
+    };
+
+    const handleStripeError = () => {
+      setCreditNotice("Checkout unavailable right now. Please try again soon.");
+      triggerCreditPulse();
+    };
+
+    script.addEventListener("load", handleStripeReady);
+    script.addEventListener("error", handleStripeError);
+
+    if (!existingScript) {
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      script.removeEventListener("load", handleStripeReady);
+      script.removeEventListener("error", handleStripeError);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const redirectStatus = params.get("redirect_status");
+    const pendingTopUp = window.localStorage.getItem(CREDIT_TOPUP_FLAG);
+
+    if (sessionId && pendingTopUp && redirectStatus === "succeeded") {
+      setCredits((prev) => prev + 5);
+      setCreditNotice("Purchase confirmed. 5 credits added.");
+      triggerCreditPulse();
+      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+
+      params.delete("session_id");
+      params.delete("redirect_status");
+      const trimmedSearch = params.toString();
+      const updatedUrl =
+        window.location.pathname +
+        (trimmedSearch ? `?${trimmedSearch}` : "") +
+        window.location.hash;
+      window.history.replaceState({}, document.title, updatedUrl);
+      return;
+    }
+
+    if (pendingTopUp && redirectStatus === "canceled") {
+      setCreditNotice("Checkout canceled. No credits were charged.");
+      triggerCreditPulse();
+      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+    }
+
+    if (pendingTopUp && redirectStatus && redirectStatus !== "succeeded") {
+      setCreditNotice("Checkout did not complete. Please try again.");
+      triggerCreditPulse();
+      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+    }
+
+    if (pendingTopUp && (sessionId || redirectStatus)) {
+      params.delete("session_id");
+      params.delete("redirect_status");
+      const trimmedSearch = params.toString();
+      const updatedUrl =
+        window.location.pathname +
+        (trimmedSearch ? `?${trimmedSearch}` : "") +
+        window.location.hash;
+      window.history.replaceState({}, document.title, updatedUrl);
+    }
+  }, []);
+
+  const handleCreditsClick = () => {
+    if (!isStripeReady) {
+      setCreditNotice("Checkout is loading. Please try again in a moment.");
+      triggerCreditPulse();
+      return;
+    }
+
+    const innerButton =
+      creditBuyButtonRef.current?.shadowRoot?.querySelector("button") ??
+      creditBuyButtonRef.current;
+
+    if (innerButton instanceof HTMLElement) {
+      try {
+        window.localStorage.setItem(CREDIT_TOPUP_FLAG, "pending");
+      } catch (error) {
+        console.error("Unable to persist credit purchase flag", error);
+      }
+
+      innerButton.click();
+      setCreditNotice("Launching $5 checkout for 5 credits...");
+    } else {
+      setCreditNotice("Checkout unavailable. Please try again in a moment.");
+    }
+    triggerCreditPulse();
+  };
+
+  const handleCreditsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleCreditsClick();
+    }
   };
 
   const spendCredit = (successPrefix?: string) => {
@@ -528,6 +694,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
   };
 
+  const handleSlideTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
   const buildLocalResearchPlan = (query: string) => {
     const region = query || "your area";
     return [
@@ -555,7 +722,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     slideTouchStartY.current = touch.clientY;
   };
 
-  const handleSlideTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+  const handleSlideTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
     const startX = slideTouchStartX.current;
     const startY = slideTouchStartY.current;
     slideTouchStartX.current = null;
@@ -576,13 +743,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const detectIOS = () =>
       typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOSDevice(detectIOS());
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
     const updateIsMobile = () => setIsMobile(mediaQuery.matches);
     updateIsMobile();
@@ -590,7 +757,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return () => mediaQuery.removeEventListener("change", updateIsMobile);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isMobile) {
       setSectionOpenState({ guides: false, tools: false, upload: false });
       return;
@@ -598,7 +765,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setSectionOpenState({ guides: true, tools: true, upload: true });
   }, [isMobile]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const setAppHeight = () => {
       document.documentElement.style.setProperty(
         "--app-height",
@@ -614,23 +781,23 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setCurrentSlide(0);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (focusUpload) {
       handleScrollTo("upload");
     }
   }, [focusUpload]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isMobile) {
       setIsMobileFlowOpen(false);
     }
   }, [isMobile]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isMobileFlowOpen) {
       document.body.classList.add("is-sheet-open");
       document.body.style.overflow = "hidden";
@@ -644,7 +811,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, [isMobileFlowOpen]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const wrapper = slidesWrapperRef.current;
     if (!wrapper) {
       return;
@@ -671,7 +838,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const wrapper = slidesWrapperRef.current;
     if (!wrapper) {
       return;
@@ -683,7 +850,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
   }, [currentSlide]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -834,7 +1001,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (locationCountdown === null) {
       return;
     }
@@ -850,7 +1017,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return () => window.clearTimeout(timer);
   }, [locationCountdown]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (analysisCountdown === null) {
       return;
     }
@@ -868,7 +1035,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return () => window.clearTimeout(timer);
   }, [analysisCountdown]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const scriptUrl = "https://js.stripe.com/v3/buy-button.js";
     if (document.querySelector(`script[src='${scriptUrl}']`)) {
       return;
@@ -882,7 +1049,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     window.disqus_config = (function disqusConfig(this: {
       page: { url: string; identifier: string };
     }) {
@@ -902,7 +1069,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const runOverflowCheck = (label: string) => {
       const doc = document.documentElement;
       const scrollWidth = doc.scrollWidth;
@@ -942,7 +1109,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return () => window.removeEventListener("load", handleLoad);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!import.meta.env.DEV) {
       return;
     }
@@ -971,7 +1138,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, []);
 
-  const reductionSummary = useMemo(() => {
+  const reductionSummary = React.useMemo(() => {
     const dailyGallonsSaved = showerReduction * SHOWER_FLOW_RATE;
     const annualGallonsSaved = dailyGallonsSaved * 365;
     const annualCostSavedMin = annualGallonsSaved * COST_PER_GALLON_MIN;
@@ -982,7 +1149,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     )} annually (approx. ${annualGallonsSaved.toFixed(0)} gallons).`;
   }, [showerReduction]);
 
-  const applianceSavings = useMemo<ApplianceSavings>(() => {
+  const applianceSavings = React.useMemo<ApplianceSavings>(() => {
     const showerGallons = showerLength * SHOWER_FLOW_RATE * 365;
     const showerMinCost = showerGallons * COST_PER_GALLON_MIN;
     const showerMaxCost = showerGallons * COST_PER_GALLON_MAX;
@@ -1169,7 +1336,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
   };
 
-  const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
+  const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
@@ -1240,7 +1407,12 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
   return (
     <div className="app">
-      <SiteNav credits={credits} pulse={creditPulse} />
+      <SiteNav
+        credits={credits}
+        pulse={creditPulse}
+        onCreditsClick={handleCreditsClick}
+        onCreditsKeyDown={handleCreditsKeyDown}
+      />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
       {showCreditCelebration && (
@@ -2184,6 +2356,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                     OpenAI o1-mini model outlines targeted conservation steps
                     tailored to your usage.
                   </p>
+                </div>
+                <div className="stripe-wrapper">
+                  <StripeBuyButton
+                    buyButtonId="buy_btn_1QLXcFIzTeKgjbPr1afKz0xu"
+                    publishableKey="pk_live_51KdlIMIzTeKgjbPrtxvb3gyKXu5k1DHh6cenXiWiaGC0zH355gAlsYznGssDrSX7KxOv7hsvLIUDM36JM5Fw6evG00StF8cIZ6"
+                    elementRef={creditBuyButtonRef}
+                  />
                 </div>
               </div>
             </div>
