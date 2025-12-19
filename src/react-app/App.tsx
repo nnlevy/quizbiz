@@ -430,6 +430,25 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
   };
 
+  const handleVibrateAgain = () => {
+    if (credits <= 0) {
+      setCreditNotice("No credits remain. Check back soon for a refresh.");
+      triggerCreditPulse();
+      logEvent("water_eject", {
+        action: "vibrate_again_blocked",
+        credits_remaining: credits,
+      });
+      return;
+    }
+
+    triggerDeviceHaptics();
+    setCreditNotice(`Haptic confirmation replayed. ${credits} credits remain.`);
+    logEvent("water_eject", {
+      action: "vibrate_again",
+      credits_remaining: credits,
+    });
+  };
+
   const handleOpenUploadStep = () => {
     handleScrollTo("upload");
     setIsMobileFlowOpen(false);
@@ -1030,6 +1049,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                 >
                   Eject water now
                   <span className="credit-chip">-1 credit</span>
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleVibrateAgain}
+                >
+                  Feel the vibration again
                 </button>
                 <p className="credit-note" aria-live="polite">
                   {creditNotice}
