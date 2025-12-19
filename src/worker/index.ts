@@ -283,6 +283,24 @@ const siteRoutes: SiteRoute[] = [
 
 const app = new Hono<{ Bindings: WorkerEnv }>();
 
+app.use("*", async (c, next) => {
+  const proto = c.req.header("x-forwarded-proto");
+  const host = c.req.header("host") || "";
+
+  if (
+    proto &&
+    proto !== "https" &&
+    !host.startsWith("localhost") &&
+    !host.startsWith("127.")
+  ) {
+    const url = new URL(c.req.url);
+    url.protocol = "https:";
+    return c.redirect(url.toString(), 301);
+  }
+
+  await next();
+});
+
 app.get("/assets/styles.css", (c) =>
   c.text(stylesCss, 200, {
     "Content-Type": "text/css; charset=utf-8",
@@ -1176,6 +1194,7 @@ app.post("/api/location", async (c) => {
 // The worker runtime supplies the context; using any keeps the shared handler flexible.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handleAnalyzeBill = async (c: any) => {
+  let fileBytes: Uint8Array | null = null;
   try {
     validateUploadEnv(c.env);
     const contentType = c.req.header("content-type") || "";
@@ -1193,19 +1212,26 @@ const handleAnalyzeBill = async (c: any) => {
 
     if (!(file instanceof File) || !validateFile(file)) {
       return c.json(
-        { error: "Invalid file. Must be a non-empty PDF <10MB." },
+        { error: "Invalid file. Upload a PDF or JPG/PNG under 10MB." },
         400,
       );
     }
 
     const arrayBuffer = await file.arrayBuffer();
+    fileBytes = new Uint8Array(arrayBuffer);
     const hash = await generateHash(arrayBuffer);
     console.log("Generated PDF Hash:", hash);
 
+    const mimeType = (file.type || "application/pdf").toLowerCase();
     const token = await getOAuthToken(c.env);
     const endpoint =
       c.env.Google_Document_AI_Processor_Prediction_Endpoint;
-    const visionResult = await callVisionAPI(arrayBuffer, token, endpoint);
+    const visionResult = await callVisionAPI(
+      arrayBuffer,
+      token,
+      endpoint,
+      mimeType,
+    );
 
     if (visionResult?.error) {
       console.error("Vision API Error:", visionResult.error);
@@ -1222,14 +1248,15 @@ const handleAnalyzeBill = async (c: any) => {
     const rawText = visionResult.document?.text;
     if (!rawText) {
       return c.json(
-        { error: "No text extracted from PDF or invalid format." },
+        { error: "No text extracted from the file or invalid format." },
         400,
       );
     }
 
     const cleanText = preprocessText(rawText);
+    const redactedText = redactSensitiveData(cleanText);
     const openAiData = await analyzeTextWithOpenAI(c.env, {
-      content: cleanText,
+      content: redactedText,
       includeWaterContext: true,
     });
 
@@ -1246,6 +1273,10 @@ const handleAnalyzeBill = async (c: any) => {
       { error: errorMessage },
       500,
     );
+  } finally {
+    if (fileBytes) {
+      fileBytes.fill(0);
+    }
   }
 };
 
@@ -1310,6 +1341,23 @@ function preprocessText(txt: unknown): string {
     return "";
   }
   return txt.replace(/[^\x20-\x7E]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function redactSensitiveData(text: string): string {
+  if (!text) return "";
+
+  let redacted = text;
+  const emailRegex = /[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/g;
+  const phoneRegex = /(?:\+?\d{1,3}[\s-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}/g;
+  const accountRegex = /\b\d{8,}\b/g;
+  const addressRegex = /\d{1,5}\s+[A-Za-z0-9'.\-\s]+(?:Avenue|Ave|Street|St|Road|Rd|Lane|Ln|Boulevard|Blvd)\b/gi;
+
+  redacted = redacted.replace(emailRegex, "[REDACTED_EMAIL]");
+  redacted = redacted.replace(phoneRegex, "[REDACTED_PHONE]");
+  redacted = redacted.replace(accountRegex, "[REDACTED_ACCOUNT]");
+  redacted = redacted.replace(addressRegex, "[REDACTED_ADDRESS]");
+
+  return redacted;
 }
 
 function normalizePrivateKey(key: unknown): string | null {
@@ -1436,8 +1484,14 @@ async function callVisionAPI(
   buffer: ArrayBuffer,
   token: string,
   endpoint: string,
+  mimeType: string,
 ): Promise<DocumentAIResponse> {
   try {
+    const resolvedMimeType = mimeType
+      ? mimeType.includes("pdf")
+        ? "application/pdf"
+        : mimeType
+      : "application/pdf";
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -1447,7 +1501,7 @@ async function callVisionAPI(
       body: JSON.stringify({
         rawDocument: {
           content: arrayBufferToBase64(buffer),
-          mimeType: "application/pdf",
+          mimeType: resolvedMimeType,
         },
       }),
     });
@@ -1528,15 +1582,24 @@ function renderAnalysisResponse(data: ChatCompletionResponse): string {
 }
 
 function validateFile(file: File): boolean {
-  if (
-    !file ||
-    !file.type.toLowerCase().includes("pdf") ||
-    file.size === 0 ||
-    file.size > 10 * 1024 * 1024
-  ) {
-    console.error("File validation failed (not a PDF or >10MB).");
+  if (!file || file.size === 0 || file.size > 10 * 1024 * 1024) {
+    console.error("File validation failed (empty or >10MB).");
     return false;
   }
+
+  const type = file.type.toLowerCase();
+  const normalizedType = type.replace("jpg", "jpeg");
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+
+  const isAllowed = allowedTypes.some((allowed) =>
+    normalizedType.includes(allowed),
+  );
+
+  if (!isAllowed) {
+    console.error("File validation failed (unsupported type).");
+    return false;
+  }
+
   return true;
 }
 
