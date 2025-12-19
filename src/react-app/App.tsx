@@ -155,6 +155,10 @@ const NEWS_ITEMS: NewsItem[] = [
   },
 ];
 
+const WATER_EJECT_SHORTCUT_URL =
+  "https://www.icloud.com/shortcuts/18d4cf361b0f458f9f72d77b6a4b2f1f";
+const WATER_EJECT_RUN_URL = "shortcuts://run-shortcut?name=Water%20Eject";
+
 function formatCurrency(value: number): string {
   return value.toFixed(2);
 }
@@ -302,6 +306,12 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }, {} as Record<string, boolean>),
   );
 
+  const [credits, setCredits] = useState(5);
+  const [creditPulse, setCreditPulse] = useState(false);
+  const [creditNotice, setCreditNotice] = useState(
+    "You start with 5 credits to trigger an instant iPhone water eject.",
+  );
+
   const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
 
   const toggleTip = (id: string) =>
@@ -337,6 +347,40 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const handleFlowClose = () => {
     setIsMobileFlowOpen(false);
     setFlowStep(0);
+  };
+
+  const triggerCreditPulse = () => {
+    setCreditPulse(true);
+    setTimeout(() => setCreditPulse(false), 750);
+  };
+
+  const spendCredit = () => {
+    if (credits <= 0) {
+      setCreditNotice("No credits left. Check back soon for a refresh.");
+      triggerCreditPulse();
+      return false;
+    }
+    const updatedCredits = Math.max(credits - 1, 0);
+    setCredits(updatedCredits);
+    setCreditNotice(`Water eject triggered. ${updatedCredits} credits left.`);
+    triggerCreditPulse();
+    return true;
+  };
+
+  const handleWaterEjectClick = () => {
+    const spent = spendCredit();
+
+    logEvent("water_eject", {
+      action: "click",
+      credits_remaining: Math.max(credits - (spent ? 1 : 0), 0),
+    });
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const targetUrl = isIOS ? WATER_EJECT_RUN_URL : WATER_EJECT_SHORTCUT_URL;
+    const openedWindow = window.open(targetUrl, "_blank");
+    if (!openedWindow) {
+      window.location.href = targetUrl;
+    }
   };
 
   const handleOpenUploadStep = () => {
@@ -910,10 +954,67 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
   return (
     <div className="app">
-      <SiteNav />
+      <SiteNav credits={credits} pulse={creditPulse} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
       <main className="main-wrapper">
+        <section className="water-eject-banner" aria-labelledby="water-eject">
+          <div className="banner-grid">
+            <div className="banner-copy">
+              <p className="eyebrow">Not the other shortcut</p>
+              <h2 id="water-eject">Instant iPhone Water Eject</h2>
+              <p>
+                Lots of visitors land here looking for the popular "iPhone
+                Water Eject" shortcut. We&apos;ve got you covered—tap once and the
+                Shortcuts app will play a speaker-clearing tone while we keep
+                your conservation journey on track.
+              </p>
+              <ul className="banner-list">
+                <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
+                <li>Credits keep the experience calm and spam-free (you start with 5).</li>
+                <li>Stay on this page—no mystery links or confusing detours.</li>
+              </ul>
+              <div className="banner-actions">
+                <button
+                  type="button"
+                  className="primary-button eject-button"
+                  onClick={handleWaterEjectClick}
+                >
+                  Eject water now
+                  <span className="credit-chip">-1 credit</span>
+                </button>
+                <p className="credit-note" aria-live="polite">
+                  {creditNotice}
+                </p>
+              </div>
+            </div>
+            <div className="banner-card" aria-hidden="true">
+              <div className="card-glow" />
+              <div className="card-body">
+                <p className="eyebrow">Shortcut preview</p>
+                <h3>Water Eject Launcher</h3>
+                <p>
+                  Taps the iOS Shortcuts URL:
+                  <br />
+                  <code>shortcuts://run-shortcut?name=Water%20Eject</code>
+                </p>
+                <p className="subdued">
+                  If you don&apos;t have Shortcuts installed, we&apos;ll open the
+                  iCloud share link so you can add it in seconds.
+                </p>
+                <div className="tone-bars">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <p className="mini-hint">Uses the classic 165 Hz water-eject pulse.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="hero" id="top">
           <div className="hero-content">
             <p className="eyebrow">Smarter conservation for every household</p>
