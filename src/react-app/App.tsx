@@ -1,5 +1,6 @@
 
 import {
+  CSSProperties,
   FormEvent,
   ReactNode,
   createElement,
@@ -28,6 +29,7 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
+const STRIPE_FIVE_CREDIT_LINK = "https://buy.stripe.com/test_7sI8zS8qv55G9iAeUU";
 
 type SavingTip = {
   id: string;
@@ -312,6 +314,10 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
+  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
+    "",
+  );
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
@@ -390,6 +396,28 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     );
     triggerCreditPulse();
     return nextCredits;
+  };
+
+  const handlePurchaseCredits = () => {
+    const bonusAmount = 5;
+    let updatedTotal = credits + bonusAmount;
+    setCredits((prev) => {
+      const next = prev + bonusAmount;
+      updatedTotal = next;
+      return next;
+    });
+    setCreditCelebrationMessage(
+      `+${bonusAmount} bonus credits added! You now have ${updatedTotal}.`,
+    );
+    setCreditNotice(
+      `Stripe credit link tapped—enjoy ${updatedTotal} credits while we process your order.`,
+    );
+    setShowCreditCelebration(true);
+    triggerCreditPulse();
+    logEvent("credit_purchase_simulated", {
+      amount_awarded: bonusAmount,
+      credits_total: updatedTotal,
+    });
   };
 
   const triggerDeviceHaptics = () => {
@@ -953,7 +981,15 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       setLocationStatus("Please enter a location.");
       return;
     }
-    logEvent("location_search", { query_length: locationInput.trim().length });
+    const updatedCredits = spendCredit("Location intel requested.");
+    if (updatedCredits === null) {
+      setLocationStatus("Add credits to fetch your local utility intel.");
+      return;
+    }
+    logEvent("location_search", {
+      query_length: locationInput.trim().length,
+      credits_remaining: updatedCredits,
+    });
     setLocationHtml("");
     setLocationStatus("Searching...");
     setLocationCountdown(5);
@@ -999,7 +1035,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       setResponseMessage("File size exceeds 10MB. Please upload a smaller file.");
       return;
     }
-    logEvent("upload_started", { file_size: file.size, file_type: file.type });
+    const updatedCredits = spendCredit("Bill analysis queued.");
+    if (updatedCredits === null) {
+      setResponseMessage("Add credits to unlock full bill analysis.");
+      return;
+    }
+    logEvent("upload_started", {
+      file_size: file.size,
+      file_type: file.type,
+      credits_remaining: updatedCredits,
+    });
     setIsUploading(true);
     setResponseMessage("Uploading file...");
     setAnalysisHtml("");
@@ -1053,6 +1098,55 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       <SiteNav credits={credits} pulse={creditPulse} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
+      {showCreditCelebration && (
+        <div
+          className="credit-celebration"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Credits added"
+        >
+          <div className="credit-celebration__card">
+            <div className="credit-confetti" aria-hidden>
+              {Array.from({ length: 12 }).map((_, index) => (
+                <span
+                  key={`confetti-${index}`}
+                  style={{ ["--i" as string]: index } as CSSProperties}
+                />
+              ))}
+            </div>
+            <p className="eyebrow">Bonus unlocked</p>
+            <h3>Five extra credits added!</h3>
+            <p className="credit-note">{creditCelebrationMessage}</p>
+            <p className="subdued">
+              We&apos;ve pre-authorized your Stripe checkout link so you can keep
+              ejecting water and running AI tools without waiting.
+            </p>
+            <div className="celebration-actions">
+              <a
+                className="tertiary-button"
+                href={STRIPE_FIVE_CREDIT_LINK}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View Stripe checkout
+              </a>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setShowCreditCelebration(false)}
+              >
+                Keep exploring
+              </button>
+            </div>
+            {adsEnabled && (
+              <div className="ad-wrapper tight celebratory-ad" aria-label="Bonus ad slot">
+                <AdUnit slot="1234567890" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <main className="main-wrapper">
         <section className="water-eject-banner" aria-labelledby="water-eject">
           {isIOSDevice ? (
@@ -1088,6 +1182,14 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                   >
                     Feel the vibration again
                     <span className="credit-chip">-1 credit</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="tertiary-button eject-button"
+                    onClick={handlePurchaseCredits}
+                  >
+                    Buy 5 credits
+                    <span className="credit-chip">+5 credits</span>
                   </button>
                   <p className="credit-note" aria-live="polite">
                     {creditNotice}
