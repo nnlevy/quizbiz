@@ -1,5 +1,6 @@
 
 import {
+  CSSProperties,
   FormEvent,
   ReactNode,
   createElement,
@@ -28,6 +29,7 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
+const STRIPE_FIVE_CREDIT_LINK = "https://buy.stripe.com/test_7sI8zS8qv55G9iAeUU";
 
 type SavingTip = {
   id: string;
@@ -130,6 +132,30 @@ const SAVING_TIPS: SavingTip[] = [
   },
 ];
 
+const UPGRADE_MODAL_CONTENT: Record<UpgradeModalTopic, { title: string; description: string; keywords: string; }> = {
+  showerheads: {
+    title: "WaterSense Showerhead Upgrade Lab",
+    description:
+      "Preview how a high-efficiency WaterSense showerhead trims gallons while keeping spa-like pressure. Pair the longer-form calculator with our water bill insights to get ahead of rate hikes.",
+    keywords:
+      "water-saving showerhead upgrade, low-flow WaterSense shower, spa pressure shower savings, conserve hot water, sustainable bathroom remodel",
+  },
+  aerators: {
+    title: "Faucet Aerator Efficiency Studio",
+    description:
+      "Dial in your daily sink use and see how aerators tame flow for dishwashing, toothbrushing, and quick rinses without losing comfort.",
+    keywords:
+      "faucet aerator savings, kitchen sink water efficiency, bathroom aerator install, conserve water at the sink, ENERGY STAR appliance pairing",
+  },
+  detergents: {
+    title: "High-Efficiency Detergent Hub",
+    description:
+      "Model your weekly watering and cleaning routines, then pair with plant-friendly nozzles and HE detergents to lighten both bills and runoff.",
+    keywords:
+      "high efficiency detergent, eco-friendly dishwasher tabs, lawn watering conservation, sustainable cleaning supplies, buy efficient appliances",
+  },
+};
+
 type NewsItem = {
   id: string;
   title: string;
@@ -185,6 +211,9 @@ type Droplet = {
   vx: number;
   vy: number;
 };
+
+type UpgradeModalTopic = "showerheads" | "aerators" | "detergents";
+type PurchasePreference = "online" | "in-person";
 
 const SLIDE_COUNT = 3;
 const MOBILE_BREAKPOINT = 768;
@@ -312,9 +341,19 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
+  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
+    "",
+  );
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(null);
+  const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(null);
+  const [ctaRecommendation, setCtaRecommendation] = useState("");
+  const [ctaLoading, setCtaLoading] = useState(false);
+  const [ctaError, setCtaError] = useState<string | null>(null);
 
   const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
   const qrShortcutUrl = useMemo(
@@ -390,6 +429,28 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     );
     triggerCreditPulse();
     return nextCredits;
+  };
+
+  const handlePurchaseCredits = () => {
+    const bonusAmount = 5;
+    let updatedTotal = credits + bonusAmount;
+    setCredits((prev) => {
+      const next = prev + bonusAmount;
+      updatedTotal = next;
+      return next;
+    });
+    setCreditCelebrationMessage(
+      `+${bonusAmount} bonus credits added! You now have ${updatedTotal}.`,
+    );
+    setCreditNotice(
+      `Stripe credit link tapped—enjoy ${updatedTotal} credits while we process your order.`,
+    );
+    setShowCreditCelebration(true);
+    triggerCreditPulse();
+    logEvent("credit_purchase_simulated", {
+      amount_awarded: bonusAmount,
+      credits_total: updatedTotal,
+    });
   };
 
   const triggerDeviceHaptics = () => {
@@ -948,12 +1009,124 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, [showerLength, sinkUsage, wateringMinutes]);
 
+  const buildCtaContextSummary = (topic: UpgradeModalTopic) => {
+    const showerNote = `${applianceSavings.shower.minutes} min showers`;
+    const sinkNote = `${applianceSavings.sink.minutes} min sink use`;
+    const wateringNote = `${applianceSavings.watering.minutes} min watering`;
+
+    switch (topic) {
+      case "showerheads":
+        return `${showerNote} with ${formatCurrencyRange(
+          applianceSavings.shower.minCost,
+          applianceSavings.shower.maxCost,
+        )} in yearly water costs.`;
+      case "aerators":
+        return `${sinkNote} paired to ${formatCurrencyRange(
+          applianceSavings.sink.minCost,
+          applianceSavings.sink.maxCost,
+        )} in annual water spend.`;
+      case "detergents":
+      default:
+        return `${wateringNote} supported by ${formatCurrencyRange(
+          applianceSavings.watering.minCost,
+          applianceSavings.watering.maxCost,
+        )} in yearly usage.`;
+    }
+  };
+
+  const synthesizeRecommendation = (
+    preference: PurchasePreference,
+    topic: UpgradeModalTopic,
+  ) => {
+    const contextSummary = buildCtaContextSummary(topic);
+    const shoppingPath =
+      preference === "online"
+        ? "online bundles and curbside pickup"
+        : "local plumbing showrooms and in-stock hardware aisles";
+    const productKeyword = {
+      showerheads: "WaterSense showerhead with massage spray",
+      aerators: "dual-thread faucet aerator kit",
+      detergents: "high-efficiency detergent tabs",
+    }[topic];
+
+    return `Based on ${contextSummary} We recommend a ${productKeyword} optimized for ${shoppingPath}. Expect fast payback with lower hot-water use.`;
+  };
+
+  const fetchCtaRecommendation = async (
+    preference: PurchasePreference,
+    topic: UpgradeModalTopic,
+  ) => {
+    setCtaLoading(true);
+    setCtaError(null);
+    setCtaPreference(preference);
+    setCtaRecommendation("");
+    const payload = {
+      preference,
+      topic,
+      showerLength,
+      sinkUsage,
+      wateringMinutes,
+    };
+
+    try {
+      const response = await fetch("/api/cta-recommendation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`CTA API error: ${response.status}`);
+      }
+
+      const data = await response
+        .json()
+        .catch(() => ({ recommendation: "" as string }));
+
+      if (typeof data?.recommendation === "string" && data.recommendation.trim()) {
+        setCtaRecommendation(data.recommendation.trim());
+      } else {
+        setCtaRecommendation(synthesizeRecommendation(preference, topic));
+      }
+    } catch (error) {
+      console.warn("CTA recommendation fallback", error);
+      setCtaRecommendation(synthesizeRecommendation(preference, topic));
+      setCtaError("Using on-device assistant while the call-to-action service warms up.");
+    } finally {
+      setCtaLoading(false);
+    }
+  };
+
+  const openUpgradeModal = (topic: UpgradeModalTopic) => {
+    setUpgradeTopic(topic);
+    setIsUpgradeModalOpen(true);
+    setCtaRecommendation("");
+    setCtaPreference(null);
+    setCtaError(null);
+  };
+
+  const closeUpgradeModal = () => {
+    setIsUpgradeModalOpen(false);
+    setUpgradeTopic(null);
+    setCtaRecommendation("");
+    setCtaPreference(null);
+    setCtaError(null);
+  };
+
   const handleLocationSearch = async () => {
     if (!locationInput.trim()) {
       setLocationStatus("Please enter a location.");
       return;
     }
-    logEvent("location_search", { query_length: locationInput.trim().length });
+    const updatedCredits = spendCredit("Location intel requested.");
+    if (updatedCredits === null) {
+      setLocationStatus("Add credits to fetch your local utility intel.");
+      return;
+    }
+    logEvent("location_search", {
+      query_length: locationInput.trim().length,
+      credits_remaining: updatedCredits,
+    });
     setLocationHtml("");
     setLocationStatus("Searching...");
     setLocationCountdown(5);
@@ -999,7 +1172,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       setResponseMessage("File size exceeds 10MB. Please upload a smaller file.");
       return;
     }
-    logEvent("upload_started", { file_size: file.size, file_type: file.type });
+    const updatedCredits = spendCredit("Bill analysis queued.");
+    if (updatedCredits === null) {
+      setResponseMessage("Add credits to unlock full bill analysis.");
+      return;
+    }
+    logEvent("upload_started", {
+      file_size: file.size,
+      file_type: file.type,
+      credits_remaining: updatedCredits,
+    });
     setIsUploading(true);
     setResponseMessage("Uploading file...");
     setAnalysisHtml("");
@@ -1053,7 +1235,184 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       <SiteNav credits={credits} pulse={creditPulse} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
+      {showCreditCelebration && (
+        <div
+          className="credit-celebration"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Credits added"
+        >
+          <div className="credit-celebration__card">
+            <div className="credit-confetti" aria-hidden>
+              {Array.from({ length: 12 }).map((_, index) => (
+                <span
+                  key={`confetti-${index}`}
+                  style={{ ["--i" as string]: index } as CSSProperties}
+                />
+              ))}
+            </div>
+            <p className="eyebrow">Bonus unlocked</p>
+            <h3>Five extra credits added!</h3>
+            <p className="credit-note">{creditCelebrationMessage}</p>
+            <p className="subdued">
+              We&apos;ve pre-authorized your Stripe checkout link so you can keep
+              ejecting water and running AI tools without waiting.
+            </p>
+            <div className="celebration-actions">
+              <a
+                className="tertiary-button"
+                href={STRIPE_FIVE_CREDIT_LINK}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View Stripe checkout
+              </a>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setShowCreditCelebration(false)}
+              >
+                Keep exploring
+              </button>
+            </div>
+            {adsEnabled && (
+              <div className="ad-wrapper tight celebratory-ad" aria-label="Bonus ad slot">
+                <AdUnit slot="1234567890" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <main className="main-wrapper">
+        <section className="water-eject-banner" aria-labelledby="water-eject">
+          {isIOSDevice ? (
+            <div className="banner-grid">
+              <div className="banner-copy">
+                <p className="eyebrow">Not the other shortcut</p>
+                <h2 id="water-eject">Instant iPhone Water Eject</h2>
+                <p>
+                  Lots of visitors land here looking for the popular "iPhone
+                  Water Eject" shortcut. We&apos;ve got you covered—tap once and the
+                  Shortcuts app will play a speaker-clearing tone (with a quick
+                  haptic buzz) while we keep your conservation journey on track.
+                </p>
+                <ul className="banner-list">
+                  <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
+                  <li>Credits keep the experience calm and spam-free (you start with 5).</li>
+                  <li>Feel a confirmation buzz on iPhone when you fire the eject.</li>
+                  <li>Stay on this page—no mystery links or confusing detours.</li>
+                </ul>
+                <div className="banner-actions">
+                  <button
+                    type="button"
+                    className="primary-button eject-button"
+                    onClick={handleWaterEjectClick}
+                  >
+                    Eject water now
+                    <span className="credit-chip">-1 credit</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button eject-button"
+                    onClick={handleVibrateAgain}
+                  >
+                    Feel the vibration again
+                    <span className="credit-chip">-1 credit</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="tertiary-button eject-button"
+                    onClick={handlePurchaseCredits}
+                  >
+                    Buy 5 credits
+                    <span className="credit-chip">+5 credits</span>
+                  </button>
+                  <p className="credit-note" aria-live="polite">
+                    {creditNotice}
+                  </p>
+                </div>
+              </div>
+              <div className="banner-card" aria-hidden="true">
+                <div className="card-glow" />
+                <div className="card-body">
+                  <p className="eyebrow">Shortcut preview</p>
+                  <h3>Water Eject Launcher</h3>
+                  <p>
+                    Taps the iOS Shortcuts URL:
+                    <br />
+                    <code>shortcuts://run-shortcut?name=Water%20Eject</code>
+                  </p>
+                  <p className="subdued">
+                    If you don&apos;t have Shortcuts installed, we&apos;ll open the
+                    iCloud share link so you can add it in seconds.
+                  </p>
+                  <div className="tone-bars">
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <p className="mini-hint">Uses the classic 165 Hz water-eject pulse.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="banner-grid qr-banner">
+              <div className="banner-copy">
+                <p className="eyebrow">Scan to run on iPhone</p>
+                <h2 id="water-eject">Instant iPhone Water Eject</h2>
+                <p>
+                  This tool runs on iPhone via the Apple Shortcuts app. Aim
+                  your camera at the QR code to open the water-eject shortcut on
+                  your phone and clear your speakers instantly.
+                </p>
+                <ul className="banner-list">
+                  <li>One scan opens the Water Eject shortcut on iPhone.</li>
+                  <li>Includes the 165 Hz tone and confirmation buzz.</li>
+                  <li>Stay in control—no random redirects.</li>
+                </ul>
+                <p className="credit-note" aria-live="polite">
+                  Viewing from a non-iPhone device—scan to eject water from your iPhone.
+                </p>
+              </div>
+              <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
+                <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
+                  <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
+                  <rect
+                    x="12"
+                    y="12"
+                    width="276"
+                    height="276"
+                    rx="12"
+                    fill="#ffffff"
+                    stroke="rgba(79, 155, 255, 0.35)"
+                    strokeWidth="2"
+                  />
+                  <image
+                    xlinkHref={qrShortcutUrl}
+                    x="24"
+                    y="24"
+                    width="252"
+                    height="252"
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                  <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
+                    Scan to eject water
+                  </text>
+                </svg>
+                <p className="qr-hint">
+                  Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
+                  <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
+                    &nbsp;Tap to view the shortcut link.
+                  </a>
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+
         <section className="hero" id="top">
           <div className="hero-content">
             <p className="eyebrow">Smarter conservation for every household</p>
@@ -1608,14 +1967,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                   />
                   <p id="shower-reduction-output">{reductionSummary}</p>
                 </div>
-              </div>
-
-              <div className="slider-group">
-                <h3>Upgrade Appliances and Fixtures</h3>
-                <p>
-                  Adjust the sliders below to estimate annual usage and cost across
-                  the cost range. <em>(We multiply gallons used by our cost-per-gallon range.)</em>
-                </p>
 
                 <div className="slider-control">
                   <label htmlFor="shower-slider">Daily Shower Length (minutes)</label>
@@ -1635,16 +1986,23 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                       applianceSavings.shower.minCost,
                       applianceSavings.shower.maxCost,
                     )}</strong>.
-                    <a
-                      href="https://www.amazon.com/gp/product/B01MFGGH8A"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      className="tertiary-button"
+                      onClick={() => openUpgradeModal("showerheads")}
                     >
                       Upgrade with WaterSense Showerheads
-                    </a>
+                    </button>
                   </p>
                 </div>
+              </div>
 
+              <div className="slider-group">
+                <h3>Upgrade Appliances and Fixtures</h3>
+                <p>
+                  Adjust the sliders below to estimate annual usage and cost across
+                  the cost range. <em>(We multiply gallons used by our cost-per-gallon range.)</em>
+                </p>
                 <div className="slider-control">
                   <label htmlFor="sink-slider">Daily Sink Use (minutes)</label>
                   <input
@@ -1661,13 +2019,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                       applianceSavings.sink.minCost,
                       applianceSavings.sink.maxCost,
                     )}</strong>.
-                    <a
-                      href="https://www.amazon.com/gp/product/B01EVXAWP0"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      className="tertiary-button"
+                      onClick={() => openUpgradeModal("aerators")}
                     >
                       Upgrade with Faucet Aerators
-                    </a>
+                    </button>
                   </p>
                 </div>
 
@@ -1689,13 +2047,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                       applianceSavings.watering.minCost,
                       applianceSavings.watering.maxCost,
                     )}</strong>.
-                    <a
-                      href="https://www.amazon.com/gp/product/B01MG8F3ST"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      className="tertiary-button"
+                      onClick={() => openUpgradeModal("detergents")}
                     >
                       Get Efficient Detergents
-                    </a>
+                    </button>
                   </p>
                 </div>
               </div>
@@ -1896,6 +2254,118 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               ))}
             </div>
           </section>
+
+        {isUpgradeModalOpen && upgradeTopic && (
+          <div
+            className="upgrade-modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upgrade-modal-title"
+          >
+            <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
+              <div className="upgrade-modal-header">
+                <div>
+                  <p className="eyebrow">Personalized call to action</p>
+                  <h3 id="upgrade-modal-title">
+                    {UPGRADE_MODAL_CONTENT[upgradeTopic].title}
+                  </h3>
+                  <p className="upgrade-modal-description">
+                    {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Close upgrade details"
+                  onClick={closeUpgradeModal}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="cta-preference-row">
+                <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
+                <div className="cta-buttons">
+                  <button
+                    type="button"
+                    className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
+                    disabled={ctaLoading}
+                    onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
+                  >
+                    {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
+                    disabled={ctaLoading}
+                    onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
+                  >
+                    {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
+                  </button>
+                </div>
+                {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
+                {ctaRecommendation && (
+                  <p className="cta-recommendation" role="status">
+                    {ctaRecommendation}
+                  </p>
+                )}
+              </div>
+
+              <div className="upgrade-modal-grid">
+                <div className="modal-card">
+                  <h4>Expanded calculator view</h4>
+                  <p className="modal-metric">
+                    <strong>Time input:</strong>{" "}
+                    {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
+                    {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
+                    {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
+                  </p>
+                  <p className="modal-metric">
+                    <strong>Annual gallons:</strong>{" "}
+                    {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
+                    {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
+                    {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
+                  </p>
+                  <p className="modal-metric">
+                    <strong>Estimated annual cost:</strong>{" "}
+                    {upgradeTopic === "showerheads" &&
+                      formatCurrencyRange(
+                        applianceSavings.shower.minCost,
+                        applianceSavings.shower.maxCost,
+                      )}
+                    {upgradeTopic === "aerators" &&
+                      formatCurrencyRange(
+                        applianceSavings.sink.minCost,
+                        applianceSavings.sink.maxCost,
+                      )}
+                    {upgradeTopic === "detergents" &&
+                      formatCurrencyRange(
+                        applianceSavings.watering.minCost,
+                        applianceSavings.watering.maxCost,
+                      )}
+                  </p>
+                  <p className="modal-copy">
+                    Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your preferred upgrade path.
+                  </p>
+                </div>
+                <div className="modal-card">
+                  <h4>Ad-friendly research cues</h4>
+                  <p className="modal-keywords">
+                    {UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}
+                  </p>
+                  <p className="modal-copy">
+                    These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while you explore the larger upgrade view.
+                  </p>
+                  {adsEnabled && (
+                    <div className="ad-wrapper modal-ad" aria-label="Contextual upgrade ad">
+                      <AdUnit slot="1122334455" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <SiteFooter />
       </div>
