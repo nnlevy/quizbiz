@@ -32,6 +32,11 @@ test.describe("mobile layout quality", () => {
       }));
       expect(afterAds.scrollWidth).toBeLessThanOrEqual(afterAds.clientWidth + 1);
 
+      const flexWrap = await page
+        .locator(".nav-container")
+        .evaluate((node) => getComputedStyle(node).flexWrap);
+      expect(flexWrap).toBe("nowrap");
+
       const headerHeight = await page
         .locator(".nav-container")
         .evaluate((node) => node.getBoundingClientRect().height);
