@@ -1111,8 +1111,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       const doc = document.documentElement;
       const scrollWidth = doc.scrollWidth;
       const viewportWidth = doc.clientWidth + OVERFLOW_TOLERANCE;
-      if (scrollWidth > viewportWidth) {
+      const withinBounds = scrollWidth <= viewportWidth;
+      console.assert(withinBounds, `layout overflow (${label})`);
+      if (!withinBounds) {
+        doc.dataset.overflowDetected = "true";
         console.warn(`layout overflow (${label}):`, scrollWidth, viewportWidth);
+      } else {
+        delete doc.dataset.overflowDetected;
       }
 
       ["hero", "location-intel", "dynamic-sliders", "upload"].forEach(
@@ -1134,7 +1139,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
     const handleLoad = () => {
       runOverflowCheck("initial");
-      window.setTimeout(() => runOverflowCheck("post-ads"), 4000);
+      window.setTimeout(() => runOverflowCheck("post-ads"), 4500);
     };
 
     if (document.readyState === "complete") {
