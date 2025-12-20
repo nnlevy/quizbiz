@@ -1,7 +1,4 @@
-
-import React from "react";
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState, TouchEvent } from "react";
-import {
+import React, {
   CSSProperties,
   FormEvent,
   ReactNode,
@@ -230,7 +227,7 @@ type CollapsibleSectionProps = {
   isMobile: boolean;
   isOpen: boolean;
   onToggle: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 const CollapsibleSection = ({
@@ -304,29 +301,17 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     typeof window !== "undefined" &&
     window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
 
-  const [isMobile, setIsMobile] = React.useState(initialIsMobile);
-  const [currentSlide, setCurrentSlide] = React.useState(0);
-  const [showerReduction, setShowerReduction] = React.useState(5);
-  const [showerLength, setShowerLength] = React.useState(10);
-  const [sinkUsage, setSinkUsage] = React.useState(10);
-  const [wateringMinutes, setWateringMinutes] = React.useState(7);
+  const [isMobile, setIsMobile] = useState(initialIsMobile);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [showerReduction, setShowerReduction] = useState(5);
+  const [showerLength, setShowerLength] = useState(10);
+  const [sinkUsage, setSinkUsage] = useState(10);
+  const [wateringMinutes, setWateringMinutes] = useState(7);
 
-  const [locationInput, setLocationInput] = React.useState("");
-  const [locationStatus, setLocationStatus] = React.useState(
+  const [locationInput, setLocationInput] = useState("");
+  const [locationStatus, setLocationStatus] = useState(
     "Enter your city or region to begin.",
   );
-  const [locationHtml, setLocationHtml] = React.useState("");
-  const [locationCountdown, setLocationCountdown] = React.useState<number | null>(null);
-
-  const [responseMessage, setResponseMessage] = React.useState("");
-  const [countdownLabel, setCountdownLabel] = React.useState("Awaiting file upload...");
-  const [analysisHtml, setAnalysisHtml] = React.useState("");
-  const [analysisCountdown, setAnalysisCountdown] = React.useState<number | null>(null);
-  const [isUploading, setIsUploading] = React.useState(false);
-
-  const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
-  const [flowStep, setFlowStep] = React.useState(0);
-  const [sectionOpenState, setSectionOpenState] = React.useState({
   const [locationHtml, setLocationHtml] = useState("");
   const [locationCountdown, setLocationCountdown] = useState<number | null>(null);
   const [localResearchPlan, setLocalResearchPlan] = useState<string[]>([]);
@@ -344,13 +329,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     tools: !initialIsMobile,
     upload: !initialIsMobile,
   });
-  const [openTips, setOpenTips] = React.useState<Record<string, boolean>>(() =>
+  const [openTips, setOpenTips] = useState<Record<string, boolean>>(() =>
     SAVING_TIPS.reduce((acc, tip, index) => {
       acc[tip.id] = !initialIsMobile && index === 0;
       return acc;
     }, {} as Record<string, boolean>),
   );
-  const [openNews, setOpenNews] = React.useState<Record<string, boolean>>(() =>
+  const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
     NEWS_ITEMS.reduce((acc, article, index) => {
       acc[article.id] = !initialIsMobile && index === 0;
       return acc;
@@ -361,24 +346,14 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const creditsRef = useRef(credits);
   const [creditPulse, setCreditPulse] = useState(false);
   const [creditNotice, setCreditNotice] = useState(
-  const [credits, setCredits] = React.useState(5);
-  const [creditPulse, setCreditPulse] = React.useState(false);
-  const [creditNotice, setCreditNotice] = React.useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
-  const [isStripeReady, setIsStripeReady] = React.useState(false);
-  const [isIOSDevice, setIsIOSDevice] = React.useState(
-  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
-  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
-    "",
-  );
-
-  useEffect(() => {
-    creditsRef.current = credits;
-  }, [credits]);
+  const [isStripeReady, setIsStripeReady] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
+  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState("");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(null);
   const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(null);
@@ -386,8 +361,12 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState<string | null>(null);
 
-  const showBillInsights = React.useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
-  const qrShortcutUrl = React.useMemo(
+  useEffect(() => {
+    creditsRef.current = credits;
+  }, [credits]);
+
+  const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
+  const qrShortcutUrl = useMemo(
     () =>
       `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
         WATER_EJECT_SHORTCUT_URL,
@@ -741,7 +720,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
   };
 
-  const handleSlideTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
   const buildLocalResearchPlan = (query: string) => {
     const region = query || "your area";
     return [
@@ -1186,7 +1164,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     };
   }, []);
 
-  const reductionSummary = React.useMemo(() => {
+  const reductionSummary = useMemo(() => {
     const dailyGallonsSaved = showerReduction * SHOWER_FLOW_RATE;
     const annualGallonsSaved = dailyGallonsSaved * 365;
     const annualCostSavedMin = annualGallonsSaved * COST_PER_GALLON_MIN;
@@ -1197,7 +1175,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     )} annually (approx. ${annualGallonsSaved.toFixed(0)} gallons).`;
   }, [showerReduction]);
 
-  const applianceSavings = React.useMemo<ApplianceSavings>(() => {
+  const applianceSavings = useMemo<ApplianceSavings>(() => {
     const showerGallons = showerLength * SHOWER_FLOW_RATE * 365;
     const showerMinCost = showerGallons * COST_PER_GALLON_MIN;
     const showerMaxCost = showerGallons * COST_PER_GALLON_MAX;
@@ -1381,7 +1359,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
   };
 
-  const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const file = fileInputRef.current?.files?.[0];
     if (!file) {

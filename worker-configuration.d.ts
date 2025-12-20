@@ -7,6 +7,7 @@ declare namespace Cloudflare {
                 OPENAI_ORG_ID?: string;
                 "Google-Service-Account-FINAL": string;
                 Google_Document_AI_Processor_Prediction_Endpoint: string;
+                STRIPE_API_KEY: string;
                 "domains-db"?: D1Database;
         }
 }
