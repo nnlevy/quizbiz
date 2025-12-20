@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./LeakPatrol.css";
 
 const ICON_MAP: Record<Scenario["icon"], string> = {
@@ -421,7 +421,7 @@ export default function LeakPatrol() {
     startLevel(1);
   };
 
-  const proceedToNextScenario = () => {
+  const proceedToNextScenario = useCallback(() => {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= scenarios.length) {
       const stillAlive = lives > 0;
@@ -443,61 +443,9 @@ export default function LeakPatrol() {
     setFeedback(null);
     setLastAction(null);
     answeredRef.current = false;
-  };
+  }, [currentIndex, level, levelAccuracy, lives, scenarios.length]);
 
-  const handleDecision = (action: Action | "timeout") => {
-    if (phase !== "playing" || !currentScenario || answeredRef.current) {
-      return;
-    }
-    answeredRef.current = true;
-    const isCorrect = action !== "timeout" && action === currentScenario.correctAction;
-    const gained = isCorrect
-      ? Math.round(currentScenario.waterSaved * Math.min(3, comboMultiplier + 0.1))
-      : 0;
-    setLevelStats((prev) => ({
-      total: prev.total + 1,
-      correct: prev.correct + (isCorrect ? 1 : 0),
-    }));
-
-    if (isCorrect) {
-      setComboCount((prev) => {
-        const next = prev + 1;
-        setBestCombo((prevBest) => Math.max(prevBest, next));
-        return next;
-      });
-      setComboMultiplier((prev) => Math.min(3, Number((prev + 0.1).toFixed(1))));
-      setScore((prev) => prev + gained);
-      setRecentGain(gained);
-      setFeedback("Nice catch! Water saved.");
-    } else {
-      setLives((prev) => prev - 1);
-      setComboCount(0);
-      setComboMultiplier(1);
-      setRecentGain(null);
-      const tip = `Better choice: ${currentScenario.correctAction.toUpperCase()}. ${currentScenario.tip}`;
-      setFeedback(tip);
-    }
-
-    setLastAction(
-      action === "timeout" ? "Too late" : action === currentScenario.correctAction ? "Correct" : "Miss",
-    );
-
-    window.setTimeout(() => {
-      if (lives - (isCorrect ? 0 : 1) <= 0) {
-        handleGameOver();
-        return;
-      }
-      proceedToNextScenario();
-    }, 650);
-  };
-
-  useEffect(() => {
-    if (phase === "playing" && timerRemaining === 0 && !answeredRef.current) {
-      handleDecision("timeout");
-    }
-  }, [phase, timerRemaining]);
-
-  const handleGameOver = () => {
+  const handleGameOver = useCallback(() => {
     setPhase("gameOver");
     setHighestLevel((prev) => {
       const updated = Math.max(prev, level);
@@ -511,7 +459,69 @@ export default function LeakPatrol() {
       }
       return prev;
     });
-  };
+  }, [level, score]);
+
+  const handleDecision = useCallback(
+    (action: Action | "timeout") => {
+      if (phase !== "playing" || !currentScenario || answeredRef.current) {
+        return;
+      }
+      answeredRef.current = true;
+      const isCorrect = action !== "timeout" && action === currentScenario.correctAction;
+      const gained = isCorrect
+        ? Math.round(currentScenario.waterSaved * Math.min(3, comboMultiplier + 0.1))
+        : 0;
+      setLevelStats((prev) => ({
+        total: prev.total + 1,
+        correct: prev.correct + (isCorrect ? 1 : 0),
+      }));
+
+      if (isCorrect) {
+        setComboCount((prev) => {
+          const next = prev + 1;
+          setBestCombo((prevBest) => Math.max(prevBest, next));
+          return next;
+        });
+        setComboMultiplier((prev) => Math.min(3, Number((prev + 0.1).toFixed(1))));
+        setScore((prev) => prev + gained);
+        setRecentGain(gained);
+        setFeedback("Nice catch! Water saved.");
+      } else {
+        setLives((prev) => prev - 1);
+        setComboCount(0);
+        setComboMultiplier(1);
+        setRecentGain(null);
+        const tip = `Better choice: ${currentScenario.correctAction.toUpperCase()}. ${currentScenario.tip}`;
+        setFeedback(tip);
+      }
+
+      setLastAction(
+        action === "timeout" ? "Too late" : action === currentScenario.correctAction ? "Correct" : "Miss",
+      );
+
+      window.setTimeout(() => {
+        if (lives - (isCorrect ? 0 : 1) <= 0) {
+          handleGameOver();
+          return;
+        }
+        proceedToNextScenario();
+      }, 650);
+    },
+    [
+      comboMultiplier,
+      currentScenario,
+      handleGameOver,
+      lives,
+      phase,
+      proceedToNextScenario,
+    ],
+  );
+
+  useEffect(() => {
+    if (phase === "playing" && timerRemaining === 0 && !answeredRef.current) {
+      handleDecision("timeout");
+    }
+  }, [handleDecision, phase, timerRemaining]);
 
   const handleNextLevel = () => {
     if (lives <= 0) {
