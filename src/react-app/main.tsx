@@ -63,14 +63,14 @@ const RootRouter = () => {
     initializeAnalytics();
   }, []);
 
-  useEffect(() => {
-    const eu = isLikelyEU();
-    setEuVisitor(eu);
-    if (!eu && !consentGiven) {
-      setConsentGiven(true);
-    }
-    setInitialized(true);
-  }, []);
+    useEffect(() => {
+      const eu = isLikelyEU();
+      setEuVisitor(eu);
+      if (!eu && !consentGiven) {
+        setConsentGiven(true);
+      }
+      setInitialized(true);
+    }, [consentGiven]);
 
   useEffect(() => {
     if (!initialized) {
@@ -138,3 +138,5 @@ const RootRouter = () => {
 };
 
 createRoot(document.getElementById("root")!).render(<RootRouter />);
+
+export default RootRouter;

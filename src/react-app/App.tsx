@@ -1,10 +1,6 @@
 
-import React from "react";
-import React, { CSSProperties, ReactNode } from "react";
-import {
 import React, {
   CSSProperties,
-  TouchEvent,
   FormEvent,
   ReactNode,
   TouchEvent,
@@ -44,7 +40,6 @@ const STRIPE_JS_SRC = "https://js.stripe.com/v3";
 const STRIPE_JS_SCRIPT_ID = "stripe-js-sdk";
 const STRIPE_PUBLISHABLE_KEY =
   "pk_live_51KdlIMIzTeKgjbPrtxvb3gyKXu5k1DHh6cenXiWiaGC0zH355gAlsYznGssDrSX7KxOv7hsvLIUDM36JM5Fw6evG00StF8cIZ6";
-const STRIPE_FIVE_CREDIT_LINK = "https://buy.stripe.com/test_7sI8zS8qv55G9iAeUU";
 
 type SavingTip = {
   id: string;
@@ -286,17 +281,11 @@ type AppProps = {
 };
 
 function App({ adsEnabled = false, focusUpload = false }: AppProps) {
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const slidesWrapperRef = React.useRef<HTMLDivElement | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const slideTouchStartX = React.useRef<number | null>(null);
-  const slideTouchStartY = React.useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const slideTouchStartX = useRef<number | null>(null);
   const slideTouchStartY = useRef<number | null>(null);
-  const creditBuyButtonRef = useRef<HTMLElement | null>(null);
 
   const initialIsMobile =
     typeof window !== "undefined" &&
@@ -346,76 +335,45 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }, {} as Record<string, boolean>),
   );
 
-  const [credits, setCredits] = React.useState(5);
-  const creditsRef = React.useRef(credits);
-  const [creditPulse, setCreditPulse] = React.useState(false);
-  const [creditNotice, setCreditNotice] = React.useState(
-    "You start with 5 credits to trigger an instant iPhone water eject.",
-  );
-  const [stripeClient, setStripeClient] = React.useState<StripeClient | null>(
-    null,
-  );
-  const [isStripeReady, setIsStripeReady] = React.useState(false);
-  const [isIOSDevice, setIsIOSDevice] = React.useState(
-    typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
-  );
-  const [showCreditCelebration, setShowCreditCelebration] = React.useState(false);
-  const [creditCelebrationMessage, setCreditCelebrationMessage] = React.useState(
   const [credits, setCredits] = useState(5);
   const creditsRef = useRef(credits);
   const [creditPulse, setCreditPulse] = useState(false);
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
-  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
-  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
-    "",
+  const [stripeClient, setStripeClient] = useState<StripeClient | null>(null);
   const [isStripeReady, setIsStripeReady] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
-  const [upgradeTopic, setUpgradeTopic] = React.useState<UpgradeModalTopic | null>(null);
-  const [ctaPreference, setCtaPreference] = React.useState<PurchasePreference | null>(null);
-  const [ctaRecommendation, setCtaRecommendation] = React.useState("");
-  const [ctaLoading, setCtaLoading] = React.useState(false);
-  const [ctaError, setCtaError] = React.useState<string | null>(null);
   const [showCreditCelebration, setShowCreditCelebration] = useState(false);
   const [creditCelebrationMessage, setCreditCelebrationMessage] = useState("");
-
-  React.useEffect(() => {
-    creditsRef.current = credits;
-  }, [credits]);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
-  const [upgradeTopic, setUpgradeTopic] = React.useState<UpgradeModalTopic | null>(
-    null,
-  );
-  const [ctaPreference, setCtaPreference] = React.useState<PurchasePreference | null>(
-    null,
-  );
-  const [ctaRecommendation, setCtaRecommendation] = React.useState("");
-  const [ctaLoading, setCtaLoading] = React.useState(false);
-  const [ctaError, setCtaError] = React.useState<string | null>(null);
-
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(null);
-  const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(null);
+  const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(
+    null,
+  );
+  const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(
+    null,
+  );
   const [ctaRecommendation, setCtaRecommendation] = useState("");
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState<string | null>(null);
 
-  useEffect(() => {
-    creditsRef.current = credits;
-  }, [credits]);
+    useEffect(() => {
+      creditsRef.current = credits;
+    }, [credits]);
 
-  const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
-  const qrShortcutUrl = useMemo(
-    () =>
-      `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
-        WATER_EJECT_SHORTCUT_URL,
-      )}&format=svg`,
-    [],
-  );
+    const showBillInsights = useMemo(
+      () => locationHtml.trim().length > 0,
+      [locationHtml],
+    );
+    const qrShortcutUrl = useMemo(
+      () =>
+        `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+          WATER_EJECT_SHORTCUT_URL,
+        )}&format=svg`,
+      [],
+    );
 
   const toggleTip = (id: string) =>
     setOpenTips((prev) => ({
@@ -457,13 +415,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setTimeout(() => setCreditPulse(false), 750);
   };
 
-  React.useEffect(() => {
-  useEffect(() => {
-    const isCustomElementRegistered =
-      typeof window !== "undefined" &&
-      typeof window.customElements !== "undefined" &&
-      Boolean(window.customElements.get("stripe-buy-button"));
-
+    useEffect(() => {
     const existingScript = document.getElementById(
       STRIPE_JS_SCRIPT_ID,
     ) as HTMLScriptElement | null;
@@ -602,13 +554,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       console.error("Stripe checkout error", error);
       setCreditNotice("Unable to start checkout right now. Please try again.");
       triggerCreditPulse();
-    }
-  };
-
-  const handleCreditsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleCreditsClick();
     }
   };
 
@@ -796,16 +741,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
   };
 
-    const buildLocalResearchPlan = (query: string) => {
-      const region = query || "your area";
-      return [
-        `Search for "${region} water utility customer portal" and bookmark the official site.`,
-        "Look for drought updates, watering schedules, or outage maps in the news or alerts section.",
-        `Scan for rebate or conservation pages—keywords like "rebate", "efficiency", or "WaterSense" flag incentives near ${region}.`,
-        "Add one local non-profit or city sustainability office to your contacts so you can call for help when bills spike.",
-        "Note the customer support number and hours, then set a reminder to request a rate review if your use drops but bills don't.",
-      ];
-    };
   const buildLocalResearchPlan = (query: string) => {
     const region = query || "your area";
     return [
@@ -2394,6 +2329,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             </div>
           </section>
         </CollapsibleSection>
+
+      </main>
+
         <CollapsibleSection
           id="guides"
           title="Step 3 · Guides &amp; resources"
@@ -2506,11 +2444,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               ))}
             </div>
           </section>
-        </div>
-      </CollapsibleSection>
-    </main>
 
-        </div>
 
         {isUpgradeModalOpen && upgradeTopic && (
           <div
@@ -2539,121 +2473,93 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                   ×
                 </button>
               </div>
-    {isUpgradeModalOpen && upgradeTopic && (
-      <div
-        className="upgrade-modal-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="upgrade-modal-title"
-      >
-        <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
-          <div className="upgrade-modal-header">
-            <div>
-              <p className="eyebrow">Personalized call to action</p>
-              <h3 id="upgrade-modal-title">{UPGRADE_MODAL_CONTENT[upgradeTopic].title}</h3>
-              <p className="upgrade-modal-description">
-                {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Close upgrade details"
-              onClick={closeUpgradeModal}
-            >
-              ×
-            </button>
-          </div>
 
-          <div className="cta-preference-row">
-            <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
-            <div className="cta-buttons">
-              <button
-                type="button"
-                className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
-                disabled={ctaLoading}
-                onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
-              >
-                {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
-              </button>
-              <button
-                type="button"
-                className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
-                disabled={ctaLoading}
-                onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
-              >
-                {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
-              </button>
-            </div>
-            {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
-            {ctaRecommendation && (
-              <p className="cta-recommendation" role="status">{ctaRecommendation}</p>
-            )}
-          </div>
-
-          <div className="upgrade-modal-grid">
-            <div className="modal-card">
-              <h4>Expanded calculator view</h4>
-              <p className="modal-metric">
-                <strong>Time input:</strong>{" "}
-                {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
-                {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
-                {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
-              </p>
-              <p className="modal-metric">
-                <strong>Annual gallons:</strong>{" "}
-                {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
-                {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
-                {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
-              </p>
-              <p className="modal-metric">
-                <strong>Estimated annual cost:</strong>{" "}
-                {upgradeTopic === "showerheads" &&
-                  formatCurrencyRange(
-                    applianceSavings.shower.minCost,
-                    applianceSavings.shower.maxCost,
-                  )}
-                {upgradeTopic === "aerators" &&
-                  formatCurrencyRange(
-                    applianceSavings.sink.minCost,
-                    applianceSavings.sink.maxCost,
-                  )}
-                {upgradeTopic === "detergents" &&
-                  formatCurrencyRange(
-                    applianceSavings.watering.minCost,
-                    applianceSavings.watering.maxCost,
-                  )}
-              </p>
-              <p className="modal-copy">
-                Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your
-                preferred upgrade path.
-              </p>
-            </div>
-            <div className="modal-card">
-              <h4>Ad-friendly research cues</h4>
-              <p className="modal-keywords">{UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}</p>
-              <p className="modal-copy">
-                These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
-                you explore the larger upgrade view.
-              </p>
-              {adsEnabled && (
-                <div className="ad-wrapper modal-ad" aria-label="Contextual upgrade ad">
-                  <AdUnit slot="1122334455" />
+              <div className="cta-preference-row">
+                <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
+                <div className="cta-buttons">
+                  <button
+                    type="button"
+                    className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
+                    disabled={ctaLoading}
+                    onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
+                  >
+                    {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
+                    disabled={ctaLoading}
+                    onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
+                  >
+                    {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
+                  </button>
                 </div>
-              )}
+                {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
+                {ctaRecommendation && (
+                  <p className="cta-recommendation" role="status">{ctaRecommendation}</p>
+                )}
+              </div>
+
+              <div className="upgrade-modal-grid">
+                <div className="modal-card">
+                  <h4>Expanded calculator view</h4>
+                  <p className="modal-metric">
+                    <strong>Time input:</strong>{" "}
+                    {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
+                    {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
+                    {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
+                  </p>
+                  <p className="modal-metric">
+                    <strong>Annual gallons:</strong>{" "}
+                    {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
+                    {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
+                    {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
+                  </p>
+                  <p className="modal-metric">
+                    <strong>Estimated annual cost:</strong>{" "}
+                    {upgradeTopic === "showerheads" &&
+                      formatCurrencyRange(
+                        applianceSavings.shower.minCost,
+                        applianceSavings.shower.maxCost,
+                      )}
+                    {upgradeTopic === "aerators" &&
+                      formatCurrencyRange(
+                        applianceSavings.sink.minCost,
+                        applianceSavings.sink.maxCost,
+                      )}
+                    {upgradeTopic === "detergents" &&
+                      formatCurrencyRange(
+                        applianceSavings.watering.minCost,
+                        applianceSavings.watering.maxCost,
+                      )}
+                  </p>
+                  <p className="modal-copy">
+                    Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your
+                    preferred upgrade path.
+                  </p>
+                </div>
+                <div className="modal-card">
+                  <h4>Ad-friendly research cues</h4>
+                  <p className="modal-keywords">{UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}</p>
+                  <p className="modal-copy">
+                    These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
+                    you explore the larger upgrade view.
+                  </p>
+                  {adsEnabled && (
+                    <div className="ad-wrapper modal-ad" aria-label="Contextual upgrade ad">
+                      <AdUnit slot="1122334455" />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
-      </CollapsibleSection>
 
-      <SiteFooter />
-    </div>
-        </div>
+        <SiteFooter />
       </div>
-    )}
-
-    <SiteFooter />
-  </div>
+      </CollapsibleSection>
+    </div>
   );
 }
 
