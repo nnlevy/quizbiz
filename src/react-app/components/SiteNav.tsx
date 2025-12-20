@@ -1,5 +1,6 @@
 import {
   FocusEvent,
+  type PointerEvent as ReactPointerEvent,
   useEffect,
   type KeyboardEvent as ReactKeyboardEvent,
   useRef,
@@ -38,6 +39,9 @@ const SiteNav = ({
 }: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDraggingNav, setIsDraggingNav] = useState(false);
+  const [navDragStartY, setNavDragStartY] = useState<number | null>(null);
+  const [navDragOffset, setNavDragOffset] = useState(0);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -115,6 +119,56 @@ const SiteNav = ({
       setIsMobileMenuOpen(false);
     }
   };
+
+  const handleNavPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+    setIsDraggingNav(true);
+    setNavDragStartY(event.clientY);
+    setNavDragOffset(0);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handleNavPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDraggingNav || navDragStartY === null) {
+      return;
+    }
+    const deltaY = event.clientY - navDragStartY;
+    if (deltaY < 0) {
+      setNavDragOffset(deltaY);
+    }
+  };
+
+  const handleNavPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDraggingNav) {
+      return;
+    }
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (navDragOffset < -NAV_SWIPE_THRESHOLD) {
+      setIsMobileMenuOpen(false);
+    }
+    setIsDraggingNav(false);
+    setNavDragStartY(null);
+    setNavDragOffset(0);
+  };
+
+  const handleNavPointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDraggingNav) {
+      return;
+    }
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    setIsDraggingNav(false);
+    setNavDragStartY(null);
+    setNavDragOffset(0);
+  };
+
+  const navDragStyle = isMobileMenuOpen
+    ? {
+        transform: isDraggingNav ? `translateY(${Math.min(navDragOffset, 0)}px)` : undefined,
+        transition: isDraggingNav ? "none" : undefined,
+      }
+    : undefined;
 
   return (
     <header
@@ -202,8 +256,23 @@ const SiteNav = ({
         className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`}
         role="dialog"
         aria-label="Mobile navigation"
+        style={navDragStyle}
+        onPointerDown={handleNavPointerDown}
+        onPointerMove={handleNavPointerMove}
+        onPointerUp={handleNavPointerUp}
+        onPointerCancel={handleNavPointerCancel}
       >
-        <div className="mobile-nav__handle" aria-hidden />
+        <div className="mobile-nav__controls">
+          <div className="mobile-nav__handle" aria-hidden />
+          <button
+            type="button"
+            className="mobile-nav__close"
+            aria-label="Close navigation"
+            onClick={closeMenu}
+          >
+            ×
+          </button>
+        </div>
         {mobileLinks.map((link) => (
           <a key={link.href} href={link.href} onClick={closeMenu}>
             {link.label}

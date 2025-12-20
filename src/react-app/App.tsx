@@ -1,4 +1,5 @@
 
+import {
 import React, {
   CSSProperties,
   FormEvent,
@@ -28,9 +29,6 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
-const CREDIT_TOPUP_FLAG = "creditTopUpRequested";
-const STRIPE_BUY_BUTTON_SRC = "https://js.stripe.com/v3/buy-button.js";
-const STRIPE_BUY_BUTTON_SCRIPT_ID = "stripe-buy-button-script";
 const STRIPE_FIVE_CREDIT_LINK = "https://buy.stripe.com/test_7sI8zS8qv55G9iAeUU";
 
 type SavingTip = {
@@ -267,24 +265,6 @@ const CollapsibleSection = ({
   );
 };
 
-const StripeBuyButton = ({
-  buyButtonId,
-  publishableKey,
-  elementRef,
-}: {
-  buyButtonId: string;
-  publishableKey?: string;
-  elementRef?: React.RefObject<HTMLElement | null>;
-}) =>
-  React.createElement(
-    "stripe-buy-button",
-    {
-      "buy-button-id": buyButtonId,
-      ...(publishableKey ? { "publishable-key": publishableKey } : {}),
-      ...(elementRef ? { ref: elementRef } : {}),
-    } as Record<string, unknown>,
-  );
-
 type AppProps = {
   adsEnabled?: boolean;
   focusUpload?: boolean;
@@ -352,6 +332,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
+  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
+    "",
   const [isStripeReady, setIsStripeReady] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
@@ -725,6 +708,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
   };
 
+    const buildLocalResearchPlan = (query: string) => {
+      const region = query || "your area";
+      return [
+        `Search for "${region} water utility customer portal" and bookmark the official site.`,
+        "Look for drought updates, watering schedules, or outage maps in the news or alerts section.",
+        `Scan for rebate or conservation pages—keywords like "rebate", "efficiency", or "WaterSense" flag incentives near ${region}.`,
+        "Add one local non-profit or city sustainability office to your contacts so you can call for help when bills spike.",
+        "Note the customer support number and hours, then set a reminder to request a rate review if your use drops but bills don't.",
+      ];
+    };
   const buildLocalResearchPlan = (query: string) => {
     const region = query || "your area";
     return [
@@ -752,7 +745,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     slideTouchStartY.current = touch.clientY;
   };
 
-  const handleSlideTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+  const handleSlideTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
     const startX = slideTouchStartX.current;
     const startY = slideTouchStartY.current;
     slideTouchStartX.current = null;
@@ -1443,12 +1436,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
   return (
     <div className="app">
-      <SiteNav
-        credits={credits}
-        pulse={creditPulse}
-        onCreditsClick={handleCreditsClick}
-        onCreditsKeyDown={handleCreditsKeyDown}
-      />
+      <SiteNav credits={credits} pulse={creditPulse} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
       {showCreditCelebration && (
@@ -2301,13 +2289,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                     OpenAI o1-mini model outlines targeted conservation steps
                     tailored to your usage.
                   </p>
-                </div>
-                <div className="stripe-wrapper">
-                  <StripeBuyButton
-                    buyButtonId="buy_btn_1QLXcFIzTeKgjbPr1afKz0xu"
-                    publishableKey="pk_live_51KdlIMIzTeKgjbPrtxvb3gyKXu5k1DHh6cenXiWiaGC0zH355gAlsYznGssDrSX7KxOv7hsvLIUDM36JM5Fw6evG00StF8cIZ6"
-                    elementRef={creditBuyButtonRef}
-                  />
                 </div>
               </div>
             </div>

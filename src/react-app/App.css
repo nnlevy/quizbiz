@@ -1988,12 +1988,38 @@ iframe[id^="google_ads_iframe"] {
   font-weight: 700;
 }
 
+.mobile-nav__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
 .mobile-nav__handle {
   width: 48px;
   height: 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.3);
   margin: 0.15rem auto 0.65rem;
+}
+
+.mobile-nav__close {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.18);
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.mobile-nav__close:hover,
+.mobile-nav__close:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+  outline: none;
 }
 
 @media (max-width: 900px) {
