@@ -27,6 +27,7 @@ type WorkerEnv = {
   Google_Document_AI_Processor_Prediction_Endpoint: string;
   "Google-Service-Account-FINAL": string;
   "domains-db"?: D1Database;
+  STRIPE_API_KEY?: string;
 };
 
 type ChatCompletionResponse = {
@@ -1345,6 +1346,54 @@ app.post("/api/location", async (c) => {
       500,
     );
   }
+});
+
+app.post("/api/credits/checkout", async (c) => {
+  const env = c.env as WorkerEnv & { STRIPE_API_KEY?: string };
+  const stripeApiKey = env.STRIPE_API_KEY;
+
+  if (!stripeApiKey) {
+    return c.json({ error: "Stripe is not configured" }, 500);
+  }
+
+  const originHeader = c.req.header("origin");
+  const hostHeader = c.req.header("host");
+  const origin = originHeader ?? (hostHeader ? `https://${hostHeader}` : DOMAIN);
+
+  const successUrl = `${origin}/?redirect_status=succeeded&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${origin}/?redirect_status=canceled`;
+
+  const body = new URLSearchParams({
+    mode: "payment",
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    "line_items[0][quantity]": "1",
+    "line_items[0][price_data][currency]": "usd",
+    "line_items[0][price_data][unit_amount]": "500",
+    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (5 pack)",
+    "line_items[0][price_data][product_data][description]":
+      "Add 5 credits for water eject and bill analysis tools.",
+  });
+
+  const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${stripeApiKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  if (!stripeResponse.ok) {
+    const errorText = await stripeResponse.text();
+    return c.json(
+      { error: "Stripe checkout creation failed", details: errorText },
+      502,
+    );
+  }
+
+  const session = (await stripeResponse.json()) as { id?: string; url?: string };
+  return c.json({ id: session.id, url: session.url ?? null });
 });
 
 // The worker runtime supplies the context; using any keeps the shared handler flexible.

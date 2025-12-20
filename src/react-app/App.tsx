@@ -1,8 +1,10 @@
 
+import React from "react";
 import React, { CSSProperties, ReactNode } from "react";
 import {
 import React, {
   CSSProperties,
+  TouchEvent,
   FormEvent,
   ReactNode,
   TouchEvent,
@@ -21,8 +23,15 @@ declare global {
   interface Window {
     disqus_config?: () => void;
     webkitAudioContext?: typeof AudioContext;
+    Stripe?: (publishableKey: string) => StripeClient;
   }
 }
+
+type StripeClient = {
+  redirectToCheckout: (options: {
+    sessionId: string;
+  }) => Promise<{ error?: { message?: string } | null }>;
+};
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -30,6 +39,11 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
+const CREDIT_TOPUP_FLAG = "creditTopUpRequested";
+const STRIPE_JS_SRC = "https://js.stripe.com/v3";
+const STRIPE_JS_SCRIPT_ID = "stripe-js-sdk";
+const STRIPE_PUBLISHABLE_KEY =
+  "pk_live_51KdlIMIzTeKgjbPrtxvb3gyKXu5k1DHh6cenXiWiaGC0zH355gAlsYznGssDrSX7KxOv7hsvLIUDM36JM5Fw6evG00StF8cIZ6";
 const STRIPE_FIVE_CREDIT_LINK = "https://buy.stripe.com/test_7sI8zS8qv55G9iAeUU";
 
 type SavingTip = {
@@ -272,6 +286,11 @@ type AppProps = {
 };
 
 function App({ adsEnabled = false, focusUpload = false }: AppProps) {
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const slidesWrapperRef = React.useRef<HTMLDivElement | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const slideTouchStartX = React.useRef<number | null>(null);
+  const slideTouchStartY = React.useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -308,19 +327,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
   const [flowStep, setFlowStep] = React.useState(0);
   const [sectionOpenState, setSectionOpenState] = React.useState({
-  const [locationHtml, setLocationHtml] = useState("");
-  const [locationCountdown, setLocationCountdown] = useState<number | null>(null);
-  const [localResearchPlan, setLocalResearchPlan] = useState<string[]>([]);
-
-  const [responseMessage, setResponseMessage] = useState("");
-  const [countdownLabel, setCountdownLabel] = useState("Awaiting file upload...");
-  const [analysisHtml, setAnalysisHtml] = useState("");
-  const [analysisCountdown, setAnalysisCountdown] = useState<number | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const [isMobileFlowOpen, setIsMobileFlowOpen] = useState(false);
-  const [flowStep, setFlowStep] = useState(0);
-  const [sectionOpenState, setSectionOpenState] = useState({
     guides: !initialIsMobile,
     tools: !initialIsMobile,
     upload: !initialIsMobile,
@@ -345,6 +351,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [creditPulse, setCreditPulse] = React.useState(false);
   const [creditNotice, setCreditNotice] = React.useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
+  );
+  const [stripeClient, setStripeClient] = React.useState<StripeClient | null>(
+    null,
   );
   const [isStripeReady, setIsStripeReady] = React.useState(false);
   const [isIOSDevice, setIsIOSDevice] = React.useState(
@@ -377,6 +386,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   React.useEffect(() => {
     creditsRef.current = credits;
   }, [credits]);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
+  const [upgradeTopic, setUpgradeTopic] = React.useState<UpgradeModalTopic | null>(
+    null,
+  );
+  const [ctaPreference, setCtaPreference] = React.useState<PurchasePreference | null>(
+    null,
+  );
+  const [ctaRecommendation, setCtaRecommendation] = React.useState("");
+  const [ctaLoading, setCtaLoading] = React.useState(false);
+  const [ctaError, setCtaError] = React.useState<string | null>(null);
 
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(null);
@@ -438,6 +457,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setTimeout(() => setCreditPulse(false), 750);
   };
 
+  React.useEffect(() => {
   useEffect(() => {
     const isCustomElementRegistered =
       typeof window !== "undefined" &&
@@ -445,28 +465,30 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       Boolean(window.customElements.get("stripe-buy-button"));
 
     const existingScript = document.getElementById(
-      STRIPE_BUY_BUTTON_SCRIPT_ID,
+      STRIPE_JS_SCRIPT_ID,
     ) as HTMLScriptElement | null;
 
-    if (existingScript && existingScript.getAttribute("data-ready") === "true") {
-      setIsStripeReady(true);
-      return undefined;
-    }
+    const hydrateStripeClient = () => {
+      if (typeof window !== "undefined" && typeof window.Stripe === "function") {
+        const client = window.Stripe(STRIPE_PUBLISHABLE_KEY);
+        setStripeClient(client);
+        setIsStripeReady(true);
+      }
+    };
 
-    if (isCustomElementRegistered && existingScript) {
-      existingScript.setAttribute("data-ready", "true");
-      setIsStripeReady(true);
+    if (existingScript && existingScript.getAttribute("data-ready") === "true") {
+      hydrateStripeClient();
       return undefined;
     }
 
     const script = existingScript ?? document.createElement("script");
-    script.id = STRIPE_BUY_BUTTON_SCRIPT_ID;
-    script.src = STRIPE_BUY_BUTTON_SRC;
+    script.id = STRIPE_JS_SCRIPT_ID;
+    script.src = STRIPE_JS_SRC;
     script.async = true;
 
     const handleStripeReady = () => {
       script.setAttribute("data-ready", "true");
-      setIsStripeReady(true);
+      hydrateStripeClient();
     };
 
     const handleStripeError = () => {
@@ -494,9 +516,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     const pendingTopUp = window.localStorage.getItem(CREDIT_TOPUP_FLAG);
 
     if (sessionId && pendingTopUp && redirectStatus === "succeeded") {
-      setCredits((prev) => prev + 5);
+      const updatedCredits = creditsRef.current + 5;
+      creditsRef.current = updatedCredits;
+      setCredits(updatedCredits);
       setCreditNotice("Purchase confirmed. 5 credits added.");
+      setCreditCelebrationMessage(
+        `Thanks for topping up—5 credits added. You now have ${updatedCredits}.`,
+      );
+      setShowCreditCelebration(true);
       triggerCreditPulse();
+      logEvent("credit_purchase_completed", { credits_total: updatedCredits });
       window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
 
       params.delete("session_id");
@@ -534,30 +563,46 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }
   }, []);
 
-  const handleCreditsClick = () => {
-    if (!isStripeReady) {
+  const handleCreditsClick = async () => {
+    if (!isStripeReady || !stripeClient) {
       setCreditNotice("Checkout is loading. Please try again in a moment.");
       triggerCreditPulse();
       return;
     }
 
-    const innerButton =
-      creditBuyButtonRef.current?.shadowRoot?.querySelector("button") ??
-      creditBuyButtonRef.current;
+    try {
+      const response = await fetch("/api/credits/checkout", { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Stripe checkout failed with status ${response.status}`);
+      }
 
-    if (innerButton instanceof HTMLElement) {
+      const payload = (await response.json()) as { id?: string };
+      if (!payload.id) {
+        throw new Error("Stripe checkout session missing");
+      }
+
       try {
         window.localStorage.setItem(CREDIT_TOPUP_FLAG, "pending");
       } catch (error) {
         console.error("Unable to persist credit purchase flag", error);
       }
 
-      innerButton.click();
       setCreditNotice("Launching $5 checkout for 5 credits...");
-    } else {
-      setCreditNotice("Checkout unavailable. Please try again in a moment.");
+      triggerCreditPulse();
+
+      const result = await stripeClient.redirectToCheckout({
+        sessionId: payload.id,
+      });
+
+      if (result.error?.message) {
+        setCreditNotice(result.error.message);
+        triggerCreditPulse();
+      }
+    } catch (error) {
+      console.error("Stripe checkout error", error);
+      setCreditNotice("Unable to start checkout right now. Please try again.");
+      triggerCreditPulse();
     }
-    triggerCreditPulse();
   };
 
   const handleCreditsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -586,28 +631,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     );
     triggerCreditPulse();
     return nextCredits;
-  };
-
-  const handlePurchaseCredits = () => {
-    const bonusAmount = 5;
-    let updatedTotal = credits + bonusAmount;
-    setCredits((prev) => {
-      const next = prev + bonusAmount;
-      updatedTotal = next;
-      return next;
-    });
-    setCreditCelebrationMessage(
-      `+${bonusAmount} bonus credits added! You now have ${updatedTotal}.`,
-    );
-    setCreditNotice(
-      `Stripe credit link tapped—enjoy ${updatedTotal} credits while we process your order.`,
-    );
-    setShowCreditCelebration(true);
-    triggerCreditPulse();
-    logEvent("credit_purchase_simulated", {
-      amount_awarded: bonusAmount,
-      credits_total: updatedTotal,
-    });
   };
 
   const triggerDeviceHaptics = () => {
@@ -1524,18 +1547,17 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             <h3>Five extra credits added!</h3>
             <p className="credit-note">{creditCelebrationMessage}</p>
             <p className="subdued">
-              We&apos;ve pre-authorized your Stripe checkout link so you can keep
+              Your credits refresh instantly after checkout so you can keep
               ejecting water and running AI tools without waiting.
             </p>
             <div className="celebration-actions">
-              <a
+              <button
+                type="button"
                 className="tertiary-button"
-                href={STRIPE_FIVE_CREDIT_LINK}
-                target="_blank"
-                rel="noreferrer"
+                onClick={handleCreditsClick}
               >
-                View Stripe checkout
-              </a>
+                Start another secure checkout
+              </button>
               <button
                 type="button"
                 className="primary-button"
@@ -1592,9 +1614,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                   <button
                     type="button"
                     className="tertiary-button eject-button"
-                    onClick={handlePurchaseCredits}
+                    onClick={handleCreditsClick}
                   >
-                    Buy 5 credits
+                    Buy 5 credits for $5
                     <span className="credit-chip">+5 credits</span>
                   </button>
                   <p className="credit-note" aria-live="polite">
@@ -2353,6 +2375,19 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                     recommendations. Google Document AI extracts the details, and the
                     OpenAI o1-mini model outlines targeted conservation steps
                     tailored to your usage.
+                  </p>
+                </div>
+                <div className="stripe-wrapper">
+                  <button
+                    type="button"
+                    className="primary-button eject-button"
+                    onClick={handleCreditsClick}
+                  >
+                    Buy 5 credits for $5 via Stripe
+                  </button>
+                  <p className="credit-note" aria-live="polite">
+                    Secure checkout with Stripe. Credits refresh automatically after
+                    payment.
                   </p>
                 </div>
               </div>
