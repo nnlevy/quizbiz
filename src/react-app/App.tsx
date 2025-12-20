@@ -1,4 +1,5 @@
 
+import React, { CSSProperties, ReactNode } from "react";
 import {
 import React, {
   CSSProperties,
@@ -294,6 +295,19 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [locationStatus, setLocationStatus] = useState(
     "Enter your city or region to begin.",
   );
+  const [locationHtml, setLocationHtml] = React.useState("");
+  const [locationCountdown, setLocationCountdown] = React.useState<number | null>(null);
+  const [localResearchPlan, setLocalResearchPlan] = React.useState<string[]>([]);
+
+  const [responseMessage, setResponseMessage] = React.useState("");
+  const [countdownLabel, setCountdownLabel] = React.useState("Awaiting file upload...");
+  const [analysisHtml, setAnalysisHtml] = React.useState("");
+  const [analysisCountdown, setAnalysisCountdown] = React.useState<number | null>(null);
+  const [isUploading, setIsUploading] = React.useState(false);
+
+  const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
+  const [flowStep, setFlowStep] = React.useState(0);
+  const [sectionOpenState, setSectionOpenState] = React.useState({
   const [locationHtml, setLocationHtml] = useState("");
   const [locationCountdown, setLocationCountdown] = useState<number | null>(null);
   const [localResearchPlan, setLocalResearchPlan] = useState<string[]>([]);
@@ -326,6 +340,18 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }, {} as Record<string, boolean>),
   );
 
+  const [credits, setCredits] = React.useState(5);
+  const creditsRef = React.useRef(credits);
+  const [creditPulse, setCreditPulse] = React.useState(false);
+  const [creditNotice, setCreditNotice] = React.useState(
+    "You start with 5 credits to trigger an instant iPhone water eject.",
+  );
+  const [isStripeReady, setIsStripeReady] = React.useState(false);
+  const [isIOSDevice, setIsIOSDevice] = React.useState(
+    typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
+  );
+  const [showCreditCelebration, setShowCreditCelebration] = React.useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = React.useState(
   const [credits, setCredits] = useState(5);
   const creditsRef = useRef(credits);
   const [creditPulse, setCreditPulse] = useState(false);
@@ -339,10 +365,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
+  const [upgradeTopic, setUpgradeTopic] = React.useState<UpgradeModalTopic | null>(null);
+  const [ctaPreference, setCtaPreference] = React.useState<PurchasePreference | null>(null);
+  const [ctaRecommendation, setCtaRecommendation] = React.useState("");
+  const [ctaLoading, setCtaLoading] = React.useState(false);
+  const [ctaError, setCtaError] = React.useState<string | null>(null);
   const [showCreditCelebration, setShowCreditCelebration] = useState(false);
   const [creditCelebrationMessage, setCreditCelebrationMessage] = useState("");
 
-  useEffect(() => {
+  React.useEffect(() => {
     creditsRef.current = credits;
   }, [credits]);
 
@@ -681,6 +713,21 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return fallback;
   };
 
+  const [pendingFileFocus, setPendingFileFocus] = React.useState(false);
+
+  const triggerFilePicker = (fileInput: HTMLInputElement) => {
+    fileInput.focus();
+    if (typeof fileInput.showPicker === "function") {
+      try {
+        fileInput.showPicker();
+        return;
+      } catch (error) {
+        console.warn("showPicker failed; falling back to click", error);
+      }
+    }
+    fileInput.click();
+  };
+
   const openUploadSection = (focusFile = false) => {
     setSectionOpenState((prev) => ({
       ...prev,
@@ -690,14 +737,28 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
 
     if (focusFile) {
-      const delay =
-        typeof window !== "undefined" ? window.setTimeout : setTimeout;
-      delay(() => {
-        fileInputRef.current?.focus();
-        fileInputRef.current?.click();
-      }, 250);
+      const fileInput = fileInputRef.current;
+      if (fileInput) {
+        triggerFilePicker(fileInput);
+      } else {
+        setPendingFileFocus(true);
+      }
     }
   };
+
+  React.useLayoutEffect(() => {
+    if (!pendingFileFocus || !sectionOpenState.upload) {
+      return;
+    }
+
+    const fileInput = fileInputRef.current;
+    if (!fileInput) {
+      return;
+    }
+
+    setPendingFileFocus(false);
+    triggerFilePicker(fileInput);
+  }, [pendingFileFocus, sectionOpenState.upload]);
 
   const handleOpenUploadStep = () => {
     openUploadSection();
@@ -743,7 +804,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     );
   };
 
-  const handleSlideTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+  const handleSlideTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
     slideTouchStartX.current = touch.clientX;
     slideTouchStartY.current = touch.clientY;
@@ -2414,6 +2475,35 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       </CollapsibleSection>
     </main>
 
+        </div>
+
+        {isUpgradeModalOpen && upgradeTopic && (
+          <div
+            className="upgrade-modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upgrade-modal-title"
+          >
+            <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
+              <div className="upgrade-modal-header">
+                <div>
+                  <p className="eyebrow">Personalized call to action</p>
+                  <h3 id="upgrade-modal-title">
+                    {UPGRADE_MODAL_CONTENT[upgradeTopic].title}
+                  </h3>
+                  <p className="upgrade-modal-description">
+                    {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Close upgrade details"
+                  onClick={closeUpgradeModal}
+                >
+                  ×
+                </button>
+              </div>
     {isUpgradeModalOpen && upgradeTopic && (
       <div
         className="upgrade-modal-overlay"
@@ -2518,6 +2608,11 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               )}
             </div>
           </div>
+        )}
+      </CollapsibleSection>
+
+      <SiteFooter />
+    </div>
         </div>
       </div>
     )}
