@@ -1,13 +1,14 @@
 
 import {
+import React, {
   CSSProperties,
   FormEvent,
   ReactNode,
+  TouchEvent,
   useEffect,
   useMemo,
   useRef,
   useState,
-  TouchEvent,
 } from "react";
 import "./App.css";
 import AdUnit from "./components/AdUnit";
@@ -275,6 +276,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const slideTouchStartX = useRef<number | null>(null);
   const slideTouchStartY = useRef<number | null>(null);
+  const creditBuyButtonRef = useRef<HTMLElement | null>(null);
 
   const initialIsMobile =
     typeof window !== "undefined" &&
@@ -286,6 +288,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [showerLength, setShowerLength] = useState(10);
   const [sinkUsage, setSinkUsage] = useState(10);
   const [wateringMinutes, setWateringMinutes] = useState(7);
+  const [qrExpanded, setQrExpanded] = useState(initialIsMobile);
 
   const [locationInput, setLocationInput] = useState("");
   const [locationStatus, setLocationStatus] = useState(
@@ -308,12 +311,14 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     tools: !initialIsMobile,
     upload: !initialIsMobile,
   });
+
   const [openTips, setOpenTips] = useState<Record<string, boolean>>(() =>
     SAVING_TIPS.reduce((acc, tip, index) => {
       acc[tip.id] = !initialIsMobile && index === 0;
       return acc;
     }, {} as Record<string, boolean>),
   );
+
   const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
     NEWS_ITEMS.reduce((acc, article, index) => {
       acc[article.id] = !initialIsMobile && index === 0;
@@ -330,14 +335,17 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [showCreditCelebration, setShowCreditCelebration] = useState(false);
   const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
     "",
+  const [isStripeReady, setIsStripeReady] = useState(false);
+  const [isIOSDevice, setIsIOSDevice] = useState(
+    typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
+  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState("");
 
   useEffect(() => {
     creditsRef.current = credits;
   }, [credits]);
-  const [isIOSDevice, setIsIOSDevice] = useState(
-    typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
-  );
+
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(null);
   const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(null);
@@ -392,6 +400,135 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const triggerCreditPulse = () => {
     setCreditPulse(true);
     setTimeout(() => setCreditPulse(false), 750);
+  };
+
+  useEffect(() => {
+    const isCustomElementRegistered =
+      typeof window !== "undefined" &&
+      typeof window.customElements !== "undefined" &&
+      Boolean(window.customElements.get("stripe-buy-button"));
+
+    const existingScript = document.getElementById(
+      STRIPE_BUY_BUTTON_SCRIPT_ID,
+    ) as HTMLScriptElement | null;
+
+    if (existingScript && existingScript.getAttribute("data-ready") === "true") {
+      setIsStripeReady(true);
+      return undefined;
+    }
+
+    if (isCustomElementRegistered && existingScript) {
+      existingScript.setAttribute("data-ready", "true");
+      setIsStripeReady(true);
+      return undefined;
+    }
+
+    const script = existingScript ?? document.createElement("script");
+    script.id = STRIPE_BUY_BUTTON_SCRIPT_ID;
+    script.src = STRIPE_BUY_BUTTON_SRC;
+    script.async = true;
+
+    const handleStripeReady = () => {
+      script.setAttribute("data-ready", "true");
+      setIsStripeReady(true);
+    };
+
+    const handleStripeError = () => {
+      setCreditNotice("Checkout unavailable right now. Please try again soon.");
+      triggerCreditPulse();
+    };
+
+    script.addEventListener("load", handleStripeReady);
+    script.addEventListener("error", handleStripeError);
+
+    if (!existingScript) {
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      script.removeEventListener("load", handleStripeReady);
+      script.removeEventListener("error", handleStripeError);
+    };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const redirectStatus = params.get("redirect_status");
+    const pendingTopUp = window.localStorage.getItem(CREDIT_TOPUP_FLAG);
+
+    if (sessionId && pendingTopUp && redirectStatus === "succeeded") {
+      setCredits((prev) => prev + 5);
+      setCreditNotice("Purchase confirmed. 5 credits added.");
+      triggerCreditPulse();
+      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+
+      params.delete("session_id");
+      params.delete("redirect_status");
+      const trimmedSearch = params.toString();
+      const updatedUrl =
+        window.location.pathname +
+        (trimmedSearch ? `?${trimmedSearch}` : "") +
+        window.location.hash;
+      window.history.replaceState({}, document.title, updatedUrl);
+      return;
+    }
+
+    if (pendingTopUp && redirectStatus === "canceled") {
+      setCreditNotice("Checkout canceled. No credits were charged.");
+      triggerCreditPulse();
+      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+    }
+
+    if (pendingTopUp && redirectStatus && redirectStatus !== "succeeded") {
+      setCreditNotice("Checkout did not complete. Please try again.");
+      triggerCreditPulse();
+      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+    }
+
+    if (pendingTopUp && (sessionId || redirectStatus)) {
+      params.delete("session_id");
+      params.delete("redirect_status");
+      const trimmedSearch = params.toString();
+      const updatedUrl =
+        window.location.pathname +
+        (trimmedSearch ? `?${trimmedSearch}` : "") +
+        window.location.hash;
+      window.history.replaceState({}, document.title, updatedUrl);
+    }
+  }, []);
+
+  const handleCreditsClick = () => {
+    if (!isStripeReady) {
+      setCreditNotice("Checkout is loading. Please try again in a moment.");
+      triggerCreditPulse();
+      return;
+    }
+
+    const innerButton =
+      creditBuyButtonRef.current?.shadowRoot?.querySelector("button") ??
+      creditBuyButtonRef.current;
+
+    if (innerButton instanceof HTMLElement) {
+      try {
+        window.localStorage.setItem(CREDIT_TOPUP_FLAG, "pending");
+      } catch (error) {
+        console.error("Unable to persist credit purchase flag", error);
+      }
+
+      innerButton.click();
+      setCreditNotice("Launching $5 checkout for 5 credits...");
+    } else {
+      setCreditNotice("Checkout unavailable. Please try again in a moment.");
+    }
+    triggerCreditPulse();
+  };
+
+  const handleCreditsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleCreditsClick();
+    }
   };
 
   const spendCredit = (successPrefix?: string) => {
@@ -581,6 +718,16 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
         "Note the customer support number and hours, then set a reminder to request a rate review if your use drops but bills don't.",
       ];
     };
+  const buildLocalResearchPlan = (query: string) => {
+    const region = query || "your area";
+    return [
+      `Search for "${region} water utility customer portal" and bookmark the official site.`,
+      "Look for drought updates, watering schedules, or outage maps in the news or alerts section.",
+      `Scan for rebate or conservation pages—keywords like "rebate", "efficiency", or "WaterSense" flag incentives near ${region}.`,
+      "Add one local non-profit or city sustainability office to your contacts so you can call for help when bills spike.",
+      "Note the customer support number and hours, then set a reminder to request a rate review if your use drops but bills don't.",
+    ];
+  };
 
   const handleLocalResearch = () => {
     const trimmed = locationInput.trim();
@@ -671,6 +818,12 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   useEffect(() => {
     if (!isMobile) {
       setIsMobileFlowOpen(false);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (isMobile) {
+      setQrExpanded(true);
     }
   }, [isMobile]);
 
@@ -951,8 +1104,13 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       const doc = document.documentElement;
       const scrollWidth = doc.scrollWidth;
       const viewportWidth = doc.clientWidth + OVERFLOW_TOLERANCE;
-      if (scrollWidth > viewportWidth) {
+      const withinBounds = scrollWidth <= viewportWidth;
+      console.assert(withinBounds, `layout overflow (${label})`);
+      if (!withinBounds) {
+        doc.dataset.overflowDetected = "true";
         console.warn(`layout overflow (${label}):`, scrollWidth, viewportWidth);
+      } else {
+        delete doc.dataset.overflowDetected;
       }
 
       ["hero", "location-intel", "dynamic-sliders", "upload"].forEach(
@@ -974,7 +1132,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
 
     const handleLoad = () => {
       runOverflowCheck("initial");
-      window.setTimeout(() => runOverflowCheck("post-ads"), 4000);
+      window.setTimeout(() => runOverflowCheck("post-ads"), 4500);
     };
 
     if (document.readyState === "complete") {
@@ -1405,56 +1563,67 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               </div>
             </div>
           ) : (
-            <div className="banner-grid qr-banner">
-              <div className="banner-copy">
-                <p className="eyebrow">Scan to run on iPhone</p>
-                <h2 id="water-eject">Instant iPhone Water Eject</h2>
-                <p>
-                  This tool runs on iPhone via the Apple Shortcuts app. Aim
-                  your camera at the QR code to open the water-eject shortcut on
-                  your phone and clear your speakers instantly.
-                </p>
-                <ul className="banner-list">
-                  <li>One scan opens the Water Eject shortcut on iPhone.</li>
-                  <li>Includes the 165 Hz tone and confirmation buzz.</li>
-                  <li>Stay in control—no random redirects.</li>
-                </ul>
-                <p className="credit-note" aria-live="polite">
-                  Viewing from a non-iPhone device—scan to eject water from your iPhone.
-                </p>
-              </div>
-              <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
-                <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
-                  <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
-                  <rect
-                    x="12"
-                    y="12"
-                    width="276"
-                    height="276"
-                    rx="12"
-                    fill="#ffffff"
-                    stroke="rgba(79, 155, 255, 0.35)"
-                    strokeWidth="2"
-                  />
-                  <image
-                    xlinkHref={qrShortcutUrl}
-                    x="24"
-                    y="24"
-                    width="252"
-                    height="252"
-                    preserveAspectRatio="xMidYMid meet"
-                  />
-                  <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
-                    Scan to eject water
-                  </text>
-                </svg>
-                <p className="qr-hint">
-                  Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
-                  <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
-                    &nbsp;Tap to view the shortcut link.
-                  </a>
-                </p>
-              </div>
+            <div className={`qr-banner-wrapper ${qrExpanded ? "open" : "collapsed"}`}>
+              <button
+                type="button"
+                className="qr-toggle"
+                aria-expanded={qrExpanded}
+                onClick={() => setQrExpanded((prev) => !prev)}
+              >
+                <span className="eyebrow">Expand to Eject Water From Your Device</span>
+                <span aria-hidden className="toggle-icon">{qrExpanded ? "–" : "+"}</span>
+              </button>
+              {qrExpanded && (
+                <div className="banner-grid qr-banner">
+                  <div className="banner-copy">
+                    <p className="eyebrow">Instant tools for your iPhone</p>
+                    <h2 id="water-eject">Instant iPhone Water Eject</h2>
+                    <p>
+                      Aim your camera at the QR code to open the water-eject shortcut on your phone and clear
+                      your speakers instantly via Apple Shortcuts.
+                    </p>
+                    <div className="banner-details">
+                      <p>One scan opens the Water Eject shortcut with the classic 165 Hz tone.</p>
+                      <p>Feel a quick confirmation buzz—no random redirects or surprises.</p>
+                    </div>
+                    <p className="credit-note" aria-live="polite">
+                      Viewing from a non-iPhone device—scan to eject water from your iPhone.
+                    </p>
+                  </div>
+                  <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
+                    <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
+                      <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
+                      <rect
+                        x="12"
+                        y="12"
+                        width="276"
+                        height="276"
+                        rx="12"
+                        fill="#ffffff"
+                        stroke="rgba(79, 155, 255, 0.35)"
+                        strokeWidth="2"
+                      />
+                      <image
+                        xlinkHref={qrShortcutUrl}
+                        x="24"
+                        y="24"
+                        width="252"
+                        height="252"
+                        preserveAspectRatio="xMidYMid meet"
+                      />
+                      <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
+                        Scan to eject water
+                      </text>
+                    </svg>
+                    <p className="qr-hint">
+                      Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
+                      <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
+                        &nbsp;Tap to view the shortcut link.
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -1864,126 +2033,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
           </div>
         )}
 
-        <section className="water-eject-banner" aria-labelledby="water-eject">
-          {isIOSDevice ? (
-            <div className="banner-grid">
-              <div className="banner-copy">
-                <p className="eyebrow">Not the other shortcut</p>
-                <h2 id="water-eject">Instant iPhone Water Eject</h2>
-                <p>
-                  Lots of visitors land here looking for the popular "iPhone
-                  Water Eject" shortcut. We&apos;ve got you covered—tap once and the
-                  Shortcuts app will play a speaker-clearing tone (with a quick
-                  haptic buzz) while we keep your conservation journey on track.
-                </p>
-                <ul className="banner-list">
-                  <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
-                  <li>Credits keep the experience calm and spam-free (you start with 5).</li>
-                  <li>Feel a confirmation buzz on iPhone when you fire the eject.</li>
-                  <li>Stay on this page—no mystery links or confusing detours.</li>
-                </ul>
-                <div className="banner-actions">
-                  <button
-                    type="button"
-                    className="primary-button eject-button"
-                    onClick={handleWaterEjectClick}
-                  >
-                    Eject water now
-                    <span className="credit-chip">-1 credit</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button eject-button"
-                    onClick={handleVibrateAgain}
-                  >
-                    Feel the vibration again
-                    <span className="credit-chip">-1 credit</span>
-                  </button>
-                  <p className="credit-note" aria-live="polite">
-                    {creditNotice}
-                  </p>
-                </div>
-              </div>
-              <div className="banner-card" aria-hidden="true">
-                <div className="card-glow" />
-                <div className="card-body">
-                  <p className="eyebrow">Shortcut preview</p>
-                  <h3>Water Eject Launcher</h3>
-                  <p>
-                    Taps the iOS Shortcuts URL:
-                    <br />
-                    <code>shortcuts://run-shortcut?name=Water%20Eject</code>
-                  </p>
-                  <p className="subdued">
-                    If you don&apos;t have Shortcuts installed, we&apos;ll open the
-                    iCloud share link so you can add it in seconds.
-                  </p>
-                  <div className="tone-bars">
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <p className="mini-hint">Uses the classic 165 Hz water-eject pulse.</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="banner-grid qr-banner">
-              <div className="banner-copy">
-                <p className="eyebrow">Scan to run on iPhone</p>
-                <h2 id="water-eject">Instant iPhone Water Eject</h2>
-                <p>
-                  This tool runs on iPhone via the Apple Shortcuts app. Aim
-                  your camera at the QR code to open the water-eject shortcut on
-                  your phone and clear your speakers instantly.
-                </p>
-                <ul className="banner-list">
-                  <li>One scan opens the Water Eject shortcut on iPhone.</li>
-                  <li>Includes the 165 Hz tone and confirmation buzz.</li>
-                  <li>Stay in control—no random redirects.</li>
-                </ul>
-                <p className="credit-note" aria-live="polite">
-                  Viewing from a non-iPhone device—scan to eject water from your iPhone.
-                </p>
-              </div>
-              <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
-                <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
-                  <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
-                  <rect
-                    x="12"
-                    y="12"
-                    width="276"
-                    height="276"
-                    rx="12"
-                    fill="#ffffff"
-                    stroke="rgba(79, 155, 255, 0.35)"
-                    strokeWidth="2"
-                  />
-                  <image
-                    xlinkHref={qrShortcutUrl}
-                    x="24"
-                    y="24"
-                    width="252"
-                    height="252"
-                    preserveAspectRatio="xMidYMid meet"
-                  />
-                  <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
-                    Scan to eject water
-                  </text>
-                </svg>
-                <p className="qr-hint">
-                  Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
-                  <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
-                    &nbsp;Tap to view the shortcut link.
-                  </a>
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-
         <CollapsibleSection
           id="interactive"
           title="Step 1 · Explore savings tools"
@@ -2245,141 +2294,18 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             </div>
           </section>
         </CollapsibleSection>
-        <section className="container" id="dynamic-sliders">
-          <h2>Instant Water Usage Calculator</h2>
-          <p>
-            Experiment with these sliders to see approximate annual usage and cost
-            for typical shower, sink, and weekly watering habits.
-          </p>
-
-          <div className="slider-panel">
-            <div className="slider-group">
-              <h3>Reduce Shower Usage</h3>
-              <p>
-                Move this slider to see how cutting down your daily shower by certain minutes can impact annual water
-                usage—and approximate cost savings.
-              </p>
-              <div className="slider-control">
-                <label htmlFor="shower-reduction-slider">Reduce Shower Length (minutes)</label>
-                <input
-                  type="range"
-                  id="shower-reduction-slider"
-                  min={1}
-                  max={10}
-                  value={showerReduction}
-                  onChange={(event) => setShowerReduction(Number(event.target.value))}
-                />
-                <p id="shower-reduction-output">{reductionSummary}</p>
-              </div>
-            </div>
-
-            <div className="slider-group">
-              <h3>Upgrade Appliances and Fixtures</h3>
-              <p>
-                Adjust the sliders below to estimate annual usage and cost across the cost range.
-                <em> (We multiply gallons used by our cost-per-gallon range.)</em>
-              </p>
-
-              <div className="slider-control">
-                <label htmlFor="shower-slider">Daily Shower Length (minutes)</label>
-                <input
-                  type="range"
-                  id="shower-slider"
-                  min={5}
-                  max={30}
-                  value={showerLength}
-                  onChange={(event) => setShowerLength(Number(event.target.value))}
-                />
-                <p id="shower-output">
-                  Daily shower time: <strong>{applianceSavings.shower.minutes}</strong>, Estimated annual cost:
-                  <strong>
-                    {formatCurrencyRange(
-                      applianceSavings.shower.minCost,
-                      applianceSavings.shower.maxCost,
-                    )}
-                  </strong>
-                  .
-                  <a
-                    href="https://www.amazon.com/gp/product/B01MFGGH8A"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Upgrade with WaterSense Showerheads
-                  </a>
-                </p>
-              </div>
-
-              <div className="slider-control">
-                <label htmlFor="sink-slider">Daily Sink Use (minutes)</label>
-                <input
-                  type="range"
-                  id="sink-slider"
-                  min={5}
-                  max={30}
-                  value={sinkUsage}
-                  onChange={(event) => setSinkUsage(Number(event.target.value))}
-                />
-                <p id="sink-output">
-                  Daily sink use: <strong>{applianceSavings.sink.minutes}</strong>, Estimated annual cost:
-                  <strong>
-                    {formatCurrencyRange(applianceSavings.sink.minCost, applianceSavings.sink.maxCost)}
-                  </strong>
-                  .
-                  <a
-                    href="https://www.amazon.com/gp/product/B01EVXAWP0"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Upgrade with Faucet Aerators
-                  </a>
-                </p>
-              </div>
-
-              <div className="slider-control">
-                <label htmlFor="watering-slider">Weekly Plants Watered (minutes)</label>
-                <input
-                  type="range"
-                  id="watering-slider"
-                  min={1}
-                  max={20}
-                  value={wateringMinutes}
-                  onChange={(event) => setWateringMinutes(Number(event.target.value))}
-                />
-                <p id="dishwasher-output">
-                  Weekly watering: <strong>{applianceSavings.watering.minutes}</strong>, Estimated annual cost:
-                  <strong>
-                    {formatCurrencyRange(
-                      applianceSavings.watering.minCost,
-                      applianceSavings.watering.maxCost,
-                    )}
-                  </strong>
-                  .
-                  <a
-                    href="https://www.amazon.com/gp/product/B01MG8F3ST"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Get Efficient Detergents
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </main>
-      <CollapsibleSection
-        id="guides"
-        title="Step 3 · Guides &amp; resources"
-        isMobile={isMobile}
-        isOpen={!isMobile || sectionOpenState.guides}
-        onToggle={() =>
-          setSectionOpenState((prev) => ({
-            ...prev,
-            guides: !prev.guides,
-          }))
-        }
-      >
+        <CollapsibleSection
+          id="guides"
+          title="Step 3 · Guides &amp; resources"
+          isMobile={isMobile}
+          isOpen={!isMobile || sectionOpenState.guides}
+          onToggle={() =>
+            setSectionOpenState((prev) => ({
+              ...prev,
+              guides: !prev.guides,
+            }))
+          }
+        >
         <div className="container-about">
           <section id="about" className="story-block">
             <h2>About Us</h2>
@@ -2480,123 +2406,120 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               ))}
             </div>
           </section>
+        </div>
+      </CollapsibleSection>
+    </main>
 
-        {isUpgradeModalOpen && upgradeTopic && (
-          <div
-            className="upgrade-modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="upgrade-modal-title"
-          >
-            <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
-              <div className="upgrade-modal-header">
-                <div>
-                  <p className="eyebrow">Personalized call to action</p>
-                  <h3 id="upgrade-modal-title">
-                    {UPGRADE_MODAL_CONTENT[upgradeTopic].title}
-                  </h3>
-                  <p className="upgrade-modal-description">
-                    {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Close upgrade details"
-                  onClick={closeUpgradeModal}
-                >
-                  ×
-                </button>
-              </div>
+    {isUpgradeModalOpen && upgradeTopic && (
+      <div
+        className="upgrade-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upgrade-modal-title"
+      >
+        <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
+          <div className="upgrade-modal-header">
+            <div>
+              <p className="eyebrow">Personalized call to action</p>
+              <h3 id="upgrade-modal-title">{UPGRADE_MODAL_CONTENT[upgradeTopic].title}</h3>
+              <p className="upgrade-modal-description">
+                {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Close upgrade details"
+              onClick={closeUpgradeModal}
+            >
+              ×
+            </button>
+          </div>
 
-              <div className="cta-preference-row">
-                <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
-                <div className="cta-buttons">
-                  <button
-                    type="button"
-                    className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
-                    disabled={ctaLoading}
-                    onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
-                  >
-                    {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
-                  </button>
-                  <button
-                    type="button"
-                    className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
-                    disabled={ctaLoading}
-                    onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
-                  >
-                    {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
-                  </button>
-                </div>
-                {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
-                {ctaRecommendation && (
-                  <p className="cta-recommendation" role="status">
-                    {ctaRecommendation}
-                  </p>
-                )}
-              </div>
+          <div className="cta-preference-row">
+            <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
+            <div className="cta-buttons">
+              <button
+                type="button"
+                className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
+                disabled={ctaLoading}
+                onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
+              >
+                {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
+              </button>
+              <button
+                type="button"
+                className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
+                disabled={ctaLoading}
+                onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
+              >
+                {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
+              </button>
+            </div>
+            {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
+            {ctaRecommendation && (
+              <p className="cta-recommendation" role="status">{ctaRecommendation}</p>
+            )}
+          </div>
 
-              <div className="upgrade-modal-grid">
-                <div className="modal-card">
-                  <h4>Expanded calculator view</h4>
-                  <p className="modal-metric">
-                    <strong>Time input:</strong>{" "}
-                    {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
-                    {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
-                    {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
-                  </p>
-                  <p className="modal-metric">
-                    <strong>Annual gallons:</strong>{" "}
-                    {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
-                    {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
-                    {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
-                  </p>
-                  <p className="modal-metric">
-                    <strong>Estimated annual cost:</strong>{" "}
-                    {upgradeTopic === "showerheads" &&
-                      formatCurrencyRange(
-                        applianceSavings.shower.minCost,
-                        applianceSavings.shower.maxCost,
-                      )}
-                    {upgradeTopic === "aerators" &&
-                      formatCurrencyRange(
-                        applianceSavings.sink.minCost,
-                        applianceSavings.sink.maxCost,
-                      )}
-                    {upgradeTopic === "detergents" &&
-                      formatCurrencyRange(
-                        applianceSavings.watering.minCost,
-                        applianceSavings.watering.maxCost,
-                      )}
-                  </p>
-                  <p className="modal-copy">
-                    Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your preferred upgrade path.
-                  </p>
-                </div>
-                <div className="modal-card">
-                  <h4>Ad-friendly research cues</h4>
-                  <p className="modal-keywords">
-                    {UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}
-                  </p>
-                  <p className="modal-copy">
-                    These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while you explore the larger upgrade view.
-                  </p>
-                  {adsEnabled && (
-                    <div className="ad-wrapper modal-ad" aria-label="Contextual upgrade ad">
-                      <AdUnit slot="1122334455" />
-                    </div>
+          <div className="upgrade-modal-grid">
+            <div className="modal-card">
+              <h4>Expanded calculator view</h4>
+              <p className="modal-metric">
+                <strong>Time input:</strong>{" "}
+                {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
+                {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
+                {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
+              </p>
+              <p className="modal-metric">
+                <strong>Annual gallons:</strong>{" "}
+                {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
+                {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
+                {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
+              </p>
+              <p className="modal-metric">
+                <strong>Estimated annual cost:</strong>{" "}
+                {upgradeTopic === "showerheads" &&
+                  formatCurrencyRange(
+                    applianceSavings.shower.minCost,
+                    applianceSavings.shower.maxCost,
                   )}
+                {upgradeTopic === "aerators" &&
+                  formatCurrencyRange(
+                    applianceSavings.sink.minCost,
+                    applianceSavings.sink.maxCost,
+                  )}
+                {upgradeTopic === "detergents" &&
+                  formatCurrencyRange(
+                    applianceSavings.watering.minCost,
+                    applianceSavings.watering.maxCost,
+                  )}
+              </p>
+              <p className="modal-copy">
+                Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your
+                preferred upgrade path.
+              </p>
+            </div>
+            <div className="modal-card">
+              <h4>Ad-friendly research cues</h4>
+              <p className="modal-keywords">{UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}</p>
+              <p className="modal-copy">
+                These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
+                you explore the larger upgrade view.
+              </p>
+              {adsEnabled && (
+                <div className="ad-wrapper modal-ad" aria-label="Contextual upgrade ad">
+                  <AdUnit slot="1122334455" />
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        )}
-
-        <SiteFooter />
+        </div>
       </div>
-      </CollapsibleSection>
-    </div>
+    )}
+
+    <SiteFooter />
+  </div>
   );
 }
 
