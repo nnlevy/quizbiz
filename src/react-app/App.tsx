@@ -353,6 +353,10 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState<string | null>(null);
 
+  useEffect(() => {
+    creditsRef.current = credits;
+  }, [credits]);
+
   const showBillInsights = useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
   const qrShortcutUrl = useMemo(
     () =>
