@@ -1,16 +1,5 @@
 
-import React from "react";
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState, TouchEvent } from "react";
-import {
-  CSSProperties,
-  FormEvent,
-  ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  TouchEvent,
-} from "react";
+import React, { CSSProperties, ReactNode } from "react";
 import "./App.css";
 import AdUnit from "./components/AdUnit";
 import SiteFooter from "./components/SiteFooter";
@@ -230,7 +219,7 @@ type CollapsibleSectionProps = {
   isMobile: boolean;
   isOpen: boolean;
   onToggle: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 const CollapsibleSection = ({
@@ -317,6 +306,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   );
   const [locationHtml, setLocationHtml] = React.useState("");
   const [locationCountdown, setLocationCountdown] = React.useState<number | null>(null);
+  const [localResearchPlan, setLocalResearchPlan] = React.useState<string[]>([]);
 
   const [responseMessage, setResponseMessage] = React.useState("");
   const [countdownLabel, setCountdownLabel] = React.useState("Awaiting file upload...");
@@ -327,19 +317,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
   const [flowStep, setFlowStep] = React.useState(0);
   const [sectionOpenState, setSectionOpenState] = React.useState({
-  const [locationHtml, setLocationHtml] = useState("");
-  const [locationCountdown, setLocationCountdown] = useState<number | null>(null);
-  const [localResearchPlan, setLocalResearchPlan] = useState<string[]>([]);
-
-  const [responseMessage, setResponseMessage] = useState("");
-  const [countdownLabel, setCountdownLabel] = useState("Awaiting file upload...");
-  const [analysisHtml, setAnalysisHtml] = useState("");
-  const [analysisCountdown, setAnalysisCountdown] = useState<number | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const [isMobileFlowOpen, setIsMobileFlowOpen] = useState(false);
-  const [flowStep, setFlowStep] = useState(0);
-  const [sectionOpenState, setSectionOpenState] = useState({
     guides: !initialIsMobile,
     tools: !initialIsMobile,
     upload: !initialIsMobile,
@@ -357,34 +334,30 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     }, {} as Record<string, boolean>),
   );
 
-  const [credits, setCredits] = useState(5);
-  const creditsRef = useRef(credits);
-  const [creditPulse, setCreditPulse] = useState(false);
-  const [creditNotice, setCreditNotice] = useState(
   const [credits, setCredits] = React.useState(5);
+  const creditsRef = React.useRef(credits);
   const [creditPulse, setCreditPulse] = React.useState(false);
   const [creditNotice, setCreditNotice] = React.useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
   const [isStripeReady, setIsStripeReady] = React.useState(false);
   const [isIOSDevice, setIsIOSDevice] = React.useState(
-  const [showCreditCelebration, setShowCreditCelebration] = useState(false);
-  const [creditCelebrationMessage, setCreditCelebrationMessage] = useState(
-    "",
-  );
-
-  useEffect(() => {
-    creditsRef.current = credits;
-  }, [credits]);
-  const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(null);
-  const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(null);
-  const [ctaRecommendation, setCtaRecommendation] = useState("");
-  const [ctaLoading, setCtaLoading] = useState(false);
-  const [ctaError, setCtaError] = useState<string | null>(null);
+  const [showCreditCelebration, setShowCreditCelebration] = React.useState(false);
+  const [creditCelebrationMessage, setCreditCelebrationMessage] = React.useState(
+    "",
+  );
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
+  const [upgradeTopic, setUpgradeTopic] = React.useState<UpgradeModalTopic | null>(null);
+  const [ctaPreference, setCtaPreference] = React.useState<PurchasePreference | null>(null);
+  const [ctaRecommendation, setCtaRecommendation] = React.useState("");
+  const [ctaLoading, setCtaLoading] = React.useState(false);
+  const [ctaError, setCtaError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    creditsRef.current = credits;
+  }, [credits]);
 
   const showBillInsights = React.useMemo(() => locationHtml.trim().length > 0, [locationHtml]);
   const qrShortcutUrl = React.useMemo(
@@ -710,6 +683,21 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     return fallback;
   };
 
+  const [pendingFileFocus, setPendingFileFocus] = React.useState(false);
+
+  const triggerFilePicker = (fileInput: HTMLInputElement) => {
+    fileInput.focus();
+    if (typeof fileInput.showPicker === "function") {
+      try {
+        fileInput.showPicker();
+        return;
+      } catch (error) {
+        console.warn("showPicker failed; falling back to click", error);
+      }
+    }
+    fileInput.click();
+  };
+
   const openUploadSection = (focusFile = false) => {
     setSectionOpenState((prev) => ({
       ...prev,
@@ -719,14 +707,28 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
 
     if (focusFile) {
-      const delay =
-        typeof window !== "undefined" ? window.setTimeout : setTimeout;
-      delay(() => {
-        fileInputRef.current?.focus();
-        fileInputRef.current?.click();
-      }, 250);
+      const fileInput = fileInputRef.current;
+      if (fileInput) {
+        triggerFilePicker(fileInput);
+      } else {
+        setPendingFileFocus(true);
+      }
     }
   };
+
+  React.useLayoutEffect(() => {
+    if (!pendingFileFocus || !sectionOpenState.upload) {
+      return;
+    }
+
+    const fileInput = fileInputRef.current;
+    if (!fileInput) {
+      return;
+    }
+
+    setPendingFileFocus(false);
+    triggerFilePicker(fileInput);
+  }, [pendingFileFocus, sectionOpenState.upload]);
 
   const handleOpenUploadStep = () => {
     openUploadSection();
@@ -741,7 +743,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setIsMobileFlowOpen(false);
   };
 
-  const handleSlideTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
   const buildLocalResearchPlan = (query: string) => {
     const region = query || "your area";
     return [
@@ -763,7 +764,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     );
   };
 
-  const handleSlideTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+  const handleSlideTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
     slideTouchStartX.current = touch.clientX;
     slideTouchStartY.current = touch.clientY;
@@ -2664,6 +2665,8 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             </div>
           </section>
 
+        </div>
+
         {isUpgradeModalOpen && upgradeTopic && (
           <div
             className="upgrade-modal-overlay"
@@ -2775,10 +2778,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             </div>
           </div>
         )}
-
-        <SiteFooter />
-      </div>
       </CollapsibleSection>
+
+      <SiteFooter />
     </div>
   );
 }
