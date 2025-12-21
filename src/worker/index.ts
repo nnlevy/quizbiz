@@ -1321,8 +1321,10 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
   try {
     const locationInput = await extractLocationInput(c);
     if (!locationInput.trim()) {
-      return c.json(
-        { error: "Missing or invalid 'location' field." },
+      return c.html(
+        renderLocationErrorHtml(
+          "Please enter a city, region, or provider name to search.",
+        ),
         400,
       );
     }
@@ -1355,16 +1357,50 @@ async function extractLocationInput(
   c: Context<{ Bindings: WorkerEnv }>,
 ): Promise<string> {
   if (c.req.method === "GET") {
-    return c.req.query("location") || "";
+    return coerceToLocationInput(c.req.query("location"));
   }
 
+  const contentType = c.req.header("content-type")?.toLowerCase() || "";
+
   try {
-    const body = await c.req.json<{ location?: string }>();
-    return body.location || "";
+    if (contentType.includes("application/json")) {
+      const body = await c.req.json<{ location?: unknown }>();
+      return coerceToLocationInput(body.location);
+    }
+
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const formData = await c.req.parseBody();
+      if (formData && typeof formData === "object" && "location" in formData) {
+        const value = formData.location;
+        const coerced = coerceToLocationInput(value);
+        if (coerced) return coerced;
+      }
+    }
+
+    if (contentType.includes("text/plain")) {
+      const text = await c.req.text();
+      return coerceToLocationInput(text);
+    }
+
+    const fallbackText = await c.req.text();
+    try {
+      const parsed = JSON.parse(fallbackText) as { location?: unknown };
+      const fromJson = coerceToLocationInput(parsed.location);
+      if (fromJson) return fromJson;
+      return coerceToLocationInput(fallbackText);
+    } catch {
+      return coerceToLocationInput(fallbackText);
+    }
   } catch (error) {
     console.warn("Failed to parse location payload, defaulting to empty:", error);
     return "";
   }
+}
+
+function coerceToLocationInput(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return `${value}`;
+  return "";
 }
 
 async function resolveLocationHtml(
@@ -1405,6 +1441,10 @@ async function resolveLocationHtml(
   }
 
   return htmlResult;
+}
+
+function renderLocationErrorHtml(message: string): string {
+  return `<div class="location-result-block"><p class="muted">${escapeHtml(message)}</p></div>`;
 }
 
 app.post("/api/credits/checkout", async (c) => {
