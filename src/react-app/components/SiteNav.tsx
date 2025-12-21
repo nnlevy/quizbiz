@@ -143,7 +143,15 @@ const SiteNav = ({
   const mobileLinks = [...links, ...learnLinks];
 
   const handleHeaderTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
-    if (!isMobileViewport()) {
+    if (!isMobileViewport() || isMobileMenuOpen) {
+      return;
+    }
+
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest(".mobile-nav")
+    ) {
+      navTouchStart.current = null;
       return;
     }
 
@@ -159,7 +167,15 @@ const SiteNav = ({
   };
 
   const handleHeaderTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
-    if (!isMobileViewport()) {
+    if (!isMobileViewport() || isMobileMenuOpen) {
+      navTouchStart.current = null;
+      return;
+    }
+
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest(".mobile-nav")
+    ) {
       navTouchStart.current = null;
       return;
     }
