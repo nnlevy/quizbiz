@@ -1321,12 +1321,9 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
   try {
     const locationInput = await extractLocationInput(c);
     if (!locationInput.trim()) {
-      return c.html(
-        renderLocationErrorHtml(
-          "Please enter a city, region, or provider name to search.",
-        ),
-        400,
-      );
+      const message =
+        "Missing or invalid 'location' field. Please enter a city, region, or provider name.";
+      return c.json({ error: message }, 400);
     }
 
     const htmlResult = await resolveLocationHtml(locationInput.trim(), c.env);
@@ -1397,9 +1394,56 @@ async function extractLocationInput(
   }
 }
 
-function coerceToLocationInput(value: unknown): string {
+function coerceToLocationInput(
+  value: unknown,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): string {
   if (typeof value === "string") return value;
   if (typeof value === "number" && Number.isFinite(value)) return `${value}`;
+
+  if (Array.isArray(value)) {
+    const joined = value
+      .map((entry) => coerceToLocationInput(entry, seen))
+      .filter((entry) => entry.trim().length > 0);
+    return Array.from(new Set(joined)).join(", ");
+  }
+
+  if (value && typeof value === "object") {
+    if (seen.has(value)) return "";
+    seen.add(value);
+    const record = value as Record<string, unknown>;
+    const prioritizedKeys = [
+      "location",
+      "city",
+      "region",
+      "state",
+      "province",
+      "postal_code",
+      "zipcode",
+      "zip",
+      "country",
+      "provider",
+      "utility",
+      "name",
+    ];
+
+    const prioritized = prioritizedKeys
+      .map((key) => coerceToLocationInput(record[key], seen))
+      .filter((entry) => entry.trim().length > 0);
+
+    if (prioritized.length > 0) {
+      return Array.from(new Set(prioritized)).join(", ");
+    }
+
+    const allValues = Object.values(record)
+      .map((entry) => coerceToLocationInput(entry, seen))
+      .filter((entry) => entry.trim().length > 0);
+
+    if (allValues.length > 0) {
+      return Array.from(new Set(allValues)).join(", ");
+    }
+  }
+
   return "";
 }
 
@@ -1441,10 +1485,6 @@ async function resolveLocationHtml(
   }
 
   return htmlResult;
-}
-
-function renderLocationErrorHtml(message: string): string {
-  return `<div class="location-result-block"><p class="muted">${escapeHtml(message)}</p></div>`;
 }
 
 app.post("/api/credits/checkout", async (c) => {
