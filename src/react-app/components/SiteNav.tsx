@@ -225,7 +225,7 @@ const SiteNav = ({
       return;
     }
     const deltaY = event.clientY - navDragStartY;
-    if (deltaY < 0) {
+    if (deltaY > 0) {
       setNavDragOffset(deltaY);
     }
   };
@@ -235,7 +235,7 @@ const SiteNav = ({
       return;
     }
     event.currentTarget.releasePointerCapture?.(event.pointerId);
-    if (navDragOffset < -NAV_SWIPE_THRESHOLD) {
+    if (navDragOffset > NAV_SWIPE_THRESHOLD) {
       setIsMobileMenuOpen(false);
     }
     setIsDraggingNav(false);
@@ -255,7 +255,7 @@ const SiteNav = ({
 
   const navDragStyle = isMobileMenuOpen
     ? {
-        transform: isDraggingNav ? `translateY(${Math.min(navDragOffset, 0)}px)` : undefined,
+        transform: isDraggingNav ? `translateY(${Math.max(navDragOffset, 0)}px)` : undefined,
       }
     : undefined;
 
