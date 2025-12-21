@@ -4,20 +4,19 @@ import React, {
   FormEvent,
   ReactNode,
   TouchEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import "./App.css";
-import AdUnit from "./components/AdUnit";
 import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import { logEvent } from "./analytics";
 
 declare global {
   interface Window {
-    disqus_config?: () => void;
     webkitAudioContext?: typeof AudioContext;
     Stripe?: (publishableKey: string) => StripeClient;
   }
@@ -276,11 +275,10 @@ const CollapsibleSection = ({
 };
 
 type AppProps = {
-  adsEnabled?: boolean;
   focusUpload?: boolean;
 };
 
-function App({ adsEnabled = false, focusUpload = false }: AppProps) {
+function App({ focusUpload = false }: AppProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -342,7 +340,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
   const [stripeClient, setStripeClient] = useState<StripeClient | null>(null);
-  const [isStripeReady, setIsStripeReady] = useState(false);
+  const stripeLoaderRef = useRef<Promise<StripeClient | null> | null>(null);
   const [isIOSDevice, setIsIOSDevice] = useState(
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
   );
@@ -415,51 +413,64 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
     setTimeout(() => setCreditPulse(false), 750);
   };
 
-    useEffect(() => {
-    const existingScript = document.getElementById(
-      STRIPE_JS_SCRIPT_ID,
-    ) as HTMLScriptElement | null;
+  const loadStripeClient = useCallback(async () => {
+    if (stripeClient) {
+      return stripeClient;
+    }
 
-    const hydrateStripeClient = () => {
-      if (typeof window !== "undefined" && typeof window.Stripe === "function") {
-        const client = window.Stripe(STRIPE_PUBLISHABLE_KEY);
-        setStripeClient(client);
-        setIsStripeReady(true);
+    if (stripeLoaderRef.current) {
+      return stripeLoaderRef.current;
+    }
+
+    stripeLoaderRef.current = new Promise<StripeClient | null>((resolve) => {
+      const existingScript = document.getElementById(
+        STRIPE_JS_SCRIPT_ID,
+      ) as HTMLScriptElement | null;
+
+      const hydrateStripeClient = () => {
+        if (typeof window !== "undefined" && typeof window.Stripe === "function") {
+          const client = window.Stripe(STRIPE_PUBLISHABLE_KEY);
+          setStripeClient(client);
+          resolve(client);
+          return;
+        }
+
+        resolve(null);
+      };
+
+      const handleStripeError = () => {
+        setCreditNotice("Checkout unavailable right now. Please try again soon.");
+        triggerCreditPulse();
+        resolve(null);
+      };
+
+      if (existingScript && existingScript.getAttribute("data-ready") === "true") {
+        hydrateStripeClient();
+        return;
       }
-    };
 
-    if (existingScript && existingScript.getAttribute("data-ready") === "true") {
-      hydrateStripeClient();
-      return undefined;
-    }
+      const script = existingScript ?? document.createElement("script");
+      script.id = STRIPE_JS_SCRIPT_ID;
+      script.src = STRIPE_JS_SRC;
+      script.async = true;
 
-    const script = existingScript ?? document.createElement("script");
-    script.id = STRIPE_JS_SCRIPT_ID;
-    script.src = STRIPE_JS_SRC;
-    script.async = true;
+      const handleStripeReady = () => {
+        script.setAttribute("data-ready", "true");
+        hydrateStripeClient();
+      };
 
-    const handleStripeReady = () => {
-      script.setAttribute("data-ready", "true");
-      hydrateStripeClient();
-    };
+      script.addEventListener("load", handleStripeReady);
+      script.addEventListener("error", handleStripeError);
 
-    const handleStripeError = () => {
-      setCreditNotice("Checkout unavailable right now. Please try again soon.");
-      triggerCreditPulse();
-    };
+      if (!existingScript) {
+        document.head.appendChild(script);
+      }
+    });
 
-    script.addEventListener("load", handleStripeReady);
-    script.addEventListener("error", handleStripeError);
-
-    if (!existingScript) {
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      script.removeEventListener("load", handleStripeReady);
-      script.removeEventListener("error", handleStripeError);
-    };
-  }, []);
+    const client = await stripeLoaderRef.current;
+    stripeLoaderRef.current = null;
+    return client;
+  }, [stripeClient]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -516,8 +527,9 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   }, []);
 
   const handleCreditsClick = async () => {
-    if (!isStripeReady || !stripeClient) {
-      setCreditNotice("Checkout is loading. Please try again in a moment.");
+    const client = await loadStripeClient();
+    if (!client) {
+      setCreditNotice("Checkout unavailable right now. Please try again soon.");
       triggerCreditPulse();
       return;
     }
@@ -542,7 +554,7 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
       setCreditNotice("Launching $5 checkout for 5 credits...");
       triggerCreditPulse();
 
-      const result = await stripeClient.redirectToCheckout({
+      const result = await client.redirectToCheckout({
         sessionId: payload.id,
       });
 
@@ -1103,26 +1115,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
   }, []);
 
   useEffect(() => {
-    window.disqus_config = (function disqusConfig(this: {
-      page: { url: string; identifier: string };
-    }) {
-      this.page = this.page || { url: "", identifier: "" };
-      this.page.url = "https://www.watershortcut.com";
-      this.page.identifier = "water-shortcut-home";
-    }) as () => void;
-    if (!document.getElementById("disqus-script")) {
-      const script = document.createElement("script");
-      script.src = "https://watershortcut.disqus.com/embed.js";
-      script.setAttribute("data-timestamp", Date.now().toString());
-      script.id = "disqus-script";
-      document.body.appendChild(script);
-    }
-    return () => {
-      window.disqus_config = undefined;
-    };
-  }, []);
-
-  useEffect(() => {
     const runOverflowCheck = (label: string) => {
       const doc = document.documentElement;
       const scrollWidth = doc.scrollWidth;
@@ -1501,11 +1493,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                 Keep exploring
               </button>
             </div>
-            {adsEnabled && (
-              <div className="ad-wrapper tight celebratory-ad" aria-label="Bonus ad slot">
-                <AdUnit slot="1234567890" />
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -2067,12 +2054,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
             }))
           }
         >
-          {adsEnabled && (
-            <div className="ad-wrapper" aria-label="Top ad unit">
-              <AdUnit slot="1234567890" />
-            </div>
-          )}
-
           <section className="feature-grid" aria-label="Feature highlights">
             <article className="feature-card">
               <h3>AI Usage Insights</h3>
@@ -2110,12 +2091,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               </button>
             </article>
           </section>
-
-          {adsEnabled && (
-            <div className="ad-wrapper tight" aria-label="Mid-page ad unit">
-              <AdUnit slot="0987654321" />
-            </div>
-          )}
 
           <section className="container" id="dynamic-sliders">
             <h2>Instant Water Usage Calculator</h2>
@@ -2412,7 +2387,14 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
               Start saving water and money today with these simple upgrades and
               solutions. Your wallet—and the planet—will thank you!
             </p>
-            <div id="disqus_thread" />
+            <div className="community-callout">
+              <h3>Community tips</h3>
+              <p>
+                We no longer load third-party comment widgets to keep your
+                browsing private. Share your own discoveries with friends or
+                neighbors and help them save too.
+              </p>
+            </div>
           </section>
 
           <section id="news" className="story-block news-block">
@@ -2545,11 +2527,6 @@ function App({ adsEnabled = false, focusUpload = false }: AppProps) {
                     These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
                     you explore the larger upgrade view.
                   </p>
-                  {adsEnabled && (
-                    <div className="ad-wrapper modal-ad" aria-label="Contextual upgrade ad">
-                      <AdUnit slot="1122334455" />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
