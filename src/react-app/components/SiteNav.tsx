@@ -81,6 +81,13 @@ const SiteNav = ({
     };
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
+    document.body.classList.remove("nav-open");
+    document.body.style.overflow = "";
+  }, []);
+
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const closeDropdown = () => setIsDropdownOpen(false);
