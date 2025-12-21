@@ -348,6 +348,7 @@ function App({ focusUpload = false }: AppProps) {
     tools: !initialIsMobile,
     upload: !initialIsMobile,
   });
+  const [isWaterEjectCollapsed, setIsWaterEjectCollapsed] = useState(false);
 
   const [openTips, setOpenTips] = useState<Record<string, boolean>>(() =>
     SAVING_TIPS.reduce((acc, tip, index) => {
@@ -373,6 +374,12 @@ function App({ focusUpload = false }: AppProps) {
     );
     setLocationSuggestions(nextSuggestions);
   }, [locationInput, locationSuggestionPool]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsWaterEjectCollapsed(false);
+    }
+  }, [isMobile]);
 
   const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
     NEWS_ITEMS.reduce((acc, article, index) => {
@@ -481,6 +488,14 @@ function App({ focusUpload = false }: AppProps) {
   const handleFlowClose = () => {
     setIsMobileFlowOpen(false);
     setFlowStep(0);
+  };
+
+  const handleWaterEjectToggle = () => {
+    if (!isMobile) {
+      return;
+    }
+
+    setIsWaterEjectCollapsed((prev) => !prev);
   };
 
   const triggerCreditPulse = () => {
@@ -1554,6 +1569,8 @@ function App({ focusUpload = false }: AppProps) {
     }
   };
 
+  const isWaterEjectHidden = isMobile && isWaterEjectCollapsed;
+
   return (
     <div className="app">
       <SiteNav credits={credits} pulse={pulse} />
@@ -1603,7 +1620,27 @@ function App({ focusUpload = false }: AppProps) {
       )}
 
       <main className="main-wrapper">
-        <section className="water-eject-banner" aria-labelledby="water-eject">
+        {isMobile && (
+          <button
+            type="button"
+            className={`water-eject-header ${isWaterEjectHidden ? "collapsed" : ""}`}
+            aria-expanded={!isWaterEjectHidden}
+            aria-controls="water-eject-section"
+            onClick={handleWaterEjectToggle}
+          >
+            <span className="water-eject-header__label">Hide water eject tools</span>
+            <span className="water-eject-header__icon" aria-hidden>
+              {isWaterEjectHidden ? "+" : "–"}
+            </span>
+          </button>
+        )}
+
+        <section
+          id="water-eject-section"
+          className={`water-eject-banner ${isWaterEjectHidden ? "collapsed" : ""}`}
+          aria-labelledby="water-eject"
+          aria-hidden={isWaterEjectHidden}
+        >
           {isIOSDevice ? (
             <div className="banner-grid">
               <div className="banner-copy">
