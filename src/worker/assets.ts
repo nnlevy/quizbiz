@@ -245,10 +245,11 @@ function clientScript() {
       track('ws_provider_search');
       result.innerHTML = '<p class="muted">Searching…</p>';
       try {
-        const res = await fetch('/api/location', {
+        const searchUrl = `/api/location?location=${encodeURIComponent(location.trim())}`;
+        const res = await fetch(searchUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ location }),
+          body: JSON.stringify({ location, locationInput: location }),
         });
         const text = await res.text();
         if (!res.ok) {

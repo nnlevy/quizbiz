@@ -528,6 +528,11 @@ function layout(options: {
       <meta name="twitter:card" content="summary" />
       <meta name="twitter:title" content="${escapeHtml(title)}" />
       <meta name="twitter:description" content="${escapeHtml(description)}" />
+      <script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395"
+        crossorigin="anonymous"
+      ></script>
       <link rel="preload" href="/assets/styles.css" as="style" />
       <link rel="stylesheet" href="/assets/styles.css" />
       <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
