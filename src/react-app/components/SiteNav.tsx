@@ -123,15 +123,6 @@ const SiteNav = ({
   const closeDropdown = () => setIsDropdownOpen(false);
   const openDropdown = () => setIsDropdownOpen(true);
 
-  const handleDropdownPointerEnter = () => {
-    dropdownPointerOpenRef.current = true;
-    openDropdown();
-  };
-
-  const handleDropdownPointerLeave = () => {
-    dropdownPointerOpenRef.current = false;
-  };
-
   const handleDropdownToggleClick = () => {
     setIsDropdownOpen((prev) => {
       if (prev && dropdownPointerOpenRef.current) {

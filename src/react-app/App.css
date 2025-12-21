@@ -355,6 +355,7 @@ h4 {
   pointer-events: none;
   transition: opacity 0.2s ease;
   border: none;
+  z-index: 11900;
 }
 
 .nav-scrim.open {
@@ -1942,24 +1943,32 @@ blockquote {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: max(0px, env(safe-area-inset-bottom));
   background: #0b1221;
   color: #e2e8f0;
-  padding: 0.75rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+  padding: 0.85rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
   border-radius: 18px 18px 0 0;
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.35);
   display: grid;
   gap: 12px;
   transform: translateY(105%);
   transition: transform 0.25s ease;
-  z-index: 24;
-  max-height: min(78vh, 620px);
+  z-index: 12000;
+  max-height: min(86vh, 640px, calc(100vh - 28px));
+  align-content: start;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .mobile-nav.open {
   transform: translateY(0);
+}
+
+@supports (max-height: 100dvh) {
+  .mobile-nav {
+    max-height: min(86dvh, 640px);
+  }
 }
 
 .mobile-nav a {
