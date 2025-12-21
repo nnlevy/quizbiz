@@ -10,6 +10,7 @@ import ReadWaterBillPage from "../pages/ReadWaterBillPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
+import { CreditsProvider } from "./context/CreditsContext";
 const RootRouter = () => {
   const pathname = window.location.pathname;
 
@@ -42,7 +43,9 @@ const RootRouter = () => {
   }, [pathname]);
 
   return (
-    <StrictMode>{routeComponent}</StrictMode>
+    <StrictMode>
+      <CreditsProvider>{routeComponent}</CreditsProvider>
+    </StrictMode>
   );
 };
 

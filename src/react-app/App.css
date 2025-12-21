@@ -2115,3 +2115,131 @@ blockquote {
     gap: 0.75rem;
   }
 }
+
+.utility-results {
+  padding: 2rem 1rem;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.utility-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.utility-result-card {
+  background: #ffffff;
+  border: 1px solid #d0e4ff;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 70, 140, 0.08);
+}
+
+.utility-result-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.utility-summary-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1rem;
+  color: #1f2c46;
+}
+
+.location-html {
+  padding: 1rem;
+  background: #0a2f5a;
+  color: #f4f8ff;
+  border-radius: 12px;
+}
+
+.input-help {
+  margin: 0.25rem 0;
+  color: #1f2c46;
+  font-size: 0.9rem;
+}
+
+.validation-error {
+  color: #b00020;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.ghost-button {
+  margin-left: 0.5rem;
+  background: transparent;
+  border: 1px solid #2d6cdf;
+  color: #2d6cdf;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.file-preview {
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+
+.inline-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #c6d7f5;
+  border-top-color: #2d6cdf;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0.5rem 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.credit-info-button {
+  margin-left: 0.25rem;
+  border: 1px solid #1f2c46;
+  background: #fff;
+  color: #1f2c46;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.credit-info-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 99;
+}
+
+.credit-info-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1rem;
+  max-width: 420px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.15);
+}
+
+.credit-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.privacy-reassurance a {
+  color: #2d6cdf;
+}
+
+@media (max-width: 720px) {
+  .utility-results {
+    padding: 1rem 0.5rem;
+  }
+}

@@ -44,6 +44,7 @@ const SiteNav = ({
   const [navDragStartY, setNavDragStartY] = useState<number | null>(null);
   const [navDragOffset, setNavDragOffset] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(false);
+  const [showCreditInfo, setShowCreditInfo] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dropdownPointerOpenRef = useRef(false);
@@ -302,6 +303,17 @@ const SiteNav = ({
         >
           <span className="credit-meter__label">Credits</span>
           <span className="credit-meter__value">{credits}</span>
+          <button
+            type="button"
+            className="credit-info-button"
+            aria-label="Learn about credits"
+            onClick={(event) => {
+              event.stopPropagation();
+              setShowCreditInfo(true);
+            }}
+          >
+            i
+          </button>
         </div>
         <nav className="global-nav" aria-label="Primary navigation">
           <div className="nav-links">
@@ -395,6 +407,29 @@ const SiteNav = ({
           </a>
         ))}
       </div>
+      {showCreditInfo && (
+        <div className="credit-info-modal" role="dialog" aria-modal="true" aria-label="Credit information">
+          <div className="credit-info-card">
+            <div className="credit-info-header">
+              <h3>How credits work</h3>
+              <button
+                type="button"
+                className="ghost-close"
+                aria-label="Close credit information"
+                onClick={() => setShowCreditInfo(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <ul>
+              <li>Utility lookups cost 1 credit once results are delivered.</li>
+              <li>Bill uploads and AI reviews draw 1 credit after analysis.</li>
+              <li>You can top up in packs of 5 credits.</li>
+            </ul>
+            <p>Need more? Tap the credit counter to purchase additional credits.</p>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

@@ -1342,6 +1342,21 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
       );
     }
 
+    const acceptsJson =
+      c.req.query("format") === "json" ||
+      (c.req.header("accept") || "")
+        .toLowerCase()
+        .includes("application/json");
+
+    const responseBody = {
+      html: htmlResult.html,
+      payload: htmlResult.payload,
+    };
+
+    if (acceptsJson) {
+      return c.json(responseBody);
+    }
+
     return c.html(htmlResult.html);
   } catch (error) {
     console.error("Error in handleLocationQuery:", error);
@@ -2009,7 +2024,7 @@ Return JSON only.`;
 function transformLocationAssistantContent(
   content: string,
   options?: { fallbackLocation?: string },
-): { success: true; html: string } | { success: false; error: string } {
+): ReturnType<typeof renderLocationPayload> {
   const jsonBlock = extractJsonObject(content);
   if (!jsonBlock) {
     return {
@@ -2043,10 +2058,23 @@ function transformLocationAssistantContent(
   });
 }
 
+type RenderedLocationPayload = {
+  departmentName: string;
+  billPaymentUrl: string | null;
+  phoneNumber: string | null;
+  departmentWebsiteUrl: string | null;
+  oversightDepartment: string | null;
+  oversightUrl: string | null;
+  grantsOrAidUrl: string | null;
+  summaryLines: string[];
+};
+
 function renderLocationPayload(
   parsed: LocationAssistantPayload,
   options?: { fallbackLocation?: string },
-): { success: true; html: string } | { success: false; error: string } {
+):
+  | { success: true; html: string; payload: RenderedLocationPayload }
+  | { success: false; error: string } {
   if (!parsed || typeof parsed !== "object") {
     return {
       success: false,
@@ -2074,6 +2102,17 @@ function renderLocationPayload(
   }
 
   const detailBlocks: string[] = [];
+
+  const structuredPayload: RenderedLocationPayload = {
+    departmentName,
+    billPaymentUrl: paymentUrl,
+    phoneNumber: phoneDetails?.display || null,
+    departmentWebsiteUrl: departmentSite,
+    oversightDepartment: oversightName || null,
+    oversightUrl: oversightUrl || null,
+    grantsOrAidUrl: grantsUrl || null,
+    summaryLines: [],
+  };
 
   detailBlocks.push(
     `<p><strong>Department:</strong> ${escapeHtml(departmentName)}</p>`,
@@ -2135,6 +2174,7 @@ function renderLocationPayload(
     .slice(0, 3);
 
   if (sanitizedSummaries.length) {
+    structuredPayload.summaryLines = sanitizedSummaries;
     detailBlocks.push(
       '<div class="location-context">' +
         sanitizedSummaries
@@ -2147,6 +2187,7 @@ function renderLocationPayload(
   return {
     success: true,
     html: `<div class="location-result-block">${detailBlocks.join("")}</div>`,
+    payload: structuredPayload,
   };
 }
 

@@ -1,6 +1,7 @@
 
 import React, {
   CSSProperties,
+  ChangeEvent,
   FormEvent,
   ReactNode,
   TouchEvent,
@@ -14,6 +15,8 @@ import "./App.css";
 import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import { logEvent } from "./analytics";
+import { useCredits } from "./context/CreditsContext";
+import UtilityResultCard, { type UtilityPayload } from "./components/UtilityResultCard";
 
 declare global {
   interface Window {
@@ -279,9 +282,12 @@ type AppProps = {
 };
 
 function App({ focusUpload = false }: AppProps) {
+  const { credits, deduct, setCredits: setGlobalCredits, pulse, setPulse } =
+    useCredits();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
   const slideTouchStartX = useRef<number | null>(null);
   const slideTouchStartY = useRef<number | null>(null);
 
@@ -304,12 +310,36 @@ function App({ focusUpload = false }: AppProps) {
   const [locationHtml, setLocationHtml] = React.useState("");
   const [locationCountdown, setLocationCountdown] = React.useState<number | null>(null);
   const [localResearchPlan, setLocalResearchPlan] = React.useState<string[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [utilityResults, setUtilityResults] = useState<UtilityPayload[]>([]);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const locationSuggestionPool = useMemo(
+    () =>
+      [
+        "Austin, TX",
+        "Los Angeles, CA",
+        "New York, NY",
+        "Chicago, IL",
+        "Seattle, WA",
+        "San Francisco, CA",
+        "Phoenix, AZ",
+        "Denver, CO",
+        "Dallas, TX",
+        "Miami, FL",
+        "Portland, OR",
+      ],
+    [],
+  );
 
   const [responseMessage, setResponseMessage] = React.useState("");
   const [countdownLabel, setCountdownLabel] = React.useState("Awaiting file upload...");
   const [analysisHtml, setAnalysisHtml] = React.useState("");
   const [analysisCountdown, setAnalysisCountdown] = React.useState<number | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
 
   const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
   const [flowStep, setFlowStep] = React.useState(0);
@@ -326,6 +356,24 @@ function App({ focusUpload = false }: AppProps) {
     }, {} as Record<string, boolean>),
   );
 
+  useEffect(() => {
+    const normalized = locationInput.trim().toLowerCase();
+    if (!normalized) {
+      setLocationSuggestions(locationSuggestionPool.slice(0, 6));
+      return;
+    }
+
+    const matches = locationSuggestionPool.filter((entry) =>
+      entry.toLowerCase().includes(normalized),
+    );
+
+    const nextSuggestions = (matches.length ? matches : locationSuggestionPool).slice(
+      0,
+      6,
+    );
+    setLocationSuggestions(nextSuggestions);
+  }, [locationInput, locationSuggestionPool]);
+
   const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
     NEWS_ITEMS.reduce((acc, article, index) => {
       acc[article.id] = !initialIsMobile && index === 0;
@@ -333,9 +381,7 @@ function App({ focusUpload = false }: AppProps) {
     }, {} as Record<string, boolean>),
   );
 
-  const [credits, setCredits] = useState(5);
   const creditsRef = useRef(credits);
-  const [creditPulse, setCreditPulse] = useState(false);
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
@@ -357,14 +403,43 @@ function App({ focusUpload = false }: AppProps) {
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (locationInput.trim().length < 3) {
+      setLocationSuggestions([]);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://geocode.maps.co/search?q=${encodeURIComponent(locationInput.trim())}&countrycodes=us&limit=5`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) return;
+        const data = (await response.json()) as Array<{ display_name?: string }>;
+        const suggestions = data
+          .map((entry) => entry.display_name)
+          .filter((name): name is string => Boolean(name))
+          .slice(0, 5);
+        setLocationSuggestions(suggestions);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          console.warn("Autocomplete lookup failed", error);
+        }
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [locationInput]);
+
     useEffect(() => {
       creditsRef.current = credits;
     }, [credits]);
 
-    const showBillInsights = useMemo(
-      () => locationHtml.trim().length > 0,
-      [locationHtml],
-    );
     const qrShortcutUrl = useMemo(
       () =>
         `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
@@ -409,8 +484,8 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const triggerCreditPulse = () => {
-    setCreditPulse(true);
-    setTimeout(() => setCreditPulse(false), 750);
+    setPulse(true);
+    setTimeout(() => setPulse(false), 750);
   };
 
   const loadStripeClient = useCallback(async () => {
@@ -481,7 +556,7 @@ function App({ focusUpload = false }: AppProps) {
     if (sessionId && pendingTopUp && redirectStatus === "succeeded") {
       const updatedCredits = creditsRef.current + 5;
       creditsRef.current = updatedCredits;
-      setCredits(updatedCredits);
+      setGlobalCredits(updatedCredits);
       setCreditNotice("Purchase confirmed. 5 credits added.");
       setCreditCelebrationMessage(
         `Thanks for topping up—5 credits added. You now have ${updatedCredits}.`,
@@ -570,16 +645,14 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const spendCredit = (successPrefix?: string) => {
-    const currentCredits = creditsRef.current;
-    if (currentCredits <= 0) {
+    const nextCredits = deduct(1);
+    if (nextCredits === null) {
       setCreditNotice("No credits remain. Check back soon for a refresh.");
       triggerCreditPulse();
       return null;
     }
 
-    const nextCredits = Math.max(currentCredits - 1, 0);
     creditsRef.current = nextCredits;
-    setCredits(nextCredits);
 
     setCreditNotice(
       successPrefix
@@ -1341,26 +1414,23 @@ function App({ focusUpload = false }: AppProps) {
   const handleLocationSearch = async () => {
     const trimmedLocation = locationInput.trim();
     if (!trimmedLocation) {
-      setLocationStatus("Please enter a location.");
+      setLocationError("Please enter a location.");
       return;
     }
-    const updatedCredits = spendCredit("Location intel requested.");
-    if (updatedCredits === null) {
-      setLocationStatus("Add credits to fetch your local utility intel.");
-      return;
-    }
+    setLocationError(null);
     logEvent("location_search", {
       query_length: locationInput.trim().length,
-      credits_remaining: updatedCredits,
+      credits_remaining: credits,
     });
     setLocationHtml("");
+    setUtilityResults([]);
     setLocationStatus("Searching...");
-    setLocationCountdown(5);
+    setIsLocationLoading(true);
     try {
-      const searchUrl = `/api/location?location=${encodeURIComponent(trimmedLocation)}`;
+      const searchUrl = `/api/location?format=json&location=${encodeURIComponent(trimmedLocation)}`;
       const response = await fetch(searchUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           location: trimmedLocation,
           locationInput: trimmedLocation,
@@ -1373,11 +1443,28 @@ function App({ focusUpload = false }: AppProps) {
           "An unexpected error occurred.",
         );
         setLocationStatus(`Error: ${errorMessage}`);
+        setLocationError(errorMessage);
         return;
       }
-      const htmlResponse = await response.text();
-      setLocationHtml(htmlResponse);
-      setLocationStatus("Results ready.");
+      const jsonResponse = (await response.json()) as {
+        payload?: UtilityPayload | UtilityPayload[];
+        html?: string;
+      };
+      const normalizedPayloads = Array.isArray(jsonResponse.payload)
+        ? jsonResponse.payload
+        : jsonResponse.payload
+          ? [jsonResponse.payload]
+          : [];
+      if (normalizedPayloads.length === 0) {
+        const notFoundMessage = `No utility found for ${trimmedLocation}.`;
+        setLocationStatus(notFoundMessage);
+        setLocationError(notFoundMessage);
+        return;
+      }
+      spendCredit("Location intel retrieved.");
+      setUtilityResults(normalizedPayloads);
+      setLocationHtml(jsonResponse.html || "");
+      setLocationStatus("Results ready — scroll down or jump to the cards.");
       logEvent("location_results_ready");
     } catch (error) {
       console.error("Location lookup failed:", error);
@@ -1385,12 +1472,23 @@ function App({ focusUpload = false }: AppProps) {
       setLocationStatus(
         "An error occurred while locating your water bill provider. Please try again.",
       );
+      setLocationError(
+        "An error occurred while locating your water bill provider. Please try again.",
+      );
+    } finally {
+      setIsLocationLoading(false);
     }
+  };
+
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setSelectedFile(file);
+    setUploadPreview(file ? file.name : null);
   };
 
   const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const file = fileInputRef.current?.files?.[0];
+    const file = fileInputRef.current?.files?.[0] || selectedFile;
     if (!file) {
       setResponseMessage("Please select a file before submitting.");
       return;
@@ -1399,15 +1497,14 @@ function App({ focusUpload = false }: AppProps) {
       setResponseMessage("File size exceeds 10MB. Please upload a smaller file.");
       return;
     }
-    const updatedCredits = spendCredit("Bill analysis queued.");
-    if (updatedCredits === null) {
+    if (creditsRef.current <= 0) {
       setResponseMessage("Add credits to unlock full bill analysis.");
       return;
     }
     logEvent("upload_started", {
       file_size: file.size,
       file_type: file.type,
-      credits_remaining: updatedCredits,
+      credits_remaining: creditsRef.current,
     });
     setIsUploading(true);
     setResponseMessage("Uploading file...");
@@ -1434,6 +1531,7 @@ function App({ focusUpload = false }: AppProps) {
         return;
       }
       const result = await response.text();
+      spendCredit("Bill analysis completed.");
       setResponseMessage("Success!");
       setAnalysisHtml(result);
       setCountdownLabel("Analysis complete.");
@@ -1451,12 +1549,14 @@ function App({ focusUpload = false }: AppProps) {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      setSelectedFile(null);
+      setUploadPreview(null);
     }
   };
 
   return (
     <div className="app">
-      <SiteNav credits={credits} pulse={creditPulse} />
+      <SiteNav credits={credits} pulse={pulse} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
       {showCreditCelebration && (
@@ -1734,17 +1834,34 @@ function App({ focusUpload = false }: AppProps) {
               <input
                 type="text"
                 id="location-input"
-                placeholder="Austin, TX or Barcelona"
+                list="location-suggestions"
+                placeholder="Enter your U.S. city or utility district (e.g., Austin, TX)"
+                aria-invalid={Boolean(locationError)}
+                aria-describedby="location-help"
                 value={locationInput}
                 onChange={(event) => setLocationInput(event.target.value)}
               />
+              <datalist id="location-suggestions">
+                {locationSuggestions.map((suggestion) => (
+                  <option key={suggestion} value={suggestion} />
+                ))}
+              </datalist>
+              <p id="location-help" className="input-help">
+                We support U.S. cities and utility districts for now.
+              </p>
+              {locationError && (
+                <p className="validation-error" role="alert">
+                  {locationError}
+                </p>
+              )}
               <div className="utility-actions">
                 <button
                   type="button"
                   className="primary-button"
                   onClick={handleLocationSearch}
+                  disabled={!locationInput.trim() || isLocationLoading}
                 >
-                  Look up my utility
+                  {isLocationLoading ? "Loading..." : "Look up my utility"}
                 </button>
                 <button
                   type="button"
@@ -1756,6 +1873,16 @@ function App({ focusUpload = false }: AppProps) {
               </div>
               <p className="location-status" aria-live="polite">
                 {locationStatus}
+                {locationStatus.toLowerCase().includes("results") &&
+                  utilityResults.length > 0 && (
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => resultsRef.current?.scrollIntoView({ behavior: "smooth" })}
+                    >
+                      Jump to results
+                    </button>
+                  )}
               </p>
             </article>
 
@@ -1796,15 +1923,18 @@ function App({ focusUpload = false }: AppProps) {
 
                   <div className="slide">
                     <h3>Find Your Water Bill</h3>
-                    <p>Enter your city or region above, then tap search.</p>
+                    <p>
+                      Use the utility lookup above to grab contact info, outage
+                      links, and rebates. Then jump into the upload area to let AI
+                      review your bill.
+                    </p>
                     <div className="location-inline-actions">
                       <button
                         type="button"
-                        id="location-button"
                         className="primary-button"
-                        onClick={handleLocationSearch}
+                        onClick={() => handleScrollTo("location-intel")}
                       >
-                        Search
+                        Go to utility lookup
                       </button>
                       <button
                         type="button"
@@ -1814,52 +1944,6 @@ function App({ focusUpload = false }: AppProps) {
                         Upload my bill
                       </button>
                     </div>
-                    <div
-                      id="location-result"
-                      aria-live="polite"
-                      dangerouslySetInnerHTML={{ __html: locationHtml }}
-                    />
-                    <p className="location-status" aria-live="polite">
-                      {locationStatus}
-                    </p>
-                    {showBillInsights && (
-                      <div className="location-follow-up">
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => handleScrollTo("upload")}
-                        >
-                          Upload your bill for an AI abnormality check
-                        </button>
-                        <div className="bill-checklist">
-                          <h4>Bill Health Checklist</h4>
-                          <ul>
-                            <li>
-                              Compare base service charges month-to-month for hidden
-                              hikes.
-                            </li>
-                            <li>Spot seasonal surges that don&apos;t match your usage.</li>
-                            <li>
-                              Verify tier pricing thresholds and confirm you&apos;re in the
-                              optimal bracket.
-                            </li>
-                            <li>
-                              Highlight leak alerts, drought surcharges, or
-                              unexpected fines.
-                            </li>
-                            <li>
-                              Capture conservation credits or rebates you&apos;re missing
-                              out on.
-                            </li>
-                          </ul>
-                          <p>
-                            Tip: Pair the findings with low-flow fixtures, mindful
-                            watering schedules, and appliance upgrades to conserve
-                            water and reduce charges.
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
                 <div className="slider-dots" role="tablist" aria-label="Water insight slides">
@@ -1895,6 +1979,37 @@ function App({ focusUpload = false }: AppProps) {
               )}
             </article>
           </div>
+        </section>
+
+        <section className="utility-results" ref={resultsRef} aria-live="polite">
+          {utilityResults.length > 0 && (
+            <div className="utility-results-grid">
+              {utilityResults.map((utility, index) => (
+                <UtilityResultCard
+                  key={`${utility.departmentName}-${index}`}
+                  utility={utility}
+                  cta={
+                    utility.billPaymentUrl ? (
+                      <a
+                        className="primary-button"
+                        href={utility.billPaymentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Visit billing portal
+                      </a>
+                    ) : null
+                  }
+                />
+              ))}
+            </div>
+          )}
+          {locationHtml && (
+            <div
+              className="location-html"
+              dangerouslySetInnerHTML={{ __html: locationHtml }}
+            />
+          )}
         </section>
 
         {isMobile && (
@@ -1968,7 +2083,7 @@ function App({ focusUpload = false }: AppProps) {
                       type="text"
                       inputMode="search"
                       id="flow-location"
-                      placeholder="Austin, TX or Barcelona"
+                      placeholder="Enter your U.S. city or utility district"
                       value={locationInput}
                       onChange={(event) => setLocationInput(event.target.value)}
                     />
@@ -1977,6 +2092,7 @@ function App({ focusUpload = false }: AppProps) {
                         type="button"
                         className="primary-button"
                         onClick={handleLocationSearch}
+                        disabled={!locationInput.trim()}
                       >
                         Search
                       </button>
@@ -2256,12 +2372,22 @@ function App({ focusUpload = false }: AppProps) {
                     id="file"
                     accept=".pdf,image/png,image/jpeg"
                     ref={fileInputRef}
-                    required
+                    onChange={handleFileSelect}
                     aria-label="Upload water bill PDF or photo"
                   />
-                  <button type="submit" disabled={isUploading} className="primary-button">
+                  {uploadPreview && (
+                    <p className="file-preview" aria-live="polite">
+                      Selected file: {uploadPreview}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isUploading || !selectedFile}
+                    className="primary-button"
+                  >
                     {isUploading ? "Uploading..." : "Upload and Analyze"}
                   </button>
+                  {isUploading && <div className="inline-spinner" aria-live="assertive" aria-label="Uploading" />}
                   <ul className="upload-benefits" aria-label="Upload safeguards and capabilities">
                     <li>HTTPS / SSL enforced end-to-end</li>
                     <li>Clear statement: we do not sell data</li>
@@ -2272,6 +2398,9 @@ function App({ focusUpload = false }: AppProps) {
                   <div id="countdown-timer" aria-live="polite">
                     {countdownLabel}
                   </div>
+                  <p className="privacy-reassurance">
+                    We value your privacy. Read our <a href="/privacy">privacy policy</a>.
+                  </p>
                 </form>
                 <div id="response-message" aria-live="polite">
                   {responseMessage}
