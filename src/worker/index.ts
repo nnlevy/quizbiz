@@ -64,7 +64,7 @@ const BUILD_DATE = new Date().toISOString().split("T")[0];
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com",
+  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com",
   "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
   "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
