@@ -64,12 +64,12 @@ const BUILD_DATE = new Date().toISOString().split("T")[0];
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com",
-  "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://googleads.g.doubleclick.net https://ep1.adtrafficquality.google",
-  "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com",
+  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://adservice.google.com https://tpc.googlesyndication.com",
+  "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://adservice.google.com https://ep1.adtrafficquality.google",
+  "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self' https://hooks.stripe.com",
@@ -521,6 +521,7 @@ function layout(options: {
       <title>${escapeHtml(title)}</title>
       <meta name="description" content="${escapeHtml(description)}" />
       <link rel="canonical" href="${canonicalUrl}" />
+      <meta name="google-adsense-account" content="ca-pub-1860356577073395" />
       <meta property="og:title" content="${escapeHtml(title)}" />
       <meta property="og:description" content="${escapeHtml(description)}" />
       <meta property="og:url" content="${canonicalUrl}" />
