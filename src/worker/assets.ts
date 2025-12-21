@@ -251,6 +251,15 @@ function clientScript() {
           body: JSON.stringify({ location }),
         });
         const text = await res.text();
+        if (!res.ok) {
+          try {
+            const parsed = JSON.parse(text) as { error?: string };
+            result.innerHTML = `<p class="muted">${parsed.error || 'We could not look up that provider.'}</p>`;
+          } catch {
+            result.innerHTML = text || '<p class="muted">We could not look up that provider.</p>';
+          }
+          return;
+        }
         result.innerHTML = text;
       } catch {
         result.innerHTML = '<p class="muted">Error loading provider info.</p>';
