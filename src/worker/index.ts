@@ -61,6 +61,19 @@ type SiteRoute = {
 const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = new Date().toISOString().split("T")[0];
 
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com",
+  "connect-src 'self' https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
+  "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://hooks.stripe.com",
+].join("; ");
+
 const navLinks = [
   { label: "Analyze", href: "/analyze-water-bill" },
   { label: "Plan", href: "/savings-plan" },
@@ -373,6 +386,11 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+});
+
 app.get("/assets/styles.css", (c) =>
   c.text(stylesCss, 200, {
     "Content-Type": "text/css; charset=utf-8",
@@ -477,6 +495,7 @@ function layout(options: {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" />
       <title>${escapeHtml(title)}</title>
       <meta name="description" content="${escapeHtml(description)}" />
       <link rel="canonical" href="${canonicalUrl}" />
