@@ -1339,7 +1339,8 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const handleLocationSearch = async () => {
-    if (!locationInput.trim()) {
+    const trimmedLocation = locationInput.trim();
+    if (!trimmedLocation) {
       setLocationStatus("Please enter a location.");
       return;
     }
@@ -1356,10 +1357,14 @@ function App({ focusUpload = false }: AppProps) {
     setLocationStatus("Searching...");
     setLocationCountdown(5);
     try {
-      const response = await fetch("/api/location", {
+      const searchUrl = `/api/location?location=${encodeURIComponent(trimmedLocation)}`;
+      const response = await fetch(searchUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: locationInput.trim() }),
+        body: JSON.stringify({
+          location: trimmedLocation,
+          locationInput: trimmedLocation,
+        }),
       });
       setLocationCountdown(null);
       if (!response.ok) {
