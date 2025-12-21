@@ -124,6 +124,10 @@ const SiteNav = ({
     if (!isMobileMenuOpen) {
       return;
     }
+
+    if (event.target instanceof HTMLElement && event.target.closest("button, a, input, textarea, select")) {
+      return;
+    }
     setIsDraggingNav(true);
     setNavDragStartY(event.clientY);
     setNavDragOffset(0);
