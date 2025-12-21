@@ -290,8 +290,7 @@ const SiteNav = ({
             <div
               ref={dropdownRef}
               className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
-              onMouseEnter={handleDropdownPointerEnter}
-              onMouseLeave={handleDropdownPointerLeave}
+              onMouseEnter={openDropdown}
               onFocusCapture={openDropdown}
               onBlurCapture={handleDropdownBlur}
             >
