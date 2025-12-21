@@ -89,6 +89,34 @@ const SiteNav = ({
     document.body.style.overflow = "";
   }, []);
 
+  useEffect(() => {
+    if (!isDropdownOpen) {
+      return undefined;
+    }
+
+    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        closeDropdown();
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideInteraction);
+    document.addEventListener("touchstart", handleOutsideInteraction);
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideInteraction);
+      document.removeEventListener("touchstart", handleOutsideInteraction);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isDropdownOpen]);
+
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const closeDropdown = () => setIsDropdownOpen(false);
@@ -242,7 +270,6 @@ const SiteNav = ({
               ref={dropdownRef}
               className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
               onMouseEnter={openDropdown}
-              onMouseLeave={closeDropdown}
               onFocusCapture={openDropdown}
               onBlurCapture={handleDropdownBlur}
             >
