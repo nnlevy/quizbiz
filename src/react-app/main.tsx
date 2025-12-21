@@ -12,7 +12,7 @@ import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import { initializeAnalytics } from "./analytics";
 
-const ADSENSE_SCRIPT_ID = "adsense-loader";
+const ADSENSE_SRC = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395";
 const CONSENT_KEY = "ws-ad-consent";
 
 function isLikelyEU(): boolean {
@@ -36,12 +36,11 @@ function loadAdSenseScript() {
   if (existing) {
     return;
   }
-  const template = document.getElementById(ADSENSE_SCRIPT_ID) as HTMLScriptElement | null;
   const script = document.createElement("script");
   script.async = true;
   script.crossOrigin = "anonymous";
   script.dataset.adsenseActive = "true";
-  script.src = template?.src || "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395";
+  script.src = ADSENSE_SRC;
   document.head.appendChild(script);
   if (!(window as typeof window & { adsbygoogle?: unknown[] }).adsbygoogle) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
