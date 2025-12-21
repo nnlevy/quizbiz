@@ -784,7 +784,7 @@ h4 {
 
 .utility-overlay {
   max-width: 1200px;
-  margin: -2.25rem auto 3rem;
+  margin: 2rem auto 3rem;
   padding: 0 var(--page-gutter);
   position: relative;
   z-index: 2;

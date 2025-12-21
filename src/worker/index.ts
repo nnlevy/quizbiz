@@ -391,6 +391,27 @@ app.use("*", async (c, next) => {
   c.res.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
 });
 
+const API_CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+app.use("/api/*", async (c, next) => {
+  if (c.req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: API_CORS_HEADERS,
+    });
+  }
+
+  await next();
+
+  Object.entries(API_CORS_HEADERS).forEach(([key, value]) => {
+    c.res.headers.set(key, value);
+  });
+});
+
 app.get("/assets/styles.css", (c) =>
   c.text(stylesCss, 200, {
     "Content-Type": "text/css; charset=utf-8",
