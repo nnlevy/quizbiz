@@ -317,6 +317,62 @@ function clientScript() {
 
   function initAds() {
     let autoAdsQueued = false;
+    let svgSetAttributePatched = false;
+
+    const normalizeCalcDimension = (value: string): string | null => {
+      const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
+      if (!match) return null;
+      const base = parseFloat(match[1]);
+      const subtract = parseFloat(match[2]);
+      if (!Number.isFinite(base) || !Number.isFinite(subtract)) return null;
+      const adjusted = Math.max(base - subtract, 0);
+      return `${adjusted}px`;
+    };
+
+    const sanitizeSvgDimensions = (svg: SVGElement) => {
+      (['width', 'height'] as const).forEach((attr) => {
+        const raw = svg.getAttribute(attr);
+        if (!raw || !raw.includes('calc')) return;
+        const normalized = normalizeCalcDimension(raw);
+        if (normalized) {
+          svg.setAttribute(attr, normalized);
+          svg.style[attr] = normalized;
+        } else {
+          svg.removeAttribute(attr);
+        }
+      });
+    };
+
+    const patchSvgSetAttribute = () => {
+      if (svgSetAttributePatched) return;
+      const nativeSetAttribute = SVGElement.prototype.setAttribute;
+      SVGElement.prototype.setAttribute = function setAttribute(name: string, value: string) {
+        if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
+          const normalized = normalizeCalcDimension(value);
+          if (normalized) return nativeSetAttribute.call(this, name, normalized);
+          return nativeSetAttribute.call(this, name, '');
+        }
+        return nativeSetAttribute.call(this, name, value);
+      };
+      svgSetAttributePatched = true;
+    };
+
+    const monitorAdSvgNodes = () => {
+      document.querySelectorAll<SVGElement>('.adsbygoogle svg').forEach(sanitizeSvgDimensions);
+
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (!(node instanceof Element)) return;
+            const adContainer = node.matches('.adsbygoogle') ? node : node.closest('.adsbygoogle');
+            if (!adContainer) return;
+            adContainer.querySelectorAll<SVGElement>('svg').forEach(sanitizeSvgDimensions);
+          });
+        });
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+    };
 
     const ensureAdsQueue = () => {
       const adsQueue = (window as typeof window & { adsbygoogle?: Array<unknown> }).adsbygoogle || [];
@@ -335,6 +391,7 @@ function clientScript() {
 
     const activateAds = () => {
       const adsQueue = queueAutoAds();
+      patchSvgSetAttribute();
 
       document.querySelectorAll<HTMLElement>('.adsbygoogle[data-ad-slot]').forEach((slot) => {
         if (slot.dataset.adsInitialized === 'true') return;
@@ -345,6 +402,8 @@ function clientScript() {
           console.error('AdSense failed to fill a slot', err);
         }
       });
+
+      monitorAdSvgNodes();
     };
 
     const adScript = document.querySelector<HTMLScriptElement>(
@@ -360,6 +419,13 @@ function clientScript() {
     } else {
       window.addEventListener('load', () => setTimeout(activateAds, 200));
     }
+
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason == null) {
+        event.preventDefault();
+        console.warn('Suppressed empty unhandled rejection from third-party script');
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
