@@ -365,7 +365,7 @@ h4 {
 .main-wrapper {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 4rem 1.25rem 3rem;
+  padding: calc(var(--header-offset) + 1rem) 1.25rem 3rem;
 }
 
 .water-eject-banner {
@@ -1553,7 +1553,7 @@ blockquote {
 
 @media (max-width: 768px) {
   .main-wrapper {
-    padding-top: 3rem;
+    padding-top: calc(var(--header-offset) + 0.75rem);
   }
 
   .utility-overlay {
