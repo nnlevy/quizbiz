@@ -307,7 +307,7 @@ h4 {
   pointer-events: none;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 22;
+  z-index: 13000;
 }
 
 .dropdown-link {
