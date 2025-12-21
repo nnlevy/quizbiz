@@ -42,11 +42,17 @@ const SiteNav = ({
   const [isDraggingNav, setIsDraggingNav] = useState(false);
   const [navDragStartY, setNavDragStartY] = useState<number | null>(null);
   const [navDragOffset, setNavDragOffset] = useState(0);
+  const [isNavVisible, setIsNavVisible] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
+
+  useEffect(() => {
+    const frameId = requestAnimationFrame(() => setIsNavVisible(true));
+    return () => cancelAnimationFrame(frameId);
+  }, []);
 
   useEffect(() => {
     if (!isMobileMenuOpen) {
@@ -176,7 +182,7 @@ const SiteNav = ({
 
   return (
     <header
-      className="app-header"
+      className={`app-header ${isNavVisible ? "nav-visible" : "nav-hidden"}`}
       onTouchStart={handleHeaderTouchStart}
       onTouchEnd={handleHeaderTouchEnd}
     >
