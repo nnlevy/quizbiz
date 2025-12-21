@@ -195,7 +195,7 @@ const NEWS_ITEMS: NewsItem[] = [
 ];
 
 const WATER_EJECT_SHORTCUT_URL =
-  "https://www.icloud.com/shortcuts/b19b1da619454313b1ad28349c45b066";
+  "https://www.icloud.com/shortcuts/0ccfc30b13184f9b9540b25285765d31";
 const WATER_EJECT_RUN_URL = "shortcuts://run-shortcut?name=Water%20Eject";
 
 function formatCurrency(value: number): string {
