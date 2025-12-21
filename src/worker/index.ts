@@ -64,12 +64,12 @@ const BUILD_DATE = new Date().toISOString().split("T")[0];
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://adservice.google.com https://tpc.googlesyndication.com",
-  "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://adservice.google.com https://ep1.adtrafficquality.google",
+  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://adservice.google.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://www.googletagservices.com",
+  "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://adservice.google.com https://ep1.adtrafficquality.google https://fundingchoicesmessages.google.com https://www.googletagservices.com",
   "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self' https://hooks.stripe.com",
@@ -531,7 +531,8 @@ function layout(options: {
       <meta name="twitter:description" content="${escapeHtml(description)}" />
       <script
         async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395"
+        data-ad-client="ca-pub-1860356577073395"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
         crossorigin="anonymous"
       ></script>
       <link rel="preload" href="/assets/styles.css" as="style" />
