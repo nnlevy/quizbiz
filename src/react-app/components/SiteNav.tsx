@@ -46,6 +46,7 @@ const SiteNav = ({
   const [isNavVisible, setIsNavVisible] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const dropdownPointerOpenRef = useRef(false);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -121,6 +122,26 @@ const SiteNav = ({
 
   const closeDropdown = () => setIsDropdownOpen(false);
   const openDropdown = () => setIsDropdownOpen(true);
+
+  const handleDropdownPointerEnter = () => {
+    dropdownPointerOpenRef.current = true;
+    openDropdown();
+  };
+
+  const handleDropdownPointerLeave = () => {
+    dropdownPointerOpenRef.current = false;
+  };
+
+  const handleDropdownToggleClick = () => {
+    setIsDropdownOpen((prev) => {
+      if (prev && dropdownPointerOpenRef.current) {
+        dropdownPointerOpenRef.current = false;
+        return true;
+      }
+      dropdownPointerOpenRef.current = false;
+      return !prev;
+    });
+  };
 
   const handleDropdownBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (!dropdownRef.current?.contains(event.relatedTarget as Node | null)) {
@@ -278,7 +299,7 @@ const SiteNav = ({
                 className="nav-link dropdown-toggle"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
-                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                onClick={handleDropdownToggleClick}
               >
                 Learn
                 <span aria-hidden className="dropdown-caret">
