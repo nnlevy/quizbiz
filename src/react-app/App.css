@@ -1428,8 +1428,7 @@ blockquote {
   box-shadow: 0 10px 18px rgba(15, 35, 95, 0.08);
 }
 
-.analysis-html,
-#disqus_thread {
+.analysis-html {
   max-width: 100%;
   overflow-x: auto;
   word-break: break-word;
@@ -1598,33 +1597,6 @@ blockquote {
 .cookie-actions .primary-button,
 .cookie-actions .secondary-button {
   flex: 1 1 140px;
-}
-
-.ad-wrapper {
-  margin: 24px auto;
-  max-width: 900px;
-  min-height: 180px;
-  display: grid;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(79, 155, 255, 0.12), rgba(12, 33, 68, 0.08));
-  border-radius: 16px;
-  border: 1px solid rgba(12, 33, 68, 0.08);
-  padding: 12px;
-}
-
-.ad-wrapper.tight {
-  min-height: 140px;
-}
-
-ins.adsbygoogle {
-  display: block;
-  max-width: 100%;
-}
-
-[id^="google_ads_iframe"],
-iframe[id^="google_ads_iframe"] {
-  max-width: 100%;
 }
 
 .content-page .content-wrapper {
