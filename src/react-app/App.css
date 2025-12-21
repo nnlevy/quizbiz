@@ -12,6 +12,9 @@
   --radius-lg: 28px;
   --radius-md: 16px;
   --radius-sm: 12px;
+  --page-gutter: clamp(1.25rem, 2vw + 1rem, 2.25rem);
+  --card-gap: clamp(1rem, 1vw + 0.65rem, 1.65rem);
+  --card-padding: clamp(1.25rem, 1vw + 1.1rem, 1.85rem);
   --font-primary: "Inter", "Segoe UI", Roboto, sans-serif;
   --font-accent: "Playfair Display", serif;
   --header-height: 72px;
@@ -150,9 +153,9 @@ h4 {
   max-width: 1200px;
   margin: 0 auto;
   padding: calc(0.65rem + env(safe-area-inset-top))
-    calc(1rem + env(safe-area-inset-right))
+    calc(var(--page-gutter) + env(safe-area-inset-right))
     0.65rem
-    calc(1rem + env(safe-area-inset-left));
+    calc(var(--page-gutter) + env(safe-area-inset-left));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -366,7 +369,7 @@ h4 {
 .main-wrapper {
   max-width: 1200px;
   margin: 0 auto;
-  padding: calc(var(--header-offset) + 1rem) 1.25rem 3rem;
+  padding: calc(var(--header-offset) + 1rem) var(--page-gutter) 3rem;
 }
 
 .water-eject-banner {
@@ -383,7 +386,7 @@ h4 {
 .banner-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(1.5rem, 2vw + 0.5rem, 3rem);
+  gap: var(--card-gap);
   align-items: stretch;
 }
 
@@ -459,7 +462,7 @@ h4 {
   max-width: 560px;
   width: 100%;
   background: linear-gradient(160deg, #ffffff 0%, #f4f7ff 50%, #e8f6ff 100%);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: 2.2rem;
   box-shadow: 0 30px 68px rgba(15, 35, 95, 0.2);
   overflow: hidden;
@@ -500,7 +503,7 @@ h4 {
 .celebratory-ad {
   margin-top: 1rem;
   border: 1px solid rgba(79, 155, 255, 0.2);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: #fff;
 }
 
@@ -782,7 +785,7 @@ h4 {
 .utility-overlay {
   max-width: 1200px;
   margin: -2.25rem auto 3rem;
-  padding: 0 1.5rem;
+  padding: 0 var(--page-gutter);
   position: relative;
   z-index: 2;
 }
@@ -790,13 +793,13 @@ h4 {
 .utility-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
+  gap: var(--card-gap);
 }
 
 .utility-card {
   background: var(--surface-strong);
   border-radius: var(--radius-lg);
-  padding: 1.5rem 1.75rem;
+  padding: var(--card-padding);
   box-shadow: var(--shadow-soft);
   border: 1px solid rgba(79, 155, 255, 0.14);
   backdrop-filter: blur(6px);
@@ -886,13 +889,13 @@ h4 {
   margin: 3rem 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
+  gap: var(--card-gap);
 }
 
 .feature-card {
   background: var(--surface-strong);
   border-radius: var(--radius-md);
-  padding: 1.75rem;
+  padding: var(--card-padding);
   box-shadow: var(--shadow-soft);
   border: 1px solid rgba(79, 155, 255, 0.12);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -1147,7 +1150,7 @@ button[type="submit"] {
 .upload-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2.5rem;
+  gap: var(--card-gap);
   align-items: center;
   min-width: 0;
 }
@@ -1362,7 +1365,7 @@ blockquote {
 
 .news-grid {
   display: grid;
-  gap: 1.1rem;
+  gap: var(--card-gap);
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
@@ -1372,7 +1375,7 @@ blockquote {
   border-radius: var(--radius-md);
   border: 1px solid rgba(12, 33, 68, 0.08);
   box-shadow: var(--shadow-soft);
-  padding: 0.35rem;
+  padding: calc(var(--card-padding) - 0.35rem);
 }
 
 .news-card .accordion-header h3 {
@@ -1491,9 +1494,9 @@ blockquote {
 
   .nav-container {
     padding: calc(0.55rem + env(safe-area-inset-top))
-      calc(0.95rem + env(safe-area-inset-right))
+      calc(var(--page-gutter) - 0.2rem + env(safe-area-inset-right))
       0.55rem
-      calc(0.95rem + env(safe-area-inset-left));
+      calc(var(--page-gutter) - 0.2rem + env(safe-area-inset-left));
     gap: 0.65rem;
   }
 
@@ -1518,22 +1521,22 @@ blockquote {
 @media (max-width: 720px) {
   .hero {
     min-height: auto;
-    padding: 2rem 1.5rem 2.5rem;
+    padding: 2rem var(--page-gutter) 2.5rem;
     gap: 1.5rem;
   }
 
   .utility-overlay {
     margin: 0 auto 2rem;
-    padding: 0 1.15rem;
+    padding: 0 var(--page-gutter);
   }
 }
 
 @media (max-width: 640px) {
   .nav-container {
     padding: calc(0.5rem + env(safe-area-inset-top))
-      calc(0.85rem + env(safe-area-inset-right))
+      calc(var(--page-gutter) - 0.35rem + env(safe-area-inset-right))
       0.5rem
-      calc(0.85rem + env(safe-area-inset-left));
+      calc(var(--page-gutter) - 0.35rem + env(safe-area-inset-left));
   }
 
   .brand {
@@ -1582,7 +1585,7 @@ blockquote {
   background: #0f172a;
   color: #f8fafc;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   z-index: 9999;
   display: grid;
@@ -1652,7 +1655,7 @@ blockquote {
 
 .collapsible-toggle {
   border: 1px solid rgba(12, 33, 68, 0.12);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 0.5rem 1rem;
   background: #fff;
   cursor: pointer;
@@ -1699,7 +1702,7 @@ blockquote {
 
 .mobile-flow__sheet {
   background: #fff;
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: 0 -12px 38px rgba(12, 33, 68, 0.2);
   padding: 1rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
   transform: translateY(100%);
@@ -1788,9 +1791,9 @@ blockquote {
 
 .upgrade-modal {
   background: #ffffff;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.16);
-  padding: 1.5rem;
+  padding: calc(var(--card-padding) + 0.1rem);
   max-width: 960px;
   width: min(960px, 100%);
   display: grid;
@@ -1823,8 +1826,8 @@ blockquote {
 .cta-preference-row {
   border: 1px solid rgba(12, 33, 68, 0.08);
   background: rgba(12, 33, 68, 0.02);
-  border-radius: 14px;
-  padding: 1rem;
+  border-radius: var(--radius-md);
+  padding: calc(var(--card-padding) - 0.35rem);
   display: grid;
   gap: 0.5rem;
 }
@@ -1867,8 +1870,8 @@ blockquote {
 
 .modal-card {
   border: 1px solid rgba(12, 33, 68, 0.08);
-  border-radius: 14px;
-  padding: 1rem;
+  border-radius: var(--radius-md);
+  padding: calc(var(--card-padding) - 0.25rem);
   background: #f7fafc;
   display: grid;
   gap: 0.5rem;
