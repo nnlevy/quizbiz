@@ -184,7 +184,6 @@ const SiteNav = ({
   const navDragStyle = isMobileMenuOpen
     ? {
         transform: isDraggingNav ? `translateY(${Math.min(navDragOffset, 0)}px)` : undefined,
-        transition: isDraggingNav ? "none" : undefined,
       }
     : undefined;
 
@@ -198,7 +197,11 @@ const SiteNav = ({
           : "translateY(105%)",
     visibility: (isMobileMenuOpen ? "visible" : "hidden") as CSSProperties["visibility"],
     pointerEvents: (isMobileMenuOpen ? "auto" : "none") as CSSProperties["pointerEvents"],
-    transition: isDraggingNav ? "none" : "transform 0.25s ease, visibility 0s linear 0.25s",
+    transition: isDraggingNav
+      ? "none"
+      : isMobileMenuOpen
+        ? "transform 0.25s ease, visibility 0s"
+        : "transform 0.25s ease, visibility 0s linear 0.25s",
   };
 
   const navScrimStyle = {
