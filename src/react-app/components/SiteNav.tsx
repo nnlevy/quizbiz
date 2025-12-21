@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   FocusEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -187,6 +188,25 @@ const SiteNav = ({
       }
     : undefined;
 
+  const mobileNavStyle = {
+    ...navDragStyle,
+    transform:
+      isMobileMenuOpen && navDragStyle?.transform !== undefined
+        ? navDragStyle.transform
+        : isMobileMenuOpen
+          ? "translateY(0)"
+          : "translateY(105%)",
+    visibility: (isMobileMenuOpen ? "visible" : "hidden") as CSSProperties["visibility"],
+    pointerEvents: (isMobileMenuOpen ? "auto" : "none") as CSSProperties["pointerEvents"],
+    transition: isDraggingNav ? "none" : "transform 0.25s ease, visibility 0s linear 0.25s",
+  };
+
+  const navScrimStyle = {
+    opacity: isMobileMenuOpen ? 1 : 0,
+    pointerEvents: (isMobileMenuOpen ? "auto" : "none") as CSSProperties["pointerEvents"],
+    transition: "opacity 0.2s ease",
+  };
+
   return (
     <header
       className={`app-header ${isNavVisible ? "nav-visible" : "nav-hidden"}`}
@@ -267,13 +287,18 @@ const SiteNav = ({
         className={`nav-scrim ${isMobileMenuOpen ? "open" : ""}`}
         aria-label="Close menu"
         onClick={closeMenu}
+        aria-hidden={!isMobileMenuOpen}
+        hidden={!isMobileMenuOpen}
+        style={navScrimStyle}
       />
       <div
         id="mobile-nav-panel"
         className={`mobile-nav ${isMobileMenuOpen ? "open" : ""}`}
         role="dialog"
         aria-label="Mobile navigation"
-        style={navDragStyle}
+        aria-hidden={!isMobileMenuOpen}
+        hidden={!isMobileMenuOpen}
+        style={mobileNavStyle}
         onPointerDown={handleNavPointerDown}
         onPointerMove={handleNavPointerMove}
         onPointerUp={handleNavPointerUp}
