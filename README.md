@@ -8,7 +8,7 @@ WaterShortcut runs as a Cloudflare Worker with Hono routing and a Vite-built Rea
 - **SEO source of truth:** `src/seo/seoConfig.js` defines the canonical host plus per-route title, description, canonical paths, OG/Twitter data, and JSON-LD.
 - **Prerendering:** `npm run prerender` clones the built `dist/index.html`, injects metadata and prerendered HTML shells for each public route, and writes `sitemap.xml` + `robots.txt`.
 - **Structured data:** Organization/WebSite JSON-LD lives on `/`; Article JSON-LD is added for each Learn page.
-- **Ads & analytics:** GA4 measurement ID `G-98170RDCDD` and AdSense client `ca-pub-1860356577073395` are wired into the layout head.
+- **Ads & analytics:** GA4 measurement ID `G-98170RDCDD` and AdSense client `ca-pub-1860356577073395` are wired into the layout head. Auto ads are queued by default; set slot IDs to monetize inline/footer placements.
 
 ## Developing locally
 ```bash
@@ -61,7 +61,11 @@ Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrang
 - optional `domains-db` D1 binding if needed later
 
 ## Ads and compliance
-- AdSense loads asynchronously; avoid adding manual ad slots without confirmed IDs.
+- AdSense loads asynchronously; avoid adding manual ad slots without confirmed IDs. To run your own slots, set these Cloudflare vars (numeric slot IDs from AdSense):
+  - `ADSENSE_SLOT_INLINE`
+  - `ADSENSE_SLOT_FOOTER` (falls back to inline if unset)
+  - `ADSENSE_SLOT_STICKY` (not yet rendered but reserved for future use)
+  Add them to `wrangler.json` under `vars` or `wrangler secret put` so the Worker renders live `<ins class="adsbygoogle">` units instead of placeholders.
 - Keep ads out of modals and away from tight interactive clusters to prevent accidental clicks.
 - Follow Google publisher policies and Better Ads standards.
 

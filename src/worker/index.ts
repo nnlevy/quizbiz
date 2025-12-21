@@ -29,6 +29,9 @@ type WorkerEnv = {
   "Google-Service-Account-FINAL": string;
   "domains-db"?: D1Database;
   STRIPE_API_KEY?: string;
+  ADSENSE_SLOT_INLINE?: string;
+  ADSENSE_SLOT_FOOTER?: string;
+  ADSENSE_SLOT_STICKY?: string;
 };
 
 type ChatCompletionResponse = {
@@ -61,6 +64,20 @@ type SiteRoute = {
 
 const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = new Date().toISOString().split("T")[0];
+const ADSENSE_PUBLISHER = "ca-pub-1860356577073395";
+const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
+
+type AdsenseSlots = {
+  inline?: string | null;
+  footer?: string | null;
+  sticky?: string | null;
+};
+
+const defaultAdsenseSlots: Required<AdsenseSlots> = {
+  inline: null,
+  footer: null,
+  sticky: null,
+};
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
@@ -74,6 +91,40 @@ const CONTENT_SECURITY_POLICY = [
   "base-uri 'self'",
   "form-action 'self' https://hooks.stripe.com",
 ].join("; ");
+
+function buildAdsenseSlots(env: WorkerEnv): Required<AdsenseSlots> {
+  return {
+    inline: env.ADSENSE_SLOT_INLINE || null,
+    footer: env.ADSENSE_SLOT_FOOTER || env.ADSENSE_SLOT_INLINE || null,
+    sticky: env.ADSENSE_SLOT_STICKY || null,
+  };
+}
+
+function renderAdSlot(
+  slotId: string | null,
+  options: { slotName: string; format?: string; fullWidth?: boolean },
+): string {
+  if (!slotId) {
+    return `<div class="ad-slot-placeholder" aria-label="Ad placeholder">Ad space reserved</div>`;
+  }
+
+  const { format = "auto", fullWidth = true, slotName } = options;
+  const attrs = [
+    'class="adsbygoogle ad-slot"',
+    `data-ad-client="${ADSENSE_PUBLISHER}"`,
+    `data-ad-slot="${escapeHtml(slotId)}"`,
+    `data-ad-region="${escapeHtml(slotName)}"`,
+    `data-ad-format="${format}"`,
+  ];
+  if (fullWidth) attrs.push('data-full-width-responsive="true"');
+
+  return `<ins ${attrs.join(" ")}></ins>`;
+}
+
+function injectAdSlots(bodyHtml: string, adsenseSlots: Required<AdsenseSlots>): string {
+  const inlineAd = renderAdSlot(adsenseSlots.inline, { slotName: "inline" });
+  return bodyHtml.replaceAll(INLINE_AD_MARKER, inlineAd);
+}
 
 const navLinks = [
   { label: "Analyze", href: "/analyze-water-bill" },
@@ -432,19 +483,22 @@ app.get("/ads.txt", (c) =>
 );
 
 siteRoutes.forEach((route) => {
-  app.get(route.path, (c) =>
-    c.html(
+  app.get(route.path, (c) => {
+    const adsenseSlots = buildAdsenseSlots(c.env);
+    const bodyHtml = route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body;
+    return c.html(
       layout({
         title: route.title,
         description: route.description,
         canonicalPath: route.path,
-        bodyHtml: route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body,
+        bodyHtml,
         pageCssClass: route.pageCssClass,
         breadcrumbs: route.breadcrumbs,
         extraJsonLd: route.extraJsonLd,
+        adsenseSlots,
       }),
-    ),
-  );
+    );
+  });
 });
 
 app.get("/sitemap.xml", (c) => {
@@ -473,9 +527,12 @@ function layout(options: {
   pageCssClass?: string;
   breadcrumbs?: Array<{ name: string; path: string }>;
   extraJsonLd?: Array<Record<string, unknown>>;
+  adsenseSlots?: Required<AdsenseSlots>;
 }): string {
   const { title, description, canonicalPath, bodyHtml, pageCssClass, breadcrumbs, extraJsonLd } = options;
-  const canonicalUrl = `${DOMAIN}${canonicalPath}`;
+  const adsenseSlots = options.adsenseSlots || defaultAdsenseSlots;
+  const processedBodyHtml = injectAdSlots(bodyHtml, adsenseSlots);
+  const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const breadcrumbJson = crumbList.length
     ? {
@@ -521,7 +578,7 @@ function layout(options: {
       <title>${escapeHtml(title)}</title>
       <meta name="description" content="${escapeHtml(description)}" />
       <link rel="canonical" href="${canonicalUrl}" />
-      <meta name="google-adsense-account" content="ca-pub-1860356577073395" />
+      <meta name="google-adsense-account" content="${ADSENSE_PUBLISHER}" />
       <meta property="og:title" content="${escapeHtml(title)}" />
       <meta property="og:description" content="${escapeHtml(description)}" />
       <meta property="og:url" content="${canonicalUrl}" />
@@ -531,8 +588,8 @@ function layout(options: {
       <meta name="twitter:description" content="${escapeHtml(description)}" />
       <script
         async
-        data-ad-client="ca-pub-1860356577073395"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+        data-ad-client="${ADSENSE_PUBLISHER}"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
         crossorigin="anonymous"
       ></script>
       <link rel="preload" href="/assets/styles.css" as="style" />
@@ -557,9 +614,9 @@ function layout(options: {
           </div>
         </header>
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
-        <main>${bodyHtml}</main>
+        <main>${processedBodyHtml}</main>
         <div class="section">
-          <div class="ad-slot-placeholder" aria-label="Ad placeholder">Ad space reserved</div>
+          ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, { slotName: "footer" })}
         </div>
         <footer class="footer">
           <div class="footer-inner">
@@ -742,7 +799,7 @@ function renderBillAnalyzer(): string {
     </section>
     ${section(
       "Your top 3 moves",
-      `<p class="muted">We highlight quick actions first.</p><div class="ad-slot-placeholder" aria-label="Ad placeholder">Reserved</div>`,
+      `<p class="muted">We highlight quick actions first.</p>${INLINE_AD_MARKER}`,
     )}
     ${section(
       "What your bill is really charging for",

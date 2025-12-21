@@ -9,6 +9,9 @@ declare namespace Cloudflare {
                 Google_Document_AI_Processor_Prediction_Endpoint: string;
                 STRIPE_API_KEY: string;
                 "domains-db"?: D1Database;
+                ADSENSE_SLOT_INLINE?: string;
+                ADSENSE_SLOT_FOOTER?: string;
+                ADSENSE_SLOT_STICKY?: string;
         }
 }
 interface Env extends Cloudflare.Env {}
