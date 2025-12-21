@@ -489,14 +489,6 @@ function layout(options: {
       <meta name="twitter:description" content="${escapeHtml(description)}" />
       <link rel="preload" href="/assets/styles.css" as="style" />
       <link rel="stylesheet" href="/assets/styles.css" />
-      <script async src="https://www.googletagmanager.com/gtag/js?id=G-98170RDCDD"></script>
-      <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);} 
-        gtag('js', new Date());
-        gtag('config', 'G-98170RDCDD');
-      </script>
-      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1860356577073395" crossorigin="anonymous"></script>
       <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
       <script defer src="/assets/app.js"></script>
     </head>
