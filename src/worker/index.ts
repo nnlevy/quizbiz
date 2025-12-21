@@ -1353,6 +1353,11 @@ app.post("/api/location", handleLocationQuery);
 async function extractLocationInput(
   c: Context<{ Bindings: WorkerEnv }>,
 ): Promise<string> {
+  const queryParam = coerceToLocationInput(c.req.query("location"));
+  if (queryParam.trim()) {
+    return queryParam;
+  }
+
   if (c.req.method === "GET") {
     return coerceToLocationInput(c.req.query("location"));
   }
@@ -1414,6 +1419,7 @@ function coerceToLocationInput(
     const record = value as Record<string, unknown>;
     const prioritizedKeys = [
       "location",
+      "locationInput",
       "city",
       "region",
       "state",
@@ -1463,7 +1469,9 @@ async function resolveLocationHtml(
         includeWaterContext: false,
       });
       const locationContent = openAiData.choices?.[0]?.message?.content || "";
-      htmlResult = transformLocationAssistantContent(locationContent);
+      htmlResult = transformLocationAssistantContent(locationContent, {
+        fallbackLocation: location,
+      });
       if (!htmlResult.success) {
         console.warn(
           "Location assistant returned invalid data, switching to fallback.",
@@ -1993,9 +2001,10 @@ Rules:
 Return JSON only.`;
 }
 
-function transformLocationAssistantContent(content: string):
-  | { success: true; html: string }
-  | { success: false; error: string } {
+function transformLocationAssistantContent(
+  content: string,
+  options?: { fallbackLocation?: string },
+): { success: true; html: string } | { success: false; error: string } {
   const jsonBlock = extractJsonObject(content);
   if (!jsonBlock) {
     return {
@@ -2022,7 +2031,11 @@ function transformLocationAssistantContent(content: string):
     };
   }
 
-  return renderLocationPayload(parsed);
+  const mergedPayload = applyFallbackLocationPayload(parsed, options?.fallbackLocation);
+
+  return renderLocationPayload(mergedPayload, {
+    fallbackLocation: options?.fallbackLocation,
+  });
 }
 
 function renderLocationPayload(
@@ -2129,6 +2142,34 @@ function renderLocationPayload(
   return {
     success: true,
     html: `<div class="location-result-block">${detailBlocks.join("")}</div>`,
+  };
+}
+
+function applyFallbackLocationPayload(
+  parsed: LocationAssistantPayload,
+  fallbackLocation?: string,
+): LocationAssistantPayload {
+  if (!fallbackLocation) {
+    return parsed;
+  }
+
+  const fallback = buildFallbackLocationPayload(fallbackLocation);
+  const summaryLines = Array.isArray(parsed.summaryLines)
+    ? parsed.summaryLines.filter((line): line is string =>
+        typeof line === "string" && Boolean(line.trim()),
+      )
+    : [];
+
+  return {
+    departmentName: parsed.departmentName || fallback.departmentName,
+    billPaymentUrl: parsed.billPaymentUrl || fallback.billPaymentUrl,
+    phoneNumber: parsed.phoneNumber || fallback.phoneNumber,
+    departmentWebsiteUrl:
+      parsed.departmentWebsiteUrl ?? fallback.departmentWebsiteUrl,
+    oversightDepartment: parsed.oversightDepartment ?? fallback.oversightDepartment,
+    oversightUrl: parsed.oversightUrl ?? fallback.oversightUrl,
+    grantsOrAidUrl: parsed.grantsOrAidUrl ?? fallback.grantsOrAidUrl,
+    summaryLines: summaryLines.length ? summaryLines.slice(0, 3) : fallback.summaryLines,
   };
 }
 
