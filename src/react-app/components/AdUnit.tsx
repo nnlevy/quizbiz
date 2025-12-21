@@ -19,15 +19,46 @@ const AdUnit = ({ slot, format = "auto", style = DEFAULT_STYLE }: AdUnitProps) =
     if (typeof window === "undefined") {
       return;
     }
-    if ((window as typeof window & { adsbygoogle?: unknown[] }).adsbygoogle && adRef.current) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (error) {
-        console.error("AdSense push failed", error);
-      }
+    const adElement = adRef.current;
+    if (!adElement) {
+      return;
     }
+
+    let hasPushed = false;
+
+    const pushAdIfReady = () => {
+      if (hasPushed) {
+        return;
+      }
+      const width = adElement.offsetWidth;
+      const height = adElement.offsetHeight;
+      if (!width || !height) {
+        return;
+      }
+      if ((window as typeof window & { adsbygoogle?: unknown[] }).adsbygoogle) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+          hasPushed = true;
+        } catch (error) {
+          console.error("AdSense push failed", error);
+        }
+      }
+    };
+
+    const observer = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(pushAdIfReady)
+      : null;
+
+    pushAdIfReady();
+    if (observer) {
+      observer.observe(adElement);
+    }
+
+    return () => {
+      observer?.disconnect();
+    };
   }, []);
 
   return (
