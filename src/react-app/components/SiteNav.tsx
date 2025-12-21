@@ -46,6 +46,7 @@ const SiteNav = ({
   const [isNavVisible, setIsNavVisible] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const dropdownPointerOpenRef = useRef(false);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -89,10 +90,58 @@ const SiteNav = ({
     document.body.style.overflow = "";
   }, []);
 
+  useEffect(() => {
+    if (!isDropdownOpen) {
+      return undefined;
+    }
+
+    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        closeDropdown();
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideInteraction);
+    document.addEventListener("touchstart", handleOutsideInteraction);
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideInteraction);
+      document.removeEventListener("touchstart", handleOutsideInteraction);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isDropdownOpen]);
+
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const closeDropdown = () => setIsDropdownOpen(false);
   const openDropdown = () => setIsDropdownOpen(true);
+
+  const handleDropdownPointerEnter = () => {
+    dropdownPointerOpenRef.current = true;
+    openDropdown();
+  };
+
+  const handleDropdownPointerLeave = () => {
+    dropdownPointerOpenRef.current = false;
+  };
+
+  const handleDropdownToggleClick = () => {
+    setIsDropdownOpen((prev) => {
+      if (prev && dropdownPointerOpenRef.current) {
+        dropdownPointerOpenRef.current = false;
+        return true;
+      }
+      dropdownPointerOpenRef.current = false;
+      return !prev;
+    });
+  };
 
   const handleDropdownBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (!dropdownRef.current?.contains(event.relatedTarget as Node | null)) {
@@ -241,8 +290,8 @@ const SiteNav = ({
             <div
               ref={dropdownRef}
               className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
-              onMouseEnter={openDropdown}
-              onMouseLeave={closeDropdown}
+              onMouseEnter={handleDropdownPointerEnter}
+              onMouseLeave={handleDropdownPointerLeave}
               onFocusCapture={openDropdown}
               onBlurCapture={handleDropdownBlur}
             >
@@ -251,7 +300,7 @@ const SiteNav = ({
                 className="nav-link dropdown-toggle"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
-                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                onClick={handleDropdownToggleClick}
               >
                 Learn
                 <span aria-hidden className="dropdown-caret">
