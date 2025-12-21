@@ -1723,6 +1723,16 @@ function App({ focusUpload = false }: AppProps) {
                 Start with your city or district to unlock the right portal, then follow a
                 guided checklist for rebates, outage alerts, and water-wise habits.
               </p>
+              <label htmlFor="location-input" className="input-label">
+                Your Location
+              </label>
+              <input
+                type="text"
+                id="location-input"
+                placeholder="Austin, TX or Barcelona"
+                value={locationInput}
+                onChange={(event) => setLocationInput(event.target.value)}
+              />
               <div className="utility-actions">
                 <button
                   type="button"
@@ -1745,16 +1755,6 @@ function App({ focusUpload = false }: AppProps) {
             </article>
 
             <article className="utility-card input-card">
-              <label htmlFor="location-input" className="input-label">
-                Where should we search?
-              </label>
-              <input
-                type="text"
-                id="location-input"
-                placeholder="Austin, TX or Barcelona"
-                value={locationInput}
-                onChange={(event) => setLocationInput(event.target.value)}
-              />
               <div className="dual-slider compact">
                 <div
                   className="slides-wrapper"

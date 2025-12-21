@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { stylesCss, appJs } from "./assets";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
@@ -393,7 +394,7 @@ app.use("*", async (c, next) => {
 
 const API_CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
@@ -1316,50 +1317,17 @@ function renderHumanSitemap(routes: SiteRoute[]): string {
   `;
 }
 
-app.post("/api/location", async (c) => {
+const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
   try {
-    const { location } = await c.req.json<{ location?: string }>();
-    if (!location || !location.trim()) {
+    const locationInput = await extractLocationInput(c);
+    if (!locationInput.trim()) {
       return c.json(
         { error: "Missing or invalid 'location' field." },
         400,
       );
     }
 
-    const trimmedLocation = location.trim();
-    const openAiEnabled = isOpenAiConfigured(c.env);
-    let htmlResult: ReturnType<typeof transformLocationAssistantContent> | null =
-      null;
-
-    if (openAiEnabled) {
-      try {
-        const prompt = buildLocationPrompt(trimmedLocation);
-        const openAiData = await analyzeTextWithOpenAI(c.env, {
-          content: prompt,
-          includeWaterContext: false,
-        });
-        const locationContent =
-          openAiData.choices?.[0]?.message?.content || "";
-        htmlResult = transformLocationAssistantContent(locationContent);
-        if (!htmlResult.success) {
-          console.warn(
-            "Location assistant returned invalid data, switching to fallback.",
-            htmlResult.error,
-          );
-          htmlResult = null;
-        }
-      } catch (error) {
-        console.warn("OpenAI lookup failed, using fallback:", error);
-        htmlResult = null;
-      }
-    }
-
-    if (!htmlResult) {
-      const fallbackPayload = buildFallbackLocationPayload(trimmedLocation);
-      htmlResult = renderLocationPayload(fallbackPayload, {
-        fallbackLocation: trimmedLocation,
-      });
-    }
+    const htmlResult = await resolveLocationHtml(locationInput.trim(), c.env);
 
     if (!htmlResult.success) {
       return c.json(
@@ -1378,7 +1346,66 @@ app.post("/api/location", async (c) => {
       500,
     );
   }
-});
+};
+
+app.get("/api/location", handleLocationQuery);
+app.post("/api/location", handleLocationQuery);
+
+async function extractLocationInput(
+  c: Context<{ Bindings: WorkerEnv }>,
+): Promise<string> {
+  if (c.req.method === "GET") {
+    return c.req.query("location") || "";
+  }
+
+  try {
+    const body = await c.req.json<{ location?: string }>();
+    return body.location || "";
+  } catch (error) {
+    console.warn("Failed to parse location payload, defaulting to empty:", error);
+    return "";
+  }
+}
+
+async function resolveLocationHtml(
+  location: string,
+  env: WorkerEnv,
+): Promise<ReturnType<typeof transformLocationAssistantContent>> {
+  const openAiEnabled = isOpenAiConfigured(env);
+  let htmlResult: ReturnType<typeof transformLocationAssistantContent> | null =
+    null;
+
+  if (openAiEnabled) {
+    try {
+      const prompt = buildLocationPrompt(location);
+      const openAiData = await analyzeTextWithOpenAI(env, {
+        content: prompt,
+        includeWaterContext: false,
+      });
+      const locationContent = openAiData.choices?.[0]?.message?.content || "";
+      htmlResult = transformLocationAssistantContent(locationContent);
+      if (!htmlResult.success) {
+        console.warn(
+          "Location assistant returned invalid data, switching to fallback.",
+          htmlResult.error,
+        );
+        htmlResult = null;
+      }
+    } catch (error) {
+      console.warn("OpenAI lookup failed, using fallback:", error);
+      htmlResult = null;
+    }
+  }
+
+  if (!htmlResult) {
+    const fallbackPayload = buildFallbackLocationPayload(location);
+    htmlResult = renderLocationPayload(fallbackPayload, {
+      fallbackLocation: location,
+    });
+  }
+
+  return htmlResult;
+}
 
 app.post("/api/credits/checkout", async (c) => {
   const env = c.env as WorkerEnv & { STRIPE_API_KEY?: string };
