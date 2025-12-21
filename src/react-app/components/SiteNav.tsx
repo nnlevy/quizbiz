@@ -146,12 +146,28 @@ const SiteNav = ({
     if (!isMobileViewport()) {
       return;
     }
+
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest(".mobile-nav")
+    ) {
+      navTouchStart.current = null;
+      return;
+    }
     const touch = event.touches[0];
     navTouchStart.current = { x: touch.clientX, y: touch.clientY };
   };
 
   const handleHeaderTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
     if (!isMobileViewport()) {
+      navTouchStart.current = null;
+      return;
+    }
+
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest(".mobile-nav")
+    ) {
       navTouchStart.current = null;
       return;
     }
