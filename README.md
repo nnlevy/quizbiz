@@ -66,6 +66,7 @@ Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrang
   - `ADSENSE_SLOT_FOOTER` (autorelaxed format, default `1809987601`)
   - `ADSENSE_SLOT_STICKY` (fluid format, default `7418194041`, layout key `-gw-3+1f-3d+2z`)
   Add overrides to `wrangler.json` under `vars` or `wrangler secret put` so the Worker renders live `<ins class="adsbygoogle">` units.
+- If AdSense does not fill a slot within a few seconds, the client injects a polite fallback message inside the ad container so visitors still see a prompt to support WaterShortcut.
 - Keep ads out of modals and away from tight interactive clusters to prevent accidental clicks.
 - Follow Google publisher policies and Better Ads standards.
 
