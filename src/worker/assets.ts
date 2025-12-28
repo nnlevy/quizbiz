@@ -315,135 +315,140 @@ function clientScript() {
     });
   }
 
-  function initAds() {
-    let autoAdsQueued = false;
-    let svgSetAttributePatched = false;
-    let htmlSetAttributePatched = false;
+  let autoAdsQueued = false;
+  let svgSetAttributePatched = false;
+  let htmlSetAttributePatched = false;
 
-    const normalizeCalcDimension = (value: string): string | null => {
-      const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
-      if (!match) return null;
-      const base = parseFloat(match[1]);
-      const subtract = parseFloat(match[2]);
-      if (!Number.isFinite(base) || !Number.isFinite(subtract)) return null;
-      const adjusted = Math.max(base - subtract, 0);
-      return `${adjusted}px`;
-    };
+  const normalizeCalcDimension = (value: string): string | null => {
+    const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
+    if (!match) return null;
+    const base = parseFloat(match[1]);
+    const subtract = parseFloat(match[2]);
+    if (!Number.isFinite(base) || !Number.isFinite(subtract)) return null;
+    const adjusted = Math.max(base - subtract, 0);
+    return `${adjusted}px`;
+  };
 
-    const sanitizeSvgDimensions = (svg: SVGElement) => {
-      (['width', 'height'] as const).forEach((attr) => {
-        const raw = svg.getAttribute(attr);
-        if (!raw || !raw.includes('calc')) return;
-        const normalized = normalizeCalcDimension(raw);
-        if (normalized) {
-          svg.setAttribute(attr, normalized);
-          svg.style[attr] = normalized;
-        } else {
-          svg.removeAttribute(attr);
+  const sanitizeSvgDimensions = (svg: SVGElement) => {
+    (['width', 'height'] as const).forEach((attr) => {
+      const raw = svg.getAttribute(attr);
+      if (!raw || !raw.includes('calc')) return;
+      const normalized = normalizeCalcDimension(raw);
+      if (normalized) {
+        svg.setAttribute(attr, normalized);
+        svg.style[attr] = normalized;
+      } else {
+        svg.removeAttribute(attr);
+      }
+    });
+  };
+
+  const sanitizeElementDimensions = (el: Element) => {
+    (['width', 'height'] as const).forEach((attr) => {
+      const raw = el.getAttribute(attr);
+      if (!raw || !raw.includes('calc')) return;
+      const normalized = normalizeCalcDimension(raw);
+      if (normalized) {
+        el.setAttribute(attr, normalized);
+        if (el instanceof HTMLElement) {
+          el.style[attr] = normalized;
         }
-      });
+      } else {
+        el.removeAttribute(attr);
+      }
+    });
+  };
+
+  const patchSvgSetAttribute = () => {
+    if (svgSetAttributePatched) return;
+    const nativeSetAttribute = SVGElement.prototype.setAttribute;
+    SVGElement.prototype.setAttribute = function setAttribute(name: string, value: string) {
+      if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
+        const normalized = normalizeCalcDimension(value);
+        if (normalized) return nativeSetAttribute.call(this, name, normalized);
+        return nativeSetAttribute.call(this, name, '');
+      }
+      return nativeSetAttribute.call(this, name, value);
     };
+    svgSetAttributePatched = true;
+  };
 
-    const sanitizeElementDimensions = (el: Element) => {
-      (['width', 'height'] as const).forEach((attr) => {
-        const raw = el.getAttribute(attr);
-        if (!raw || !raw.includes('calc')) return;
-        const normalized = normalizeCalcDimension(raw);
-        if (normalized) {
-          el.setAttribute(attr, normalized);
-          if (el instanceof HTMLElement) {
-            el.style[attr] = normalized;
-          }
-        } else {
-          el.removeAttribute(attr);
-        }
-      });
+  const patchHtmlSetAttribute = () => {
+    if (htmlSetAttributePatched) return;
+    const nativeSetAttribute = HTMLElement.prototype.setAttribute;
+    HTMLElement.prototype.setAttribute = function setAttribute(name: string, value: string) {
+      if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
+        const normalized = normalizeCalcDimension(value);
+        if (normalized) return nativeSetAttribute.call(this, name, normalized);
+        return nativeSetAttribute.call(this, name, '');
+      }
+      return nativeSetAttribute.call(this, name, value);
     };
+    htmlSetAttributePatched = true;
+  };
 
-    const patchSvgSetAttribute = () => {
-      if (svgSetAttributePatched) return;
-      const nativeSetAttribute = SVGElement.prototype.setAttribute;
-      SVGElement.prototype.setAttribute = function setAttribute(name: string, value: string) {
-        if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
-          const normalized = normalizeCalcDimension(value);
-          if (normalized) return nativeSetAttribute.call(this, name, normalized);
-          return nativeSetAttribute.call(this, name, '');
-        }
-        return nativeSetAttribute.call(this, name, value);
-      };
-      svgSetAttributePatched = true;
-    };
+  const patchAdDimensionSetters = () => {
+    patchSvgSetAttribute();
+    patchHtmlSetAttribute();
+  };
 
-    const patchHtmlSetAttribute = () => {
-      if (htmlSetAttributePatched) return;
-      const nativeSetAttribute = HTMLElement.prototype.setAttribute;
-      HTMLElement.prototype.setAttribute = function setAttribute(name: string, value: string) {
-        if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
-          const normalized = normalizeCalcDimension(value);
-          if (normalized) return nativeSetAttribute.call(this, name, normalized);
-          return nativeSetAttribute.call(this, name, '');
-        }
-        return nativeSetAttribute.call(this, name, value);
-      };
-      htmlSetAttributePatched = true;
-    };
+  const monitorAdNodes = () => {
+    document.querySelectorAll<SVGElement>('.adsbygoogle svg').forEach(sanitizeSvgDimensions);
+    document
+      .querySelectorAll<HTMLElement>('.adsbygoogle [width*="calc"], .adsbygoogle [height*="calc"]')
+      .forEach(sanitizeElementDimensions);
 
-    const monitorAdNodes = () => {
-      document.querySelectorAll<SVGElement>('.adsbygoogle svg').forEach(sanitizeSvgDimensions);
-      document
-        .querySelectorAll<HTMLElement>('.adsbygoogle [width*="calc"], .adsbygoogle [height*="calc"]')
-        .forEach(sanitizeElementDimensions);
-
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (!(node instanceof Element)) return;
-            const adContainer = node.matches('.adsbygoogle') ? node : node.closest('.adsbygoogle');
-            if (!adContainer) return;
-            adContainer.querySelectorAll<SVGElement>('svg').forEach(sanitizeSvgDimensions);
-            adContainer
-              .querySelectorAll<HTMLElement>('[width*="calc"], [height*="calc"]')
-              .forEach(sanitizeElementDimensions);
-          });
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          const adContainer = node.matches('.adsbygoogle') ? node : node.closest('.adsbygoogle');
+          if (!adContainer) return;
+          adContainer.querySelectorAll<SVGElement>('svg').forEach(sanitizeSvgDimensions);
+          adContainer
+            .querySelectorAll<HTMLElement>('[width*="calc"], [height*="calc"]')
+            .forEach(sanitizeElementDimensions);
         });
       });
+    });
 
-      observer.observe(document.body, { childList: true, subtree: true });
-    };
+    observer.observe(document.body, { childList: true, subtree: true });
+  };
 
-    const ensureAdsQueue = () => {
-      const adsQueue = (window as typeof window & { adsbygoogle?: Array<unknown> }).adsbygoogle || [];
-      (window as typeof window & { adsbygoogle: Array<unknown> }).adsbygoogle = adsQueue;
-      return adsQueue;
-    };
+  const ensureAdsQueue = () => {
+    const adsQueue = (window as typeof window & { adsbygoogle?: Array<unknown> }).adsbygoogle || [];
+    (window as typeof window & { adsbygoogle: Array<unknown> }).adsbygoogle = adsQueue;
+    return adsQueue;
+  };
 
-    const queueAutoAds = () => {
-      const adsQueue = ensureAdsQueue();
-      if (!autoAdsQueued) {
-        adsQueue.push({ google_ad_client: ADSENSE_CLIENT, enable_page_level_ads: true });
-        autoAdsQueued = true;
+  const queueAutoAds = () => {
+    const adsQueue = ensureAdsQueue();
+    if (!autoAdsQueued) {
+      adsQueue.push({ google_ad_client: ADSENSE_CLIENT, enable_page_level_ads: true });
+      autoAdsQueued = true;
+    }
+    return adsQueue;
+  };
+
+  const activateAds = () => {
+    const adsQueue = queueAutoAds();
+    patchAdDimensionSetters();
+
+    document.querySelectorAll<HTMLElement>('.adsbygoogle[data-ad-slot]').forEach((slot) => {
+      if (slot.dataset.adsInitialized === 'true') return;
+      try {
+        adsQueue.push({});
+        slot.dataset.adsInitialized = 'true';
+      } catch (err) {
+        console.error('AdSense failed to fill a slot', err);
       }
-      return adsQueue;
-    };
+    });
 
-    const activateAds = () => {
-      const adsQueue = queueAutoAds();
-      patchSvgSetAttribute();
-      patchHtmlSetAttribute();
+    monitorAdNodes();
+  };
 
-      document.querySelectorAll<HTMLElement>('.adsbygoogle[data-ad-slot]').forEach((slot) => {
-        if (slot.dataset.adsInitialized === 'true') return;
-        try {
-          adsQueue.push({});
-          slot.dataset.adsInitialized = 'true';
-        } catch (err) {
-          console.error('AdSense failed to fill a slot', err);
-        }
-      });
-
-      monitorAdNodes();
-    };
-
+  function initAds() {
+    patchAdDimensionSetters();
     const adScript = document.querySelector<HTMLScriptElement>(
       'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
     );
@@ -465,6 +470,8 @@ function clientScript() {
       }
     });
   }
+
+  patchAdDimensionSetters();
 
   document.addEventListener('DOMContentLoaded', () => {
     initFaq();
