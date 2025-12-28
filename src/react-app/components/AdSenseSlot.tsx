@@ -21,7 +21,7 @@ const AdSenseSlot = ({
   layoutKey,
   className,
 }: AdSenseSlotProps) => {
-  const slotRef = useRef<HTMLModElement>(null);
+  const slotRef = useRef<HTMLModElement>(null!);
 
   useEffect(() => {
     const slot = slotRef.current;

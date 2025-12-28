@@ -35,7 +35,8 @@ const waitForScriptLoad = (script: HTMLScriptElement) => {
       resolve();
     };
 
-    if ((script as HTMLScriptElement).complete) {
+    const readyState = (script as HTMLScriptElement & { readyState?: string }).readyState;
+    if (readyState === "complete" || readyState === "loaded") {
       handleLoad();
       return;
     }
