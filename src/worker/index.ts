@@ -65,6 +65,9 @@ type SiteRoute = {
 const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = new Date().toISOString().split("T")[0];
 const ADSENSE_PUBLISHER = "ca-pub-1860356577073395";
+const DEFAULT_SLOT_INLINE = "5613501243";
+const DEFAULT_SLOT_FOOTER = "1809987601";
+const DEFAULT_SLOT_STICKY = "7418194041";
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
 
 type AdsenseSlots = {
@@ -74,9 +77,9 @@ type AdsenseSlots = {
 };
 
 const defaultAdsenseSlots: Required<AdsenseSlots> = {
-  inline: null,
-  footer: null,
-  sticky: null,
+  inline: DEFAULT_SLOT_INLINE,
+  footer: DEFAULT_SLOT_FOOTER,
+  sticky: DEFAULT_SLOT_STICKY,
 };
 
 const CONTENT_SECURITY_POLICY = [
@@ -94,21 +97,21 @@ const CONTENT_SECURITY_POLICY = [
 
 function buildAdsenseSlots(env: WorkerEnv): Required<AdsenseSlots> {
   return {
-    inline: env.ADSENSE_SLOT_INLINE || null,
-    footer: env.ADSENSE_SLOT_FOOTER || env.ADSENSE_SLOT_INLINE || null,
-    sticky: env.ADSENSE_SLOT_STICKY || null,
+    inline: env.ADSENSE_SLOT_INLINE ?? DEFAULT_SLOT_INLINE,
+    footer: env.ADSENSE_SLOT_FOOTER ?? DEFAULT_SLOT_FOOTER,
+    sticky: env.ADSENSE_SLOT_STICKY ?? DEFAULT_SLOT_STICKY,
   };
 }
 
 function renderAdSlot(
   slotId: string | null,
-  options: { slotName: string; format?: string; fullWidth?: boolean },
+  options: { slotName: string; format?: string; fullWidth?: boolean; layoutKey?: string },
 ): string {
   if (!slotId) {
     return `<div class="ad-slot-placeholder" aria-label="Ad placeholder">Ad space reserved</div>`;
   }
 
-  const { format = "auto", fullWidth = true, slotName } = options;
+  const { format = "auto", fullWidth = true, slotName, layoutKey } = options;
   const attrs = [
     'class="adsbygoogle ad-slot"',
     `data-ad-client="${ADSENSE_PUBLISHER}"`,
@@ -116,6 +119,7 @@ function renderAdSlot(
     `data-ad-region="${escapeHtml(slotName)}"`,
     `data-ad-format="${format}"`,
   ];
+  if (layoutKey) attrs.push(`data-ad-layout-key="${escapeHtml(layoutKey)}"`);
   if (fullWidth) attrs.push('data-full-width-responsive="true"');
 
   return `<ins ${attrs.join(" ")}></ins>`;
@@ -616,7 +620,7 @@ function layout(options: {
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
         <main>${processedBodyHtml}</main>
         <div class="section">
-          ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, { slotName: "footer" })}
+          ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, { slotName: "footer", format: "autorelaxed" })}
         </div>
         <footer class="footer">
           <div class="footer-inner">
@@ -634,6 +638,14 @@ function layout(options: {
             </div>
           </div>
         </footer>
+        <div class="ad-sticky">
+          ${renderAdSlot(adsenseSlots.sticky, {
+            slotName: "sticky",
+            format: "fluid",
+            fullWidth: true,
+            layoutKey: "-gw-3+1f-3d+2z",
+          })}
+        </div>
       </div>
       ${renderModals()}
     </body>
