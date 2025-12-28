@@ -66,6 +66,8 @@ Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrang
   - `ADSENSE_SLOT_FOOTER` (autorelaxed format, default `1809987601`)
   - `ADSENSE_SLOT_STICKY` (fluid format, default `7418194041`, layout key `-gw-3+1f-3d+2z`)
   Add overrides to `wrangler.json` under `vars` or `wrangler secret put` so the Worker renders live `<ins class="adsbygoogle">` units.
+- If Cloudflare Rocket Loader is enabled, exclude the AdSense script or keep `data-cfasync="false"` on the AdSense `<script>` tag to avoid breaking Auto Ads. Purge the Cloudflare HTML cache after deploying head changes so the updated script tag ships.
+- Set `VITE_ADSENSE_DEBUG=true` to enable optional AdSense debug logging in the SPA (script presence/load state, slot counts, and push errors).
 - If AdSense does not fill a slot within a few seconds, the client injects a polite fallback message inside the ad container so visitors still see a prompt to support WaterShortcut.
 - Keep ads out of modals and away from tight interactive clusters to prevent accidental clicks.
 - Follow Google publisher policies and Better Ads standards.
