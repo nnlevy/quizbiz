@@ -589,6 +589,12 @@ function layout(options: {
       <link rel="preload" href="/assets/styles.css" as="style" />
       <link rel="stylesheet" href="/assets/styles.css" />
       <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
+      <script
+        async
+        data-ad-client="${ADSENSE_PUBLISHER}"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
+        crossorigin="anonymous"
+      ></script>
       <script defer src="/assets/app.js"></script>
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
@@ -630,12 +636,6 @@ function layout(options: {
         </footer>
       </div>
       ${renderModals()}
-      <script
-        async
-        data-ad-client="${ADSENSE_PUBLISHER}"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
-        crossorigin="anonymous"
-      ></script>
     </body>
   </html>`;
 }
