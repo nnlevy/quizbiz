@@ -61,11 +61,11 @@ Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrang
 - optional `domains-db` D1 binding if needed later
 
 ## Ads and compliance
-- AdSense loads asynchronously; avoid adding manual ad slots without confirmed IDs. To run your own slots, set these Cloudflare vars (numeric slot IDs from AdSense):
-  - `ADSENSE_SLOT_INLINE`
-  - `ADSENSE_SLOT_FOOTER` (falls back to inline if unset)
-  - `ADSENSE_SLOT_STICKY` (not yet rendered but reserved for future use)
-  Add them to `wrangler.json` under `vars` or `wrangler secret put` so the Worker renders live `<ins class="adsbygoogle">` units instead of placeholders.
+- AdSense loads asynchronously; avoid adding manual ad slots without confirmed IDs. The Worker ships with built-in defaults for each slot, and you can override them with Cloudflare vars (numeric slot IDs from AdSense):
+  - `ADSENSE_SLOT_INLINE` (auto format, default `5613501243`)
+  - `ADSENSE_SLOT_FOOTER` (autorelaxed format, default `1809987601`)
+  - `ADSENSE_SLOT_STICKY` (fluid format, default `7418194041`, layout key `-gw-3+1f-3d+2z`)
+  Add overrides to `wrangler.json` under `vars` or `wrangler secret put` so the Worker renders live `<ins class="adsbygoogle">` units.
 - Keep ads out of modals and away from tight interactive clusters to prevent accidental clicks.
 - Follow Google publisher policies and Better Ads standards.
 
