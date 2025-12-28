@@ -1,4 +1,4 @@
-import { StrictMode, useMemo } from "react";
+import { StrictMode, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
@@ -11,8 +11,18 @@ import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import { CreditsProvider } from "./context/CreditsContext";
+import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
 const RootRouter = () => {
   const pathname = window.location.pathname;
+
+  useEffect(() => {
+    ensureAdSenseLoaded();
+    const unsubscribe = subscribeToRouteChanges(() => {
+      ensureAdSenseLoaded();
+      initializeAllAdSlots();
+    });
+    return unsubscribe;
+  }, []);
 
   const routeComponent = useMemo(() => {
     if (pathname.startsWith("/leak-patrol") || pathname.startsWith("/game")) {

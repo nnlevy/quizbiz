@@ -594,8 +594,8 @@ function layout(options: {
       <link rel="stylesheet" href="/assets/styles.css" />
       <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
       <script
+        data-cfasync="false"
         async
-        data-ad-client="${ADSENSE_PUBLISHER}"
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
         crossorigin="anonymous"
       ></script>
