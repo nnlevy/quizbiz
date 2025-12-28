@@ -86,7 +86,7 @@ const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://ep2.adtrafficquality.google https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self' https://hooks.stripe.com",

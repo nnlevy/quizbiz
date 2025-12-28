@@ -318,6 +318,7 @@ function clientScript() {
   function initAds() {
     let autoAdsQueued = false;
     let svgSetAttributePatched = false;
+    let htmlSetAttributePatched = false;
 
     const normalizeCalcDimension = (value: string): string | null => {
       const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
@@ -343,6 +344,22 @@ function clientScript() {
       });
     };
 
+    const sanitizeElementDimensions = (el: Element) => {
+      (['width', 'height'] as const).forEach((attr) => {
+        const raw = el.getAttribute(attr);
+        if (!raw || !raw.includes('calc')) return;
+        const normalized = normalizeCalcDimension(raw);
+        if (normalized) {
+          el.setAttribute(attr, normalized);
+          if (el instanceof HTMLElement) {
+            el.style[attr] = normalized;
+          }
+        } else {
+          el.removeAttribute(attr);
+        }
+      });
+    };
+
     const patchSvgSetAttribute = () => {
       if (svgSetAttributePatched) return;
       const nativeSetAttribute = SVGElement.prototype.setAttribute;
@@ -357,8 +374,25 @@ function clientScript() {
       svgSetAttributePatched = true;
     };
 
-    const monitorAdSvgNodes = () => {
+    const patchHtmlSetAttribute = () => {
+      if (htmlSetAttributePatched) return;
+      const nativeSetAttribute = HTMLElement.prototype.setAttribute;
+      HTMLElement.prototype.setAttribute = function setAttribute(name: string, value: string) {
+        if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
+          const normalized = normalizeCalcDimension(value);
+          if (normalized) return nativeSetAttribute.call(this, name, normalized);
+          return nativeSetAttribute.call(this, name, '');
+        }
+        return nativeSetAttribute.call(this, name, value);
+      };
+      htmlSetAttributePatched = true;
+    };
+
+    const monitorAdNodes = () => {
       document.querySelectorAll<SVGElement>('.adsbygoogle svg').forEach(sanitizeSvgDimensions);
+      document
+        .querySelectorAll<HTMLElement>('.adsbygoogle [width*="calc"], .adsbygoogle [height*="calc"]')
+        .forEach(sanitizeElementDimensions);
 
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -367,6 +401,9 @@ function clientScript() {
             const adContainer = node.matches('.adsbygoogle') ? node : node.closest('.adsbygoogle');
             if (!adContainer) return;
             adContainer.querySelectorAll<SVGElement>('svg').forEach(sanitizeSvgDimensions);
+            adContainer
+              .querySelectorAll<HTMLElement>('[width*="calc"], [height*="calc"]')
+              .forEach(sanitizeElementDimensions);
           });
         });
       });
@@ -392,6 +429,7 @@ function clientScript() {
     const activateAds = () => {
       const adsQueue = queueAutoAds();
       patchSvgSetAttribute();
+      patchHtmlSetAttribute();
 
       document.querySelectorAll<HTMLElement>('.adsbygoogle[data-ad-slot]').forEach((slot) => {
         if (slot.dataset.adsInitialized === 'true') return;
@@ -403,7 +441,7 @@ function clientScript() {
         }
       });
 
-      monitorAdSvgNodes();
+      monitorAdNodes();
     };
 
     const adScript = document.querySelector<HTMLScriptElement>(

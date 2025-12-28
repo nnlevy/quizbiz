@@ -1233,9 +1233,20 @@ function App({ focusUpload = false }: AppProps) {
       );
     };
 
+    const scheduleOverflowCheck = (label: string) => {
+      const run = () => window.requestAnimationFrame(() => runOverflowCheck(label));
+      if ("fonts" in document) {
+        (document.fonts.ready as Promise<unknown>)
+          .then(run)
+          .catch(run);
+      } else {
+        run();
+      }
+    };
+
     const handleLoad = () => {
-      runOverflowCheck("initial");
-      window.setTimeout(() => runOverflowCheck("post-ads"), 4500);
+      scheduleOverflowCheck("initial");
+      window.setTimeout(() => scheduleOverflowCheck("post-ads"), 4500);
     };
 
     if (document.readyState === "complete") {
