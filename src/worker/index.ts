@@ -569,7 +569,7 @@ function layout(options: {
 
   const combinedJsonLd = extraJsonLd?.length ? [...jsonLd, ...extraJsonLd] : jsonLd;
 
-  return `<!doctype html>
+  return `<!DOCTYPE html>
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
@@ -590,12 +590,6 @@ function layout(options: {
       <link rel="stylesheet" href="/assets/styles.css" />
       <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
       <script defer src="/assets/app.js"></script>
-      <script
-        defer
-        data-ad-client="${ADSENSE_PUBLISHER}"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
-        crossorigin="anonymous"
-      ></script>
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
       <div class="app-shell">
@@ -636,6 +630,12 @@ function layout(options: {
         </footer>
       </div>
       ${renderModals()}
+      <script
+        async
+        data-ad-client="${ADSENSE_PUBLISHER}"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
+        crossorigin="anonymous"
+      ></script>
     </body>
   </html>`;
 }
