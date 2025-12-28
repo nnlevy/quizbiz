@@ -35,6 +35,11 @@ const waitForScriptLoad = (script: HTMLScriptElement) => {
       resolve();
     };
 
+    if ((script as HTMLScriptElement).complete) {
+      handleLoad();
+      return;
+    }
+
     script.addEventListener("load", handleLoad, { once: true });
     script.addEventListener(
       "error",
