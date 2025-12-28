@@ -2487,8 +2487,6 @@ function App({ focusUpload = false }: AppProps) {
           </section>
         </CollapsibleSection>
 
-      </main>
-
         <CollapsibleSection
           id="guides"
           title="Step 3 · Guides &amp; resources"
@@ -2501,223 +2499,224 @@ function App({ focusUpload = false }: AppProps) {
             }))
           }
         >
-        <div className="container-about">
-          <section id="about" className="story-block">
-            <h2>About Us</h2>
-            <p>
-              At WaterShortcut.com, we help you conserve water and save money. First,
-              Google Vision analyzes your water bill and then the most advanced AI
-              model offered by OpenAI provides recommendations. Our mission is to
-              make water efficiency simple, impactful, and accessible to everyone.
-              Whether you&apos;re a homeowner or a business, our tools provide actionable
-              insights to optimize your water usage.
-            </p>
-          </section>
-
-          <section id="top-ways" className="story-block">
-            <h1>Top 5 Ways to Reduce Your Water Bill</h1>
-            <p>
-              Cutting back on water usage isn&apos;t just good for the planet—it’s great
-              for your wallet! Here are five actionable tips to reduce your water
-              bill and related product recommendations.
-            </p>
-            <div className="accordion" role="list">
-              {SAVING_TIPS.map((tip, index) => (
-                <article
-                  key={tip.id}
-                  className={`accordion-item ${openTips[tip.id] ? "open" : ""}`}
-                  role="listitem"
-                >
-                  <button
-                    type="button"
-                    className="accordion-trigger"
-                    aria-expanded={!!openTips[tip.id]}
-                    onClick={() => toggleTip(tip.id)}
-                  >
-                    <div className="accordion-header">
-                      <p className="eyebrow">Move {index + 1}</p>
-                      <h3>{tip.title}</h3>
-                      <p className="accordion-summary">{tip.summary}</p>
-                    </div>
-                    <span aria-hidden>{openTips[tip.id] ? "–" : "+"}</span>
-                  </button>
-                  <div className="accordion-content" hidden={!openTips[tip.id]}>
-                    <p className="accordion-detail">{tip.summary}</p>
-                    <p>
-                      <strong>Fact:</strong> {tip.fact}{" "}
-                      <a href={tip.sourceHref} target="_blank" rel="noopener noreferrer">
-                        ({tip.source})
-                      </a>
-                    </p>
-                    {tip.quote && <blockquote>{tip.quote}</blockquote>}
-                    {tip.products && tip.products.length > 0 && (
-                      <ul className="product-links">
-                        {tip.products.map((product) => (
-                          <li key={product.href}>
-                            <a href={product.href} target="_blank" rel="noopener noreferrer">
-                              {product.label}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-            <p className="accordion-footer">
-              Start saving water and money today with these simple upgrades and
-              solutions. Your wallet—and the planet—will thank you!
-            </p>
-            <div className="community-callout">
-              <h3>Community tips</h3>
+          <div className="container-about">
+            <section id="about" className="story-block">
+              <h2>About Us</h2>
               <p>
-                We no longer load third-party comment widgets to keep your
-                browsing private. Share your own discoveries with friends or
-                neighbors and help them save too.
+                At WaterShortcut.com, we help you conserve water and save money. First,
+                Google Vision analyzes your water bill and then the most advanced AI
+                model offered by OpenAI provides recommendations. Our mission is to
+                make water efficiency simple, impactful, and accessible to everyone.
+                Whether you&apos;re a homeowner or a business, our tools provide actionable
+                insights to optimize your water usage.
               </p>
-            </div>
-          </section>
+            </section>
 
-          <section id="news" className="story-block news-block">
-            <h2>From the News - January 2025</h2>
-            <div className="news-grid" role="list">
-              {NEWS_ITEMS.map((item, index) => (
-                <article
-                  key={item.id}
-                  className={`news-card ${openNews[item.id] ? "open" : ""}`}
-                  role="listitem"
-                >
-                  <button
-                    type="button"
-                    className="accordion-trigger compact"
-                    aria-expanded={!!openNews[item.id]}
-                    onClick={() => toggleNews(item.id)}
+            <section id="top-ways" className="story-block">
+              <h1>Top 5 Ways to Reduce Your Water Bill</h1>
+              <p>
+                Cutting back on water usage isn&apos;t just good for the planet—it’s great
+                for your wallet! Here are five actionable tips to reduce your water
+                bill and related product recommendations.
+              </p>
+              <div className="accordion" role="list">
+                {SAVING_TIPS.map((tip, index) => (
+                  <article
+                    key={tip.id}
+                    className={`accordion-item ${openTips[tip.id] ? "open" : ""}`}
+                    role="listitem"
                   >
-                    <div className="accordion-header">
-                      <p className="eyebrow">Brief {index + 1}</p>
-                      <h3>{item.title}</h3>
-                      <p className="accordion-summary">{item.summary}</p>
+                    <button
+                      type="button"
+                      className="accordion-trigger"
+                      aria-expanded={!!openTips[tip.id]}
+                      onClick={() => toggleTip(tip.id)}
+                    >
+                      <div className="accordion-header">
+                        <p className="eyebrow">Move {index + 1}</p>
+                        <h3>{tip.title}</h3>
+                        <p className="accordion-summary">{tip.summary}</p>
+                      </div>
+                      <span aria-hidden>{openTips[tip.id] ? "–" : "+"}</span>
+                    </button>
+                    <div className="accordion-content" hidden={!openTips[tip.id]}>
+                      <p className="accordion-detail">{tip.summary}</p>
+                      <p>
+                        <strong>Fact:</strong> {tip.fact}{" "}
+                        <a href={tip.sourceHref} target="_blank" rel="noopener noreferrer">
+                          ({tip.source})
+                        </a>
+                      </p>
+                      {tip.quote && <blockquote>{tip.quote}</blockquote>}
+                      {tip.products && tip.products.length > 0 && (
+                        <ul className="product-links">
+                          {tip.products.map((product) => (
+                            <li key={product.href}>
+                              <a href={product.href} target="_blank" rel="noopener noreferrer">
+                                {product.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                    <span aria-hidden>{openNews[item.id] ? "–" : "+"}</span>
-                  </button>
-                  <div className="accordion-content" hidden={!openNews[item.id]}>
-                    <p className="accordion-detail">{item.insight}</p>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))}
+              </div>
+              <p className="accordion-footer">
+                Start saving water and money today with these simple upgrades and
+                solutions. Your wallet—and the planet—will thank you!
+              </p>
+              <div className="community-callout">
+                <h3>Community tips</h3>
+                <p>
+                  We no longer load third-party comment widgets to keep your
+                  browsing private. Share your own discoveries with friends or
+                  neighbors and help them save too.
+                </p>
+              </div>
+            </section>
+
+            <section id="news" className="story-block news-block">
+              <h2>From the News - January 2025</h2>
+              <div className="news-grid" role="list">
+                {NEWS_ITEMS.map((item, index) => (
+                  <article
+                    key={item.id}
+                    className={`news-card ${openNews[item.id] ? "open" : ""}`}
+                    role="listitem"
+                  >
+                    <button
+                      type="button"
+                      className="accordion-trigger compact"
+                      aria-expanded={!!openNews[item.id]}
+                      onClick={() => toggleNews(item.id)}
+                    >
+                      <div className="accordion-header">
+                        <p className="eyebrow">Brief {index + 1}</p>
+                        <h3>{item.title}</h3>
+                        <p className="accordion-summary">{item.summary}</p>
+                      </div>
+                      <span aria-hidden>{openNews[item.id] ? "–" : "+"}</span>
+                    </button>
+                    <div className="accordion-content" hidden={!openNews[item.id]}>
+                      <p className="accordion-detail">{item.insight}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
+        </CollapsibleSection>
+
+      </main>
+
+      {isUpgradeModalOpen && upgradeTopic && (
+        <div
+          className="upgrade-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upgrade-modal-title"
+        >
+          <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
+            <div className="upgrade-modal-header">
+              <div>
+                <p className="eyebrow">Personalized call to action</p>
+                <h3 id="upgrade-modal-title">
+                  {UPGRADE_MODAL_CONTENT[upgradeTopic].title}
+                </h3>
+                <p className="upgrade-modal-description">
+                  {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close upgrade details"
+                onClick={closeUpgradeModal}
+              >
+                ×
+              </button>
             </div>
-          </section>
 
-
-        {isUpgradeModalOpen && upgradeTopic && (
-          <div
-            className="upgrade-modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="upgrade-modal-title"
-          >
-            <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
-              <div className="upgrade-modal-header">
-                <div>
-                  <p className="eyebrow">Personalized call to action</p>
-                  <h3 id="upgrade-modal-title">
-                    {UPGRADE_MODAL_CONTENT[upgradeTopic].title}
-                  </h3>
-                  <p className="upgrade-modal-description">
-                    {UPGRADE_MODAL_CONTENT[upgradeTopic].description}
-                  </p>
-                </div>
+            <div className="cta-preference-row">
+              <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
+              <div className="cta-buttons">
                 <button
                   type="button"
-                  className="icon-button"
-                  aria-label="Close upgrade details"
-                  onClick={closeUpgradeModal}
+                  className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
+                  disabled={ctaLoading}
+                  onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
                 >
-                  ×
+                  {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
+                </button>
+                <button
+                  type="button"
+                  className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
+                  disabled={ctaLoading}
+                  onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
+                >
+                  {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
                 </button>
               </div>
+              {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
+              {ctaRecommendation && (
+                <p className="cta-recommendation" role="status">{ctaRecommendation}</p>
+              )}
+            </div>
 
-              <div className="cta-preference-row">
-                <p className="cta-label">Pick your shopping preference to tailor the recommendation:</p>
-                <div className="cta-buttons">
-                  <button
-                    type="button"
-                    className={`secondary-button ${ctaPreference === "online" ? "active" : ""}`}
-                    disabled={ctaLoading}
-                    onClick={() => fetchCtaRecommendation("online", upgradeTopic)}
-                  >
-                    {ctaLoading && ctaPreference === "online" ? "Loading…" : "Shop online"}
-                  </button>
-                  <button
-                    type="button"
-                    className={`secondary-button ${ctaPreference === "in-person" ? "active" : ""}`}
-                    disabled={ctaLoading}
-                    onClick={() => fetchCtaRecommendation("in-person", upgradeTopic)}
-                  >
-                    {ctaLoading && ctaPreference === "in-person" ? "Loading…" : "Shop in person"}
-                  </button>
-                </div>
-                {ctaError && <p className="cta-error" role="status">{ctaError}</p>}
-                {ctaRecommendation && (
-                  <p className="cta-recommendation" role="status">{ctaRecommendation}</p>
-                )}
+            <div className="upgrade-modal-grid">
+              <div className="modal-card">
+                <h4>Expanded calculator view</h4>
+                <p className="modal-metric">
+                  <strong>Time input:</strong>{" "}
+                  {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
+                  {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
+                  {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
+                </p>
+                <p className="modal-metric">
+                  <strong>Annual gallons:</strong>{" "}
+                  {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
+                  {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
+                  {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
+                </p>
+                <p className="modal-metric">
+                  <strong>Estimated annual cost:</strong>{" "}
+                  {upgradeTopic === "showerheads" &&
+                    formatCurrencyRange(
+                      applianceSavings.shower.minCost,
+                      applianceSavings.shower.maxCost,
+                    )}
+                  {upgradeTopic === "aerators" &&
+                    formatCurrencyRange(
+                      applianceSavings.sink.minCost,
+                      applianceSavings.sink.maxCost,
+                    )}
+                  {upgradeTopic === "detergents" &&
+                    formatCurrencyRange(
+                      applianceSavings.watering.minCost,
+                      applianceSavings.watering.maxCost,
+                    )}
+                </p>
+                <p className="modal-copy">
+                  Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your
+                  preferred upgrade path.
+                </p>
               </div>
-
-              <div className="upgrade-modal-grid">
-                <div className="modal-card">
-                  <h4>Expanded calculator view</h4>
-                  <p className="modal-metric">
-                    <strong>Time input:</strong>{" "}
-                    {upgradeTopic === "showerheads" && `${applianceSavings.shower.minutes} minutes per shower`}
-                    {upgradeTopic === "aerators" && `${applianceSavings.sink.minutes} minutes at the sink daily`}
-                    {upgradeTopic === "detergents" && `${applianceSavings.watering.minutes} minutes watering weekly`}
-                  </p>
-                  <p className="modal-metric">
-                    <strong>Annual gallons:</strong>{" "}
-                    {upgradeTopic === "showerheads" && applianceSavings.shower.gallons.toFixed(0)}
-                    {upgradeTopic === "aerators" && applianceSavings.sink.gallons.toFixed(0)}
-                    {upgradeTopic === "detergents" && applianceSavings.watering.gallons.toFixed(0)}
-                  </p>
-                  <p className="modal-metric">
-                    <strong>Estimated annual cost:</strong>{" "}
-                    {upgradeTopic === "showerheads" &&
-                      formatCurrencyRange(
-                        applianceSavings.shower.minCost,
-                        applianceSavings.shower.maxCost,
-                      )}
-                    {upgradeTopic === "aerators" &&
-                      formatCurrencyRange(
-                        applianceSavings.sink.minCost,
-                        applianceSavings.sink.maxCost,
-                      )}
-                    {upgradeTopic === "detergents" &&
-                      formatCurrencyRange(
-                        applianceSavings.watering.minCost,
-                        applianceSavings.watering.maxCost,
-                      )}
-                  </p>
-                  <p className="modal-copy">
-                    Run the sliders above, then return here to compare gallons, energy savings, and the payback window for your
-                    preferred upgrade path.
-                  </p>
-                </div>
-                <div className="modal-card">
-                  <h4>Ad-friendly research cues</h4>
-                  <p className="modal-keywords">{UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}</p>
-                  <p className="modal-copy">
-                    These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
-                    you explore the larger upgrade view.
-                  </p>
-                </div>
+              <div className="modal-card">
+                <h4>Ad-friendly research cues</h4>
+                <p className="modal-keywords">{UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}</p>
+                <p className="modal-copy">
+                  These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
+                  you explore the larger upgrade view.
+                </p>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        <SiteFooter />
-      </div>
-      </CollapsibleSection>
+      <SiteFooter />
     </div>
   );
 }
