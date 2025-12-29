@@ -737,6 +737,7 @@ function layout(options: {
       <script nonce="${cspNonce}">
         window.__WS_ADSENSE_CLIENT__ = "${adsenseClient}";
         window.__WS_CONSENT_REQUIRED__ = ${consentRequired ? "true" : "false"};
+        window.__WS_GA_MEASUREMENT_ID__ = "${gaMeasurementId}";
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         window.gtag = window.gtag || gtag;
@@ -780,12 +781,6 @@ function layout(options: {
         gtag("js", new Date());
         gtag("config", "${gaMeasurementId}", { anonymize_ip: true, send_page_view: false });
       </script>
-      <script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
-      <script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}"
-        crossorigin="anonymous"
-      ></script>
       <script defer src="/assets/app.js"></script>
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">

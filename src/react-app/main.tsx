@@ -10,7 +10,7 @@ import ReadWaterBillPage from "../pages/ReadWaterBillPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
-import { initializeAnalytics } from "./analytics";
+import { ensureAnalyticsLoaded, initializeAnalytics } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
 import { subscribeToConsentChanges } from "./consent";
@@ -41,6 +41,9 @@ const RootRouter = () => {
       if (consent.ads) {
         ensureAdSenseLoaded();
         initializeAllAdSlots();
+      }
+      if (consent.analytics) {
+        ensureAnalyticsLoaded();
       }
     });
     return () => {
