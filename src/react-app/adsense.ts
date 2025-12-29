@@ -62,9 +62,8 @@ const waitForScriptLoad = (script: HTMLScriptElement) => {
 const collectAdStatus = () => {
   const slots = Array.from(document.querySelectorAll<HTMLElement>(".adsbygoogle"));
   const initialized = slots.filter((slot) => {
-    if (slot.dataset.adsInitialized === "true") return true;
-    const status = slot.getAttribute("data-adsbygoogle-status");
-    return status === "done" || status === "filled";
+    if (!isSlotEligible(slot)) return true;
+    return false;
   });
 
   return {
@@ -73,6 +72,19 @@ const collectAdStatus = () => {
     hasScript: Boolean(findAdSenseScript()),
   };
 };
+
+const isSlotEligible = (slot: HTMLElement) => {
+  if (slot.dataset.adsInitialized === "true") return false;
+  const status = slot.getAttribute("data-adsbygoogle-status");
+  if (status === "done" || status === "filled") return false;
+  if (slot.innerHTML.trim() !== "" || slot.childElementCount > 0) return false;
+  return true;
+};
+
+const hasEligibleSlots = () =>
+  Array.from(document.querySelectorAll<HTMLElement>(".adsbygoogle[data-ad-slot]")).some((slot) =>
+    isSlotEligible(slot),
+  );
 
 const logAdStatus = (label: string) => {
   if (!isDebugEnabled()) return;
@@ -97,6 +109,10 @@ const ensureScriptPresent = () => {
 
 const ensureAutoAds = () => {
   if (autoAdsQueued) return;
+  if (!hasEligibleSlots()) {
+    debugLog("Skipped auto ads init: no eligible slots found");
+    return;
+  }
   const adsQueue =
     (window as typeof window & { adsbygoogle?: Array<Record<string, unknown>> }).adsbygoogle || [];
   (window as typeof window & { adsbygoogle: Array<Record<string, unknown>> }).adsbygoogle = adsQueue;
@@ -106,13 +122,7 @@ const ensureAutoAds = () => {
 };
 
 const initializeSlot = (slot: HTMLElement) => {
-  if (slot.dataset.adsInitialized === "true") return;
-  const status = slot.getAttribute("data-adsbygoogle-status");
-  if (status) {
-    slot.dataset.adsInitialized = "true";
-    return;
-  }
-  if (slot.innerHTML.trim() !== "" || slot.childElementCount > 0) {
+  if (!isSlotEligible(slot)) {
     slot.dataset.adsInitialized = "true";
     return;
   }
@@ -137,6 +147,10 @@ const initializeSlot = (slot: HTMLElement) => {
 
 export const initializeAllAdSlots = () => {
   if (!hasAdsConsent()) return;
+  if (!hasEligibleSlots()) {
+    logAdStatus("AdSense slot status (skipped: no eligible slots)");
+    return;
+  }
   document
     .querySelectorAll<HTMLElement>(".adsbygoogle[data-ad-slot]")
     .forEach((slot) => initializeSlot(slot));
