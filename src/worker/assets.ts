@@ -16,6 +16,12 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 .calc-result{padding:14px;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;display:grid;gap:6px;font-weight:700;} .result-number{font-size:22px;color:#0ea5e9;}
 .sources{margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:14px;color:#334155;} .breadcrumbs{display:flex;gap:8px;flex-wrap:wrap;font-size:14px;color:#475569;} .breadcrumbs a{color:#0f172a;}
 .modal-trigger{cursor:pointer;} dialog{border:none;border-radius:14px;max-width:520px;width:90%;padding:0;box-shadow:0 10px 40px rgba(15,23,42,0.25);} dialog::backdrop{background:rgba(15,23,42,0.45);} .modal-inner{padding:18px;display:grid;gap:10px;} .modal-inner h2{margin:0;} .modal-actions{text-align:right;} .chip-list{display:flex;gap:8px;flex-wrap:wrap;}
+.mode-switcher{display:flex;align-items:center;gap:8px;font-size:13px;color:#475569;flex-wrap:wrap;} .mode-switcher span{font-weight:700;} .mode-switcher a{padding:6px 8px;border-radius:999px;border:1px solid #e2e8f0;color:#0f172a;font-weight:600;} .mode-switcher a.active{background:#0ea5e9;color:white;border-color:#0ea5e9;}
+.trust-capsule{margin-top:12px;padding:12px;border-radius:12px;border:1px solid #bae6fd;background:#eff6ff;}
+.upload-stepper{display:grid;gap:6px;margin-top:10px;} .upload-stepper .step{padding:8px 10px;border-radius:10px;border:1px solid #e2e8f0;font-weight:700;color:#475569;} .upload-stepper .step.active{background:#0ea5e9;color:white;border-color:#0ea5e9;}
+.results-grid{display:grid;gap:16px;} .result-card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;display:grid;gap:10px;} .result-card h3{margin:0;} .result-meta{display:flex;gap:12px;font-size:13px;color:#475569;font-weight:700;flex-wrap:wrap;}
+.share-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.help-accordion summary{font-weight:700;cursor:pointer;margin-bottom:6px;}
 @media (min-width:768px){.hero{grid-template-columns:2fr 1fr;align-items:center;} .hero h1{font-size:40px;} }
 @media print{.site-header,.footer,.ad-slot-placeholder,.actions,.wizard-actions,.nav-links{display:none!important;} body{background:white;} .layout-slab{box-shadow:none;border-color:#e2e8f0;} .hero{padding-top:0;}}
 `;
@@ -38,6 +44,10 @@ function clientScript() {
   const consentRequired = Boolean(
     (window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean }).__WS_CONSENT_REQUIRED__,
   );
+  const privacySignal = Boolean((navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl) ||
+    navigator.doNotTrack === '1' ||
+    navigator.doNotTrack === 'yes' ||
+    (window as typeof window & { doNotTrack?: string }).doNotTrack === '1';
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReducedMotion) {
     document.body.classList.add('prefers-reduced-motion');
@@ -56,13 +66,14 @@ function clientScript() {
   };
 
   function track(eventName: string, params: Record<string, unknown> = {}) {
+    if (!hasAnalyticsConsent()) return;
     const gtagFn = (window as typeof window & { gtag?: (...args: unknown[]) => void }).gtag;
     if (typeof gtagFn === 'function') {
       gtagFn('event', eventName, params);
     }
   }
 
-  const defaultConsent: ConsentState = consentRequired
+  const defaultConsent: ConsentState = privacySignal || consentRequired
     ? { functional: true, analytics: false, ads: false }
     : { functional: true, analytics: true, ads: true };
 
@@ -81,6 +92,19 @@ function clientScript() {
     } catch (err) {
       console.warn('Failed to write consent cookie');
     }
+  };
+
+  const clearConsentCookies = () => {
+    const cookieNames = ['_ga', '_gid', '_gat', '_gcl_au', '_gads'];
+    document.cookie
+      .split(';')
+      .map((cookie) => cookie.split('=')[0]?.trim())
+      .filter(Boolean)
+      .forEach((name) => {
+        if (cookieNames.includes(name) || name?.startsWith('_ga_') || name?.startsWith('_gcl')) {
+          document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
+        }
+      });
   };
 
   const applyConsentMode = (consent: ConsentState) => {
@@ -104,6 +128,9 @@ function clientScript() {
     }
     writeConsentCookie(consent);
     applyConsentMode(consent);
+    if (!consent.analytics || !consent.ads) {
+      clearConsentCookies();
+    }
     window.dispatchEvent(new CustomEvent('ws-consent-updated', { detail: consent }));
   };
 
@@ -161,6 +188,13 @@ function clientScript() {
     const closeBanner = () => {
       banner.hidden = true;
     };
+
+    document.querySelectorAll('[data-consent-open]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        banner.hidden = false;
+      });
+    });
 
     acceptAll?.addEventListener('click', () => {
       storeConsent({ functional: true, analytics: true, ads: true });
@@ -329,6 +363,8 @@ function clientScript() {
     const getNum = (selector: string, fallback = 0) =>
       Number((form.querySelector(selector) as HTMLInputElement | HTMLSelectElement | null)?.value) || fallback;
     const rate = getNum('[name="rate"]', 0);
+    const showBath =
+      (form.querySelector('[name="show-bath"]') as HTMLInputElement | null)?.checked || false;
     let gallonsDay = 0;
 
     if (type === 'shower') {
@@ -364,11 +400,20 @@ function clientScript() {
 
     const gallonsYear = gallonsDay * 365;
     const money = rate ? (gallonsYear / 1000) * rate : null;
+    const bathtubEquivalent = showBath ? gallonsYear / 80 : null;
     if (resultEl) {
       resultEl.innerHTML = `
-        <div class="result-number">Saved: ${fmt(gallonsDay)} gallons/day</div>
-        <div class="result-number">Saved: ${fmt(gallonsYear)} gallons/year</div>
-        ${money ? `<div class="result-number">≈ ${dollars(money)}/year</div>` : ''}
+        <div class="result-number">Estimated gallons saved / year: ${fmt(gallonsYear)}</div>
+        ${
+          money
+            ? `<div class="result-number">Estimated $ saved / year: ${dollars(money)}</div>`
+            : `<div class="muted">Add your rate to see $ savings.</div>`
+        }
+        ${
+          bathtubEquivalent
+            ? `<div class="muted">That’s about ${fmt(bathtubEquivalent)} bathtubs per year.</div>`
+            : ''
+        }
       `;
     }
   }
@@ -415,6 +460,115 @@ function clientScript() {
     });
   }
 
+  type AnalysisMove = {
+    title: string;
+    why: string;
+    effort: string;
+    impact: string;
+    steps: string[];
+    ctaLabel: string;
+    ctaHref: string;
+  };
+
+  type AnalysisResult = {
+    topMoves: AnalysisMove[];
+    payingFor: string;
+    nextStep: string;
+    confidenceNote?: string;
+  };
+
+  const demoResult: AnalysisResult = {
+    topMoves: [
+      {
+        title: 'Stop silent toilet leaks',
+        why: 'Running toilets are often the biggest indoor waste.',
+        effort: 'Low',
+        impact: '500–2,000 gallons/month',
+        steps: ['Do a dye test', 'Replace the flapper if it leaks', 'Recheck after 24 hours'],
+        ctaLabel: 'Run the toilet calculator',
+        ctaHref: '/calculators/toilet',
+      },
+      {
+        title: 'Trim shower flow',
+        why: 'Small hardware swap saves daily gallons fast.',
+        effort: 'Low',
+        impact: '$6–$15/month',
+        steps: ['Install a WaterSense showerhead', 'Shorten showers by 2 minutes', 'Check for drips'],
+        ctaLabel: 'Use the shower calculator',
+        ctaHref: '/calculators/shower',
+      },
+      {
+        title: 'Tune outdoor watering',
+        why: 'Outdoor use is the fastest way to overshoot tiers.',
+        effort: 'Medium',
+        impact: '5–15% lower bill',
+        steps: ['Water 2 days/week', 'Watch for runoff', 'Fix broken heads'],
+        ctaLabel: 'Open outdoor tool',
+        ctaHref: '/calculators/outdoor',
+      },
+    ],
+    payingFor: 'Most of the bill is usage charges + sewer. Your tier jumps happen when outdoor watering spikes.',
+    nextStep: 'Run the leak check today, then redo your bill comparison in 2 weeks.',
+    confidenceNote: 'Demo mode uses sample data — your real bill will be more precise.',
+  };
+
+  const renderAnalysis = (result: AnalysisResult, target: HTMLElement) => {
+    const cards = result.topMoves
+      .map(
+        (move) => `
+        <div class="result-card">
+          <h3>${move.title}</h3>
+          <p class="muted">${move.why}</p>
+          <div class="result-meta">
+            <span>Effort: ${move.effort}</span>
+            <span>Impact: ${move.impact}</span>
+          </div>
+          <ul class="bullet-list">${move.steps.map((step) => `<li>${step}</li>`).join('')}</ul>
+          <a class="btn secondary" href="${move.ctaHref}">${move.ctaLabel}</a>
+        </div>
+      `,
+      )
+      .join('');
+    const summary = [
+      'WaterShortcut plan summary:',
+      ...result.topMoves.map((move, idx) => `${idx + 1}. ${move.title} (${move.effort})`),
+      `What you’re paying for: ${result.payingFor}`,
+      `Next step: ${result.nextStep}`,
+    ].join('\n');
+    target.innerHTML = `
+      <div class="results-grid">
+        <h3>Your top 3 moves</h3>
+        <div class="cards">${cards}</div>
+        <h3>What you’re really paying for</h3>
+        <p>${result.payingFor}</p>
+        <h3>Your next best step</h3>
+        <p>${result.nextStep}</p>
+        ${result.confidenceNote ? `<p class="muted">${result.confidenceNote}</p>` : ''}
+        <div class="share-bar">
+          <button class="btn secondary" data-copy-summary>Copy summary</button>
+          <button class="btn secondary" data-print-plan>Download PDF</button>
+        </div>
+      </div>
+    `;
+    const copyBtn = target.querySelector<HTMLButtonElement>('[data-copy-summary]');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(summary);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => (copyBtn.textContent = 'Copy summary'), 1500);
+        } catch {
+          copyBtn.textContent = 'Copy failed';
+          setTimeout(() => (copyBtn.textContent = 'Copy summary'), 1500);
+        }
+      });
+    }
+    const printBtn = target.querySelector<HTMLButtonElement>('[data-print-plan]');
+    if (printBtn) {
+      printBtn.addEventListener('click', () => window.print());
+    }
+  };
+
   function initBillUpload() {
     const form = document.querySelector<HTMLFormElement>('#bill-form');
     const status = document.querySelector<HTMLElement>('#bill-status');
@@ -424,21 +578,136 @@ function clientScript() {
       const fileInput = form.querySelector<HTMLInputElement>('input[type="file"]');
       const file = fileInput?.files?.[0];
       if (!file) {
-        status.textContent = 'Please select a PDF.';
+        status.textContent = 'Please upload a PDF water bill.';
+        return;
+      }
+      if (file.type !== 'application/pdf') {
+        status.textContent = 'Please upload a PDF water bill.';
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        status.textContent = 'That file is too large. Please upload a PDF under 10MB.';
         return;
       }
       track('ws_bill_analyze_submit');
       const data = new FormData();
       data.append('file', file);
-      status.textContent = 'Uploading…';
+      const stepper = (step: number) =>
+        `<div class="upload-stepper">
+          <div class="step ${step >= 0 ? 'active' : ''}">Uploading…</div>
+          <div class="step ${step >= 1 ? 'active' : ''}">Reading your bill…</div>
+          <div class="step ${step >= 2 ? 'active' : ''}">Building your plan…</div>
+        </div>
+        <p class="muted">This usually takes under a minute.</p>`;
+      status.innerHTML = stepper(0);
+      const timers = [
+        window.setTimeout(() => (status.innerHTML = stepper(1)), 1500),
+        window.setTimeout(() => (status.innerHTML = stepper(2)), 3500),
+      ];
       try {
-        const res = await fetch('/api/analyze-bill', { method: 'POST', body: data });
-        const text = await res.text();
-        status.innerHTML = text;
+        const res = await fetch('/api/analyze-bill', {
+          method: 'POST',
+          body: data,
+          headers: { Accept: 'application/json' },
+        });
+        const responseText = await res.text();
+        timers.forEach((timer) => window.clearTimeout(timer));
+        if (!res.ok) {
+          status.innerHTML = `
+            <p>We couldn’t read that bill. Try a different PDF, or use manual entry.</p>
+            <p class="muted">Optional: email your utility name to hello@watershortcut.com.</p>
+            <div class="inline-list"><a class="btn secondary" href="#manual">Try manual entry</a><a class="btn secondary" href="/guides">Open guides</a></div>
+          `;
+          return;
+        }
+        try {
+          const data = JSON.parse(responseText) as { analysis?: AnalysisResult };
+          if (data.analysis) {
+            renderAnalysis(data.analysis, status);
+            localStorage.setItem('ws-latest-plan', JSON.stringify(data.analysis));
+            return;
+          }
+        } catch {
+          // fall through to raw HTML
+        }
+        status.innerHTML = responseText;
       } catch {
-        status.textContent = 'Upload failed. Try again later.';
+        timers.forEach((timer) => window.clearTimeout(timer));
+        status.textContent = 'We hit a snag building your plan. Please try again. If it keeps happening, email hello@watershortcut.com.';
       }
     });
+  }
+
+  function initDemoAndManual() {
+    const demoButton = document.querySelector<HTMLButtonElement>('[data-demo-run]');
+    const demoOutput = document.querySelector<HTMLElement>('[data-demo-output]');
+    if (demoButton && demoOutput) {
+      demoButton.addEventListener('click', () => {
+        renderAnalysis(demoResult, demoOutput);
+        localStorage.setItem('ws-latest-plan', JSON.stringify(demoResult));
+      });
+    }
+
+    const manualForm = document.querySelector<HTMLFormElement>('#manual-form');
+    const manualOutput = document.querySelector<HTMLElement>('[data-manual-output]');
+    if (manualForm && manualOutput) {
+      manualForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(manualForm);
+        const usage = Number(formData.get('usage') || 0);
+        const cost = Number(formData.get('cost') || 0);
+        const household = Number(formData.get('household') || 0);
+        const result: AnalysisResult = {
+          topMoves: [
+            {
+              title: 'Check for leaks first',
+              why: 'Leaks are the fastest, cheapest win.',
+              effort: 'Low',
+              impact: usage ? `~${fmt(usage * 0.15)} units/month` : 'Fast impact',
+              steps: ['Run the leak check', 'Fix toilets first', 'Recheck your meter'],
+              ctaLabel: 'Start leak check',
+              ctaHref: '/leak-check',
+            },
+            {
+              title: 'Trim shower & faucet flow',
+              why: 'Daily habits add up quickly.',
+              effort: 'Low',
+              impact: household ? `${household} people × daily savings` : 'Daily savings',
+              steps: ['Install WaterSense fixtures', 'Shorten showers', 'Monitor for drips'],
+              ctaLabel: 'Open shower calculator',
+              ctaHref: '/calculators/shower',
+            },
+            {
+              title: 'Watch outdoor watering',
+              why: 'Outdoor use drives tier spikes.',
+              effort: 'Medium',
+              impact: cost ? `Protect ~$${fmt(cost * 0.1)}/mo` : 'Avoid tier jumps',
+              steps: ['Water 2 days/week', 'Fix spray heads', 'Adjust seasonally'],
+              ctaLabel: 'Outdoor tips',
+              ctaHref: '/calculators/outdoor',
+            },
+          ],
+          payingFor: 'Manual entry suggests usage + sewer charges dominate the total bill.',
+          nextStep: 'Confirm your unit rate on the next bill for a sharper estimate.',
+          confidenceNote: 'Manual entry is less precise than a full bill upload.',
+        };
+        renderAnalysis(result, manualOutput);
+        localStorage.setItem('ws-latest-plan', JSON.stringify(result));
+      });
+    }
+
+    const stored = localStorage.getItem('ws-latest-plan');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as AnalysisResult;
+        const target = demoOutput || manualOutput;
+        if (target) {
+          renderAnalysis(parsed, target);
+        }
+      } catch {
+        // ignore invalid stored plan
+      }
+    }
   }
 
   function initModals() {
@@ -735,6 +1004,7 @@ function clientScript() {
     initCalculators();
     initProviderLookup();
     initBillUpload();
+    initDemoAndManual();
     initModals();
     initConsentBanner();
     ensureAnalyticsLoaded();

@@ -1,0 +1,34 @@
+{
+  "topMoves": [
+    {
+      "title": "Stop silent toilet leaks",
+      "why": "Running toilets are often the biggest indoor waste.",
+      "effort": "Low",
+      "impact": "500–2,000 gallons/month",
+      "steps": ["Do a dye test", "Replace the flapper if it leaks", "Recheck after 24 hours"],
+      "ctaLabel": "Run the toilet calculator",
+      "ctaHref": "/calculators/toilet"
+    },
+    {
+      "title": "Trim shower flow",
+      "why": "Small hardware swap saves daily gallons fast.",
+      "effort": "Low",
+      "impact": "$6–$15/month",
+      "steps": ["Install a WaterSense showerhead", "Shorten showers by 2 minutes", "Check for drips"],
+      "ctaLabel": "Use the shower calculator",
+      "ctaHref": "/calculators/shower"
+    },
+    {
+      "title": "Tune outdoor watering",
+      "why": "Outdoor use is the fastest way to overshoot tiers.",
+      "effort": "Medium",
+      "impact": "5–15% lower bill",
+      "steps": ["Water 2 days/week", "Watch for runoff", "Fix broken heads"],
+      "ctaLabel": "Open outdoor tool",
+      "ctaHref": "/calculators/outdoor"
+    }
+  ],
+  "payingFor": "Most of the bill is usage charges + sewer. Your tier jumps happen when outdoor watering spikes.",
+  "nextStep": "Run the leak check today, then redo your bill comparison in 2 weeks.",
+  "confidenceNote": "Demo mode uses sample data — your real bill will be more precise."
+}

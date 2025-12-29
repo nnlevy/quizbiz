@@ -1,6 +1,5 @@
 import {
   type CSSProperties,
-  FocusEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -9,18 +8,20 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from "react";
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/upload", label: "Upload" },
-  { href: "/leak-patrol", label: "Game" },
+import { copy } from "../../copy";
+
+const homeownerLinks = [
+  { href: "/analyze-water-bill", label: "Analyze" },
+  { href: "/savings-plan", label: "Plan" },
+  { href: "/calculators", label: "Calculators" },
+  { href: "/leak-check", label: "Leak check" },
+  { href: "/rebates", label: "Rebates" },
+  { href: "/guides", label: "Guides" },
 ];
 
-const learnLinks = [
-  { href: "/learn/read-water-bill", label: "Read Your Bill" },
-  { href: "/learn/leak-detection", label: "Leak Detection" },
-  { href: "/learn/water-saving-tips", label: "Water-Saving Tips" },
-  { href: "/learn/water-bill-spikes", label: "Bill Spikes" },
-  { href: "/learn/hidden-leaks", label: "Hidden Leaks" },
+const waterEjectLinks = [
+  { href: "/blog-how-to-eject.html", label: "Water Eject How-To" },
+  { href: "/blog-is-it-safe.html", label: "Is it safe?" },
 ];
 
 const NAV_SWIPE_THRESHOLD = 42;
@@ -39,15 +40,12 @@ const SiteNav = ({
   onCreditsKeyDown,
 }: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDraggingNav, setIsDraggingNav] = useState(false);
   const [navDragStartY, setNavDragStartY] = useState<number | null>(null);
   const [navDragOffset, setNavDragOffset] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [showCreditInfo, setShowCreditInfo] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const dropdownPointerOpenRef = useRef(false);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -86,62 +84,19 @@ const SiteNav = ({
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
-    setIsDropdownOpen(false);
     document.body.classList.remove("nav-open");
     document.body.style.overflow = "";
   }, []);
 
-  useEffect(() => {
-    if (!isDropdownOpen) {
-      return undefined;
-    }
-
-    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        closeDropdown();
-      }
-    };
-
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeDropdown();
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideInteraction);
-    document.addEventListener("touchstart", handleOutsideInteraction);
-    document.addEventListener("keydown", handleEscapeKey);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideInteraction);
-      document.removeEventListener("touchstart", handleOutsideInteraction);
-      document.removeEventListener("keydown", handleEscapeKey);
-    };
-  }, [isDropdownOpen]);
-
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  const closeDropdown = () => setIsDropdownOpen(false);
-  const openDropdown = () => setIsDropdownOpen(true);
-
-  const handleDropdownToggleClick = () => {
-    setIsDropdownOpen((prev) => {
-      if (prev && dropdownPointerOpenRef.current) {
-        dropdownPointerOpenRef.current = false;
-        return true;
-      }
-      dropdownPointerOpenRef.current = false;
-      return !prev;
-    });
-  };
-
-  const handleDropdownBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (!dropdownRef.current?.contains(event.relatedTarget as Node | null)) {
-      closeDropdown();
-    }
-  };
-
-  const mobileLinks = [...links, ...learnLinks];
+  const isWaterEjectRoute =
+    typeof window !== "undefined" &&
+    (window.location.pathname.startsWith("/blog-how-to-eject") ||
+      window.location.pathname.startsWith("/blog-is-it-safe") ||
+      window.location.pathname.startsWith("/water-eject"));
+  const navLinks = isWaterEjectRoute ? waterEjectLinks : homeownerLinks;
+  const mobileLinks = navLinks;
 
   const handleHeaderTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
     if (!isMobileViewport() || isMobileMenuOpen) {
@@ -291,7 +246,7 @@ const SiteNav = ({
     >
       <div className="nav-container">
         <a className="brand" href="/">
-          WaterShortcut
+          WaterShortcut <span className="tagline">{copy.brand.tagline}</span>
         </a>
         <div
           className={`credit-meter ${pulse ? "is-animating" : ""}`}
@@ -317,44 +272,20 @@ const SiteNav = ({
         </div>
         <nav className="global-nav" aria-label="Primary navigation">
           <div className="nav-links">
-            {links.map((link) => (
+            {navLinks.map((link) => (
               <a key={link.href} className="nav-link" href={link.href} onClick={closeMenu}>
                 {link.label}
               </a>
             ))}
-            <div
-              ref={dropdownRef}
-              className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
-              onMouseEnter={openDropdown}
-              onFocusCapture={openDropdown}
-              onBlurCapture={handleDropdownBlur}
-            >
-              <button
-                type="button"
-                className="nav-link dropdown-toggle"
-                aria-haspopup="true"
-                aria-expanded={isDropdownOpen}
-                onClick={handleDropdownToggleClick}
-              >
-                Learn
-                <span aria-hidden className="dropdown-caret">
-                  {isDropdownOpen ? "▴" : "▾"}
-                </span>
-              </button>
-              <div className="dropdown-panel" role="menu">
-                {learnLinks.map((link) => (
-                  <a
-                    key={link.href}
-                    className="dropdown-link"
-                    href={link.href}
-                    role="menuitem"
-                    onClick={closeDropdown}
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            </div>
+          </div>
+          <div className="mode-switcher">
+            <span>{copy.nav.switcherLabel}</span>
+            <a className={!isWaterEjectRoute ? "active" : ""} href="/analyze-water-bill">
+              {copy.nav.homeLabel}
+            </a>
+            <a className={isWaterEjectRoute ? "active" : ""} href="/blog-how-to-eject.html">
+              {copy.nav.ejectLabel}
+            </a>
           </div>
           <button
             type="button"
@@ -406,6 +337,9 @@ const SiteNav = ({
             {link.label}
           </a>
         ))}
+        <a href="/blog-how-to-eject.html" onClick={closeMenu}>
+          {copy.nav.ejectLabel}
+        </a>
       </div>
       {showCreditInfo && (
         <div className="credit-info-modal" role="dialog" aria-modal="true" aria-label="Credit information">
