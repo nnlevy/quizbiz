@@ -308,7 +308,7 @@ h4 {
   right: 0;
   min-width: 240px;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.6rem;
   padding: 0.65rem;
   background: var(--surface-strong);
   border-radius: var(--radius-md);
@@ -319,6 +319,26 @@ h4 {
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 13000;
+}
+
+.dropdown-section {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dropdown-heading {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(12, 22, 48, 0.55);
+  font-weight: 700;
+  padding: 0 0.35rem;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(12, 33, 68, 0.08);
+  margin: 0.2rem 0;
 }
 
 .dropdown-link {
@@ -2475,6 +2495,17 @@ blockquote {
   gap: 8px;
   font-size: 0.85rem;
   color: rgba(12, 22, 48, 0.6);
+}
+
+.mode-switcher--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.mode-switcher--stacked a {
+  display: inline-flex;
+  justify-content: center;
 }
 
 .mode-switcher a {
