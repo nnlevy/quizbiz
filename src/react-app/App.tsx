@@ -25,7 +25,7 @@ import { useCredits } from "./context/CreditsContext";
 import UtilityResultCard, { type UtilityPayload } from "./components/UtilityResultCard";
 import { copy } from "../copy";
 import demoResult from "./data/demo.json";
-import type { AnalysisResult } from "./types";
+import type { AnalysisMove, AnalysisResult } from "./types";
 
 declare global {
   interface Window {
@@ -51,6 +51,40 @@ const STRIPE_JS_SRC = "https://js.stripe.com/v3";
 const STRIPE_JS_SCRIPT_ID = "stripe-js-sdk";
 const STRIPE_PUBLISHABLE_KEY =
   "pk_live_51KdlIMIzTeKgjbPrtxvb3gyKXu5k1DHh6cenXiWiaGC0zH355gAlsYznGssDrSX7KxOv7hsvLIUDM36JM5Fw6evG00StF8cIZ6";
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((entry) => isNonEmptyString(entry));
+
+const isAnalysisMove = (value: unknown): value is AnalysisMove => {
+  if (!isRecord(value)) return false;
+  return (
+    isNonEmptyString(value.title) &&
+    isNonEmptyString(value.why) &&
+    isNonEmptyString(value.effort) &&
+    isNonEmptyString(value.impact) &&
+    isStringArray(value.steps) &&
+    isNonEmptyString(value.ctaLabel) &&
+    isNonEmptyString(value.ctaHref)
+  );
+};
+
+const isAnalysisResult = (value: unknown): value is AnalysisResult => {
+  if (!isRecord(value)) return false;
+  return (
+    Array.isArray(value.topMoves) &&
+    value.topMoves.length === 3 &&
+    value.topMoves.every((move) => isAnalysisMove(move)) &&
+    isNonEmptyString(value.payingFor) &&
+    isNonEmptyString(value.nextStep) &&
+    (value.confidenceNote === undefined || isNonEmptyString(value.confidenceNote))
+  );
+};
 
 type SavingTip = {
   id: string;
@@ -402,7 +436,11 @@ function App({ focusUpload = false }: AppProps) {
         const encoded = hash.replace("#plan=", "");
         const decoded = decodeURIComponent(atob(encoded));
         const parsed = JSON.parse(decoded) as AnalysisResult;
-        setAnalysisResult(parsed);
+        if (isAnalysisResult(parsed)) {
+          setAnalysisResult(parsed);
+          return;
+        }
+        console.warn("Shared plan is missing required fields.");
         return;
       } catch (error) {
         console.warn("Failed to parse shared plan", error);
@@ -412,7 +450,11 @@ function App({ focusUpload = false }: AppProps) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as AnalysisResult;
-        setAnalysisResult(parsed);
+        if (isAnalysisResult(parsed)) {
+          setAnalysisResult(parsed);
+        } else {
+          console.warn("Stored plan is missing required fields.");
+        }
       } catch (error) {
         console.warn("Failed to parse stored plan", error);
       }
@@ -1699,11 +1741,13 @@ function App({ focusUpload = false }: AppProps) {
       };
       spendCredit("Bill analysis completed.");
       setResponseMessage("Success!");
-      if (result.analysis) {
+      if (result.analysis && isAnalysisResult(result.analysis)) {
         setAnalysisResult(result.analysis);
         window.localStorage.setItem("ws-latest-plan", JSON.stringify(result.analysis));
       } else if (result.html) {
         setAnalysisHtml(result.html);
+      } else if (result.analysis) {
+        console.warn("Analysis response missing required fields.");
       }
       logEvent("upload_success", { file_size: file.size });
       logEvent("analysis_success");
