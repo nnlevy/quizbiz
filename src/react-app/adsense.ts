@@ -14,6 +14,79 @@ const ROUTE_CHANGE_EVENT = "adsense:route-change";
 let historyPatched = false;
 let scriptLoadPromise: Promise<void> | null = null;
 let autoAdsQueued = false;
+let dimensionPatchApplied = false;
+
+const normalizeCalcDimension = (value: string): string | null => {
+  const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
+  if (!match) return null;
+  const base = parseFloat(match[1]);
+  const subtract = parseFloat(match[2]);
+  if (!Number.isFinite(base) || !Number.isFinite(subtract)) return null;
+  const adjusted = Math.max(base - subtract, 0);
+  return `${adjusted}px`;
+};
+
+const patchDimensionProperty = (proto: object, prop: "width" | "height") => {
+  const descriptor = Object.getOwnPropertyDescriptor(proto, prop);
+  if (!descriptor?.set || !descriptor?.get || descriptor.configurable === false) return;
+  Object.defineProperty(proto, prop, {
+    configurable: descriptor.configurable,
+    enumerable: descriptor.enumerable,
+    get: descriptor.get,
+    set(value: string | number) {
+      if (typeof value === "string" && value.includes("calc")) {
+        const normalized = normalizeCalcDimension(value);
+        descriptor.set?.call(this, normalized ?? "");
+        return;
+      }
+      descriptor.set?.call(this, value);
+    },
+  });
+};
+
+const patchAdDimensionSetters = () => {
+  if (dimensionPatchApplied) return;
+  const patchSetAttribute = (proto: Element) => {
+    const nativeSetAttribute = proto.setAttribute;
+    proto.setAttribute = function patchedSetAttribute(name: string, value: string) {
+      if ((name === "width" || name === "height") && typeof value === "string" && value.includes("calc")) {
+        const normalized = normalizeCalcDimension(value);
+        return nativeSetAttribute.call(this, name, normalized ?? "");
+      }
+      return nativeSetAttribute.call(this, name, value);
+    };
+  };
+
+  const patchSetAttributeNS = (proto: Element) => {
+    const nativeSetAttributeNS = proto.setAttributeNS;
+    proto.setAttributeNS = function patchedSetAttributeNS(
+      namespace: string | null,
+      name: string,
+      value: string,
+    ) {
+      if ((name === "width" || name === "height") && typeof value === "string" && value.includes("calc")) {
+        const normalized = normalizeCalcDimension(value);
+        return nativeSetAttributeNS.call(this, namespace, name, normalized ?? "");
+      }
+      return nativeSetAttributeNS.call(this, namespace, name, value);
+    };
+  };
+
+  patchSetAttribute(Element.prototype);
+  patchSetAttributeNS(Element.prototype);
+  patchSetAttribute(SVGElement.prototype);
+  patchSetAttribute(HTMLElement.prototype);
+
+  patchDimensionProperty(HTMLIFrameElement.prototype, "width");
+  patchDimensionProperty(HTMLIFrameElement.prototype, "height");
+  patchDimensionProperty(HTMLImageElement.prototype, "width");
+  patchDimensionProperty(HTMLImageElement.prototype, "height");
+  patchDimensionProperty(HTMLObjectElement.prototype, "width");
+  patchDimensionProperty(HTMLObjectElement.prototype, "height");
+  patchDimensionProperty(HTMLVideoElement.prototype, "width");
+  patchDimensionProperty(HTMLVideoElement.prototype, "height");
+  dimensionPatchApplied = true;
+};
 
 const isDebugEnabled = () => import.meta.env.VITE_ADSENSE_DEBUG === "true";
 
@@ -162,6 +235,7 @@ export const ensureAdSenseLoaded = () => {
     debugLog("AdSense blocked until consent is granted");
     return;
   }
+  patchAdDimensionSetters();
   (window as typeof window & { __WS_ADSENSE_MANAGED__?: string }).__WS_ADSENSE_MANAGED__ = "react";
   if (!scriptLoadPromise) {
     const script = ensureScriptPresent();
