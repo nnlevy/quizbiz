@@ -202,7 +202,7 @@ function injectAdSlots(
   return bodyHtml.replaceAll(INLINE_AD_MARKER, inlineAd);
 }
 
-const homeownerNavLinks = [
+const homeownerDropdownLinks = [
   { label: "Analyze", href: "/analyze-water-bill" },
   { label: "Plan", href: "/savings-plan" },
   { label: "Calculators", href: "/calculators" },
@@ -700,16 +700,45 @@ function layout(options: {
   const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const useEjectNav = isWaterEjectRoute(canonicalPath);
-  const navLinks = useEjectNav ? waterEjectNavLinks : homeownerNavLinks;
-  const modeSwitcher = `
-    <div class="mode-switcher" role="group" aria-label="Mode switcher">
-      <span>${escapeHtml(copy.nav.switcherLabel)}</span>
-      <a class="${useEjectNav ? "" : "active"}" href="/analyze-water-bill">${escapeHtml(
-        copy.nav.homeLabel,
-      )}</a>
-      <a class="${useEjectNav ? "active" : ""}" href="/blog-how-to-eject.html">${escapeHtml(
-        copy.nav.ejectLabel,
-      )}</a>
+  const isGameRoute = canonicalPath.startsWith("/game") || canonicalPath.startsWith("/leak-patrol");
+  const navLinks = useEjectNav
+    ? waterEjectNavLinks
+    : [
+        {
+          label: "Tools & More",
+          href: "#tools-dropdown",
+          dropdown: true,
+        },
+      ];
+  const toolsDropdown = `
+    <div class="nav-dropdown">
+      <button type="button" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+        Tools &amp; More <span class="dropdown-caret">▼</span>
+      </button>
+      <div class="dropdown-panel" id="tools-dropdown">
+        ${homeownerDropdownLinks
+          .map((link) => `<a class="dropdown-link" href="${link.href}">${link.label}</a>`)
+          .join("")}
+      </div>
+    </div>
+  `;
+  const modeBar = `
+    <div class="mode-bar" role="region" aria-label="Mode switcher">
+      <div class="mode-bar__content">
+        <span class="mode-bar__label">${escapeHtml(copy.nav.switcherLabel)}</span>
+        <div class="mode-bar__actions">
+          <a class="${!useEjectNav && !isGameRoute ? "active" : ""}" href="/analyze-water-bill">${escapeHtml(
+            copy.nav.homeLabel,
+          )}</a>
+          <a class="${useEjectNav ? "active" : ""}" href="/blog-how-to-eject.html">${escapeHtml(
+            copy.nav.ejectLabel,
+          )}</a>
+          <a class="${isGameRoute ? "active" : ""}" href="/game">${escapeHtml(
+            copy.nav.gameLabel,
+          )}</a>
+        </div>
+        <button type="button" class="mode-bar__close" data-mode-bar-close aria-label="Close mode bar">×</button>
+      </div>
     </div>
   `;
   const breadcrumbJson = crumbList.length
@@ -817,6 +846,14 @@ function layout(options: {
         }
         gtag("js", new Date());
         gtag("config", "${gaMeasurementId}", { anonymize_ip: true, send_page_view: false });
+        window.addEventListener("DOMContentLoaded", () => {
+          document.querySelectorAll("[data-mode-bar-close]").forEach((button) => {
+            button.addEventListener("click", () => {
+              const bar = button.closest(".mode-bar");
+              bar?.remove();
+            });
+          });
+        });
       </script>
       <script defer src="/assets/app.js"></script>
     </head>
@@ -824,22 +861,36 @@ function layout(options: {
       <div class="app-shell">
         <header class="site-header">
           <div class="nav-bar">
-            <div class="brand"><a href="/"><span>WS</span>WaterShortcut</a></div>
+            <div class="brand">
+              <a href="/">
+                <span class="brand-mark">WS</span>
+                <span class="brand-text">
+                  <span class="brand-name">WaterShortcut</span><span class="brand-dotcom">.com</span>
+                  <span class="tagline">${escapeHtml(copy.brand.tagline)}</span>
+                </span>
+              </a>
+            </div>
             <nav class="nav-links" aria-label="Main navigation">
-              ${navLinks
-                .map(
-                  (link) =>
-                    `<a href="${link.href}"${link.href === canonicalPath ? " aria-current=\"page\"" : ""}>${link.label}</a>`,
-                )
-                .join("")}
+              ${
+                useEjectNav
+                  ? navLinks
+                      .map(
+                        (link) =>
+                          `<a class="nav-link" href="${link.href}"${
+                            link.href === canonicalPath ? ' aria-current="page"' : ""
+                          }>${link.label}</a>`,
+                      )
+                      .join("")
+                  : toolsDropdown
+              }
               ${
                 useEjectNav
                   ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
                   : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
               }
             </nav>
-            ${modeSwitcher}
           </div>
+          ${modeBar}
         </header>
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
         <main>${processedBodyHtml}</main>
