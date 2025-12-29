@@ -1,8 +1,12 @@
 import { useEffect, useRef } from "react";
 
+import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../../config/adsense";
 import { requestAdForSlot, subscribeToRouteChanges } from "../adsense";
 
-const ADSENSE_CLIENT = "ca-pub-1860356577073395";
+const ADSENSE_CLIENT =
+  (typeof window !== "undefined" &&
+    (window as typeof window & { __WS_ADSENSE_CLIENT__?: string }).__WS_ADSENSE_CLIENT__) ||
+  DEFAULT_ADSENSE_CLIENT;
 
 type AdFormat = "auto" | "autorelaxed" | "fluid";
 

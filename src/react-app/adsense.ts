@@ -1,4 +1,10 @@
-const ADSENSE_CLIENT = "ca-pub-1860356577073395";
+import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
+import { hasAdsConsent } from "./consent";
+
+const ADSENSE_CLIENT =
+  (typeof window !== "undefined" &&
+    (window as typeof window & { __WS_ADSENSE_CLIENT__?: string }).__WS_ADSENSE_CLIENT__) ||
+  DEFAULT_ADSENSE_CLIENT;
 const ADSENSE_SCRIPT_SRC =
   "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + ADSENSE_CLIENT;
 const ADSENSE_SCRIPT_SELECTOR =
@@ -124,6 +130,7 @@ const initializeSlot = (slot: HTMLElement) => {
 };
 
 export const initializeAllAdSlots = () => {
+  if (!hasAdsConsent()) return;
   document
     .querySelectorAll<HTMLElement>(".adsbygoogle[data-ad-slot]")
     .forEach((slot) => initializeSlot(slot));
@@ -131,6 +138,10 @@ export const initializeAllAdSlots = () => {
 };
 
 export const ensureAdSenseLoaded = () => {
+  if (!hasAdsConsent()) {
+    debugLog("AdSense blocked until consent is granted");
+    return;
+  }
   if (!scriptLoadPromise) {
     const script = ensureScriptPresent();
     scriptLoadPromise = waitForScriptLoad(script);
@@ -173,6 +184,7 @@ export const subscribeToRouteChanges = (listener: () => void) => {
 };
 
 export const requestAdForSlot = (slot: HTMLElement) => {
+  if (!hasAdsConsent()) return;
   ensureAdSenseLoaded();
   initializeSlot(slot);
 };

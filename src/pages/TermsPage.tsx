@@ -42,6 +42,8 @@ const TermsPage = () => (
         by consumer protection rules. Continuing to use the site means you accept any updates we publish here.
       </p>
     </section>
+
+    <p className="muted">Last updated: 2025-03-08</p>
   </PageLayout>
 );
 

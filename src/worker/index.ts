@@ -3,6 +3,8 @@ import type { Context } from "hono";
 import { stylesCss, appJs } from "./assets";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
+import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT, DEFAULT_ADSENSE_SLOTS, DEFAULT_ADSENSE_STICKY_LAYOUT_KEY } from "../config/adsense";
+import { GA_MEASUREMENT_ID as DEFAULT_GA_MEASUREMENT_ID } from "../config/analytics";
 import { pages as seoPages, site as seoSite, canonicalUrl as seoCanonicalUrl } from "../seo/seoConfig.js";
 import type { PageSeo } from "../seo/seoConfig.js";
 
@@ -29,6 +31,8 @@ type WorkerEnv = {
   "Google-Service-Account-FINAL": string;
   "domains-db"?: D1Database;
   STRIPE_API_KEY?: string;
+  ADSENSE_CLIENT?: string;
+  GA_MEASUREMENT_ID?: string;
   ADSENSE_SLOT_INLINE?: string;
   ADSENSE_SLOT_FOOTER?: string;
   ADSENSE_SLOT_STICKY?: string;
@@ -64,10 +68,6 @@ type SiteRoute = {
 
 const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = new Date().toISOString().split("T")[0];
-const ADSENSE_PUBLISHER = "ca-pub-1860356577073395";
-const DEFAULT_SLOT_INLINE = "5613501243";
-const DEFAULT_SLOT_FOOTER = "1809987601";
-const DEFAULT_SLOT_STICKY = "7418194041";
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
 
 type AdsenseSlots = {
@@ -77,44 +77,94 @@ type AdsenseSlots = {
 };
 
 const defaultAdsenseSlots: Required<AdsenseSlots> = {
-  inline: DEFAULT_SLOT_INLINE,
-  footer: DEFAULT_SLOT_FOOTER,
-  sticky: DEFAULT_SLOT_STICKY,
+  inline: DEFAULT_ADSENSE_SLOTS.inline,
+  footer: DEFAULT_ADSENSE_SLOTS.footer,
+  sticky: DEFAULT_ADSENSE_SLOTS.sticky,
 };
 
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://securepubads.g.doubleclick.net https://googleads.g.doubleclick.net https://adservice.google.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://www.googletagservices.com https://ep2.adtrafficquality.google",
-  "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://adservice.google.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://fundingchoicesmessages.google.com https://www.googletagservices.com",
-  "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net https://tpc.googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://ep2.adtrafficquality.google https://www.google.com",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self' https://hooks.stripe.com",
-].join("; ");
+const buildContentSecurityPolicy = (nonce: string) =>
+  [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' https://js.stripe.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://securepubads.g.doubleclick.net https://googleads.g.doubleclick.net https://adservice.google.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://www.googletagservices.com https://www.googletagmanager.com https://ep2.adtrafficquality.google`,
+    "connect-src 'self' https://www.watershortcut.com https://watershortcut.com https://api.stripe.com https://hooks.stripe.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://adservice.google.com https://www.google-analytics.com https://stats.g.doubleclick.net https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://fundingchoicesmessages.google.com https://www.googletagservices.com",
+    "img-src 'self' data: https://res.cloudinary.com https://api.qrserver.com https://js.stripe.com https://m.stripe.network https://hooks.stripe.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google-analytics.com https://stats.g.doubleclick.net https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net https://pagead2.googlesyndication.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://ep2.adtrafficquality.google https://www.google.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self' https://hooks.stripe.com",
+  ].join("; ");
+
+const CONSENT_REQUIRED_COUNTRIES = new Set([
+  "AT",
+  "BE",
+  "BG",
+  "HR",
+  "CY",
+  "CZ",
+  "DK",
+  "EE",
+  "FI",
+  "FR",
+  "DE",
+  "GR",
+  "HU",
+  "IE",
+  "IT",
+  "LV",
+  "LT",
+  "LU",
+  "MT",
+  "NL",
+  "PL",
+  "PT",
+  "RO",
+  "SK",
+  "SI",
+  "ES",
+  "SE",
+  "IS",
+  "LI",
+  "NO",
+  "GB",
+]);
+
+const CONSENT_STORAGE_KEY = "ws-consent-v1";
 
 function buildAdsenseSlots(env: WorkerEnv): Required<AdsenseSlots> {
   return {
-    inline: env.ADSENSE_SLOT_INLINE ?? DEFAULT_SLOT_INLINE,
-    footer: env.ADSENSE_SLOT_FOOTER ?? DEFAULT_SLOT_FOOTER,
-    sticky: env.ADSENSE_SLOT_STICKY ?? DEFAULT_SLOT_STICKY,
+    inline: env.ADSENSE_SLOT_INLINE ?? DEFAULT_ADSENSE_SLOTS.inline,
+    footer: env.ADSENSE_SLOT_FOOTER ?? DEFAULT_ADSENSE_SLOTS.footer,
+    sticky: env.ADSENSE_SLOT_STICKY ?? DEFAULT_ADSENSE_SLOTS.sticky,
   };
+}
+
+function resolveAdsenseClient(env: WorkerEnv): string {
+  return env.ADSENSE_CLIENT ?? DEFAULT_ADSENSE_CLIENT;
+}
+
+function resolveGaMeasurementId(env: WorkerEnv): string {
+  return env.GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID;
+}
+
+function isConsentRequired(country?: string | null): boolean {
+  if (!country) return true;
+  return CONSENT_REQUIRED_COUNTRIES.has(country.toUpperCase());
 }
 
 function renderAdSlot(
   slotId: string | null,
-  options: { slotName: string; format?: string; fullWidth?: boolean; layoutKey?: string },
+  options: { clientId: string; slotName: string; format?: string; fullWidth?: boolean; layoutKey?: string },
 ): string {
   if (!slotId) {
     return `<div class="ad-slot-placeholder" aria-label="Ad placeholder">Ad space reserved</div>`;
   }
 
-  const { format = "auto", fullWidth = true, slotName, layoutKey } = options;
+  const { format = "auto", fullWidth = true, slotName, layoutKey, clientId } = options;
   const attrs = [
     'class="adsbygoogle ad-slot"',
-    `data-ad-client="${ADSENSE_PUBLISHER}"`,
+    `data-ad-client="${escapeHtml(clientId)}"`,
     `data-ad-slot="${escapeHtml(slotId)}"`,
     `data-ad-region="${escapeHtml(slotName)}"`,
     `data-ad-format="${format}"`,
@@ -125,8 +175,12 @@ function renderAdSlot(
   return `<ins ${attrs.join(" ")}></ins>`;
 }
 
-function injectAdSlots(bodyHtml: string, adsenseSlots: Required<AdsenseSlots>): string {
-  const inlineAd = renderAdSlot(adsenseSlots.inline, { slotName: "inline" });
+function injectAdSlots(
+  bodyHtml: string,
+  adsenseSlots: Required<AdsenseSlots>,
+  adsenseClient: string,
+): string {
+  const inlineAd = renderAdSlot(adsenseSlots.inline, { slotName: "inline", clientId: adsenseClient });
   return bodyHtml.replaceAll(INLINE_AD_MARKER, inlineAd);
 }
 
@@ -443,27 +497,48 @@ app.use("*", async (c, next) => {
 });
 
 app.use("*", async (c, next) => {
+  const cspNonce = crypto.randomUUID().replace(/-/g, "");
+  c.set("cspNonce", cspNonce);
   await next();
-  c.res.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+  c.res.headers.set("Content-Security-Policy", buildContentSecurityPolicy(cspNonce));
+  c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set(
+    "Permissions-Policy",
+    "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+  );
+  c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
 });
 
-const API_CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+const API_ALLOWED_ORIGINS = new Set([
+  `https://${seoSite.canonicalHost}`,
+  "https://watershortcut.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+
+const buildCorsHeaders = (origin?: string | null): Record<string, string> => {
+  const allowedOrigin = origin && API_ALLOWED_ORIGINS.has(origin) ? origin : `https://${seoSite.canonicalHost}`;
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
+  };
 };
 
 app.use("/api/*", async (c, next) => {
+  const corsHeaders = buildCorsHeaders(c.req.header("Origin"));
   if (c.req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: API_CORS_HEADERS,
+      headers: corsHeaders,
     });
   }
 
   await next();
 
-  Object.entries(API_CORS_HEADERS).forEach(([key, value]) => {
+  Object.entries(corsHeaders).forEach(([key, value]) => {
     c.res.headers.set(key, value);
   });
 });
@@ -486,9 +561,35 @@ app.get("/ads.txt", (c) =>
   c.text("google.com, pub-1860356577073395, DIRECT, f08c47fec0942fa0"),
 );
 
+app.get("/__ads", (c) => {
+  const adsenseSlots = buildAdsenseSlots(c.env);
+  const adsenseClient = resolveAdsenseClient(c.env);
+  const gaMeasurementId = resolveGaMeasurementId(c.env);
+  const consentRequired = isConsentRequired(c.req.raw.cf?.country);
+  const cspNonce = c.get("cspNonce") as string;
+  return c.html(
+    layout({
+      title: "AdSense diagnostics | WaterShortcut",
+      description: "Internal ad diagnostics for verifying AdSense script loading and slot wiring.",
+      canonicalPath: "/__ads",
+      bodyHtml: renderAdsDiagnosticsPage(adsenseClient, adsenseSlots),
+      pageCssClass: "ads-diagnostics-page",
+      adsenseSlots,
+      adsenseClient,
+      gaMeasurementId,
+      consentRequired,
+      cspNonce,
+    }),
+  );
+});
+
 siteRoutes.forEach((route) => {
   app.get(route.path, (c) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
+    const adsenseClient = resolveAdsenseClient(c.env);
+    const gaMeasurementId = resolveGaMeasurementId(c.env);
+    const consentRequired = isConsentRequired(c.req.raw.cf?.country);
+    const cspNonce = c.get("cspNonce") as string;
     const bodyHtml = route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body;
     return c.html(
       layout({
@@ -500,6 +601,10 @@ siteRoutes.forEach((route) => {
         breadcrumbs: route.breadcrumbs,
         extraJsonLd: route.extraJsonLd,
         adsenseSlots,
+        adsenseClient,
+        gaMeasurementId,
+        consentRequired,
+        cspNonce,
       }),
     );
   });
@@ -523,6 +628,22 @@ app.get("/robots.txt", (c) =>
   ),
 );
 
+app.get("/security.txt", (c) =>
+  c.text(
+    `Contact: mailto:support@watershortcut.com\nPreferred-Languages: en\nCanonical: https://${seoSite.canonicalHost}/security.txt`,
+    200,
+    { "Content-Type": "text/plain; charset=utf-8" },
+  ),
+);
+
+app.get("/humans.txt", (c) =>
+  c.text(
+    `WaterShortcut\nTeam: WaterShortcut\nSite: https://${seoSite.canonicalHost}\nContact: support@watershortcut.com`,
+    200,
+    { "Content-Type": "text/plain; charset=utf-8" },
+  ),
+);
+
 function layout(options: {
   title: string;
   description: string;
@@ -532,10 +653,26 @@ function layout(options: {
   breadcrumbs?: Array<{ name: string; path: string }>;
   extraJsonLd?: Array<Record<string, unknown>>;
   adsenseSlots?: Required<AdsenseSlots>;
+  adsenseClient: string;
+  gaMeasurementId: string;
+  consentRequired: boolean;
+  cspNonce: string;
 }): string {
-  const { title, description, canonicalPath, bodyHtml, pageCssClass, breadcrumbs, extraJsonLd } = options;
+  const {
+    title,
+    description,
+    canonicalPath,
+    bodyHtml,
+    pageCssClass,
+    breadcrumbs,
+    extraJsonLd,
+    adsenseClient,
+    gaMeasurementId,
+    consentRequired,
+    cspNonce,
+  } = options;
   const adsenseSlots = options.adsenseSlots || defaultAdsenseSlots;
-  const processedBodyHtml = injectAdSlots(bodyHtml, adsenseSlots);
+  const processedBodyHtml = injectAdSlots(bodyHtml, adsenseSlots, adsenseClient);
   const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const breadcrumbJson = crumbList.length
@@ -578,11 +715,11 @@ function layout(options: {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" />
+      <meta http-equiv="Content-Security-Policy" content="${buildContentSecurityPolicy(cspNonce)}" />
       <title>${escapeHtml(title)}</title>
       <meta name="description" content="${escapeHtml(description)}" />
       <link rel="canonical" href="${canonicalUrl}" />
-      <meta name="google-adsense-account" content="${ADSENSE_PUBLISHER}" />
+      <meta name="google-adsense-account" content="${adsenseClient}" />
       <meta property="og:title" content="${escapeHtml(title)}" />
       <meta property="og:description" content="${escapeHtml(description)}" />
       <meta property="og:url" content="${canonicalUrl}" />
@@ -592,11 +729,58 @@ function layout(options: {
       <meta name="twitter:description" content="${escapeHtml(description)}" />
       <link rel="preload" href="/assets/styles.css" as="style" />
       <link rel="stylesheet" href="/assets/styles.css" />
-      <script type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
+      <script nonce="${cspNonce}" type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
+      <script nonce="${cspNonce}">
+        window.__WS_ADSENSE_CLIENT__ = "${adsenseClient}";
+        window.__WS_CONSENT_REQUIRED__ = ${consentRequired ? "true" : "false"};
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        window.gtag = window.gtag || gtag;
+        const storedConsent = (() => {
+          try {
+            return JSON.parse(localStorage.getItem("${CONSENT_STORAGE_KEY}") || "null");
+          } catch (err) {
+            return null;
+          }
+        })();
+        const defaultConsent = ${consentRequired ? "true" : "false"}
+          ? {
+              ad_storage: "denied",
+              analytics_storage: "denied",
+              ad_user_data: "denied",
+              ad_personalization: "denied",
+              functionality_storage: "granted",
+              security_storage: "granted",
+              wait_for_update: 500,
+            }
+          : {
+              ad_storage: "granted",
+              analytics_storage: "granted",
+              ad_user_data: "granted",
+              ad_personalization: "granted",
+              functionality_storage: "granted",
+              security_storage: "granted",
+              wait_for_update: 500,
+            };
+        gtag("consent", "default", defaultConsent);
+        if (storedConsent) {
+          gtag("consent", "update", {
+            ad_storage: storedConsent.ads ? "granted" : "denied",
+            analytics_storage: storedConsent.analytics ? "granted" : "denied",
+            ad_user_data: storedConsent.ads ? "granted" : "denied",
+            ad_personalization: storedConsent.ads ? "granted" : "denied",
+            functionality_storage: "granted",
+            security_storage: "granted",
+          });
+        }
+        gtag("js", new Date());
+        gtag("config", "${gaMeasurementId}", { anonymize_ip: true, send_page_view: false });
+      </script>
+      <script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
       <script
         data-cfasync="false"
         async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}"
         crossorigin="anonymous"
       ></script>
       <script defer src="/assets/app.js"></script>
@@ -620,7 +804,11 @@ function layout(options: {
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
         <main>${processedBodyHtml}</main>
         <div class="section">
-          ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, { slotName: "footer", format: "autorelaxed" })}
+          ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, {
+            slotName: "footer",
+            format: "autorelaxed",
+            clientId: adsenseClient,
+          })}
         </div>
         <footer class="footer">
           <div class="footer-inner">
@@ -643,11 +831,31 @@ function layout(options: {
             slotName: "sticky",
             format: "fluid",
             fullWidth: true,
-            layoutKey: "-gw-3+1f-3d+2z",
+            layoutKey: DEFAULT_ADSENSE_STICKY_LAYOUT_KEY,
+            clientId: adsenseClient,
           })}
         </div>
       </div>
       ${renderModals()}
+      <div class="consent-banner" data-consent-banner hidden>
+        <div class="consent-copy">
+          <strong>Your privacy controls</strong>
+          <p class="muted">
+            We use cookies for analytics and ads to keep WaterShortcut free. Choose what to allow.
+            See <a href="/privacy">privacy details</a>.
+          </p>
+        </div>
+        <div class="consent-options">
+          <label><input type="checkbox" data-consent-option="functional" checked disabled /> Functional (required)</label>
+          <label><input type="checkbox" data-consent-option="analytics" /> Analytics</label>
+          <label><input type="checkbox" data-consent-option="ads" /> Ads</label>
+        </div>
+        <div class="consent-actions">
+          <button class="btn secondary" type="button" data-consent-reject>Reject non-essential</button>
+          <button class="btn secondary" type="button" data-consent-save>Save choices</button>
+          <button class="btn primary" type="button" data-consent-accept>Accept all</button>
+        </div>
+      </div>
     </body>
   </html>`;
 }
@@ -662,6 +870,36 @@ function renderBreadcrumbs(crumbs: Array<{ name: string; path: string }>): strin
     })
     .join("<span>/</span>");
   return `<div class="section breadcrumbs" aria-label="Breadcrumbs">${items}</div>`;
+}
+
+function renderAdsDiagnosticsPage(adsenseClient: string, adsenseSlots: Required<AdsenseSlots>): string {
+  return `
+    <section class="section">
+      <p class="eyebrow">Hidden diagnostics</p>
+      <h1>AdSense diagnostics</h1>
+      <p class="muted">
+        Use this page when ads aren’t showing. It reports script load state, slot dimensions, and initialization timing.
+      </p>
+      <div class="ads-diagnostics-panel" data-ads-diagnostics>
+        <div class="ads-diagnostics-row"><span>Script loaded</span><strong data-ads-script>pending</strong></div>
+        <div class="ads-diagnostics-row"><span>adsbygoogle present</span><strong data-adsbygoogle>pending</strong></div>
+        <div class="ads-diagnostics-row"><span>Ad slots found</span><strong data-ads-count>0</strong></div>
+        <div class="ads-diagnostics-row"><span>Last init</span><strong data-ads-last-init>—</strong></div>
+      </div>
+    </section>
+    <section class="section">
+      <h2>Inline slot</h2>
+      ${renderAdSlot(adsenseSlots.inline, { slotName: "inline", clientId: adsenseClient })}
+    </section>
+    <section class="section">
+      <h2>Footer slot</h2>
+      ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, {
+        slotName: "footer",
+        format: "autorelaxed",
+        clientId: adsenseClient,
+      })}
+    </section>
+  `;
 }
 
 function buildBreadcrumbs(path: string): Array<{ name: string; path: string }> {

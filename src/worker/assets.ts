@@ -1,3 +1,5 @@
+import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
+
 export const stylesCss = `:root{color-scheme:light;font-family:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;background:#f7fbff;}
 *{box-sizing:border-box;}body{margin:0;color:#0f172a;background:#f7fbff;}a{color:#0d6efd;text-decoration:none;}a:hover{text-decoration:underline;}header,main,footer{width:100%;}img{max-width:100%;display:block;}button,input,select,textarea{font-family:inherit;}button{cursor:pointer;}body.prefers-reduced-motion *{transition:none!important;animation:none!important;}
 .app-shell{min-height:100vh;display:flex;flex-direction:column;} .site-header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,0.92);backdrop-filter:blur(6px);border-bottom:1px solid #e2e8f0;} .nav-bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;} .brand a{font-weight:700;color:#0f172a;font-size:18px;display:flex;align-items:center;gap:8px;} .brand span{display:inline-block;padding:6px 10px;border-radius:12px;background:#e0f2ff;color:#075985;font-weight:700;} .nav-links{display:flex;align-items:center;gap:12px;flex-wrap:wrap;} .nav-links a{padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;transition:all .2s ease;} .nav-links a:hover,.nav-links a:focus-visible{background:#e0f2ff;outline:none;} .primary-cta{background:#0ea5e9;color:white;} .primary-cta:hover,.primary-cta:focus-visible{background:#0284c7;color:white;}
@@ -6,7 +8,7 @@ main{flex:1;} .hero{max-width:1100px;margin:0 auto;padding:40px 18px 18px;displa
 .blog-page main{display:flex;justify-content:center;} .blog-shell{max-width:800px;width:100%;margin:0 auto;padding:28px 18px;} .blog-article{background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 12px 36px rgba(15,23,42,0.08);display:grid;gap:18px;padding:22px;} .blog-header h1{margin:0;font-size:32px;color:#0f172a;} .blog-header .lead{margin:8px 0 0;color:#1f2937;font-size:17px;line-height:1.6;} .blog-section{display:grid;gap:10px;} .blog-section h2{margin:0;font-size:22px;color:#0f172a;} .blog-section p,.blog-section li{color:#1f2937;line-height:1.6;} .blog-section ol{padding-left:20px;display:grid;gap:8px;} .blog-footer{margin-top:6px;} .eyebrow{letter-spacing:0.08em;text-transform:uppercase;font-weight:800;color:#075985;margin:0;} .lead{font-weight:600;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;} .bullet-list{padding-left:18px;display:grid;gap:8px;color:#1f2937;} .faq{border:1px solid #e2e8f0;border-radius:12px;background:white;} .faq-item{border-top:1px solid #e2e8f0;} .faq-item:first-of-type{border-top:none;} .faq button{width:100%;text-align:left;padding:14px;border:none;background:none;font-weight:700;display:flex;justify-content:space-between;align-items:center;} .faq .answer{padding:0 14px 14px;color:#334155;display:none;} .faq .answer.open{display:block;}
 .layout-slab{background:white;border-radius:18px;border:1px solid #e2e8f0;box-shadow:0 10px 40px rgba(15,23,42,0.06);padding:18px;} .meta-line{font-size:14px;color:#475569;}
-.footer{margin-top:30px;background:#0f172a;color:white;} .footer .footer-inner{max-width:1100px;margin:0 auto;padding:24px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;} .footer a{color:#bae6fd;} .footer-links{display:flex;gap:12px;flex-wrap:wrap;} .footnote{font-size:13px;color:#cbd5e1;} .ad-slot-placeholder{min-height:250px;border:1px dashed #cbd5e1;border-radius:12px;background:linear-gradient(135deg,#f0f9ff,#e2e8f0);display:flex;align-items:center;justify-content:center;color:#475569;font-weight:600;} .ad-slot{display:block;min-height:250px;width:100%;margin:12px auto;text-align:center;} .ad-fallback{min-height:250px;display:flex;align-items:center;justify-content:center;text-align:center;color:#475569;font-weight:600;} .ad-sticky{position:sticky;bottom:0;z-index:5;background:#f7fbff;padding:0 18px 18px;border-top:1px solid #e2e8f0;}
+.footer{margin-top:30px;background:#0f172a;color:white;} .footer .footer-inner{max-width:1100px;margin:0 auto;padding:24px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;} .footer a{color:#bae6fd;} .footer-links{display:flex;gap:12px;flex-wrap:wrap;} .footnote{font-size:13px;color:#cbd5e1;} .ad-slot-placeholder{min-height:250px;border:1px dashed #cbd5e1;border-radius:12px;background:linear-gradient(135deg,#f0f9ff,#e2e8f0);display:flex;align-items:center;justify-content:center;color:#475569;font-weight:600;} .ad-slot{display:block;min-height:250px;width:100%;margin:12px auto;text-align:center;} .ad-fallback{min-height:250px;display:flex;align-items:center;justify-content:center;text-align:center;color:#475569;font-weight:600;} .ad-sticky{position:sticky;bottom:0;z-index:5;background:#f7fbff;padding:0 18px 18px;border-top:1px solid #e2e8f0;} .consent-banner{position:fixed;bottom:18px;left:18px;right:18px;z-index:20;background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 10px 40px rgba(15,23,42,0.2);padding:16px;display:grid;gap:12px;} .consent-banner a{color:#0ea5e9;} .consent-options{display:grid;gap:6px;font-size:14px;color:#475569;} .consent-actions{display:flex;gap:10px;flex-wrap:wrap;} .consent-actions .btn{flex:1 1 160px;} .ads-diagnostics-panel{border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:white;display:grid;gap:10px;} .ads-diagnostics-row{display:flex;justify-content:space-between;gap:12px;font-weight:600;color:#0f172a;} .ads-diagnostics-floating{position:fixed;top:18px;right:18px;max-width:320px;z-index:30;}
 .table{width:100%;border-collapse:collapse;} .table td,.table th{border:1px solid #e2e8f0;padding:10px;} .table th{background:#f0f9ff;text-align:left;}
 label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,select,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #e2e8f0;background:white;color:#0f172a;} input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #0ea5e9;} .form-row{display:grid;gap:8px;margin-bottom:12px;} .form-inline{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;} .muted{color:#475569;font-size:14px;} .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#e0f2ff;border-radius:10px;color:#075985;font-weight:700;font-size:13px;}
 .wizard{display:grid;gap:12px;} .wizard-steps{display:flex;gap:8px;flex-wrap:wrap;} .step-pill{padding:8px 10px;border-radius:999px;border:1px solid #e2e8f0;font-weight:700;color:#475569;background:white;} .step-pill.active{background:#0ea5e9;color:white;border-color:#0ea5e9;} .wizard-step{display:none;gap:10px;} .wizard-step.active{display:grid;} .wizard-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
@@ -19,7 +21,13 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 `;
 
 function clientScript() {
-  const ADSENSE_CLIENT = 'ca-pub-1860356577073395';
+  const ADSENSE_CLIENT =
+    (window as typeof window & { __WS_ADSENSE_CLIENT__?: string }).__WS_ADSENSE_CLIENT__ ||
+    DEFAULT_ADSENSE_CLIENT;
+  const CONSENT_STORAGE_KEY = 'ws-consent-v1';
+  const consentRequired = Boolean(
+    (window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean }).__WS_CONSENT_REQUIRED__,
+  );
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReducedMotion) {
     document.body.classList.add('prefers-reduced-motion');
@@ -31,12 +39,117 @@ function clientScript() {
       ? num.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
       : '';
 
+  type ConsentState = {
+    functional: boolean;
+    analytics: boolean;
+    ads: boolean;
+  };
+
   function track(eventName: string, params: Record<string, unknown> = {}) {
     const gtagFn = (window as typeof window & { gtag?: (...args: unknown[]) => void }).gtag;
     if (typeof gtagFn === 'function') {
       gtagFn('event', eventName, params);
     }
   }
+
+  const defaultConsent: ConsentState = consentRequired
+    ? { functional: true, analytics: false, ads: false }
+    : { functional: true, analytics: true, ads: true };
+
+  const getStoredConsent = (): ConsentState | null => {
+    try {
+      const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as ConsentState) : null;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const writeConsentCookie = (consent: ConsentState) => {
+    try {
+      document.cookie = `ws_consent=${encodeURIComponent(JSON.stringify(consent))}; Max-Age=31536000; Path=/; SameSite=Lax`;
+    } catch (err) {
+      console.warn('Failed to write consent cookie');
+    }
+  };
+
+  const applyConsentMode = (consent: ConsentState) => {
+    const gtagFn = (window as typeof window & { gtag?: (...args: unknown[]) => void }).gtag;
+    if (typeof gtagFn !== 'function') return;
+    gtagFn('consent', 'update', {
+      ad_storage: consent.ads ? 'granted' : 'denied',
+      analytics_storage: consent.analytics ? 'granted' : 'denied',
+      ad_user_data: consent.ads ? 'granted' : 'denied',
+      ad_personalization: consent.ads ? 'granted' : 'denied',
+      functionality_storage: 'granted',
+      security_storage: 'granted',
+    });
+  };
+
+  const storeConsent = (consent: ConsentState) => {
+    try {
+      localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(consent));
+    } catch (err) {
+      console.warn('Failed to persist consent choice');
+    }
+    writeConsentCookie(consent);
+    applyConsentMode(consent);
+    window.dispatchEvent(new CustomEvent('ws-consent-updated', { detail: consent }));
+  };
+
+  const getEffectiveConsent = (): ConsentState => {
+    return getStoredConsent() ?? defaultConsent;
+  };
+
+  const hasAdsConsent = () => getEffectiveConsent().ads;
+
+  const initConsentBanner = () => {
+    const banner = document.querySelector<HTMLElement>('[data-consent-banner]');
+    if (!banner) return;
+
+    const stored = getStoredConsent();
+    const consent = stored ?? defaultConsent;
+    applyConsentMode(consent);
+
+    const checkboxFor = (key: keyof ConsentState) =>
+      banner.querySelector<HTMLInputElement>(`[data-consent-option="${key}"]`);
+    const analyticsBox = checkboxFor('analytics');
+    const adsBox = checkboxFor('ads');
+    if (analyticsBox) analyticsBox.checked = consent.analytics;
+    if (adsBox) adsBox.checked = consent.ads;
+
+    const shouldShow = !stored;
+    banner.hidden = !shouldShow;
+
+    const acceptAll = banner.querySelector<HTMLButtonElement>('[data-consent-accept]');
+    const reject = banner.querySelector<HTMLButtonElement>('[data-consent-reject]');
+    const save = banner.querySelector<HTMLButtonElement>('[data-consent-save]');
+
+    const closeBanner = () => {
+      banner.hidden = true;
+    };
+
+    acceptAll?.addEventListener('click', () => {
+      storeConsent({ functional: true, analytics: true, ads: true });
+      closeBanner();
+    });
+
+    reject?.addEventListener('click', () => {
+      storeConsent({ functional: true, analytics: false, ads: false });
+      if (analyticsBox) analyticsBox.checked = false;
+      if (adsBox) adsBox.checked = false;
+      closeBanner();
+    });
+
+    save?.addEventListener('click', () => {
+      storeConsent({
+        functional: true,
+        analytics: Boolean(analyticsBox?.checked),
+        ads: Boolean(adsBox?.checked),
+      });
+      closeBanner();
+    });
+  };
 
   function initFaq() {
     document.querySelectorAll('.faq button').forEach((btn) => {
@@ -316,6 +429,8 @@ function clientScript() {
   }
 
   let autoAdsQueued = false;
+  let adsActivated = false;
+  let lastAdsInit = 0;
   let svgSetAttributePatched = false;
   let htmlSetAttributePatched = false;
 
@@ -423,7 +538,7 @@ function clientScript() {
 
   const queueAutoAds = () => {
     const adsQueue = ensureAdsQueue();
-    if (!autoAdsQueued) {
+    if (!autoAdsQueued && hasAdsConsent()) {
       adsQueue.push({ google_ad_client: ADSENSE_CLIENT, enable_page_level_ads: true });
       autoAdsQueued = true;
     }
@@ -431,8 +546,12 @@ function clientScript() {
   };
 
   const activateAds = () => {
+    if (!hasAdsConsent()) return;
+    if (adsActivated) return;
+    adsActivated = true;
     const adsQueue = queueAutoAds();
     patchAdDimensionSetters();
+    lastAdsInit = Date.now();
 
     document.querySelectorAll<HTMLElement>('.adsbygoogle[data-ad-slot]').forEach((slot) => {
       if (slot.dataset.adsInitialized === 'true') return;
@@ -456,6 +575,66 @@ function clientScript() {
     monitorAdNodes();
   };
 
+  const isAdsDebugMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('ads_debug') === '1' || window.location.pathname === '/__ads';
+  };
+
+  const ensureDiagnosticsPanel = () => {
+    let panel = document.querySelector<HTMLElement>('[data-ads-diagnostics]');
+    if (panel) return panel;
+    panel = document.createElement('div');
+    panel.className = 'ads-diagnostics-panel ads-diagnostics-floating';
+    panel.setAttribute('data-ads-diagnostics', 'true');
+    panel.innerHTML = `
+      <div class="ads-diagnostics-row"><span>Script loaded</span><strong data-ads-script>pending</strong></div>
+      <div class="ads-diagnostics-row"><span>adsbygoogle present</span><strong data-adsbygoogle>pending</strong></div>
+      <div class="ads-diagnostics-row"><span>Ad slots found</span><strong data-ads-count>0</strong></div>
+      <div class="ads-diagnostics-row"><span>Last init</span><strong data-ads-last-init>—</strong></div>
+      <div class="muted" data-ads-slots></div>
+    `;
+    document.body.appendChild(panel);
+    return panel;
+  };
+
+  const updateDiagnosticsPanel = () => {
+    if (!isAdsDebugMode()) return;
+    const panel = ensureDiagnosticsPanel();
+    const adScript = document.querySelector<HTMLScriptElement>(
+      'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
+    );
+    const scriptLoaded = adScript?.dataset.adsenseLoaded === 'true';
+    const adsQueue = (window as typeof window & { adsbygoogle?: Array<unknown> }).adsbygoogle;
+    const slots = Array.from(document.querySelectorAll<HTMLElement>('.adsbygoogle'));
+    const slotDetails = slots
+      .map((slot, index) => {
+        const rect = slot.getBoundingClientRect();
+        return `#${index + 1} ${slot.dataset.adSlot || 'auto'}: ${Math.round(rect.width)}x${Math.round(rect.height)}`;
+      })
+      .join(' · ');
+
+    const setText = (selector: string, value: string) => {
+      const el = panel.querySelector<HTMLElement>(selector);
+      if (el) el.textContent = value;
+    };
+
+    setText('[data-ads-script]', scriptLoaded ? 'loaded' : 'pending');
+    setText('[data-adsbygoogle]', adsQueue ? 'yes' : 'no');
+    setText('[data-ads-count]', String(slots.length));
+    setText('[data-ads-last-init]', lastAdsInit ? new Date(lastAdsInit).toLocaleTimeString() : '—');
+    setText('[data-ads-slots]', slotDetails || 'No ad slots on page');
+
+    if (isAdsDebugMode()) {
+      console.info('[ads-diagnostics]', {
+        scriptLoaded,
+        adsbygooglePresent: Boolean(adsQueue),
+        slotCount: slots.length,
+        lastInit: lastAdsInit,
+        slotDetails,
+      });
+    }
+  };
+
   function initAds() {
     patchAdDimensionSetters();
     const adScript = document.querySelector<HTMLScriptElement>(
@@ -463,7 +642,15 @@ function clientScript() {
     );
     queueAutoAds();
     if (adScript) {
-      adScript.addEventListener('load', () => setTimeout(activateAds, 50), { once: true });
+      adScript.addEventListener(
+        'load',
+        () => {
+          adScript.dataset.adsenseLoaded = 'true';
+          setTimeout(activateAds, 50);
+          updateDiagnosticsPanel();
+        },
+        { once: true },
+      );
     }
 
     if (document.readyState === 'complete') {
@@ -471,6 +658,12 @@ function clientScript() {
     } else {
       window.addEventListener('load', () => setTimeout(activateAds, 200));
     }
+
+    window.addEventListener('ws-consent-updated', () => {
+      adsActivated = false;
+      setTimeout(activateAds, 50);
+      updateDiagnosticsPanel();
+    });
 
     window.addEventListener('unhandledrejection', (event) => {
       if (event.reason == null) {
@@ -489,7 +682,12 @@ function clientScript() {
     initProviderLookup();
     initBillUpload();
     initModals();
+    initConsentBanner();
     initAds();
+    if (isAdsDebugMode()) {
+      updateDiagnosticsPanel();
+      window.setInterval(updateDiagnosticsPanel, 2000);
+    }
   });
 }
 
