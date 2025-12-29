@@ -16,9 +16,15 @@ import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } fr
 import { subscribeToConsentChanges } from "./consent";
 
 if (typeof window !== "undefined") {
-  const globalWindow = window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean };
+  const globalWindow = window as typeof window & {
+    __WS_CONSENT_REQUIRED__?: boolean;
+    __WS_ADSENSE_MANAGED__?: string;
+  };
   if (globalWindow.__WS_CONSENT_REQUIRED__ == null) {
     globalWindow.__WS_CONSENT_REQUIRED__ = false;
+  }
+  if (!globalWindow.__WS_ADSENSE_MANAGED__) {
+    globalWindow.__WS_ADSENSE_MANAGED__ = "react";
   }
 }
 const RootRouter = () => {

@@ -815,7 +815,7 @@ function App({ focusUpload = false }: AppProps) {
     }
   };
 
-  React.useLayoutEffect(() => {
+  useEffect(() => {
     if (!pendingFileFocus || !sectionOpenState.upload) {
       return;
     }

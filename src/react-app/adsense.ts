@@ -90,7 +90,6 @@ const ensureScriptPresent = () => {
   script.async = true;
   script.src = ADSENSE_SCRIPT_SRC;
   script.crossOrigin = "anonymous";
-  script.setAttribute("data-cfasync", "false");
   document.head.appendChild(script);
   debugLog("Injected AdSense script", { src: script.src });
   return script;
@@ -149,6 +148,7 @@ export const ensureAdSenseLoaded = () => {
     debugLog("AdSense blocked until consent is granted");
     return;
   }
+  (window as typeof window & { __WS_ADSENSE_MANAGED__?: string }).__WS_ADSENSE_MANAGED__ = "react";
   if (!scriptLoadPromise) {
     const script = ensureScriptPresent();
     scriptLoadPromise = waitForScriptLoad(script);
