@@ -1,5 +1,6 @@
 import {
   type CSSProperties,
+  type FocusEvent as ReactFocusEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -10,10 +11,13 @@ import {
 
 import { copy } from "../../copy";
 
-const homeownerLinks = [
+const primaryLinks = [
   { href: "/analyze-water-bill", label: "Analyze" },
   { href: "/savings-plan", label: "Plan" },
   { href: "/calculators", label: "Calculators" },
+];
+
+const secondaryLinks = [
   { href: "/leak-check", label: "Leak check" },
   { href: "/rebates", label: "Rebates" },
   { href: "/guides", label: "Guides" },
@@ -45,7 +49,9 @@ const SiteNav = ({
   const [navDragOffset, setNavDragOffset] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [showCreditInfo, setShowCreditInfo] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
+  const dropdownToggleRef = useRef<HTMLButtonElement | null>(null);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -95,8 +101,8 @@ const SiteNav = ({
     (window.location.pathname.startsWith("/blog-how-to-eject") ||
       window.location.pathname.startsWith("/blog-is-it-safe") ||
       window.location.pathname.startsWith("/water-eject"));
-  const navLinks = isWaterEjectRoute ? waterEjectLinks : homeownerLinks;
-  const mobileLinks = navLinks;
+  const navLinks = isWaterEjectRoute ? waterEjectLinks : primaryLinks;
+  const mobileLinks = isWaterEjectRoute ? waterEjectLinks : [...primaryLinks, ...secondaryLinks];
 
   const handleHeaderTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
     if (!isMobileViewport() || isMobileMenuOpen) {
@@ -238,6 +244,26 @@ const SiteNav = ({
     transition: "opacity 0.2s ease",
   };
 
+  const closeDropdown = () => setIsDropdownOpen(false);
+
+  const handleDropdownToggle = () => setIsDropdownOpen((prev) => !prev);
+
+  const handleDropdownBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+    setIsDropdownOpen(false);
+  };
+
+  const handleDropdownKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+    event.stopPropagation();
+    setIsDropdownOpen(false);
+    dropdownToggleRef.current?.focus();
+  };
+
   return (
     <header
       className={`app-header ${isNavVisible ? "nav-visible" : "nav-hidden"}`}
@@ -277,6 +303,42 @@ const SiteNav = ({
                 {link.label}
               </a>
             ))}
+            {!isWaterEjectRoute && (
+              <div
+                className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
+                onBlur={handleDropdownBlur}
+                onKeyDown={handleDropdownKeyDown}
+                onMouseEnter={() => setIsDropdownOpen(true)}
+                onMouseLeave={closeDropdown}
+              >
+                <button
+                  ref={dropdownToggleRef}
+                  type="button"
+                  className="nav-link dropdown-toggle"
+                  aria-haspopup="true"
+                  aria-expanded={isDropdownOpen}
+                  aria-controls="secondary-links-panel"
+                  onClick={handleDropdownToggle}
+                >
+                  More <span className="dropdown-caret">▼</span>
+                </button>
+                <div id="secondary-links-panel" className="dropdown-panel">
+                  {secondaryLinks.map((link) => (
+                    <a
+                      key={link.href}
+                      className="dropdown-link"
+                      href={link.href}
+                      onClick={() => {
+                        closeMenu();
+                        closeDropdown();
+                      }}
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="mode-switcher">
             <span>{copy.nav.switcherLabel}</span>
