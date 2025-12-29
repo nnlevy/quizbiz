@@ -2448,6 +2448,28 @@ async function analyzeTextWithOpenAI(
   return data;
 }
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((entry) => isNonEmptyString(entry));
+
+const isAnalysisMove = (move: unknown): move is AnalysisMove => {
+  if (!isRecord(move)) return false;
+  return (
+    isNonEmptyString(move.title) &&
+    isNonEmptyString(move.why) &&
+    isNonEmptyString(move.effort) &&
+    isNonEmptyString(move.impact) &&
+    isStringArray(move.steps) &&
+    isNonEmptyString(move.ctaLabel) &&
+    isNonEmptyString(move.ctaHref)
+  );
+};
+
 function parseAnalysisPayload(data: ChatCompletionResponse): AnalysisResult | null {
   const content = data.choices?.[0]?.message?.content;
   if (!content) return null;
@@ -2455,7 +2477,15 @@ function parseAnalysisPayload(data: ChatCompletionResponse): AnalysisResult | nu
   if (!jsonBlock) return null;
   try {
     const parsed = JSON.parse(jsonBlock) as AnalysisResult;
-    if (!parsed?.topMoves?.length || !parsed.payingFor || !parsed.nextStep) {
+    if (
+      !Array.isArray(parsed?.topMoves) ||
+      parsed.topMoves.length !== 3 ||
+      !isNonEmptyString(parsed.payingFor) ||
+      !isNonEmptyString(parsed.nextStep)
+    ) {
+      return null;
+    }
+    if (!parsed.topMoves.every((move) => isAnalysisMove(move))) {
       return null;
     }
     return parsed;
