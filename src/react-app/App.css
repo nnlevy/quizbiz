@@ -236,12 +236,28 @@ h4 {
 }
 
 .brand {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+
+.brand-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1rem;
   font-weight: 700;
   font-size: clamp(1rem, 1vw + 0.65rem, 1.28rem);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent-strong);
-  white-space: nowrap;
+}
+
+.brand-dotcom {
+  font-size: 0.7em;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
 }
 
 .global-nav {
@@ -2525,7 +2541,72 @@ blockquote {
 .tagline {
   font-size: 0.75rem;
   color: rgba(12, 22, 48, 0.5);
-  margin-left: 8px;
+  margin-left: 0;
+}
+
+.mode-bar {
+  border-top: 1px solid rgba(12, 22, 48, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+}
+
+.mode-bar__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mode-bar__label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(12, 22, 48, 0.55);
+}
+
+.mode-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mode-bar__actions a {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(12, 22, 48, 0.1);
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mode-bar__actions a.active {
+  background: rgba(79, 155, 255, 0.2);
+  color: rgba(12, 22, 48, 0.9);
+  border-color: rgba(79, 155, 255, 0.4);
+}
+
+.mode-bar__close {
+  margin-left: auto;
+  border: none;
+  background: rgba(12, 22, 48, 0.08);
+  color: rgba(12, 22, 48, 0.7);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.mode-bar__close:hover,
+.mode-bar__close:focus-visible {
+  background: rgba(79, 155, 255, 0.2);
+  color: rgba(12, 22, 48, 0.9);
+  outline: none;
 }
 
 .link-button {

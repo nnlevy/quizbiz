@@ -50,6 +50,7 @@ const SiteNav = ({
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [showCreditInfo, setShowCreditInfo] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showModeBar, setShowModeBar] = useState(true);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownToggleRef = useRef<HTMLButtonElement | null>(null);
 
@@ -101,17 +102,19 @@ const SiteNav = ({
     (window.location.pathname.startsWith("/blog-how-to-eject") ||
       window.location.pathname.startsWith("/blog-is-it-safe") ||
       window.location.pathname.startsWith("/water-eject"));
-  const compactPrimaryLinks = primaryLinks.slice(0, 1);
-  const overflowPrimaryLinks = primaryLinks.slice(1);
+  const isGameRoute =
+    typeof window !== "undefined" &&
+    (window.location.pathname.startsWith("/game") ||
+      window.location.pathname.startsWith("/leak-patrol"));
   const navLinks = isWaterEjectRoute
     ? [{ href: "/blog-how-to-eject.html", label: copy.nav.ejectLabel }]
-    : compactPrimaryLinks;
+    : [];
   const dropdownLinks = isWaterEjectRoute
     ? [
         ...waterEjectLinks.filter((link) => link.href !== "/blog-how-to-eject.html"),
         { href: "/analyze-water-bill", label: copy.nav.homeLabel },
       ]
-    : [...overflowPrimaryLinks, ...secondaryLinks];
+    : [...primaryLinks, ...secondaryLinks];
   const mobileLinks = isWaterEjectRoute
     ? [...waterEjectLinks, { href: "/analyze-water-bill", label: copy.nav.homeLabel }]
     : [...primaryLinks, ...secondaryLinks, { href: "/blog-how-to-eject.html", label: copy.nav.ejectLabel }];
@@ -284,7 +287,11 @@ const SiteNav = ({
     >
       <div className="nav-container">
         <a className="brand" href="/">
-          WaterShortcut <span className="tagline">{copy.brand.tagline}</span>
+          <span className="brand-title">
+            <span className="brand-name">WaterShortcut</span>
+            <span className="brand-dotcom">.com</span>
+          </span>
+          <span className="tagline">{copy.brand.tagline}</span>
         </a>
         <div
           className={`credit-meter ${pulse ? "is-animating" : ""}`}
@@ -331,7 +338,7 @@ const SiteNav = ({
                 aria-controls="secondary-links-panel"
                 onClick={handleDropdownToggle}
               >
-                More <span className="dropdown-caret">▼</span>
+                Tools &amp; More <span className="dropdown-caret">▼</span>
               </button>
               <div id="secondary-links-panel" className="dropdown-panel">
                 <div className="dropdown-section">
@@ -350,18 +357,6 @@ const SiteNav = ({
                     </a>
                   ))}
                 </div>
-                <div className="dropdown-divider" role="presentation" />
-                <div className="dropdown-section">
-                  <span className="dropdown-heading">{copy.nav.switcherLabel}</span>
-                  <div className="mode-switcher mode-switcher--stacked">
-                    <a className={!isWaterEjectRoute ? "active" : ""} href="/analyze-water-bill">
-                      {copy.nav.homeLabel}
-                    </a>
-                    <a className={isWaterEjectRoute ? "active" : ""} href="/blog-how-to-eject.html">
-                      {copy.nav.ejectLabel}
-                    </a>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -377,6 +372,32 @@ const SiteNav = ({
           </button>
         </nav>
       </div>
+      {showModeBar && (
+        <div className="mode-bar" role="region" aria-label="Mode switcher">
+          <div className="mode-bar__content">
+            <span className="mode-bar__label">{copy.nav.switcherLabel}</span>
+            <div className="mode-bar__actions">
+              <a className={!isWaterEjectRoute && !isGameRoute ? "active" : ""} href="/analyze-water-bill">
+                {copy.nav.homeLabel}
+              </a>
+              <a className={isWaterEjectRoute ? "active" : ""} href="/blog-how-to-eject.html">
+                {copy.nav.ejectLabel}
+              </a>
+              <a className={isGameRoute ? "active" : ""} href="/game">
+                {copy.nav.gameLabel}
+              </a>
+            </div>
+            <button
+              type="button"
+              className="mode-bar__close"
+              aria-label="Close mode bar"
+              onClick={() => setShowModeBar(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       <button
         type="button"
         className={`nav-scrim ${isMobileMenuOpen ? "open" : ""}`}
