@@ -1,5 +1,5 @@
 import { GA_MEASUREMENT_ID } from "../config/analytics";
-import { getStoredConsent, isConsentRequired } from "./consent";
+import { getEffectiveConsent, getStoredConsent, isConsentRequired } from "./consent";
 
 declare global {
   interface Window {
@@ -12,6 +12,21 @@ export type AnalyticsEventParams = Record<string, string | number | boolean | un
 
 const GTAG_SCRIPT_SRC = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
 const GTAG_SCRIPT_SELECTOR = 'script[src*="www.googletagmanager.com/gtag/js"]';
+
+export function ensureAnalyticsLoaded() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (!getEffectiveConsent().analytics) {
+    return;
+  }
+  if (!document.querySelector(GTAG_SCRIPT_SELECTOR)) {
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = GTAG_SCRIPT_SRC;
+    document.head.appendChild(script);
+  }
+}
 
 export function initializeAnalytics() {
   if (typeof window === "undefined") {
@@ -52,12 +67,7 @@ export function initializeAnalytics() {
     });
   }
 
-  if (!document.querySelector(GTAG_SCRIPT_SELECTOR)) {
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = GTAG_SCRIPT_SRC;
-    document.head.appendChild(script);
-  }
+  ensureAnalyticsLoaded();
 
   window.gtag("js", new Date());
   window.gtag("config", GA_MEASUREMENT_ID, { anonymize_ip: true, send_page_view: false });

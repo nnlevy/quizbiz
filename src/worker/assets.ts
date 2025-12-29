@@ -24,6 +24,16 @@ function clientScript() {
   const ADSENSE_CLIENT =
     (window as typeof window & { __WS_ADSENSE_CLIENT__?: string }).__WS_ADSENSE_CLIENT__ ||
     DEFAULT_ADSENSE_CLIENT;
+  const GA_MEASUREMENT_ID =
+    (window as typeof window & { __WS_GA_MEASUREMENT_ID__?: string }).__WS_GA_MEASUREMENT_ID__ || '';
+  const ADSENSE_SCRIPT_SRC =
+    'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
+  const ADSENSE_SCRIPT_SELECTOR =
+    'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]';
+  const GTAG_SCRIPT_SRC = GA_MEASUREMENT_ID
+    ? `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
+    : '';
+  const GTAG_SCRIPT_SELECTOR = 'script[src*="www.googletagmanager.com/gtag/js"]';
   const CONSENT_STORAGE_KEY = 'ws-consent-v1';
   const consentRequired = Boolean(
     (window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean }).__WS_CONSENT_REQUIRED__,
@@ -102,6 +112,29 @@ function clientScript() {
   };
 
   const hasAdsConsent = () => getEffectiveConsent().ads;
+  const hasAnalyticsConsent = () => getEffectiveConsent().analytics;
+
+  const ensureAnalyticsLoaded = () => {
+    if (!GA_MEASUREMENT_ID) return;
+    if (!hasAnalyticsConsent()) return;
+    if (document.querySelector(GTAG_SCRIPT_SELECTOR)) return;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = GTAG_SCRIPT_SRC;
+    document.head.appendChild(script);
+  };
+
+  const ensureAdSenseLoaded = () => {
+    if (!hasAdsConsent()) return null;
+    const existing = document.querySelector<HTMLScriptElement>(ADSENSE_SCRIPT_SELECTOR);
+    if (existing) return existing;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = ADSENSE_SCRIPT_SRC;
+    script.crossOrigin = 'anonymous';
+    document.head.appendChild(script);
+    return script;
+  };
 
   const initConsentBanner = () => {
     const banner = document.querySelector<HTMLElement>('[data-consent-banner]');
@@ -654,20 +687,22 @@ function clientScript() {
       return;
     }
     patchAdDimensionSetters();
-    const adScript = document.querySelector<HTMLScriptElement>(
-      'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
-    );
+    const adScript = ensureAdSenseLoaded();
     queueAutoAds();
     if (adScript) {
-      adScript.addEventListener(
-        'load',
-        () => {
-          adScript.dataset.adsenseLoaded = 'true';
-          setTimeout(activateAds, 50);
-          updateDiagnosticsPanel();
-        },
-        { once: true },
-      );
+      if (adScript.dataset.adsenseLoaded === 'true') {
+        activateAds();
+      } else {
+        adScript.addEventListener(
+          'load',
+          () => {
+            adScript.dataset.adsenseLoaded = 'true';
+            setTimeout(activateAds, 50);
+            updateDiagnosticsPanel();
+          },
+          { once: true },
+        );
+      }
     }
 
     if (document.readyState === 'complete') {
@@ -677,6 +712,8 @@ function clientScript() {
     }
 
     window.addEventListener('ws-consent-updated', () => {
+      ensureAnalyticsLoaded();
+      ensureAdSenseLoaded();
       adsActivated = false;
       setTimeout(activateAds, 50);
       updateDiagnosticsPanel();
@@ -700,6 +737,8 @@ function clientScript() {
     initBillUpload();
     initModals();
     initConsentBanner();
+    ensureAnalyticsLoaded();
+    window.addEventListener('ws-consent-updated', ensureAnalyticsLoaded);
     initAds();
     if (isAdsDebugMode()) {
       updateDiagnosticsPanel();
