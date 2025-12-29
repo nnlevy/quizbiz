@@ -1,4 +1,5 @@
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
+import { copy } from "../../copy";
 import AdSenseSlot from "./AdSenseSlot";
 
 const SiteFooter = () => (
@@ -9,11 +10,19 @@ const SiteFooter = () => (
     <div className="footer-links">
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
+      <button
+        type="button"
+        className="link-button"
+        onClick={() => window.dispatchEvent(new Event("ws-consent-open"))}
+      >
+        {copy.footer.privacySettings}
+      </button>
+      <a href="/blog-how-to-eject.html">{copy.nav.ejectLabel}</a>
       <a href="/learn/water-saving-tips">Water-Saving Tips</a>
       <a href="/learn/leak-detection">Leak Detection</a>
     </div>
     <p>
-      Built to help households spot leaks, decode charges, and stay in control of every drop.
+      {copy.footer.estimates} {copy.footer.sources} {copy.footer.help}
     </p>
   </footer>
 );

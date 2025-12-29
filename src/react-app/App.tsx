@@ -13,11 +13,19 @@ import React, {
 } from "react";
 import "./App.css";
 import ConsentBanner from "./components/ConsentBanner";
+import InlineHelpAccordion from "./components/InlineHelpAccordion";
+import ResultsCard from "./components/ResultsCard";
+import ShareExportBar from "./components/ShareExportBar";
 import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
+import Stepper from "./components/Stepper";
+import TrustCapsule from "./components/TrustCapsule";
 import { logEvent } from "./analytics";
 import { useCredits } from "./context/CreditsContext";
 import UtilityResultCard, { type UtilityPayload } from "./components/UtilityResultCard";
+import { copy } from "../copy";
+import demoResult from "./data/demo.json";
+import type { AnalysisResult } from "./types";
 
 declare global {
   interface Window {
@@ -288,6 +296,7 @@ function App({ focusUpload = false }: AppProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadStepTimers = useRef<number[]>([]);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const slideTouchStartX = useRef<number | null>(null);
   const slideTouchStartY = useRef<number | null>(null);
@@ -335,12 +344,22 @@ function App({ focusUpload = false }: AppProps) {
   );
 
   const [responseMessage, setResponseMessage] = React.useState("");
-  const [countdownLabel, setCountdownLabel] = React.useState("Awaiting file upload...");
+  const [uploadError, setUploadError] = React.useState<"parse" | "ai" | null>(null);
   const [analysisHtml, setAnalysisHtml] = React.useState("");
-  const [analysisCountdown, setAnalysisCountdown] = React.useState<number | null>(null);
+  const [analysisResult, setAnalysisResult] = React.useState<AnalysisResult | null>(null);
+  const [uploadStep, setUploadStep] = React.useState(0);
   const [isUploading, setIsUploading] = React.useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({
+    period: "",
+    usage: "",
+    unit: "Gallons",
+    cost: "",
+    rate: "",
+    household: "",
+    notes: "",
+  });
 
   const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
   const [flowStep, setFlowStep] = React.useState(0);
@@ -349,7 +368,7 @@ function App({ focusUpload = false }: AppProps) {
     tools: !initialIsMobile,
     upload: !initialIsMobile,
   });
-  const [isWaterEjectCollapsed, setIsWaterEjectCollapsed] = useState(false);
+  const [isWaterEjectCollapsed, setIsWaterEjectCollapsed] = useState(true);
 
   const [openTips, setOpenTips] = useState<Record<string, boolean>>(() =>
     SAVING_TIPS.reduce((acc, tip, index) => {
@@ -375,6 +394,30 @@ function App({ focusUpload = false }: AppProps) {
     );
     setLocationSuggestions(nextSuggestions);
   }, [locationInput, locationSuggestionPool]);
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.startsWith("#plan=")) {
+      try {
+        const encoded = hash.replace("#plan=", "");
+        const decoded = decodeURIComponent(atob(encoded));
+        const parsed = JSON.parse(decoded) as AnalysisResult;
+        setAnalysisResult(parsed);
+        return;
+      } catch (error) {
+        console.warn("Failed to parse shared plan", error);
+      }
+    }
+    const stored = window.localStorage.getItem("ws-latest-plan");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as AnalysisResult;
+        setAnalysisResult(parsed);
+      } catch (error) {
+        console.warn("Failed to parse stored plan", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!isMobile) {
@@ -1187,24 +1230,6 @@ function App({ focusUpload = false }: AppProps) {
   }, [locationCountdown]);
 
   useEffect(() => {
-    if (analysisCountdown === null) {
-      return;
-    }
-    if (analysisCountdown < 0) {
-      setCountdownLabel("Analysis should be complete shortly.");
-      setAnalysisCountdown(null);
-      return;
-    }
-    const minutes = Math.floor(analysisCountdown / 60);
-    const seconds = analysisCountdown % 60;
-    setCountdownLabel(`Estimated time remaining: ${minutes}m ${seconds}s`);
-    const timer = window.setTimeout(() => {
-      setAnalysisCountdown((prev) => (prev === null ? null : prev - 1));
-    }, 1000);
-    return () => window.clearTimeout(timer);
-  }, [analysisCountdown]);
-
-  useEffect(() => {
     const scriptUrl = "https://js.stripe.com/v3/buy-button.js";
     if (document.querySelector(`script[src='${scriptUrl}']`)) {
       return;
@@ -1522,37 +1547,132 @@ function App({ focusUpload = false }: AppProps) {
     }
   };
 
+  const buildManualResult = (): AnalysisResult => {
+    const usage = Number(manualForm.usage || 0);
+    const cost = Number(manualForm.cost || 0);
+    const household = Number(manualForm.household || 0);
+    return {
+      topMoves: [
+        {
+          title: "Check for leaks first",
+          why: "Leaks are the fastest, cheapest win.",
+          effort: "Low",
+          impact: usage ? `~${Math.round(usage * 0.15)} units/month` : "Fast impact",
+          steps: ["Run the leak check", "Fix toilets first", "Recheck your meter"],
+          ctaLabel: "Start leak check",
+          ctaHref: "/leak-check",
+        },
+        {
+          title: "Trim shower & faucet flow",
+          why: "Daily habits add up quickly.",
+          effort: "Low",
+          impact: household ? `${household} people × daily savings` : "Daily savings",
+          steps: ["Install WaterSense fixtures", "Shorten showers", "Monitor for drips"],
+          ctaLabel: "Open shower calculator",
+          ctaHref: "/calculators/shower",
+        },
+        {
+          title: "Watch outdoor watering",
+          why: "Outdoor use drives tier spikes.",
+          effort: "Medium",
+          impact: cost ? `Protect ~$${Math.round(cost * 0.1)}/mo` : "Avoid tier jumps",
+          steps: ["Water 2 days/week", "Fix spray heads", "Adjust seasonally"],
+          ctaLabel: "Outdoor tips",
+          ctaHref: "/calculators/outdoor",
+        },
+      ],
+      payingFor: "Manual entry suggests usage + sewer charges dominate the total bill.",
+      nextStep: "Confirm your unit rate on the next bill for a sharper estimate.",
+      confidenceNote: "Manual entry is less precise than a full bill upload.",
+    };
+  };
+
+  const handleManualChange = (field: keyof typeof manualForm) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setManualForm((prev) => ({ ...prev, [field]: event.target.value }));
+    };
+
+  const handleManualSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const result = buildManualResult();
+    setAnalysisResult(result);
+    setAnalysisHtml("");
+    window.localStorage.setItem("ws-latest-plan", JSON.stringify(result));
+    logEvent("cta_click", { type: "manual_entry" });
+    logEvent("plan_generated", { type: "manual" });
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleDemoRun = () => {
+    setAnalysisResult(demoResult as AnalysisResult);
+    setAnalysisHtml("");
+    window.localStorage.setItem("ws-latest-plan", JSON.stringify(demoResult));
+    logEvent("cta_click", { type: "demo" });
+    logEvent("plan_generated", { type: "demo" });
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
+    if (!file) {
+      setSelectedFile(null);
+      setUploadPreview(null);
+      return;
+    }
+    setUploadError(null);
+    if (file.type !== "application/pdf") {
+      setResponseMessage(copy.analyze.errors.wrongType);
+      setSelectedFile(null);
+      setUploadPreview(null);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setResponseMessage(copy.analyze.errors.tooLarge);
+      setSelectedFile(null);
+      setUploadPreview(null);
+      return;
+    }
+    setResponseMessage("");
     setSelectedFile(file);
-    setUploadPreview(file ? file.name : null);
+    setUploadPreview(file.name);
   };
 
   const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const file = fileInputRef.current?.files?.[0] || selectedFile;
     if (!file) {
-      setResponseMessage("Please select a file before submitting.");
+      setResponseMessage(copy.analyze.errors.wrongType);
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setResponseMessage("File size exceeds 10MB. Please upload a smaller file.");
+      setResponseMessage(copy.analyze.errors.tooLarge);
+      return;
+    }
+    if (file.type !== "application/pdf") {
+      setResponseMessage(copy.analyze.errors.wrongType);
       return;
     }
     if (creditsRef.current <= 0) {
       setResponseMessage("Add credits to unlock full bill analysis.");
       return;
     }
-    logEvent("upload_started", {
+    logEvent("cta_click", { type: "analyze" });
+    logEvent("upload_start", {
       file_size: file.size,
       file_type: file.type,
       credits_remaining: creditsRef.current,
     });
     setIsUploading(true);
-    setResponseMessage("Uploading file...");
+    setResponseMessage(copy.analyze.progressSteps[0]);
+    setUploadError(null);
     setAnalysisHtml("");
-    setCountdownLabel("Estimated time remaining: 2m 0s");
-    setAnalysisCountdown(120);
+    setAnalysisResult(null);
+    setUploadStep(0);
+    uploadStepTimers.current.forEach((timer) => window.clearTimeout(timer));
+    uploadStepTimers.current = [
+      window.setTimeout(() => setUploadStep(1), 1500),
+      window.setTimeout(() => setUploadStep(2), 3500),
+    ];
 
     const formData = new FormData();
     formData.append("file", file);
@@ -1560,34 +1680,43 @@ function App({ focusUpload = false }: AppProps) {
     try {
       const response = await fetch("/api/upload", {
         method: "POST",
+        headers: { Accept: "application/json" },
         body: formData,
       });
-      setAnalysisCountdown(null);
       if (!response.ok) {
         const errorMessage = await parseErrorResponse(
           response,
-          "Unable to process your file right now. Please try again soon.",
+          copy.analyze.errors.parseFail,
         );
-        setResponseMessage(`Error: ${errorMessage}`);
-        setCountdownLabel("Analysis should be complete shortly.");
+        setResponseMessage(errorMessage);
+        setUploadError("parse");
+        logEvent("analysis_error");
         return;
       }
-      const result = await response.text();
+      const result = (await response.json()) as {
+        analysis?: AnalysisResult | null;
+        html?: string;
+      };
       spendCredit("Bill analysis completed.");
       setResponseMessage("Success!");
-      setAnalysisHtml(result);
-      setCountdownLabel("Analysis complete.");
-      logEvent("upload_completed", { file_size: file.size, status: "success" });
+      if (result.analysis) {
+        setAnalysisResult(result.analysis);
+        window.localStorage.setItem("ws-latest-plan", JSON.stringify(result.analysis));
+      } else if (result.html) {
+        setAnalysisHtml(result.html);
+      }
+      logEvent("upload_success", { file_size: file.size });
+      logEvent("analysis_success");
+      logEvent("plan_generated");
     } catch (error) {
       console.error("Upload failed:", error);
-      setAnalysisCountdown(null);
-      setCountdownLabel("Analysis should be complete shortly.");
-      setResponseMessage(
-        "An error occurred during the upload. Please try again.",
-      );
-      logEvent("upload_failed", { message: String(error) });
+      setResponseMessage(copy.analyze.errors.aiFail);
+      setUploadError("ai");
+      logEvent("upload_error", { message: String(error) });
+      logEvent("analysis_error");
     } finally {
       setIsUploading(false);
+      uploadStepTimers.current.forEach((timer) => window.clearTimeout(timer));
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -1596,7 +1725,7 @@ function App({ focusUpload = false }: AppProps) {
     }
   };
 
-  const isWaterEjectHidden = isMobile && isWaterEjectCollapsed;
+  const isWaterEjectHidden = isWaterEjectCollapsed;
 
   return (
     <div className="app">
@@ -1647,20 +1776,18 @@ function App({ focusUpload = false }: AppProps) {
       )}
 
       <main className="main-wrapper">
-        {isMobile && (
-          <button
-            type="button"
-            className={`water-eject-header ${isWaterEjectHidden ? "collapsed" : ""}`}
-            aria-expanded={!isWaterEjectHidden}
-            aria-controls="water-eject-section"
-            onClick={handleWaterEjectToggle}
-          >
-            <span className="water-eject-header__label">Hide water eject tools</span>
-            <span className="water-eject-header__icon" aria-hidden>
-              {isWaterEjectHidden ? "+" : "–"}
-            </span>
-          </button>
-        )}
+        <button
+          type="button"
+          className={`water-eject-header ${isWaterEjectHidden ? "collapsed" : ""}`}
+          aria-expanded={!isWaterEjectHidden}
+          aria-controls="water-eject-section"
+          onClick={handleWaterEjectToggle}
+        >
+          <span className="water-eject-header__label">Other tool: Water eject (iPhone)</span>
+          <span className="water-eject-header__icon" aria-hidden>
+            {isWaterEjectHidden ? "+" : "–"}
+          </span>
+        </button>
 
         <section
           id="water-eject-section"
@@ -1808,38 +1935,35 @@ function App({ focusUpload = false }: AppProps) {
 
         <section className="hero" id="top">
           <div className="hero-content">
-            <p className="eyebrow">Smarter conservation for every household</p>
-            <h1>Conserve Water &amp; Save Money</h1>
-            <h2>Reduce Your Water Bill With AI</h2>
-            <p className="hero-copy">
-              Pinpoint hidden leaks, compare local utility rates, and let our AI
-              coach guide you toward a water-wise lifestyle. Every feature is
-              crafted to feel fluid, interactive, and actionable.
-            </p>
+            <p className="eyebrow">{copy.brand.tagline}</p>
+            <h1>{copy.home.title}</h1>
+            <h2>{copy.home.subtitle}</h2>
             <div className="hero-actions">
               <button
                 type="button"
                 className="primary-button"
                 onClick={handleMobileStart}
               >
-                Start
+                {copy.home.primaryCta}
               </button>
               <button
                 type="button"
                 className="secondary-button"
-                onClick={handleOpenLocationStep}
+                onClick={handleDemoRun}
               >
-                Explore tools
+                {copy.home.secondaryCta}
               </button>
-              <a
+              <button
+                type="button"
                 className="secondary-button"
-                href={WATER_EJECT_SHORTCUT_URL}
-                target="_blank"
-                rel="noreferrer"
+                onClick={() =>
+                  document.getElementById("manual-entry")?.scrollIntoView({ behavior: "smooth" })
+                }
               >
-                Play Water Saving Trivia Game
-              </a>
+                {copy.home.tertiaryCta}
+              </button>
             </div>
+            <TrustCapsule items={copy.home.trustRow} />
           </div>
           <div className="hero-visual" aria-hidden="true">
             <svg viewBox="0 0 400 320" role="presentation">
@@ -2424,21 +2548,23 @@ function App({ focusUpload = false }: AppProps) {
                 />
               </div>
               <div className="upload-panel">
-                <h1>Free Water Usage Optimizer</h1>
-                <h2>Upload Your Water Bill</h2>
+                <h1>{copy.analyze.title}</h1>
+                <h2>{copy.analyze.subtitle}</h2>
                 <form id="upload-form" onSubmit={handleUpload} encType="multipart/form-data">
                   <label className="file-label" htmlFor="file">
-                    Attach a PDF or photo (JPG/PNG) statement (max 10MB)
+                    {copy.analyze.uploadLabel}
                   </label>
                   <input
                     type="file"
                     name="file"
                     id="file"
-                    accept=".pdf,image/png,image/jpeg"
+                    accept=".pdf,application/pdf"
                     ref={fileInputRef}
                     onChange={handleFileSelect}
-                    aria-label="Upload water bill PDF or photo"
+                    aria-label="Upload water bill PDF"
                   />
+                  <p className="muted">{copy.analyze.uploadHelper}</p>
+                  <p className="muted">{copy.analyze.uploadConstraints}</p>
                   {uploadPreview && (
                     <p className="file-preview" aria-live="polite">
                       Selected file: {uploadPreview}
@@ -2449,18 +2575,25 @@ function App({ focusUpload = false }: AppProps) {
                     disabled={isUploading || !selectedFile}
                     className="primary-button"
                   >
-                    {isUploading ? "Uploading..." : "Upload and Analyze"}
+                    {isUploading ? copy.analyze.progressSteps[0] : copy.analyze.uploadActive}
                   </button>
                   {isUploading && <div className="inline-spinner" aria-live="assertive" aria-label="Uploading" />}
-                  <ul className="upload-benefits" aria-label="Upload safeguards and capabilities">
-                    <li>HTTPS / SSL enforced end-to-end</li>
-                    <li>Clear statement: we do not sell data</li>
-                    <li>Auto-deletion of files immediately after analysis</li>
-                    <li>PII redaction before any AI processing</li>
-                    <li>Accepts photos (JPG/PNG) and PDFs</li>
-                  </ul>
-                  <div id="countdown-timer" aria-live="polite">
-                    {countdownLabel}
+                  <Stepper steps={copy.analyze.progressSteps} activeIndex={uploadStep} />
+                  <p className="muted">{copy.analyze.progressNote}</p>
+                  <TrustCapsule items={copy.analyze.trustCapsule} />
+                  <div className="upload-alt-actions">
+                    <button type="button" className="secondary-button" onClick={handleDemoRun}>
+                      {copy.analyze.uploadAltDemo}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() =>
+                        document.getElementById("manual-entry")?.scrollIntoView({ behavior: "smooth" })
+                      }
+                    >
+                      {copy.analyze.uploadAltManual}
+                    </button>
                   </div>
                   <p className="privacy-reassurance">
                     We value your privacy. Read our <a href="/privacy">privacy policy</a>.
@@ -2469,19 +2602,127 @@ function App({ focusUpload = false }: AppProps) {
                 <div id="response-message" aria-live="polite">
                   {responseMessage}
                 </div>
+                {uploadError === "parse" && (
+                  <div className="upload-error-actions">
+                    <p className="muted">
+                      Try manual entry or email your utility name (optional) at{" "}
+                      <a href="mailto:hello@watershortcut.com">hello@watershortcut.com</a>.
+                    </p>
+                    <div className="upload-alt-actions">
+                      <button type="button" className="secondary-button" onClick={handleDemoRun}>
+                        {copy.analyze.uploadAltDemo}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() =>
+                          document.getElementById("manual-entry")?.scrollIntoView({ behavior: "smooth" })
+                        }
+                      >
+                        {copy.analyze.uploadAltManual}
+                      </button>
+                      <a className="secondary-button" href="/guides">
+                        Open guides
+                      </a>
+                    </div>
+                  </div>
+                )}
                 {analysisHtml && (
                   <div
                     className="analysis-html"
                     dangerouslySetInnerHTML={{ __html: analysisHtml }}
                   />
                 )}
+                {analysisResult && (
+                  <div className="analysis-results" ref={resultsRef}>
+                    <h3>{copy.analyze.results.topMoves}</h3>
+                    <div className="results-grid">
+                      {analysisResult.topMoves.map((move) => (
+                        <ResultsCard key={move.title} move={move} />
+                      ))}
+                    </div>
+                    <h3>{copy.analyze.results.payingFor}</h3>
+                    <p>{analysisResult.payingFor}</p>
+                    <h3>{copy.analyze.results.nextStep}</h3>
+                    <p>{analysisResult.nextStep}</p>
+                    {analysisResult.confidenceNote && (
+                      <p className="muted">{analysisResult.confidenceNote}</p>
+                    )}
+                    <ShareExportBar result={analysisResult} />
+                  </div>
+                )}
+                {!analysisResult && !analysisHtml && (
+                  <p className="muted">{copy.analyze.results.empty}</p>
+                )}
+                <div className="manual-entry" id="manual-entry">
+                  <h3>Manual entry</h3>
+                  <p className="muted">Manual entry is less precise, but gets you a plan without uploads.</p>
+                  <form onSubmit={handleManualSubmit}>
+                    <div className="manual-grid">
+                      <label>
+                        Billing period (optional)
+                        <input type="text" value={manualForm.period} onChange={handleManualChange("period")} />
+                      </label>
+                      <label>
+                        Total usage
+                        <input type="number" value={manualForm.usage} onChange={handleManualChange("usage")} placeholder="e.g., 8" />
+                      </label>
+                      <label>
+                        Unit
+                        <select value={manualForm.unit} onChange={handleManualChange("unit")}>
+                          <option>Gallons</option>
+                          <option>CCF</option>
+                          <option>HCF</option>
+                        </select>
+                      </label>
+                      <label>
+                        Total cost
+                        <input type="number" value={manualForm.cost} onChange={handleManualChange("cost")} placeholder="e.g., 86" />
+                      </label>
+                      <label>
+                        Water rate (optional)
+                        <input
+                          type="number"
+                          value={manualForm.rate}
+                          onChange={handleManualChange("rate")}
+                          placeholder="Use $6 per 1,000 gallons if unsure"
+                        />
+                      </label>
+                      <label>
+                        Household size (optional)
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={manualForm.household}
+                          onChange={handleManualChange("household")}
+                        />
+                      </label>
+                    </div>
+                    <label>
+                      Notes (optional)
+                      <textarea value={manualForm.notes} onChange={handleManualChange("notes")} />
+                    </label>
+                    <button type="submit" className="secondary-button">
+                      Build my plan
+                    </button>
+                  </form>
+                  <InlineHelpAccordion label="Not sure what to enter?">
+                    <p>
+                      <strong>How to find your rate:</strong> Look for “unit cost”, “rate”, “$/CCF”, or “$/1,000 gallons” on your
+                      bill.
+                    </p>
+                    <p>
+                      <strong>Placeholder rate:</strong> Use $6 per 1,000 gallons and adjust later.
+                    </p>
+                  </InlineHelpAccordion>
+                </div>
                 <div className="upload-how-it-works">
                   <h3>How It Works</h3>
                   <p>
                     Upload your recent water bill to our secure platform, and our
-                    advanced AI system will generate specific action
-                    recommendations. Google Document AI extracts the details, and the
-                    OpenAI o1-mini model outlines targeted conservation steps
+                    AI system generates a simple plan. Google Document AI extracts
+                    the details, and OpenAI summarizes targeted conservation steps
                     tailored to your usage.
                   </p>
                 </div>

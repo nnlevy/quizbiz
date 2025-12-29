@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { stylesCss, appJs } from "./assets";
+import { BUILD_DATE as COPY_BUILD_DATE, copy } from "../copy";
 import { buildFallbackLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT, DEFAULT_ADSENSE_SLOTS, DEFAULT_ADSENSE_STICKY_LAYOUT_KEY } from "../config/adsense";
@@ -47,6 +48,23 @@ type ChatCompletionResponse = {
   error?: unknown;
 };
 
+type AnalysisMove = {
+  title: string;
+  why: string;
+  effort: string;
+  impact: string;
+  steps: string[];
+  ctaLabel: string;
+  ctaHref: string;
+};
+
+type AnalysisResult = {
+  topMoves: AnalysisMove[];
+  payingFor: string;
+  nextStep: string;
+  confidenceNote?: string;
+};
+
 type DocumentAIResponse = {
   document?: {
     text?: string;
@@ -67,7 +85,7 @@ type SiteRoute = {
 };
 
 const DOMAIN = `https://${seoSite.canonicalHost}`;
-const BUILD_DATE = new Date().toISOString().split("T")[0];
+const BUILD_DATE = COPY_BUILD_DATE;
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
 
 type AdsenseSlots = {
@@ -184,16 +202,20 @@ function injectAdSlots(
   return bodyHtml.replaceAll(INLINE_AD_MARKER, inlineAd);
 }
 
-const navLinks = [
+const homeownerNavLinks = [
   { label: "Analyze", href: "/analyze-water-bill" },
   { label: "Plan", href: "/savings-plan" },
   { label: "Calculators", href: "/calculators" },
   { label: "Leaks", href: "/leak-check" },
   { label: "Rebates", href: "/rebates" },
   { label: "Guides", href: "/guides" },
+  { label: "Find provider", href: "/find-water-provider" },
+];
+
+const waterEjectNavLinks = [
   { label: "Water Eject How-To", href: "/blog-how-to-eject.html" },
-  { label: "Water Eject Safety", href: "/blog-is-it-safe.html" },
-  { label: "About", href: "/about" },
+  { label: "Is it safe?", href: "/blog-is-it-safe.html" },
+  { label: "Get shortcut", href: "/" },
 ];
 
 const footerLinks = [
@@ -201,40 +223,38 @@ const footerLinks = [
   { label: "Terms", href: "/terms", modal: "terms-modal" },
   { label: "Affiliate", href: "/affiliate", modal: "affiliate-modal" },
   { label: "Disclaimer", href: "/disclaimer", modal: "disclaimer-modal" },
+  { label: "Change privacy settings", href: "#privacy-settings" },
+  { label: "Water Eject (iPhone)", href: "/blog-how-to-eject.html" },
   { label: "Contact", href: "/contact" },
   { label: "Sitemap", href: "/sitemap", modal: "sitemap-modal" },
 ];
 
 const modalCopy: Record<string, { title: string; body: string[]; footer?: string }> = {
   "privacy-modal": {
-    title: "Privacy",
-    body: [
-      "We use cookies for analytics and ads.",
-      "If you upload a bill, we process it to generate results.",
-      "We don’t sell personal data.",
-    ],
+    title: copy.trust.privacy.title,
+    body: copy.trust.privacy.tldr.slice(0, 3),
     footer: `Last updated: ${BUILD_DATE}`,
   },
   "terms-modal": {
-    title: "Terms",
+    title: copy.trust.terms.title,
     body: [
       "Use at your own risk.",
       "Estimates are not guarantees.",
-      "Follow local rules and manufacturer instructions.",
+      "Not legal, financial, or plumbing advice.",
     ],
   },
   "affiliate-modal": {
-    title: "Affiliate disclosure",
+    title: copy.trust.affiliate.title,
     body: [
       "Some links are affiliate links.",
       "You pay the same price.",
-      "It helps keep WaterShortcut free.",
+      "We recommend products because they’re useful.",
     ],
   },
   "disclaimer-modal": {
-    title: "Disclaimer",
+    title: copy.trust.disclaimer.title,
     body: [
-      "Not legal, financial, or plumbing advice.",
+      "WaterShortcut provides educational estimates, not professional advice.",
       "For emergencies, contact a licensed professional.",
     ],
   },
@@ -679,6 +699,19 @@ function layout(options: {
   const processedBodyHtml = injectAdSlots(bodyHtml, adsenseSlots, adsenseClient);
   const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
+  const useEjectNav = isWaterEjectRoute(canonicalPath);
+  const navLinks = useEjectNav ? waterEjectNavLinks : homeownerNavLinks;
+  const modeSwitcher = `
+    <div class="mode-switcher" role="group" aria-label="Mode switcher">
+      <span>${escapeHtml(copy.nav.switcherLabel)}</span>
+      <a class="${useEjectNav ? "" : "active"}" href="/analyze-water-bill">${escapeHtml(
+        copy.nav.homeLabel,
+      )}</a>
+      <a class="${useEjectNav ? "active" : ""}" href="/blog-how-to-eject.html">${escapeHtml(
+        copy.nav.ejectLabel,
+      )}</a>
+    </div>
+  `;
   const breadcrumbJson = crumbList.length
     ? {
         '@context': 'https://schema.org',
@@ -741,6 +774,10 @@ function layout(options: {
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         window.gtag = window.gtag || gtag;
+        const privacySignal = Boolean(navigator.globalPrivacyControl) ||
+          navigator.doNotTrack === "1" ||
+          navigator.doNotTrack === "yes" ||
+          (window.doNotTrack === "1");
         const storedConsent = (() => {
           try {
             return JSON.parse(localStorage.getItem("${CONSENT_STORAGE_KEY}") || "null");
@@ -748,7 +785,7 @@ function layout(options: {
             return null;
           }
         })();
-        const defaultConsent = ${consentRequired ? "true" : "false"}
+        const defaultConsent = (privacySignal || ${consentRequired ? "true" : "false"})
           ? {
               ad_storage: "denied",
               analytics_storage: "denied",
@@ -795,8 +832,13 @@ function layout(options: {
                     `<a href="${link.href}"${link.href === canonicalPath ? " aria-current=\"page\"" : ""}>${link.label}</a>`,
                 )
                 .join("")}
-              <a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>
+              ${
+                useEjectNav
+                  ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
+                  : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
+              }
             </nav>
+            ${modeSwitcher}
           </div>
         </header>
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
@@ -811,14 +853,17 @@ function layout(options: {
         <footer class="footer">
           <div class="footer-inner">
             <div>
-              <div class="footnote">Estimates, not guarantees.</div>
-              <div class="footnote">Sources you can click.</div>
+              <div class="footnote">${escapeHtml(copy.footer.estimates)}</div>
+              <div class="footnote">${escapeHtml(copy.footer.sources)}</div>
+              <div class="footnote">${escapeHtml(copy.footer.help)}</div>
             </div>
             <div class="footer-links">
               ${footerLinks
                 .map((link) => {
                   const modalAttr = link.modal ? ` data-modal-target="${link.modal}"` : "";
-                  return `<a href="${link.href}"${modalAttr}>${link.label}</a>`;
+                  const settingsAttr =
+                    link.label === "Change privacy settings" ? ` data-consent-open` : "";
+                  return `<a href="${link.href}"${modalAttr}${settingsAttr}>${link.label}</a>`;
                 })
                 .join("")}
             </div>
@@ -900,6 +945,14 @@ function renderAdsDiagnosticsPage(adsenseClient: string, adsenseSlots: Required<
   `;
 }
 
+function isWaterEjectRoute(pathname: string): boolean {
+  return (
+    pathname.startsWith("/blog-how-to-eject") ||
+    pathname.startsWith("/blog-is-it-safe") ||
+    pathname.startsWith("/water-eject")
+  );
+}
+
 function buildBreadcrumbs(path: string): Array<{ name: string; path: string }> {
   const parts = path.split("/").filter(Boolean);
   const crumbs: Array<{ name: string; path: string }> = [{ name: "Home", path: "/" }];
@@ -946,17 +999,19 @@ function renderHome(): string {
   return `
     <section class="hero">
       <div>
-        <p class="badge">Fast. Clear. Helpful.</p>
-        <h1>Save water. Save money.</h1>
-        <p>Upload a bill—or build a plan in 3 minutes.</p>
+        <p class="badge">${escapeHtml(copy.brand.tagline)}</p>
+        <h1>${escapeHtml(copy.home.title)}</h1>
+        <p>${escapeHtml(copy.home.subtitle)}</p>
         <div class="actions">
-          <a class="btn primary" href="/analyze-water-bill">Analyze my bill</a>
-          <a class="btn secondary" href="/savings-plan">Build my plan</a>
+          <a class="btn primary" href="/analyze-water-bill">${escapeHtml(copy.home.primaryCta)}</a>
+          <a class="btn secondary" href="/analyze-water-bill#demo">${escapeHtml(copy.home.secondaryCta)}</a>
+          <a class="btn secondary" href="/analyze-water-bill#manual">${escapeHtml(copy.home.tertiaryCta)}</a>
         </div>
       </div>
       <div class="layout-slab">
-        <p class="meta-line">Estimates, not guarantees.</p>
-        <p class="meta-line">Sources you can click.</p>
+        <ul class="bullet-list">
+          ${copy.home.trustRow.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
       </div>
     </section>
     ${section(
@@ -1015,46 +1070,83 @@ function renderBillAnalyzer(): string {
   return `
     <section class="hero">
       <div>
-        <h1>Your bill, explained.</h1>
-        <p>Upload a PDF. Get a plan you can act on.</p>
+        <h1>${escapeHtml(copy.analyze.title)}</h1>
+        <p>${escapeHtml(copy.analyze.subtitle)}</p>
         <div class="actions">
-          <a class="btn primary" href="#bill-form">Analyze my bill</a>
-          <a class="btn secondary" href="/guides/water-bill">Prefer not to upload? See bill basics</a>
+          <a class="btn primary" href="#bill-form">${escapeHtml(copy.analyze.uploadActive)}</a>
+          <a class="btn secondary" href="#demo">${escapeHtml(copy.analyze.uploadAltDemo)}</a>
+          <a class="btn secondary" href="#manual">${escapeHtml(copy.analyze.uploadAltManual)}</a>
         </div>
       </div>
       <div class="layout-slab">
         <div class="wizard-steps">
-          <div class="step-pill active">1 Upload</div>
-          <div class="step-pill">2 We read it</div>
-          <div class="step-pill">3 Your plan</div>
+          <div class="step-pill active">Uploading</div>
+          <div class="step-pill">Reading</div>
+          <div class="step-pill">Building plan</div>
         </div>
+        <p class="muted">${escapeHtml(copy.analyze.progressNote)}</p>
       </div>
     </section>
     <section class="section layout-slab">
-      <h2>Upload your bill (PDF)</h2>
-      <p class="muted">Tip: cover your account number if you want.</p>
+      <h2>${escapeHtml(copy.analyze.uploadLabel)}</h2>
+      <p class="muted">${escapeHtml(copy.analyze.uploadHelper)}</p>
+      <p class="muted">${escapeHtml(copy.analyze.uploadConstraints)}</p>
+      <div class="trust-capsule">
+        <ul class="bullet-list">
+          ${copy.analyze.trustCapsule.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+      </div>
       <form id="bill-form" aria-label="Upload water bill">
         <div class="form-row">
-          <label for="bill-file">Choose PDF</label>
+          <label for="bill-file">${escapeHtml(copy.analyze.uploadIdle)}</label>
           <input id="bill-file" type="file" name="file" accept="application/pdf" />
         </div>
         <div class="wizard-actions">
-          <button class="btn primary" type="submit">Analyze my bill</button>
-          <a class="btn secondary" href="/guides/water-bill">See bill basics</a>
+          <button class="btn primary" type="submit">${escapeHtml(copy.analyze.uploadActive)}</button>
+          <a class="btn secondary" href="#manual">${escapeHtml(copy.analyze.uploadAltManual)}</a>
         </div>
       </form>
       <div id="bill-status" class="callout" aria-live="polite"></div>
+      <div class="inline-list">
+        <a class="btn secondary" id="demo" href="#demo">${escapeHtml(copy.analyze.uploadAltDemo)}</a>
+        <a class="btn secondary" href="/guides/water-bill">See bill basics</a>
+      </div>
+    </section>
+    <section class="section layout-slab" id="demo">
+      <h2>Try a demo</h2>
+      <p class="muted">See a sample plan before you upload anything.</p>
+      <div class="wizard-actions">
+        <button class="btn secondary" type="button" data-demo-run>Run demo</button>
+      </div>
+      <div class="demo-output" data-demo-output></div>
+    </section>
+    <section class="section layout-slab" id="manual">
+      <h2>Manual entry</h2>
+      <p class="muted">Manual entry is less precise, but gets you a plan without uploads.</p>
+      <form id="manual-form" aria-label="Manual bill entry">
+        <div class="form-inline">
+          <div class="form-row"><label>Billing period (optional)</label><input name="period" type="text" placeholder="e.g., Aug 1–31" /></div>
+          <div class="form-row"><label>Total usage</label><input name="usage" type="number" step="0.1" placeholder="e.g., 8" /></div>
+          <div class="form-row"><label>Unit</label><select name="unit"><option>Gallons</option><option>CCF</option><option>HCF</option></select></div>
+          <div class="form-row"><label>Total cost</label><input name="cost" type="number" step="0.01" placeholder="e.g., 86" /></div>
+          <div class="form-row"><label>Water rate (optional)</label><input name="rate" type="number" step="0.01" placeholder="Use $6 per 1,000 gallons if unsure" /></div>
+          <div class="form-row"><label>Household size (optional)</label><input name="household" type="number" min="1" max="10" /></div>
+        </div>
+        <div class="form-row"><label>Notes (optional)</label><textarea name="notes" rows="3"></textarea></div>
+        <div class="wizard-actions"><button class="btn primary" type="submit">Build my plan</button></div>
+      </form>
+      <div class="manual-output" data-manual-output></div>
     </section>
     ${section(
-      "Your top 3 moves",
-      `<p class="muted">We highlight quick actions first.</p>${INLINE_AD_MARKER}`,
+      copy.analyze.results.topMoves,
+      `<p class="muted">${escapeHtml(copy.analyze.results.empty)}</p>${INLINE_AD_MARKER}`,
     )}
     ${section(
-      "What your bill is really charging for",
+      copy.analyze.results.payingFor,
       `<p class="muted">Usage, tiers, sewer, and fees broken down in plain language.</p>`,
     )}
     ${section(
-      "Your next best step",
+      copy.analyze.results.nextStep,
       `<div class="inline-list"><a class="btn secondary" href="/savings-plan">Build a savings plan</a><a class="btn secondary" href="/calculators">Try a 2‑minute calculator</a></div>`,
     )}
     <section class="section">
@@ -1069,6 +1161,7 @@ function renderProviderFinder(): string {
       <div>
         <h1>Find your water provider.</h1>
         <p>We’ll point you to the official portal.</p>
+        <p class="muted">Double-check the domain before paying. We can’t verify every utility link.</p>
       </div>
     </section>
     <section class="section layout-slab">
@@ -1102,7 +1195,7 @@ function renderSavingsPlan(): string {
       </div>
       <div class="wizard-step active" data-step="1" data-step-index="1">
         <h3>Basics</h3>
-        <p>Where do you want to save?</p>
+        <p>Pick where you want the biggest wins first. You can change this later.</p>
         <div class="inline-list">
           <label class="tag"><input type="radio" name="focus-area" value="Indoor" /> Indoor</label>
           <label class="tag"><input type="radio" name="focus-area" value="Outdoor" /> Outdoor</label>
@@ -1112,18 +1205,18 @@ function renderSavingsPlan(): string {
           <div class="form-row"><label>Household size (1–10)</label><input id="household-size" type="number" min="1" max="10" value="2" /></div>
           <div class="form-row"><label>Home type</label><select id="home-type"><option>House</option><option>Apartment</option><option>Condo</option></select></div>
         </div>
-        <div class="wizard-actions"><button class="btn primary" data-action="next">Next: Habits</button></div>
+        <div class="wizard-actions"><button class="btn primary" data-action="next">Next</button></div>
       </div>
       <div class="wizard-step" data-step="2" data-step-index="2">
         <h3>Habits</h3>
-        <p>Give us your best guess.</p>
+        <p>Best guess is perfect. Leave blanks if you’re not sure.</p>
         <div class="form-inline">
           <div class="form-row"><label>Showers per day</label><input id="showers-per-day" type="number" value="2" /></div>
           <div class="form-row"><label>Minutes per shower</label><input id="minutes-per-shower" type="number" value="8" /></div>
           <div class="form-row"><label>Laundry loads per week</label><input id="laundry-loads" type="number" value="5" /></div>
-          <div class="form-row"><label>Water rate ($ per 1,000 gallons)</label><input id="water-rate" type="number" step="0.01" placeholder="Optional" /><p class="muted">Find it on your bill as “rate”, “unit cost”, or “$/CCF”.</p></div>
+          <div class="form-row"><label>Water rate (optional)</label><input id="water-rate" type="number" step="0.01" placeholder="Use $6 per 1,000 gallons if unsure" /><p class="muted">Find it on your bill as “unit cost”, “rate”, “$/CCF”, or “$/1,000 gallons”.</p></div>
         </div>
-        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next: Upgrades</button></div>
+        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next</button></div>
       </div>
       <div class="wizard-step" data-step="3" data-step-index="3">
         <h3>Upgrades</h3>
@@ -1141,7 +1234,11 @@ function renderSavingsPlan(): string {
         <h3>Your plan</h3>
         <div class="plan-output"></div>
         <p class="muted">Estimates only. Your rates and usage vary.</p>
-        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button></div>
+        <div class="wizard-actions">
+          <button class="btn secondary" data-action="back">Back</button>
+          <button class="btn secondary" data-copy-plan>Copy my plan</button>
+          <button class="btn secondary" data-print-plan>Download PDF</button>
+        </div>
       </div>
     </section>
   `;
@@ -1179,6 +1276,7 @@ function calculatorForm(title: string, subtitle: string, formHtml: string, resul
     </section>
     <section class="section layout-slab">
       <form data-calc="${title.toLowerCase().split(" ")[0]}">${formHtml}</form>
+      <h2>Your estimate</h2>
       <div class="calc-result" aria-live="polite"></div>
     </section>
     ${sourcesList(resultSources)}
@@ -1191,10 +1289,18 @@ function renderShowerCalculator(): string {
       <div class="form-row"><label>Current flow (gpm)</label><input name="current-flow" type="number" step="0.1" value="2.5" /></div>
       <div class="form-row"><label>New flow (gpm)</label><input name="new-flow" type="number" step="0.1" value="2.0" /></div>
       <div class="form-row"><label>Minutes per shower</label><input name="minutes" type="number" value="8" /></div>
-      <div class="form-row"><label>Showers per day</label><input name="showers" type="number" value="2" /></div>
+      <div class="form-row"><label>Showers per day</label><input name="showers" type="number" value="1" /></div>
       <div class="form-row"><label>People</label><input name="people" type="number" value="2" /></div>
-      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Use $6 if you’re unsure" /><p class="muted">Don’t know your rate? Use $6 per 1,000 gallons (rough placeholder) and adjust later.</p></div>
     </div>
+    <details class="help-accordion">
+      <summary>Not sure what to enter?</summary>
+      <div class="muted">
+        <p><strong>How to find your rate:</strong> Look for “unit cost”, “rate”, “$/CCF”, or “$/1,000 gallons” on your bill.</p>
+        <p><strong>How to estimate flow:</strong> Run a 1-gallon bucket test for 30 seconds and double it to get gpm.</p>
+      </div>
+    </details>
+    <label class="tag"><input type="checkbox" name="show-bath" /> Show bathtub equivalent</label>
     <p class="muted">WaterSense showerheads are ≤2.0 gpm [1]. Standard showerheads are 2.5 gpm [1].</p>
     <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button></div>
   `;
@@ -1210,8 +1316,16 @@ function renderFaucetCalculator(): string {
       <div class="form-row"><label>New flow (gpm)</label><input name="new-flow" type="number" step="0.1" value="1.5" /></div>
       <div class="form-row"><label>Minutes per person per day</label><input name="minutes" type="number" value="5" /></div>
       <div class="form-row"><label>People</label><input name="people" type="number" value="2" /></div>
-      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Use $6 if you’re unsure" /><p class="muted">Don’t know your rate? Use $6 per 1,000 gallons (rough placeholder) and adjust later.</p></div>
     </div>
+    <details class="help-accordion">
+      <summary>Not sure what to enter?</summary>
+      <div class="muted">
+        <p><strong>How to find your rate:</strong> Look for “unit cost”, “rate”, “$/CCF”, or “$/1,000 gallons” on your bill.</p>
+        <p><strong>How to estimate flow:</strong> Use a bucket test or check the aerator packaging for gpm.</p>
+      </div>
+    </details>
+    <label class="tag"><input type="checkbox" name="show-bath" /> Show bathtub equivalent</label>
     <p class="muted">WaterSense bathroom faucets target 1.5 gpm [1].</p>
     <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button></div>
   `;
@@ -1224,13 +1338,21 @@ function renderToiletCalculator(): string {
   const form = `
     <div class="form-inline">
       <div class="form-row"><label>Toilets count</label><input name="toilets" type="number" value="2" /></div>
-      <div class="form-row"><label>Current gallons/flush (gpf)</label><select name="current-gpf"><option value="3.5">3.5</option><option value="1.6">1.6</option><option value="1.28" selected>1.28</option></select></div>
+      <div class="form-row"><label>Current gallons/flush (gpf)</label><select name="current-gpf"><option value="3.5">3.5</option><option value="1.6" selected>1.6</option><option value="1.28">1.28</option></select></div>
       <div class="form-row"><label>New gpf</label><input name="new-gpf" type="number" step="0.01" value="1.28" /></div>
       <div class="form-row"><label>Flushes per person per day</label><input name="flushes" type="number" value="5" /></div>
       <div class="form-row"><label>People</label><input name="people" type="number" value="2" /></div>
-      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Use $6 if you’re unsure" /><p class="muted">Don’t know your rate? Use $6 per 1,000 gallons (rough placeholder) and adjust later.</p></div>
       <div class="form-row"><label><input type="checkbox" name="leak" /> Also suspect a leak (running toilet)</label><p class="muted">If checked, head to the leak check.</p></div>
     </div>
+    <details class="help-accordion">
+      <summary>Not sure what to enter?</summary>
+      <div class="muted">
+        <p><strong>How to find your rate:</strong> Look for “unit cost”, “rate”, “$/CCF”, or “$/1,000 gallons” on your bill.</p>
+        <p><strong>How to estimate flow:</strong> Check inside the tank lid for gpf or look up your model.</p>
+      </div>
+    </details>
+    <label class="tag"><input type="checkbox" name="show-bath" /> Show bathtub equivalent</label>
     <p class="muted">WaterSense toilets are 1.28 gpf or less [1]. A drip per second wastes 3,000+ gallons/year [2].</p>
     <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button><a class="btn secondary" href="/leak-check">Check for leaks</a></div>
   `;
@@ -1243,10 +1365,17 @@ function renderToiletCalculator(): string {
 function renderLaundryCalculator(): string {
   const form = `
     <div class="form-inline">
-      <div class="form-row"><label>Loads per week</label><input name="loads" type="number" value="6" /></div>
+      <div class="form-row"><label>Loads per week</label><input name="loads" type="number" value="5" /></div>
       <div class="form-row"><label>Washer type</label><select name="washer"><option>Standard</option><option>ENERGY STAR</option></select></div>
-      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Optional" /></div>
+      <div class="form-row"><label>Rate ($ per 1,000 gallons)</label><input name="rate" type="number" step="0.01" placeholder="Use $6 if you’re unsure" /><p class="muted">Don’t know your rate? Use $6 per 1,000 gallons (rough placeholder) and adjust later.</p></div>
     </div>
+    <details class="help-accordion">
+      <summary>Not sure what to enter?</summary>
+      <div class="muted">
+        <p><strong>How to find your rate:</strong> Look for “unit cost”, “rate”, “$/CCF”, or “$/1,000 gallons” on your bill.</p>
+      </div>
+    </details>
+    <label class="tag"><input type="checkbox" name="show-bath" /> Show bathtub equivalent</label>
     <p class="muted">ENERGY STAR washers use about 30% less water. [1]</p>
     <div class="wizard-actions"><button class="btn primary" type="submit">Run estimate</button></div>
   `;
@@ -1277,8 +1406,8 @@ function renderOutdoorCalculator(): string {
       </div>
       <div class="wizard-step" data-step="2" data-step-index="2">
         <h3>Your schedule</h3>
-        <div class="form-row"><label>Days per week</label><input type="number" value="3" /></div>
-        <div class="form-row"><label>Minutes per day</label><input type="number" value="15" /></div>
+        <div class="form-row"><label>Days per week</label><input type="number" value="2" /></div>
+        <div class="form-row"><label>Minutes per day</label><input type="number" value="10" /></div>
         <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next</button></div>
       </div>
       <div class="wizard-step" data-step="3" data-step-index="3">
@@ -1321,12 +1450,49 @@ function renderLeakCheck(): string {
       </div>
       <div class="wizard-step" data-step="2" data-step-index="2">
         <h3>Quick checks</h3>
-        <ul class="bullet-list">
-          <li>Toilet dye test</li>
-          <li>Check faucet drips</li>
-          <li>Check showerhead drips</li>
-          <li>Check irrigation leaks</li>
-        </ul>
+        <p>Start with the fastest, highest-odds checks.</p>
+        <div class="faq">
+          <div class="faq-item">
+            <button type="button">Toilet dye test <span aria-hidden="true">＋</span></button>
+            <div class="answer">
+              <ol>
+                <li>Add a few drops of food coloring to the tank.</li>
+                <li>Wait 10 minutes without flushing.</li>
+                <li>Color in the bowl = leaking flapper.</li>
+              </ol>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button type="button">Check faucet drips <span aria-hidden="true">＋</span></button>
+            <div class="answer">
+              <ol>
+                <li>Dry the sink and watch for steady drips.</li>
+                <li>Check under the cabinet for moisture.</li>
+                <li>Tighten aerators or replace washers.</li>
+              </ol>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button type="button">Check showerhead drips <span aria-hidden="true">＋</span></button>
+            <div class="answer">
+              <ol>
+                <li>Turn the shower off fully.</li>
+                <li>Watch for a steady drip.</li>
+                <li>Re-seat or replace the cartridge.</li>
+              </ol>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button type="button">Check irrigation leaks <span aria-hidden="true">＋</span></button>
+            <div class="answer">
+              <ol>
+                <li>Run one zone for 2–3 minutes.</li>
+                <li>Look for pooling or misting heads.</li>
+                <li>Adjust heads or repair cracked lines.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
         <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><button class="btn primary" data-action="next">Next</button></div>
       </div>
       <div class="wizard-step" data-step="3" data-step-index="3">
@@ -1338,6 +1504,7 @@ function renderLeakCheck(): string {
         </div>
         <p>A drip per second can waste 3,000+ gallons/year. [1]</p>
         <p>Household leaks can waste thousands of gallons/year. [2]</p>
+        <p class="muted">If you rent: take a photo/video and notify your landlord or property manager.</p>
         <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button><a class="btn primary" href="/calculators/toilet">Run the toilet calculator</a></div>
       </div>
     </section>
@@ -1354,6 +1521,7 @@ function renderRebatesWizard(): string {
       <div>
         <h1>Find rebates.</h1>
         <p>Start with the official finders.</p>
+        <p class="muted">WaterSense lists rebates, but your utility provides them.</p>
       </div>
     </section>
     <section class="section layout-slab wizard" data-wizard="rebates">
@@ -1431,7 +1599,7 @@ function guideLayout(title: string, subtitle: string, sectionsHtml: string, sour
 
 function renderGuideShowerheads(): string {
   const sections = `
-    ${section("What to buy", `<p>Look for WaterSense. [1]</p>`)}
+    ${section("What to buy", `<p>Look for WaterSense. [1]</p><p class="muted">If you’re unsure, start with one bathroom and compare.</p>`)}
     ${section("What to expect", `<p>Standard is 2.5 gpm. WaterSense is ≤2.0 gpm. [1]</p>`)}
     ${section("Do it today", `<p>Pick a model → install → rerun the calculator.</p><a class="btn secondary" href="/calculators/shower">Open calculator</a>`)}
     <section class="section faq">
@@ -1459,7 +1627,7 @@ function renderGuideLeaks(): string {
 
 function renderGuideToilets(): string {
   const sections = `
-    ${section("Fix first", `<p>Most running toilets are a flapper problem.</p><a class="btn secondary" href="/leak-check">Check leaks</a>`)}
+    ${section("Fix first", `<p>Most running toilets are a flapper problem.</p><p class="muted">A running toilet is often the #1 silent indoor leak.</p><a class="btn secondary" href="/leak-check">Check leaks</a>`)}
     ${section("Upgrade when it’s time", `<p>Look for WaterSense. [1]</p>`)}
     ${section("Plan the swap", `<a class="btn secondary" href="/calculators/toilet">Run the toilet calculator</a>`)}
   `;
@@ -1470,7 +1638,7 @@ function renderGuideToilets(): string {
 
 function renderGuideWaterBill(): string {
   const sections = `
-    ${section("Start with usage", `<p>Bills may show gallons, CCF, or HCF. [1]</p>`)}
+    ${section("Start with usage", `<p>Bills may show gallons, CCF, or HCF. [1]</p><p class="muted">If you only learn one thing: find your usage unit + rate.</p>`)}
     ${section("Find your rate", `<p>Look for $/unit or a tier table. [1]</p>`)}
     ${section("Sewer is often tied to water", `<p>Check your bill’s sewer line item.</p>`)}
     ${section("Next", `<a class="btn secondary" href="/analyze-water-bill">Analyze a bill PDF</a>`)}
@@ -1482,7 +1650,7 @@ function renderGuideWaterBill(): string {
 
 function renderGuideOutdoor(): string {
   const sections = `
-    ${section("Spot waste", `<ul class="bullet-list"><li>Runoff</li><li>Puddles</li><li>Water on pavement</li></ul>`)}
+    ${section("Spot waste", `<ul class="bullet-list"><li>Runoff</li><li>Puddles</li><li>Water on pavement</li></ul><p class="muted">Water early, watch runoff, and adjust week to week.</p>`)}
     ${section("Try a smarter controller", `<p>A WaterSense controller can save up to 15,000 gallons/year. [1]</p>`)}
     ${section("Act now", `<a class="btn secondary" href="/calculators/outdoor">Use the outdoor tool</a>`)}
   `;
@@ -1605,12 +1773,36 @@ function renderContact(): string {
 }
 
 function renderTrustPage(kind: "privacy" | "terms" | "affiliate" | "disclaimer"): string {
-  const modal = modalCopy[`${kind}-modal`];
-  const body = modal.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
-  const footer = modal.footer ? `<p class="muted">${escapeHtml(modal.footer)}</p>` : "";
+  const trustCopy = copy.trust[kind];
+  const sections = trustCopy.sections
+    .map(
+      (sectionItem) =>
+        `<section class="section"><h2>${escapeHtml(sectionItem.title)}</h2><p>${escapeHtml(sectionItem.body)}</p></section>`,
+    )
+    .join("");
+  const tldr =
+    kind === "privacy"
+      ? `<section class="section layout-slab"><h2>TL;DR</h2><ul class="bullet-list">${copy.trust.privacy.tldr
+          .map((line) => `<li>${escapeHtml(line)}</li>`)
+          .join("")}</ul>
+          <p class="muted"><a href="#privacy-settings" data-consent-open>${escapeHtml(copy.footer.privacySettings)}</a></p>
+        </section>`
+      : "";
   return `
-    <section class="hero"><div><h1>${escapeHtml(modal.title)}</h1><p>${escapeHtml(modal.body[0])}</p></div></section>
-    <section class="section layout-slab">${body}${footer}<div class="wizard-actions"><a class="btn secondary" href="/">Back home</a></div></section>
+    <section class="hero">
+      <div>
+        <h1>${escapeHtml(trustCopy.title)}</h1>
+        <p>${escapeHtml(trustCopy.summary)}</p>
+      </div>
+    </section>
+    ${tldr}
+    ${sections}
+    <section class="section layout-slab">
+      <p class="muted">Last updated: ${escapeHtml(BUILD_DATE)}</p>
+      <div class="wizard-actions">
+        <a class="btn secondary" href="/">Back home</a>
+      </div>
+    </section>
   `;
 }
 
@@ -1891,7 +2083,7 @@ const handleAnalyzeBill = async (c: any) => {
 
     if (!(file instanceof File) || !validateFile(file)) {
       return c.json(
-        { error: "Invalid file. Upload a PDF or JPG/PNG under 10MB." },
+        { error: "Invalid file. Upload a PDF under 10MB." },
         400,
       );
     }
@@ -1938,6 +2130,17 @@ const handleAnalyzeBill = async (c: any) => {
       content: redactedText,
       includeWaterContext: true,
     });
+    const analysis = parseAnalysisPayload(openAiData);
+    const acceptsJson = (c.req.header("accept") || "")
+      .toLowerCase()
+      .includes("application/json");
+
+    if (acceptsJson) {
+      return c.json({
+        analysis,
+        html: renderAnalysisResponse(openAiData),
+      });
+    }
 
     return c.html(renderAnalysisResponse(openAiData));
   } catch (error) {
@@ -2205,7 +2408,7 @@ async function analyzeTextWithOpenAI(
   const { content, includeWaterContext = true } = options;
 
   const prompt = includeWaterContext
-    ? `You are a world-leading expert in water conservation and efficiency.\nProvide a concise set of location-based or usage-based recommendations.\n\nHere is the user content:\n${content}`
+    ? `You are a world-leading expert in water conservation and efficiency.\nReturn ONLY valid JSON matching this schema (no markdown, no prose):\n{\n  "topMoves": [\n    {\n      "title": string,\n      "why": string,\n      "effort": "Low" | "Med" | "High",\n      "impact": string,\n      "steps": string[],\n      "ctaLabel": string,\n      "ctaHref": string\n    }\n  ],\n  "payingFor": string,\n  "nextStep": string,\n  "confidenceNote": string\n}\nRules:\n- Provide exactly 3 topMoves.\n- Keep language short, plain-English, and action-first.\n- Use realistic impact ranges instead of guarantees.\n- Use internal links for ctaHref when possible (e.g., /leak-check, /calculators/shower).\n\nBill text:\n${content}`
     : content;
 
   const headers: Record<string, string> = {
@@ -2245,17 +2448,71 @@ async function analyzeTextWithOpenAI(
   return data;
 }
 
+function parseAnalysisPayload(data: ChatCompletionResponse): AnalysisResult | null {
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return null;
+  const jsonBlock = extractJsonObject(content);
+  if (!jsonBlock) return null;
+  try {
+    const parsed = JSON.parse(jsonBlock) as AnalysisResult;
+    if (!parsed?.topMoves?.length || !parsed.payingFor || !parsed.nextStep) {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
+    console.error("Failed to parse analysis JSON:", error);
+    return null;
+  }
+}
+
 function renderAnalysisResponse(data: ChatCompletionResponse): string {
-  const content =
-    data.choices?.[0]?.message?.content || "No recommendations provided.";
-  const formatted = content
-    .replace(/\*\*\*(.*?)\*\*\*/g, "<h2>$1</h2>")
-    .replace(/\n/g, "<br>");
+  const parsed = parseAnalysisPayload(data);
+  if (!parsed) {
+    const content =
+      data.choices?.[0]?.message?.content || "No recommendations provided.";
+    const formatted = content
+      .replace(/\*\*\*(.*?)\*\*\*/g, "<h2>$1</h2>")
+      .replace(/\n/g, "<br>");
+    return `
+      <div class="analysis-fallback">
+        <h2>Water Efficiency Recommendations</h2>
+        ${formatted}
+      </div>
+    `;
+  }
+
+  const cards = parsed.topMoves
+    .map(
+      (move) => `
+      <div class="result-card">
+        <h3>${escapeHtml(move.title)}</h3>
+        <p class="muted">${escapeHtml(move.why)}</p>
+        <div class="result-meta">
+          <span>Effort: ${escapeHtml(move.effort)}</span>
+          <span>Impact: ${escapeHtml(move.impact)}</span>
+        </div>
+        <ul class="bullet-list">${move.steps
+          .map((step) => `<li>${escapeHtml(step)}</li>`)
+          .join("")}</ul>
+        <a class="btn secondary" href="${escapeHtml(move.ctaHref)}">${escapeHtml(move.ctaLabel)}</a>
+      </div>
+    `,
+    )
+    .join("");
 
   return `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;">
-      <h1>Water Efficiency Recommendations</h1>
-      ${formatted}
+    <div class="results-grid">
+      <h2>Your top 3 moves</h2>
+      <div class="cards">${cards}</div>
+      <h2>What you’re really paying for</h2>
+      <p>${escapeHtml(parsed.payingFor)}</p>
+      <h2>Your next best step</h2>
+      <p>${escapeHtml(parsed.nextStep)}</p>
+      ${parsed.confidenceNote ? `<p class="muted">${escapeHtml(parsed.confidenceNote)}</p>` : ""}
+      <div class="share-bar">
+        <button class="btn secondary" type="button" data-copy-summary>Copy summary</button>
+        <button class="btn secondary" type="button" data-print-plan>Download PDF</button>
+      </div>
     </div>
   `;
 }
@@ -2267,12 +2524,7 @@ function validateFile(file: File): boolean {
   }
 
   const type = file.type.toLowerCase();
-  const normalizedType = type.replace("jpg", "jpeg");
-  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
-
-  const isAllowed = allowedTypes.some((allowed) =>
-    normalizedType.includes(allowed),
-  );
+  const isAllowed = type.includes("application/pdf");
 
   if (!isAllowed) {
     console.error("File validation failed (unsupported type).");

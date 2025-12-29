@@ -13,7 +13,7 @@ import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import { ensureAnalyticsLoaded, initializeAnalytics } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
-import { subscribeToConsentChanges } from "./consent";
+import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
 
 if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
@@ -32,10 +32,23 @@ const RootRouter = () => {
 
   useEffect(() => {
     initializeAnalytics();
-    ensureAdSenseLoaded();
-    const unsubscribe = subscribeToRouteChanges(() => {
+    const consent = getEffectiveConsent();
+    if (consent.ads) {
       ensureAdSenseLoaded();
       initializeAllAdSlots();
+    }
+    if (consent.analytics) {
+      ensureAnalyticsLoaded();
+    }
+    const unsubscribe = subscribeToRouteChanges(() => {
+      const updatedConsent = getEffectiveConsent();
+      if (updatedConsent.ads) {
+        ensureAdSenseLoaded();
+        initializeAllAdSlots();
+      }
+      if (updatedConsent.analytics) {
+        ensureAnalyticsLoaded();
+      }
     });
     const unsubscribeConsent = subscribeToConsentChanges((consent) => {
       if (consent.ads) {

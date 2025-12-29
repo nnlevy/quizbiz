@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { applyConsentMode, getEffectiveConsent, getStoredConsent, isConsentRequired, saveConsent } from "../consent";
+import {
+  applyConsentMode,
+  getEffectiveConsent,
+  getStoredConsent,
+  hasGlobalPrivacySignal,
+  isConsentRequired,
+  saveConsent,
+} from "../consent";
 
 const ConsentBanner = () => {
   const [visible, setVisible] = useState(false);
@@ -14,6 +21,12 @@ const ConsentBanner = () => {
     setAnalytics(effective.analytics);
     setAds(effective.ads);
     setVisible(!stored);
+  }, []);
+
+  useEffect(() => {
+    const openHandler = () => setVisible(true);
+    window.addEventListener("ws-consent-open", openHandler);
+    return () => window.removeEventListener("ws-consent-open", openHandler);
   }, []);
 
   const acceptAll = () => {
@@ -68,6 +81,9 @@ const ConsentBanner = () => {
           Accept all
         </button>
       </div>
+      {hasGlobalPrivacySignal() ? (
+        <p className="muted">Global Privacy Control detected. Analytics and ads are off by default.</p>
+      ) : null}
       {isConsentRequired() ? null : <p className="muted">You can update preferences at any time.</p>}
     </div>
   );
