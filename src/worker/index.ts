@@ -464,7 +464,7 @@ const siteRoutes: SiteRoute[] = [
   },
 ];
 
-const app = new Hono<{ Bindings: WorkerEnv }>();
+const app = new Hono<{ Bindings: WorkerEnv; Variables: { cspNonce: string } }>();
 
 app.use("*", async (c, next) => {
   const proto = c.req.header("x-forwarded-proto");
@@ -565,7 +565,9 @@ app.get("/__ads", (c) => {
   const adsenseSlots = buildAdsenseSlots(c.env);
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
-  const consentRequired = isConsentRequired(c.req.raw.cf?.country);
+  const consentRequired = isConsentRequired(
+    (c.req.raw.cf as { country?: string } | undefined)?.country,
+  );
   const cspNonce = c.get("cspNonce") as string;
   return c.html(
     layout({
@@ -588,7 +590,9 @@ siteRoutes.forEach((route) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
     const adsenseClient = resolveAdsenseClient(c.env);
     const gaMeasurementId = resolveGaMeasurementId(c.env);
-    const consentRequired = isConsentRequired(c.req.raw.cf?.country);
+    const consentRequired = isConsentRequired(
+      (c.req.raw.cf as { country?: string } | undefined)?.country,
+    );
     const cspNonce = c.get("cspNonce") as string;
     const bodyHtml = route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body;
     return c.html(
