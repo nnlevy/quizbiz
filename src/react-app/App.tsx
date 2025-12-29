@@ -1027,8 +1027,20 @@ function App({ focusUpload = false }: AppProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
 
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+    let resizeAttached = false;
+    const attachResize = () => {
+      if (resizeAttached) return;
+      resizeAttached = true;
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+    };
+
+    const handleLoad = () => attachResize();
+    if (document.readyState === "complete") {
+      attachResize();
+    } else {
+      window.addEventListener("load", handleLoad, { once: true });
+    }
 
     let droplets: Droplet[] = [];
     let mouseX = -9999;
@@ -1149,7 +1161,10 @@ function App({ focusUpload = false }: AppProps) {
 
     return () => {
       cancelAnimationFrame(animationFrame);
-      window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("load", handleLoad);
+      if (resizeAttached) {
+        window.removeEventListener("resize", resizeCanvas);
+      }
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleMouseLeave);
     };

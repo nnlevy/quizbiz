@@ -90,6 +90,7 @@ const ensureScriptPresent = () => {
   script.async = true;
   script.src = ADSENSE_SCRIPT_SRC;
   script.crossOrigin = "anonymous";
+  script.setAttribute("data-cfasync", "false");
   document.head.appendChild(script);
   debugLog("Injected AdSense script", { src: script.src });
   return script;
@@ -108,7 +109,11 @@ const ensureAutoAds = () => {
 const initializeSlot = (slot: HTMLElement) => {
   if (slot.dataset.adsInitialized === "true") return;
   const status = slot.getAttribute("data-adsbygoogle-status");
-  if (status === "done" || status === "filled" || slot.innerHTML.trim() !== "") {
+  if (status) {
+    slot.dataset.adsInitialized = "true";
+    return;
+  }
+  if (slot.innerHTML.trim() !== "" || slot.childElementCount > 0) {
     slot.dataset.adsInitialized = "true";
     return;
   }

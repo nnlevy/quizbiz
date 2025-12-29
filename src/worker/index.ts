@@ -784,6 +784,7 @@ function layout(options: {
       <script
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}"
+        data-cfasync="false"
         crossorigin="anonymous"
       ></script>
       <script defer src="/assets/app.js"></script>
