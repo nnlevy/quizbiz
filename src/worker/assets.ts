@@ -434,6 +434,11 @@ function clientScript() {
   let svgSetAttributePatched = false;
   let htmlSetAttributePatched = false;
 
+  const isReactManagedAds = () => {
+    const globalWindow = window as typeof window & { __WS_ADSENSE_MANAGED__?: string };
+    return globalWindow.__WS_ADSENSE_MANAGED__ === 'react' || Boolean(document.getElementById('root'));
+  };
+
   const normalizeCalcDimension = (value: string): string | null => {
     const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
     if (!match) return null;
@@ -645,6 +650,9 @@ function clientScript() {
   };
 
   function initAds() {
+    if (isReactManagedAds()) {
+      return;
+    }
     patchAdDimensionSetters();
     const adScript = document.querySelector<HTMLScriptElement>(
       'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
