@@ -778,7 +778,6 @@ function layout(options: {
       </script>
       <script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
       <script
-        data-cfasync="false"
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}"
         crossorigin="anonymous"

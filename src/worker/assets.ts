@@ -555,6 +555,11 @@ function clientScript() {
 
     document.querySelectorAll<HTMLElement>('.adsbygoogle[data-ad-slot]').forEach((slot) => {
       if (slot.dataset.adsInitialized === 'true') return;
+      const status = slot.getAttribute('data-adsbygoogle-status');
+      if (status === 'done' || status === 'filled' || slot.innerHTML.trim() !== '') {
+        slot.dataset.adsInitialized = 'true';
+        return;
+      }
       try {
         adsQueue.push({});
         slot.dataset.adsInitialized = 'true';
