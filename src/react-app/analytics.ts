@@ -1,3 +1,6 @@
+import { GA_MEASUREMENT_ID } from "../config/analytics";
+import { getStoredConsent, isConsentRequired } from "./consent";
+
 declare global {
   interface Window {
     dataLayer: unknown[];
@@ -6,6 +9,9 @@ declare global {
 }
 
 export type AnalyticsEventParams = Record<string, string | number | boolean | undefined>;
+
+const GTAG_SCRIPT_SRC = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+const GTAG_SCRIPT_SELECTOR = 'script[src*="www.googletagmanager.com/gtag/js"]';
 
 export function initializeAnalytics() {
   if (typeof window === "undefined") {
@@ -23,6 +29,38 @@ export function initializeAnalytics() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   window.gtag = window.gtag || gtag;
+
+  const consentRequired = isConsentRequired();
+  const stored = getStoredConsent();
+  window.gtag("consent", "default", {
+    ad_storage: consentRequired ? "denied" : "granted",
+    analytics_storage: consentRequired ? "denied" : "granted",
+    ad_user_data: consentRequired ? "denied" : "granted",
+    ad_personalization: consentRequired ? "denied" : "granted",
+    functionality_storage: "granted",
+    security_storage: "granted",
+    wait_for_update: 500,
+  });
+  if (stored) {
+    window.gtag("consent", "update", {
+      ad_storage: stored.ads ? "granted" : "denied",
+      analytics_storage: stored.analytics ? "granted" : "denied",
+      ad_user_data: stored.ads ? "granted" : "denied",
+      ad_personalization: stored.ads ? "granted" : "denied",
+      functionality_storage: "granted",
+      security_storage: "granted",
+    });
+  }
+
+  if (!document.querySelector(GTAG_SCRIPT_SELECTOR)) {
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = GTAG_SCRIPT_SRC;
+    document.head.appendChild(script);
+  }
+
+  window.gtag("js", new Date());
+  window.gtag("config", GA_MEASUREMENT_ID, { anonymize_ip: true, send_page_view: false });
 }
 
 export function logEvent(eventName: string, params: AnalyticsEventParams = {}) {

@@ -10,18 +10,37 @@ import ReadWaterBillPage from "../pages/ReadWaterBillPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
+import { initializeAnalytics } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
+import { subscribeToConsentChanges } from "./consent";
+
+if (typeof window !== "undefined") {
+  const globalWindow = window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean };
+  if (globalWindow.__WS_CONSENT_REQUIRED__ == null) {
+    globalWindow.__WS_CONSENT_REQUIRED__ = false;
+  }
+}
 const RootRouter = () => {
   const pathname = window.location.pathname;
 
   useEffect(() => {
+    initializeAnalytics();
     ensureAdSenseLoaded();
     const unsubscribe = subscribeToRouteChanges(() => {
       ensureAdSenseLoaded();
       initializeAllAdSlots();
     });
-    return unsubscribe;
+    const unsubscribeConsent = subscribeToConsentChanges((consent) => {
+      if (consent.ads) {
+        ensureAdSenseLoaded();
+        initializeAllAdSlots();
+      }
+    });
+    return () => {
+      unsubscribe();
+      unsubscribeConsent();
+    };
   }, []);
 
   const routeComponent = useMemo(() => {

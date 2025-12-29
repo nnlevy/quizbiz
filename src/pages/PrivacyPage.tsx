@@ -37,6 +37,8 @@ const PrivacyPage = () => (
         page that uses cookies.
       </p>
     </section>
+
+    <p className="muted">Last updated: 2025-03-08</p>
   </PageLayout>
 );
 

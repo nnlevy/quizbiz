@@ -1,5 +1,11 @@
+import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
+import AdSenseSlot from "./AdSenseSlot";
+
 const SiteFooter = () => (
   <footer className="site-footer">
+    <div className="footer-ad">
+      <AdSenseSlot slotId={DEFAULT_ADSENSE_SLOTS.footer} format="autorelaxed" className="ad-slot" />
+    </div>
     <div className="footer-links">
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>

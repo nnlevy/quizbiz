@@ -12,6 +12,7 @@ import React, {
   useState,
 } from "react";
 import "./App.css";
+import ConsentBanner from "./components/ConsentBanner";
 import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import { logEvent } from "./analytics";
@@ -2717,6 +2718,7 @@ function App({ focusUpload = false }: AppProps) {
       )}
 
       <SiteFooter />
+      <ConsentBanner />
     </div>
   );
 }

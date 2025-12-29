@@ -52,6 +52,10 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 
+.muted {
+  color: var(--muted-text);
+}
+
 html {
   width: 100%;
   max-width: 100%;
@@ -1444,6 +1448,18 @@ blockquote {
   padding: 2rem 0 1.4rem;
 }
 
+.footer-ad {
+  margin: 0 auto 1.2rem;
+  max-width: 720px;
+  min-height: 250px;
+}
+
+.footer-ad .ad-slot {
+  display: block;
+  min-height: 250px;
+  width: 100%;
+}
+
 .site-footer a {
   font-weight: 600;
 }
@@ -1636,6 +1652,17 @@ blockquote {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.cookie-options {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.cookie-banner a {
+  color: #bae6fd;
 }
 
 .cookie-actions .primary-button,
