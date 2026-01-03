@@ -735,6 +735,9 @@ function clientScript() {
   let lastAdsInit = 0;
   let svgSetAttributePatched = false;
   let htmlSetAttributePatched = false;
+  let elementSetAttributePatched = false;
+  let elementSetAttributeNsPatched = false;
+  let dimensionPropertiesPatched = false;
 
   const isReactManagedAds = () => {
     const globalWindow = window as typeof window & { __WS_ADSENSE_MANAGED__?: string };
@@ -795,6 +798,38 @@ function clientScript() {
     svgSetAttributePatched = true;
   };
 
+  const patchElementSetAttribute = () => {
+    if (elementSetAttributePatched) return;
+    const nativeSetAttribute = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function setAttribute(name: string, value: string) {
+      if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
+        const normalized = normalizeCalcDimension(value);
+        if (normalized) return nativeSetAttribute.call(this, name, normalized);
+        return nativeSetAttribute.call(this, name, '');
+      }
+      return nativeSetAttribute.call(this, name, value);
+    };
+    elementSetAttributePatched = true;
+  };
+
+  const patchElementSetAttributeNs = () => {
+    if (elementSetAttributeNsPatched) return;
+    const nativeSetAttributeNs = Element.prototype.setAttributeNS;
+    Element.prototype.setAttributeNS = function setAttributeNS(
+      namespace: string | null,
+      name: string,
+      value: string,
+    ) {
+      if ((name === 'width' || name === 'height') && typeof value === 'string' && value.includes('calc')) {
+        const normalized = normalizeCalcDimension(value);
+        if (normalized) return nativeSetAttributeNs.call(this, namespace, name, normalized);
+        return nativeSetAttributeNs.call(this, namespace, name, '');
+      }
+      return nativeSetAttributeNs.call(this, namespace, name, value);
+    };
+    elementSetAttributeNsPatched = true;
+  };
+
   const patchHtmlSetAttribute = () => {
     if (htmlSetAttributePatched) return;
     const nativeSetAttribute = HTMLElement.prototype.setAttribute;
@@ -809,9 +844,43 @@ function clientScript() {
     htmlSetAttributePatched = true;
   };
 
+  const patchDimensionProperty = (proto: object, prop: 'width' | 'height') => {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, prop);
+    if (!descriptor?.set || !descriptor?.get || descriptor.configurable === false) return;
+    Object.defineProperty(proto, prop, {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value: string | number) {
+        if (typeof value === 'string' && value.includes('calc')) {
+          const normalized = normalizeCalcDimension(value);
+          descriptor.set?.call(this, normalized ?? '');
+          return;
+        }
+        descriptor.set?.call(this, value);
+      },
+    });
+  };
+
+  const patchDimensionProperties = () => {
+    if (dimensionPropertiesPatched) return;
+    patchDimensionProperty(HTMLIFrameElement.prototype, 'width');
+    patchDimensionProperty(HTMLIFrameElement.prototype, 'height');
+    patchDimensionProperty(HTMLImageElement.prototype, 'width');
+    patchDimensionProperty(HTMLImageElement.prototype, 'height');
+    patchDimensionProperty(HTMLObjectElement.prototype, 'width');
+    patchDimensionProperty(HTMLObjectElement.prototype, 'height');
+    patchDimensionProperty(HTMLVideoElement.prototype, 'width');
+    patchDimensionProperty(HTMLVideoElement.prototype, 'height');
+    dimensionPropertiesPatched = true;
+  };
+
   const patchAdDimensionSetters = () => {
+    patchElementSetAttribute();
+    patchElementSetAttributeNs();
     patchSvgSetAttribute();
     patchHtmlSetAttribute();
+    patchDimensionProperties();
   };
 
   const monitorAdNodes = () => {
