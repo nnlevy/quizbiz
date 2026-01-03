@@ -13,6 +13,9 @@ const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
 const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
+const REBATE_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
+
+const rebateCache = new Map<string, { expiresAt: number; payload: RebateResponse }>();
 
 const subtle = (() => {
   if (typeof crypto.subtle !== "undefined") {
@@ -63,6 +66,21 @@ type AnalysisResult = {
   payingFor: string;
   nextStep: string;
   confidenceNote?: string;
+};
+
+type RebateResult = {
+  program: string;
+  provider: string;
+  amount: string;
+  eligibility: string[];
+  howToApply: string;
+  links: Array<{ label: string; url: string }>;
+  estimated?: boolean;
+};
+
+type RebateResponse = {
+  lastChecked: string;
+  results: RebateResult[];
 };
 
 type DocumentAIResponse = {
@@ -1328,6 +1346,7 @@ function calculatorForm(title: string, subtitle: string, formHtml: string, resul
     </section>
     <section class="section layout-slab">
       <form data-calc="${title.toLowerCase().split(" ")[0]}">${formHtml}</form>
+      <p class="muted">Results update instantly as you type.</p>
       <h2>Your estimate</h2>
       <div class="calc-result" aria-live="polite"></div>
     </section>
@@ -1572,46 +1591,53 @@ function renderRebatesWizard(): string {
     <section class="hero">
       <div>
         <h1>Find rebates.</h1>
-        <p>Start with the official finders.</p>
-        <p class="muted">WaterSense lists rebates, but your utility provides them.</p>
+        <p>Get instant, AI-researched rebate leads for your utility.</p>
+        <p class="muted">Programs change—verify details on official sites.</p>
       </div>
     </section>
-    <section class="section layout-slab wizard" data-wizard="rebates">
-      <div class="wizard-steps">
-        <div class="step-pill active" data-step="1">1/2 Basics</div>
-        <div class="step-pill" data-step="2">2/2 Links</div>
-      </div>
-      <div class="wizard-step active" data-step="1" data-step-index="1">
-        <div class="form-row"><label>Zip/postal code (optional)</label><input type="text" placeholder="Optional" /></div>
-        <div class="form-row">
-          <label>Product interests</label>
-          <div class="chip-list">
-            <label class="tag"><input type="checkbox" /> showerhead</label>
-            <label class="tag"><input type="checkbox" /> toilet</label>
-            <label class="tag"><input type="checkbox" /> faucet</label>
-            <label class="tag"><input type="checkbox" /> washer</label>
-            <label class="tag"><input type="checkbox" /> irrigation controller</label>
+    <section class="section layout-slab" id="rebate-tool">
+      <form id="rebate-form">
+        <div class="form-inline">
+          <div class="form-row">
+            <label>ZIP code</label>
+            <input type="text" name="zip" placeholder="e.g., 78701" required />
+          </div>
+          <div class="form-row">
+            <label>City (optional)</label>
+            <input type="text" name="city" placeholder="Austin" />
+          </div>
+          <div class="form-row">
+            <label>State (optional)</label>
+            <input type="text" name="state" placeholder="TX" />
+          </div>
+          <div class="form-row">
+            <label>Utility provider (optional)</label>
+            <input type="text" name="utility" placeholder="Austin Water" />
           </div>
         </div>
-        <div class="wizard-actions"><button class="btn primary" data-action="next">Next</button></div>
-      </div>
-      <div class="wizard-step" data-step="2" data-step-index="2">
-        <div class="cards">
-          <a class="card" href="https://lookforwatersense.epa.gov/Rebate-Finder.html" target="_blank" rel="noopener">
-            <h3>WaterSense Rebate Finder</h3>
-          </a>
-          <a class="card" href="https://www.energystar.gov/rebate-finder" target="_blank" rel="noopener">
-            <h3>ENERGY STAR Rebate Finder</h3>
-          </a>
-          <a class="card" href="https://lookforwatersense.epa.gov/" target="_blank" rel="noopener">
-            <h3>WaterSense Product Search</h3>
-          </a>
+        <div class="form-row">
+          <label>Upgrades to check</label>
+          <div class="chip-list">
+            <label class="tag"><input type="checkbox" name="upgrade" value="WaterSense toilet" checked /> WaterSense toilet</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="WaterSense showerhead" /> WaterSense showerhead</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="Faucet aerators" /> Faucet aerators</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="Smart irrigation controller" /> Smart irrigation controller</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="Leak detector" /> Leak detector</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="High-efficiency washer" /> High-efficiency washer</label>
+          </div>
         </div>
-        <p class="muted">WaterSense lists rebates, but doesn’t provide them. Your utility does. [1]</p>
-        <div class="wizard-actions"><button class="btn secondary" data-action="back">Back</button></div>
-      </div>
+        <div class="wizard-actions">
+          <button class="btn primary" type="submit">Find rebates</button>
+        </div>
+      </form>
+      <p class="muted" id="rebate-status">Enter your ZIP to see local rebate programs.</p>
+      <div id="rebate-results" class="cards"></div>
+      <p class="muted">Programs change—verify details on official sites before you apply.</p>
     </section>
-    ${sourcesList(["https://lookforwatersense.epa.gov/Rebate-Finder.html"])}
+    ${sourcesList([
+      "https://lookforwatersense.epa.gov/Rebate-Finder.html",
+      "https://www.energystar.gov/rebate-finder",
+    ])}
   `;
 }
 
@@ -2214,9 +2240,79 @@ const handleAnalyzeBill = async (c: any) => {
   }
 };
 
+const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: {
+    zip?: string;
+    city?: string;
+    state?: string;
+    utility?: string;
+    upgrades?: string[];
+  } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Rebate search payload error:", error);
+    return c.json({ error: "Invalid rebate request body." }, 400);
+  }
+
+  const zip = typeof payload.zip === "string" ? payload.zip.trim() : "";
+  if (!zip) {
+    return c.json({ error: "ZIP code is required to find rebates." }, 400);
+  }
+  const upgrades = Array.isArray(payload.upgrades)
+    ? payload.upgrades.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const locationLabel = [payload.city, payload.state]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(", ");
+
+  const cacheKey = JSON.stringify({
+    zip,
+    locationLabel,
+    utility: payload.utility?.trim() || "",
+    upgrades: upgrades.slice().sort(),
+  });
+  const cached = rebateCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return c.json(cached.payload);
+  }
+
+  const prompt = buildRebatePrompt({
+    zip,
+    locationLabel,
+    utility: payload.utility?.trim() || "",
+    upgrades,
+  });
+
+  try {
+    const openAiData = await analyzeRebatesWithOpenAI(c.env, prompt);
+    const parsed = parseRebatePayload(openAiData);
+    const lastChecked = new Date().toISOString();
+    const responsePayload: RebateResponse = {
+      lastChecked,
+      results: parsed,
+    };
+    rebateCache.set(cacheKey, {
+      expiresAt: Date.now() + REBATE_CACHE_TTL_MS,
+      payload: responsePayload,
+    });
+    return c.json(responsePayload);
+  } catch (error) {
+    console.error("Rebate lookup failed:", error);
+    return c.json(
+      {
+        error:
+          "We hit a snag researching rebates. Please try again or check official rebate finders.",
+      },
+      500,
+    );
+  }
+};
+
 app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);
 app.post("/", handleAnalyzeBill);
+app.post("/api/rebates", handleRebateSearch);
 
 app.get("/api/usage-defaults", (c) =>
   c.json({
@@ -2500,6 +2596,136 @@ async function analyzeTextWithOpenAI(
   return data;
 }
 
+function buildRebatePrompt(input: {
+  zip: string;
+  locationLabel: string;
+  utility: string;
+  upgrades: string[];
+}): string {
+  const upgradeList = input.upgrades.length
+    ? input.upgrades.join(", ")
+    : "WaterSense fixtures, leak detection, irrigation, and efficient appliances";
+  const locationDescriptor = input.locationLabel
+    ? `${input.locationLabel} (ZIP ${input.zip})`
+    : `ZIP ${input.zip}`;
+  const utilityDescriptor = input.utility ? `Utility provider: ${input.utility}.` : "";
+
+  return `You are a water rebate researcher. Return ONLY valid JSON (no markdown) matching:
+{
+  "results": [
+    {
+      "program": string,
+      "provider": string,
+      "amount": string,
+      "eligibility": string[],
+      "howToApply": string,
+      "links": [{ "label": string, "url": string }],
+      "estimated": boolean
+    }
+  ]
+}
+Rules:
+- Focus on water efficiency rebates for ${locationDescriptor}.
+- Include ${utilityDescriptor}
+- Upgrades of interest: ${upgradeList}.
+- Provide at least 3 results if available; otherwise return an empty array.
+- Every result must include at least one official source link (utility/state/city).
+- If the amount is uncertain, set "estimated": true and describe as a range in amount.
+- If no credible program is found, return an empty results array.
+Return JSON only.`;
+}
+
+async function analyzeRebatesWithOpenAI(
+  env: WorkerEnv,
+  prompt: string,
+): Promise<ChatCompletionResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
+  };
+
+  if (env.OPENAI_ORG_ID) {
+    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: 1800,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    }),
+  });
+
+  const data = (await response.json()) as ChatCompletionResponse;
+  if (!response.ok) {
+    console.error("OpenAI rebate request failed:", JSON.stringify(data, null, 2));
+    throw new Error("Failed to analyze rebates with OpenAI");
+  }
+
+  return data;
+}
+
+function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return [];
+  const jsonBlock = extractJsonObject(content);
+  if (!jsonBlock) return [];
+
+  let parsed: { results?: RebateResult[] } | null = null;
+  try {
+    parsed = JSON.parse(jsonBlock) as { results?: RebateResult[] };
+  } catch (error) {
+    console.error("Failed to parse rebate JSON:", error);
+    return [];
+  }
+
+  if (!parsed?.results || !Array.isArray(parsed.results)) {
+    return [];
+  }
+
+  return parsed.results
+    .map((result) => {
+      const program = sanitizeText(result.program);
+      const provider = sanitizeText(result.provider);
+      const amount = sanitizeText(result.amount);
+      const howToApply = sanitizeText(result.howToApply);
+      const eligibility = Array.isArray(result.eligibility)
+        ? result.eligibility.map((item) => sanitizeText(item)).filter((item): item is string => Boolean(item))
+        : [];
+      const links = Array.isArray(result.links)
+        ? result.links
+            .map((link) => ({
+              label: sanitizeText(link?.label || "Official source"),
+              url: sanitizeHttpUrl(link?.url),
+            }))
+            .filter(
+              (link): link is { label: string; url: string } =>
+                Boolean(link.label) && Boolean(link.url),
+            )
+        : [];
+      if (!program || !provider || !howToApply || links.length === 0) {
+        return null;
+      }
+      return {
+        program,
+        provider,
+        amount: amount || "Amount varies by program",
+        eligibility,
+        howToApply,
+        links,
+        estimated: Boolean(result.estimated),
+      };
+    })
+    .filter((result): result is RebateResult => Boolean(result));
+}
+
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
@@ -2521,6 +2747,26 @@ const isAnalysisMove = (move: unknown): move is AnalysisMove => {
     isNonEmptyString(move.ctaHref)
   );
 };
+
+function getCalculatorLinkForMove(move: AnalysisMove): string | null {
+  if (move.ctaHref.startsWith("/calculators/")) {
+    return move.ctaHref;
+  }
+  const combined = `${move.title} ${move.ctaLabel} ${move.ctaHref}`.toLowerCase();
+  if (combined.includes("shower")) return "/calculators/shower";
+  if (combined.includes("faucet") || combined.includes("aerator")) return "/calculators/faucet";
+  if (combined.includes("toilet") || combined.includes("flapper")) return "/calculators/toilet";
+  if (combined.includes("laundry") || combined.includes("washer")) return "/calculators/laundry";
+  if (
+    combined.includes("outdoor") ||
+    combined.includes("irrigation") ||
+    combined.includes("sprinkler") ||
+    combined.includes("lawn")
+  ) {
+    return "/calculators/outdoor";
+  }
+  return null;
+}
 
 function parseAnalysisPayload(data: ChatCompletionResponse): AnalysisResult | null {
   const content = data.choices?.[0]?.message?.content;
@@ -2565,7 +2811,9 @@ function renderAnalysisResponse(data: ChatCompletionResponse): string {
 
   const cards = parsed.topMoves
     .map(
-      (move) => `
+      (move) => {
+        const calculatorLink = getCalculatorLinkForMove(move);
+        return `
       <div class="result-card">
         <h3>${escapeHtml(move.title)}</h3>
         <p class="muted">${escapeHtml(move.why)}</p>
@@ -2576,9 +2824,17 @@ function renderAnalysisResponse(data: ChatCompletionResponse): string {
         <ul class="bullet-list">${move.steps
           .map((step) => `<li>${escapeHtml(step)}</li>`)
           .join("")}</ul>
-        <a class="btn secondary" href="${escapeHtml(move.ctaHref)}">${escapeHtml(move.ctaLabel)}</a>
+        <div class="inline-list">
+          <a class="btn secondary" href="${escapeHtml(move.ctaHref)}">${escapeHtml(move.ctaLabel)}</a>
+          ${
+            calculatorLink && calculatorLink !== move.ctaHref
+              ? `<a class="btn secondary" href="${escapeHtml(calculatorLink)}">Calculate savings</a>`
+              : ""
+          }
+        </div>
       </div>
-    `,
+    `;
+      },
     )
     .join("");
 

@@ -2,9 +2,10 @@ import type { AnalysisMove } from "../types";
 
 type ResultsCardProps = {
   move: AnalysisMove;
+  calculatorHref?: string | null;
 };
 
-const ResultsCard = ({ move }: ResultsCardProps) => (
+const ResultsCard = ({ move, calculatorHref }: ResultsCardProps) => (
   <div className="results-card">
     <h3>{move.title}</h3>
     <p className="muted">{move.why}</p>
@@ -17,9 +18,16 @@ const ResultsCard = ({ move }: ResultsCardProps) => (
         <li key={step}>{step}</li>
       ))}
     </ul>
-    <a className="secondary-button" href={move.ctaHref}>
-      {move.ctaLabel}
-    </a>
+    <div className="results-card__actions">
+      <a className="secondary-button" href={move.ctaHref}>
+        {move.ctaLabel}
+      </a>
+      {calculatorHref && calculatorHref !== move.ctaHref && (
+        <a className="secondary-button ghost" href={calculatorHref}>
+          Calculate savings
+        </a>
+      )}
+    </div>
   </div>
 );
 

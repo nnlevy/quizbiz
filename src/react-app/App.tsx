@@ -20,6 +20,14 @@ import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import Stepper from "./components/Stepper";
 import TrustCapsule from "./components/TrustCapsule";
+import {
+  calculateAnnualGallons,
+  calculateAnnualGallonsFromWeekly,
+  calculateCostRange,
+  calculateReductionSavings,
+} from "./utils/calculators";
+import { detectIphone } from "./utils/device";
+import { buildSearchKeywords, buildSearchQuery, buildSearchUrl } from "./utils/searchLinks";
 import { logEvent } from "./analytics";
 import { useCredits } from "./context/CreditsContext";
 import UtilityResultCard, { type UtilityPayload } from "./components/UtilityResultCard";
@@ -84,6 +92,32 @@ const isAnalysisResult = (value: unknown): value is AnalysisResult => {
     isNonEmptyString(value.nextStep) &&
     (value.confidenceNote === undefined || isNonEmptyString(value.confidenceNote))
   );
+};
+
+const getCalculatorLinkForMove = (move: AnalysisMove): string | null => {
+  if (move.ctaHref.startsWith("/calculators/")) {
+    return move.ctaHref;
+  }
+  const combined = `${move.title} ${move.ctaLabel} ${move.ctaHref}`.toLowerCase();
+  if (combined.includes("shower")) return "/calculators/shower";
+  if (combined.includes("faucet") || combined.includes("aerator")) {
+    return "/calculators/faucet";
+  }
+  if (combined.includes("toilet") || combined.includes("flapper")) {
+    return "/calculators/toilet";
+  }
+  if (combined.includes("laundry") || combined.includes("washer")) {
+    return "/calculators/laundry";
+  }
+  if (
+    combined.includes("outdoor") ||
+    combined.includes("irrigation") ||
+    combined.includes("sprinkler") ||
+    combined.includes("lawn")
+  ) {
+    return "/calculators/outdoor";
+  }
+  return null;
 };
 
 type SavingTip = {
@@ -332,6 +366,7 @@ function App({ focusUpload = false }: AppProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadStepTimers = useRef<number[]>([]);
   const resultsRef = useRef<HTMLDivElement | null>(null);
+  const topMovesRef = useRef<HTMLDivElement | null>(null);
   const slideTouchStartX = useRef<number | null>(null);
   const slideTouchStartY = useRef<number | null>(null);
 
@@ -467,6 +502,26 @@ function App({ focusUpload = false }: AppProps) {
     }
   }, [isMobile]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    setIsWaterEjectMode(
+      window.location.pathname.startsWith("/blog-how-to-eject") ||
+        window.location.pathname.startsWith("/water-eject"),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    setDeviceInfo({
+      isIphone: detectIphone(window.navigator),
+      ready: true,
+    });
+  }, []);
+
   const [openNews, setOpenNews] = useState<Record<string, boolean>>(() =>
     NEWS_ITEMS.reduce((acc, article, index) => {
       acc[article.id] = !initialIsMobile && index === 0;
@@ -480,9 +535,8 @@ function App({ focusUpload = false }: AppProps) {
   );
   const [stripeClient, setStripeClient] = useState<StripeClient | null>(null);
   const stripeLoaderRef = useRef<Promise<StripeClient | null> | null>(null);
-  const [isIOSDevice, setIsIOSDevice] = useState(
-    typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent),
-  );
+  const [deviceInfo, setDeviceInfo] = useState({ isIphone: false, ready: false });
+  const [isWaterEjectMode, setIsWaterEjectMode] = useState(false);
   const [showCreditCelebration, setShowCreditCelebration] = useState(false);
   const [creditCelebrationMessage, setCreditCelebrationMessage] = useState("");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -818,7 +872,7 @@ function App({ focusUpload = false }: AppProps) {
       credits_remaining: updatedCredits,
     });
 
-    const targetUrl = isIOSDevice ? WATER_EJECT_RUN_URL : WATER_EJECT_SHORTCUT_URL;
+    const targetUrl = deviceInfo.isIphone ? WATER_EJECT_RUN_URL : WATER_EJECT_SHORTCUT_URL;
     const openedWindow = window.open(targetUrl, "_blank");
     if (!openedWindow) {
       window.location.href = targetUrl;
@@ -974,12 +1028,6 @@ function App({ focusUpload = false }: AppProps) {
       setCurrentSlide((prev) => Math.max(prev - 1, 0));
     }
   };
-
-  useEffect(() => {
-    const detectIOS = () =>
-      typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOSDevice(detectIOS());
-  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
@@ -1371,47 +1419,62 @@ function App({ focusUpload = false }: AppProps) {
   }, []);
 
   const reductionSummary = useMemo(() => {
-    const dailyGallonsSaved = showerReduction * SHOWER_FLOW_RATE;
-    const annualGallonsSaved = dailyGallonsSaved * 365;
-    const annualCostSavedMin = annualGallonsSaved * COST_PER_GALLON_MIN;
-    const annualCostSavedMax = annualGallonsSaved * COST_PER_GALLON_MAX;
+    const reductionSavings = calculateReductionSavings(
+      showerReduction,
+      SHOWER_FLOW_RATE,
+      COST_PER_GALLON_MIN,
+      COST_PER_GALLON_MAX,
+    );
     return `Reducing shower length by ${showerReduction} minutes saves ${formatCurrencyRange(
-      annualCostSavedMin,
-      annualCostSavedMax,
-    )} annually (approx. ${annualGallonsSaved.toFixed(0)} gallons).`;
+      reductionSavings.min,
+      reductionSavings.max,
+    )} annually (approx. ${reductionSavings.annualGallonsSaved.toFixed(0)} gallons).`;
   }, [showerReduction]);
 
   const applianceSavings = useMemo<ApplianceSavings>(() => {
-    const showerGallons = showerLength * SHOWER_FLOW_RATE * 365;
-    const showerMinCost = showerGallons * COST_PER_GALLON_MIN;
-    const showerMaxCost = showerGallons * COST_PER_GALLON_MAX;
+    const showerGallons = calculateAnnualGallons(showerLength, SHOWER_FLOW_RATE, 365);
+    const showerCosts = calculateCostRange(
+      showerGallons,
+      COST_PER_GALLON_MIN,
+      COST_PER_GALLON_MAX,
+    );
 
-    const sinkGallons = sinkUsage * SINK_FLOW_RATE * 365;
-    const sinkMinCost = sinkGallons * COST_PER_GALLON_MIN;
-    const sinkMaxCost = sinkGallons * COST_PER_GALLON_MAX;
+    const sinkGallons = calculateAnnualGallons(sinkUsage, SINK_FLOW_RATE, 365);
+    const sinkCosts = calculateCostRange(
+      sinkGallons,
+      COST_PER_GALLON_MIN,
+      COST_PER_GALLON_MAX,
+    );
 
-    const wateringGallons = wateringMinutes * WATERING_GALLONS_PER_MINUTE * 52;
-    const wateringMinCost = wateringGallons * COST_PER_GALLON_MIN;
-    const wateringMaxCost = wateringGallons * COST_PER_GALLON_MAX;
+    const wateringGallons = calculateAnnualGallonsFromWeekly(
+      wateringMinutes,
+      WATERING_GALLONS_PER_MINUTE,
+      52,
+    );
+    const wateringCosts = calculateCostRange(
+      wateringGallons,
+      COST_PER_GALLON_MIN,
+      COST_PER_GALLON_MAX,
+    );
 
     return {
       shower: {
         minutes: showerLength,
         gallons: showerGallons,
-        minCost: showerMinCost,
-        maxCost: showerMaxCost,
+        minCost: showerCosts.min,
+        maxCost: showerCosts.max,
       },
       sink: {
         minutes: sinkUsage,
         gallons: sinkGallons,
-        minCost: sinkMinCost,
-        maxCost: sinkMaxCost,
+        minCost: sinkCosts.min,
+        maxCost: sinkCosts.max,
       },
       watering: {
         minutes: wateringMinutes,
         gallons: wateringGallons,
-        minCost: wateringMinCost,
-        maxCost: wateringMaxCost,
+        minCost: wateringCosts.min,
+        maxCost: wateringCosts.max,
       },
     };
   }, [showerLength, sinkUsage, wateringMinutes]);
@@ -1440,6 +1503,34 @@ function App({ focusUpload = false }: AppProps) {
         )} in yearly usage.`;
     }
   };
+
+  const buildUpgradeKeywords = (topic: UpgradeModalTopic) =>
+    UPGRADE_MODAL_CONTENT[topic].keywords
+      .split(",")
+      .map((keyword) => keyword.trim())
+      .filter(Boolean);
+
+  const searchPreference = ctaPreference ?? "online";
+
+  const searchKeywords = useMemo(() => {
+    if (!upgradeTopic) return [];
+    return buildSearchKeywords({
+      baseKeywords: buildUpgradeKeywords(upgradeTopic),
+      moveTitles: analysisResult?.topMoves.map((move) => move.title) ?? [],
+      location: locationInput.trim() || null,
+      preference: searchPreference,
+    });
+  }, [upgradeTopic, analysisResult, locationInput, searchPreference]);
+
+  const searchQuery = useMemo(() => {
+    if (!upgradeTopic) return "";
+    return buildSearchQuery({
+      baseKeywords: buildUpgradeKeywords(upgradeTopic),
+      moveTitles: analysisResult?.topMoves.map((move) => move.title) ?? [],
+      location: locationInput.trim() || null,
+      preference: searchPreference,
+    });
+  }, [upgradeTopic, analysisResult, locationInput, searchPreference]);
 
   const synthesizeRecommendation = (
     preference: PurchasePreference,
@@ -1642,7 +1733,7 @@ function App({ focusUpload = false }: AppProps) {
     window.localStorage.setItem("ws-latest-plan", JSON.stringify(result));
     logEvent("cta_click", { type: "manual_entry" });
     logEvent("plan_generated", { type: "manual" });
-    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    topMovesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleDemoRun = () => {
@@ -1651,7 +1742,7 @@ function App({ focusUpload = false }: AppProps) {
     window.localStorage.setItem("ws-latest-plan", JSON.stringify(demoResult));
     logEvent("cta_click", { type: "demo" });
     logEvent("plan_generated", { type: "demo" });
-    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    topMovesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1770,6 +1861,8 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const isWaterEjectHidden = isWaterEjectCollapsed;
+  const isHomeMode = !isWaterEjectMode;
+  const shouldHideWaterEject = isHomeMode && (!deviceInfo.ready || !deviceInfo.isIphone);
 
   return (
     <div className="app">
@@ -1820,162 +1913,187 @@ function App({ focusUpload = false }: AppProps) {
       )}
 
       <main className="main-wrapper">
-        <button
-          type="button"
-          className={`water-eject-header ${isWaterEjectHidden ? "collapsed" : ""}`}
-          aria-expanded={!isWaterEjectHidden}
-          aria-controls="water-eject-section"
-          onClick={handleWaterEjectToggle}
-        >
-          <span className="water-eject-header__label">Other tool: Water eject (iPhone)</span>
-          <span className="water-eject-header__icon" aria-hidden>
-            {isWaterEjectHidden ? "+" : "–"}
-          </span>
-        </button>
+        {!shouldHideWaterEject && (
+          <>
+            <button
+              type="button"
+              className={`water-eject-header ${isWaterEjectHidden ? "collapsed" : ""}`}
+              aria-expanded={!isWaterEjectHidden}
+              aria-controls="water-eject-section"
+              onClick={handleWaterEjectToggle}
+            >
+              <span className="water-eject-header__label">Other tool: Water eject (iPhone)</span>
+              <span className="water-eject-header__icon" aria-hidden>
+                {isWaterEjectHidden ? "+" : "–"}
+              </span>
+            </button>
 
-        <section
-          id="water-eject-section"
-          className={`water-eject-banner ${isWaterEjectHidden ? "collapsed" : ""}`}
-          aria-labelledby="water-eject"
-          aria-hidden={isWaterEjectHidden}
-        >
-          {isIOSDevice ? (
-            <div className="banner-grid">
-              <div className="banner-copy">
-                <p className="eyebrow">Not the other shortcut</p>
-                <h2 id="water-eject">Instant iPhone Water Eject</h2>
-                <p>
-                  Lots of visitors land here looking for the popular "iPhone
-                  Water Eject" shortcut. We&apos;ve got you covered—tap once and the
-                  Shortcuts app will play a speaker-clearing tone (with a quick
-                  haptic buzz) while we keep your conservation journey on track.
-                </p>
-                <ul className="banner-list">
-                  <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
-                  <li>Credits keep the experience calm and spam-free (you start with 5).</li>
-                  <li>Feel a confirmation buzz on iPhone when you fire the eject.</li>
-                  <li>Stay on this page—no mystery links or confusing detours.</li>
-                </ul>
-                <div className="banner-actions">
-                  <button
-                    type="button"
-                    className="primary-button eject-button"
-                    onClick={handleWaterEjectClick}
-                  >
-                    Eject water now
-                    <span className="credit-chip">-1 credit</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button eject-button"
-                    onClick={handleVibrateAgain}
-                  >
-                    Feel the vibration again
-                    <span className="credit-chip">-1 credit</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="tertiary-button eject-button"
-                    onClick={handleCreditsClick}
-                  >
-                    Buy 5 credits for $5
-                    <span className="credit-chip">+5 credits</span>
-                  </button>
-                  <p className="credit-note" aria-live="polite">
-                    {creditNotice}
-                  </p>
-                </div>
-              </div>
-              <div className="banner-card" aria-hidden="true">
-                <div className="card-glow" />
-                <div className="card-body">
-                  <p className="eyebrow">Shortcut preview</p>
-                  <h3>Water Eject Launcher</h3>
-                  <p>
-                    Taps the iOS Shortcuts URL:
-                    <br />
-                    <code>shortcuts://run-shortcut?name=Water%20Eject</code>
-                  </p>
-                  <p className="subdued">
-                    If you don&apos;t have Shortcuts installed, we&apos;ll open the
-                    iCloud share link so you can add it in seconds.
-                  </p>
-                  <div className="tone-bars">
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <p className="mini-hint">Uses the classic 165 Hz water-eject pulse.</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className={`qr-banner-wrapper ${qrExpanded ? "open" : "collapsed"}`}>
-              <button
-                type="button"
-                className="qr-toggle"
-                aria-expanded={qrExpanded}
-                onClick={() => setQrExpanded((prev) => !prev)}
-              >
-                <span className="eyebrow">Expand to Eject Water From Your Device</span>
-                <span aria-hidden className="toggle-icon">{qrExpanded ? "–" : "+"}</span>
-              </button>
-              {qrExpanded && (
-                <div className="banner-grid qr-banner">
+            <section
+              id="water-eject-section"
+              className={`water-eject-banner ${isWaterEjectHidden ? "collapsed" : ""}`}
+              aria-labelledby="water-eject"
+              aria-hidden={isWaterEjectHidden}
+            >
+              {deviceInfo.isIphone ? (
+                <div className="banner-grid">
                   <div className="banner-copy">
-                    <p className="eyebrow">Instant tools for your iPhone</p>
+                    <p className="eyebrow">Not the other shortcut</p>
                     <h2 id="water-eject">Instant iPhone Water Eject</h2>
                     <p>
-                      Aim your camera at the QR code to open the water-eject shortcut on your phone and clear
-                      your speakers instantly via Apple Shortcuts.
+                      Lots of visitors land here looking for the popular "iPhone
+                      Water Eject" shortcut. We&apos;ve got you covered—tap once and the
+                      Shortcuts app will play a speaker-clearing tone (with a quick
+                      haptic buzz) while we keep your conservation journey on track.
                     </p>
-                    <div className="banner-details">
-                      <p>One scan opens the Water Eject shortcut with the classic 165 Hz tone.</p>
-                      <p>Feel a quick confirmation buzz—no random redirects or surprises.</p>
+                    <ul className="banner-list">
+                      <li>Runs via Apple Shortcuts with the classic 165 Hz pulse.</li>
+                      <li>Credits keep the experience calm and spam-free (you start with 5).</li>
+                      <li>Feel a confirmation buzz on iPhone when you fire the eject.</li>
+                      <li>Stay on this page—no mystery links or confusing detours.</li>
+                    </ul>
+                    <div className="banner-actions">
+                      <button
+                        type="button"
+                        className="primary-button eject-button"
+                        onClick={handleWaterEjectClick}
+                      >
+                        Eject water now
+                        <span className="credit-chip">-1 credit</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button eject-button"
+                        onClick={handleVibrateAgain}
+                      >
+                        Feel the vibration again
+                        <span className="credit-chip">-1 credit</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="tertiary-button eject-button"
+                        onClick={handleCreditsClick}
+                      >
+                        Buy 5 credits for $5
+                        <span className="credit-chip">+5 credits</span>
+                      </button>
+                      <p className="credit-note" aria-live="polite">
+                        {creditNotice}
+                      </p>
                     </div>
-                    <p className="credit-note" aria-live="polite">
-                      Viewing from a non-iPhone device—scan to eject water from your iPhone.
-                    </p>
                   </div>
-                  <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
-                    <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
-                      <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
-                      <rect
-                        x="12"
-                        y="12"
-                        width="276"
-                        height="276"
-                        rx="12"
-                        fill="#ffffff"
-                        stroke="rgba(79, 155, 255, 0.35)"
-                        strokeWidth="2"
-                      />
-                      <image
-                        xlinkHref={qrShortcutUrl}
-                        x="24"
-                        y="24"
-                        width="252"
-                        height="252"
-                        preserveAspectRatio="xMidYMid meet"
-                      />
-                      <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
-                        Scan to eject water
-                      </text>
-                    </svg>
-                    <p className="qr-hint">
-                      Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
-                      <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
-                        &nbsp;Tap to view the shortcut link.
-                      </a>
-                    </p>
+                  <div className="banner-card" aria-hidden="true">
+                    <div className="card-glow" />
+                    <div className="card-body">
+                      <p className="eyebrow">Shortcut preview</p>
+                      <h3>Water Eject Launcher</h3>
+                      <p>
+                        Taps the iOS Shortcuts URL:
+                        <br />
+                        <code>shortcuts://run-shortcut?name=Water%20Eject</code>
+                      </p>
+                      <p className="subdued">
+                        If you don&apos;t have Shortcuts installed, we&apos;ll open the
+                        iCloud share link so you can add it in seconds.
+                      </p>
+                      <div className="tone-bars">
+                        <span />
+                        <span />
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <p className="mini-hint">Uses the classic 165 Hz water-eject pulse.</p>
+                    </div>
                   </div>
                 </div>
+              ) : isWaterEjectMode ? (
+                <div className="water-eject-fallback">
+                  <p className="eyebrow">iPhone-only tool</p>
+                  <h2 id="water-eject">Eject Water runs on iPhone</h2>
+                  <p>
+                    This shortcut uses iOS Shortcuts and the iPhone speaker. Open it on your
+                    iPhone to clear water from the device safely.
+                  </p>
+                  <div className="banner-details">
+                    <p><strong>Why:</strong> The tone and haptic confirmation are iOS-only.</p>
+                    <p>Want to keep saving water here? Jump back to the savings mode.</p>
+                  </div>
+                  <div className="banner-actions">
+                    <a className="primary-button" href="/analyze-water-bill">
+                      Go to Home Water Savings
+                    </a>
+                    <a className="secondary-button" href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
+                      Open shortcut link
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className={`qr-banner-wrapper ${qrExpanded ? "open" : "collapsed"}`}>
+                  <button
+                    type="button"
+                    className="qr-toggle"
+                    aria-expanded={qrExpanded}
+                    onClick={() => setQrExpanded((prev) => !prev)}
+                  >
+                    <span className="eyebrow">Expand to Eject Water From Your Device</span>
+                    <span aria-hidden className="toggle-icon">{qrExpanded ? "–" : "+"}</span>
+                  </button>
+                  {qrExpanded && (
+                    <div className="banner-grid qr-banner">
+                      <div className="banner-copy">
+                        <p className="eyebrow">Instant tools for your iPhone</p>
+                        <h2 id="water-eject">Instant iPhone Water Eject</h2>
+                        <p>
+                          Aim your camera at the QR code to open the water-eject shortcut on your phone and clear
+                          your speakers instantly via Apple Shortcuts.
+                        </p>
+                        <div className="banner-details">
+                          <p>One scan opens the Water Eject shortcut with the classic 165 Hz tone.</p>
+                          <p>Feel a quick confirmation buzz—no random redirects or surprises.</p>
+                        </div>
+                        <p className="credit-note" aria-live="polite">
+                          Viewing from a non-iPhone device—scan to eject water from your iPhone.
+                        </p>
+                      </div>
+                      <div className="qr-card" aria-label="QR code to open the Water Eject shortcut on iPhone">
+                        <svg className="qr-frame" viewBox="0 0 300 360" role="img" aria-hidden="true">
+                          <rect x="0" y="0" width="300" height="360" rx="16" fill="var(--surface-strong)" />
+                          <rect
+                            x="12"
+                            y="12"
+                            width="276"
+                            height="276"
+                            rx="12"
+                            fill="#ffffff"
+                            stroke="rgba(79, 155, 255, 0.35)"
+                            strokeWidth="2"
+                          />
+                          <image
+                            xlinkHref={qrShortcutUrl}
+                            x="24"
+                            y="24"
+                            width="252"
+                            height="252"
+                            preserveAspectRatio="xMidYMid meet"
+                          />
+                          <text x="150" y="320" textAnchor="middle" fill="#0b1b3a" fontWeight="700" fontSize="16">
+                            Scan to eject water
+                          </text>
+                        </svg>
+                        <p className="qr-hint">
+                          Open your iPhone camera, point at the QR, and launch the shortcut. Need a backup?
+                          <a href={WATER_EJECT_SHORTCUT_URL} target="_blank" rel="noreferrer">
+                            &nbsp;Tap to view the shortcut link.
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-        </section>
+            </section>
+          </>
+        )}
 
         <section className="hero" id="top">
           <div className="hero-content">
@@ -2671,33 +2789,6 @@ function App({ focusUpload = false }: AppProps) {
                     </div>
                   </div>
                 )}
-                {analysisHtml && (
-                  <div
-                    className="analysis-html"
-                    dangerouslySetInnerHTML={{ __html: analysisHtml }}
-                  />
-                )}
-                {analysisResult && (
-                  <div className="analysis-results" ref={resultsRef}>
-                    <h3>{copy.analyze.results.topMoves}</h3>
-                    <div className="results-grid">
-                      {analysisResult.topMoves.map((move) => (
-                        <ResultsCard key={move.title} move={move} />
-                      ))}
-                    </div>
-                    <h3>{copy.analyze.results.payingFor}</h3>
-                    <p>{analysisResult.payingFor}</p>
-                    <h3>{copy.analyze.results.nextStep}</h3>
-                    <p>{analysisResult.nextStep}</p>
-                    {analysisResult.confidenceNote && (
-                      <p className="muted">{analysisResult.confidenceNote}</p>
-                    )}
-                    <ShareExportBar result={analysisResult} />
-                  </div>
-                )}
-                {!analysisResult && !analysisHtml && (
-                  <p className="muted">{copy.analyze.results.empty}</p>
-                )}
                 <div className="manual-entry" id="manual-entry">
                   <h3>Manual entry</h3>
                   <p className="muted">Manual entry is less precise, but gets you a plan without uploads.</p>
@@ -2787,6 +2878,54 @@ function App({ focusUpload = false }: AppProps) {
             </div>
           </section>
         </CollapsibleSection>
+
+        <section className="container results-section" id="top-moves" ref={topMovesRef}>
+          <div className="section-intro">
+            <p className="eyebrow">Step 2 · Results</p>
+            <h2>{copy.analyze.results.topMoves}</h2>
+            <p className="muted">
+              {analysisResult
+                ? "Your personalized moves and next steps are ready."
+                : "Upload your bill to generate instant priorities and calculators."}
+            </p>
+          </div>
+          {analysisHtml && !analysisResult && (
+            <div
+              className="analysis-html"
+              dangerouslySetInnerHTML={{ __html: analysisHtml }}
+            />
+          )}
+          {analysisResult && (
+            <div className="analysis-results">
+              <div className="results-grid">
+                {analysisResult.topMoves.map((move) => (
+                  <ResultsCard
+                    key={move.title}
+                    move={move}
+                    calculatorHref={getCalculatorLinkForMove(move)}
+                  />
+                ))}
+              </div>
+              <div className="analysis-summary">
+                <div>
+                  <h3>{copy.analyze.results.payingFor}</h3>
+                  <p>{analysisResult.payingFor}</p>
+                </div>
+                <div>
+                  <h3>{copy.analyze.results.nextStep}</h3>
+                  <p>{analysisResult.nextStep}</p>
+                </div>
+              </div>
+              {analysisResult.confidenceNote && (
+                <p className="muted">{analysisResult.confidenceNote}</p>
+              )}
+              <ShareExportBar result={analysisResult} />
+            </div>
+          )}
+          {!analysisResult && !analysisHtml && (
+            <p className="muted">{copy.analyze.results.empty}</p>
+          )}
+        </section>
 
         <CollapsibleSection
           id="guides"
@@ -3005,12 +3144,53 @@ function App({ focusUpload = false }: AppProps) {
                 </p>
               </div>
               <div className="modal-card">
-                <h4>Ad-friendly research cues</h4>
-                <p className="modal-keywords">{UPGRADE_MODAL_CONTENT[upgradeTopic].keywords}</p>
+                <h4>Helpful keywords to search</h4>
+                <div className="keyword-chips" aria-label="Search keywords">
+                  {searchKeywords.map((keyword) => (
+                    <span key={keyword} className="keyword-chip">
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
                 <p className="modal-copy">
-                  These keywords help surface contextual Google ads for eco-friendly fixtures and ENERGY STAR appliances while
-                  you explore the larger upgrade view.
+                  Use these phrases to find trusted recommendations without sifting through generic ads.
                 </p>
+                <div className="search-buttons">
+                  <a
+                    className="secondary-button"
+                    href={buildSearchUrl("duckduckgo", searchQuery)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    DuckDuckGo search
+                  </a>
+                  <a
+                    className="secondary-button"
+                    href={buildSearchUrl("google", searchQuery)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Google search
+                  </a>
+                  <a
+                    className="secondary-button"
+                    href={buildSearchUrl("facebook", searchQuery)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Facebook Marketplace
+                  </a>
+                  {searchPreference === "in-person" && (
+                    <a
+                      className="secondary-button"
+                      href={buildSearchUrl("maps", searchQuery)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Google Maps
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
