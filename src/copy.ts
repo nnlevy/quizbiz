@@ -7,9 +7,9 @@ export const copy = {
   },
   nav: {
     switcherLabel: "Mode",
-    homeLabel: "Home water savings",
-    ejectLabel: "Water eject (iPhone)",
-    gameLabel: "Leak Patrol game",
+    homeLabel: "Home Water Savings",
+    ejectLabel: "Eject Water (iPhone)",
+    gameLabel: "Play Leak Patrol Game",
   },
   footer: {
     estimates: "Estimates, not guarantees.",

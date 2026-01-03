@@ -58,6 +58,13 @@ function clientScript() {
     Number.isFinite(num)
       ? num.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
       : '';
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
   type ConsentState = {
     functional: boolean;
@@ -362,51 +369,56 @@ function clientScript() {
   function runCalc({ type, resultEl, form }: CalcConfig) {
     const getNum = (selector: string, fallback = 0) =>
       Number((form.querySelector(selector) as HTMLInputElement | HTMLSelectElement | null)?.value) || fallback;
-    const rate = getNum('[name="rate"]', 0);
+    const clamp = (value: number) => (Number.isFinite(value) ? Math.max(value, 0) : 0);
+    const rate = clamp(getNum('[name="rate"]', 0));
     const showBath =
       (form.querySelector('[name="show-bath"]') as HTMLInputElement | null)?.checked || false;
     let gallonsDay = 0;
 
     if (type === 'shower') {
-      const current = getNum('[name="current-flow"]', 2.5);
-      const next = getNum('[name="new-flow"]', 2);
-      const minutes = getNum('[name="minutes"]', 8);
-      const showers = getNum('[name="showers"]', 2);
-      const people = getNum('[name="people"]', 2);
-      gallonsDay = (current - next) * minutes * showers * people;
+      const current = clamp(getNum('[name="current-flow"]', 2.5));
+      const next = clamp(getNum('[name="new-flow"]', 2));
+      const minutes = clamp(getNum('[name="minutes"]', 8));
+      const showers = clamp(getNum('[name="showers"]', 2));
+      const people = clamp(getNum('[name="people"]', 2));
+      gallonsDay = Math.max(current - next, 0) * minutes * showers * people;
     }
     if (type === 'faucet') {
-      const current = getNum('[name="current-flow"]', 2.2);
-      const next = getNum('[name="new-flow"]', 1.5);
-      const minutes = getNum('[name="minutes"]', 5);
-      const people = getNum('[name="people"]', 2);
-      gallonsDay = (current - next) * minutes * people;
+      const current = clamp(getNum('[name="current-flow"]', 2.2));
+      const next = clamp(getNum('[name="new-flow"]', 1.5));
+      const minutes = clamp(getNum('[name="minutes"]', 5));
+      const people = clamp(getNum('[name="people"]', 2));
+      gallonsDay = Math.max(current - next, 0) * minutes * people;
     }
     if (type === 'toilet') {
-      const toilets = getNum('[name="toilets"]', 2);
-      const current = getNum('[name="current-gpf"]', 1.6);
-      const next = getNum('[name="new-gpf"]', 1.28);
-      const flushes = getNum('[name="flushes"]', 5);
-      const people = getNum('[name="people"]', 2);
-      gallonsDay = (current - next) * flushes * people * toilets;
+      const toilets = clamp(getNum('[name="toilets"]', 2));
+      const current = clamp(getNum('[name="current-gpf"]', 1.6));
+      const next = clamp(getNum('[name="new-gpf"]', 1.28));
+      const flushes = clamp(getNum('[name="flushes"]', 5));
+      const people = clamp(getNum('[name="people"]', 2));
+      gallonsDay = Math.max(current - next, 0) * flushes * people * toilets;
     }
     if (type === 'laundry') {
-      const loads = getNum('[name="loads"]', 6);
+      const loads = clamp(getNum('[name="loads"]', 6));
       const washer = (form.querySelector('[name="washer"]') as HTMLSelectElement | null)?.value || 'Standard';
       const baselinePerLoad = 41; // gallons typical top-loader
       const savingsPerLoad = washer === 'ENERGY STAR' ? baselinePerLoad * 0.3 : 0;
       gallonsDay = (savingsPerLoad * loads * 52) / 365;
     }
 
-    const gallonsYear = gallonsDay * 365;
-    const money = rate ? (gallonsYear / 1000) * rate : null;
+    const gallonsYear = clamp(gallonsDay * 365);
+    const gallonsMonth = gallonsYear / 12;
+    const moneyYear = rate ? (gallonsYear / 1000) * rate : null;
+    const moneyMonth = moneyYear ? moneyYear / 12 : null;
     const bathtubEquivalent = showBath ? gallonsYear / 80 : null;
     if (resultEl) {
       resultEl.innerHTML = `
         <div class="result-number">Estimated gallons saved / year: ${fmt(gallonsYear)}</div>
+        <div class="muted">≈ ${fmt(gallonsMonth)} gallons per month.</div>
         ${
-          money
-            ? `<div class="result-number">Estimated $ saved / year: ${dollars(money)}</div>`
+          moneyYear
+            ? `<div class="result-number">Estimated $ saved / year: ${dollars(moneyYear)}</div>
+               <div class="muted">≈ ${dollars(moneyMonth ?? 0)} per month.</div>`
             : `<div class="muted">Add your rate to see $ savings.</div>`
         }
         ${
@@ -456,6 +468,90 @@ function clientScript() {
         result.innerHTML = text;
       } catch {
         result.innerHTML = '<p class="muted">Error loading provider info.</p>';
+      }
+    });
+  }
+
+  function initRebatesTool() {
+    const form = document.querySelector<HTMLFormElement>('#rebate-form');
+    const status = document.querySelector<HTMLElement>('#rebate-status');
+    const results = document.querySelector<HTMLElement>('#rebate-results');
+    if (!form || !status || !results) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const zip = (form.querySelector('input[name="zip"]') as HTMLInputElement | null)?.value || '';
+      const city = (form.querySelector('input[name="city"]') as HTMLInputElement | null)?.value || '';
+      const state = (form.querySelector('input[name="state"]') as HTMLInputElement | null)?.value || '';
+      const utility = (form.querySelector('input[name="utility"]') as HTMLInputElement | null)?.value || '';
+      const upgrades = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="upgrade"]:checked')).map(
+        (input) => input.value,
+      );
+      if (!zip.trim()) {
+        status.textContent = 'Please enter a ZIP code to continue.';
+        return;
+      }
+      status.textContent = 'Searching for rebates…';
+      results.innerHTML = '';
+      try {
+        const response = await fetch('/api/rebates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zip, city, state, utility, upgrades }),
+        });
+        const data = (await response.json()) as {
+          lastChecked?: string;
+          results?: Array<{
+            program: string;
+            provider: string;
+            amount: string;
+            eligibility: string[];
+            howToApply: string;
+            links: Array<{ label: string; url: string }>;
+            estimated?: boolean;
+          }>;
+          error?: string;
+        };
+        if (!response.ok) {
+          status.textContent = data.error || 'Unable to fetch rebates right now.';
+          return;
+        }
+        const rebateResults = data.results || [];
+        status.textContent = data.lastChecked
+          ? `Last checked ${new Date(data.lastChecked).toLocaleString()}`
+          : 'Results updated.';
+        if (!rebateResults.length) {
+          results.innerHTML = '<div class="card"><h3>No programs found yet.</h3><p class="muted">Try another ZIP or check official rebate finders.</p></div>';
+          return;
+        }
+        results.innerHTML = rebateResults
+          .map((result) => {
+            const eligibilityList = result.eligibility?.length
+              ? `<ul class="bullet-list">${result.eligibility
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join('')}</ul>`
+              : '';
+            const linkList = result.links
+              .map(
+                (link) =>
+                  `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`,
+              )
+              .join(' ');
+            return `
+              <div class="card">
+                <h3>${escapeHtml(result.program)}</h3>
+                <p class="small">Provided by ${escapeHtml(result.provider)}</p>
+                <p><strong>Estimated rebate:</strong> ${escapeHtml(result.amount)}${result.estimated ? ' (estimate)' : ''}</p>
+                ${eligibilityList}
+                <p class="muted">${escapeHtml(result.howToApply)}</p>
+                <div class="inline-list">${linkList}</div>
+              </div>
+            `;
+          })
+          .join('');
+      } catch (error) {
+        console.error('Rebate lookup error', error);
+        status.textContent = 'Error loading rebates. Please try again.';
       }
     });
   }
@@ -1072,6 +1168,7 @@ function clientScript() {
     initWizards();
     initCalculators();
     initProviderLookup();
+    initRebatesTool();
     initBillUpload();
     initDemoAndManual();
     initModals();
