@@ -269,11 +269,18 @@ async function findDirectoryMatch(
   const searchableColumns = buildSearchableColumns(tableInfo.columns);
   if (searchableColumns.length === 0) return null;
 
-  const likeValue = `%${normalized}%`;
-  const predicates = searchableColumns.map((column) => `lower(${column}) LIKE ?`).join(" OR ");
+  const tokens = buildLocationTokens(normalized);
+  const searchTerms = tokens.length > 0 ? tokens : [normalized];
+  const predicates = searchableColumns
+    .flatMap((column) => searchTerms.map(() => `lower(${column}) LIKE ?`))
+    .join(" OR ");
   const statement = db
     .prepare(`SELECT * FROM ${tableInfo.name} WHERE ${predicates} LIMIT 1`)
-    .bind(...searchableColumns.map(() => likeValue));
+    .bind(
+      ...searchableColumns.flatMap(() =>
+        searchTerms.map((term) => `%${term}%`),
+      ),
+    );
 
   try {
     const row = await statement.first<Record<string, unknown>>();
@@ -294,6 +301,13 @@ function buildSearchableColumns(columns: string[]): string[] {
     }
   });
   return matches;
+}
+
+function buildLocationTokens(normalized: string): string[] {
+  const rawTokens = normalized.split(/[ ,/]+/).map((token) => token.trim());
+  const filtered = rawTokens.filter((token) => token.length > 1);
+  const unique = Array.from(new Set([normalized, ...filtered]));
+  return unique.slice(0, 8);
 }
 
 function mapDirectoryMatchToPayload(

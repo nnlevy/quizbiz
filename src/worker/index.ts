@@ -2697,8 +2697,7 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
     return [];
   }
 
-  return parsed.results
-    .map((result) => {
+  const mappedResults: Array<RebateResult | null> = parsed.results.map((result) => {
       const program = sanitizeText(result.program);
       const provider = sanitizeText(result.provider);
       const amount = sanitizeText(result.amount);
@@ -2720,6 +2719,7 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
       if (!program || !provider || !howToApply || links.length === 0) {
         return null;
       }
+      const estimated = result.estimated === true ? true : undefined;
       return {
         program,
         provider,
@@ -2727,10 +2727,11 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
         eligibility,
         howToApply,
         links,
-        estimated: Boolean(result.estimated),
+        ...(estimated !== undefined ? { estimated } : {}),
       };
-    })
-    .filter((result): result is RebateResult => Boolean(result));
+    });
+
+  return mappedResults.filter((result): result is RebateResult => result !== null);
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
