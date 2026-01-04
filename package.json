@@ -44,6 +44,7 @@
     "lint": "eslint .",
     "prerender": "node scripts/prerender.mjs",
     "seo:check": "node scripts/seo-check.mjs",
+    "smoke:worker": "node scripts/worker-smoke-check.mjs",
     "test:e2e": "playwright test",
     "test:unit": "vitest run",
     "preview": "npm run build && vite preview"
