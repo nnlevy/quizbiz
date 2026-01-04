@@ -54,11 +54,18 @@ npm run preview
 
 ## Deployment
 Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrangler.json` plus the generated `dist/watershortcut/wrangler.json` during CI. Ensure secrets are set in Cloudflare:
-- `OPEN_API_KEY_NEW`
+- `OPEN_API_KEY_NEW` (OpenAI API key used by `analyzeTextWithOpenAI` in `src/worker/index.ts`)
 - `OPENAI_ORG_ID` (optional)
 - `Google_Document_AI_Processor_Prediction_Endpoint`
-- `Google-Service-Account-FINAL`
+- `Google-Service-Account-FINAL` (service account JSON used by `getOAuthToken`)
 - optional `domains-db` D1 binding if needed later
+
+## Deployment smoke check
+Use the automated smoke check to verify the Worker can fetch a Google OAuth token, call the Document AI endpoint, and reach OpenAI. See `docs/deployment-checklist.md` for the full checklist.
+
+```bash
+WORKER_BASE_URL="https://www.watershortcut.com" npm run smoke:worker
+```
 
 ## Ads and compliance
 - AdSense loads asynchronously; avoid adding manual ad slots without confirmed IDs. The Worker ships with built-in defaults for each slot, and you can override them with Cloudflare vars (numeric slot IDs from AdSense):
