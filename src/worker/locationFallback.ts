@@ -93,6 +93,83 @@ const FALLBACK_DIRECTORY: FallbackEntry[] = [
   },
 ];
 
+const DIRECTORY_TABLE_PREFERENCES = [
+  "utility_directory",
+  "utilities",
+  "providers",
+  "utility_providers",
+  "domains",
+  "utility_domains",
+];
+
+type DirectoryLookupEnv = {
+  "domains-db"?: D1Database;
+};
+
+type DirectoryTableInfo = {
+  name: string;
+  columns: string[];
+};
+
+const NAME_COLUMNS = [
+  "name",
+  "utility",
+  "utility_name",
+  "provider",
+  "department",
+  "agency",
+];
+const WEBSITE_COLUMNS = [
+  "website",
+  "website_url",
+  "url",
+  "site",
+  "homepage",
+  "domain",
+  "web",
+];
+const PAYMENT_COLUMNS = [
+  "payment_url",
+  "payment_portal",
+  "billing_url",
+  "billing_portal",
+  "bill_url",
+  "pay_url",
+  "payment",
+  "billing",
+];
+const PHONE_COLUMNS = [
+  "phone",
+  "phone_number",
+  "contact_phone",
+  "customer_service",
+  "customer_service_phone",
+];
+const OVERSIGHT_COLUMNS = ["oversight_department", "oversight", "regulator", "governing_body"];
+const OVERSIGHT_URL_COLUMNS = ["oversight_url", "regulator_url", "governing_url"];
+const ASSISTANCE_COLUMNS = [
+  "assistance_url",
+  "assistance_link",
+  "aid_url",
+  "grants_url",
+  "grants_link",
+  "relief_url",
+  "assistance",
+];
+const LOCATION_COLUMNS = [
+  "city",
+  "town",
+  "state",
+  "province",
+  "county",
+  "service_area",
+  "servicearea",
+  "service_area_name",
+  "zip",
+  "zipcode",
+  "postal_code",
+];
+
 export function buildFallbackLocationPayload(
   location: string,
 ): LocationAssistantPayload {
@@ -135,6 +212,28 @@ export function buildFallbackLocationPayload(
   };
 }
 
+export async function lookupLiveLocationPayload(
+  location: string,
+  env: DirectoryLookupEnv,
+): Promise<LocationAssistantPayload | null> {
+  const db = env["domains-db"];
+  if (!db) return null;
+  const normalized = normalizeLocation(location);
+  if (!normalized) return null;
+
+  const tableInfo = await findDirectoryTable(db);
+  if (!tableInfo) return null;
+
+  const match = await findDirectoryMatch(db, tableInfo, normalized);
+  if (!match) return null;
+
+  const payload = mapDirectoryMatchToPayload(match, tableInfo.columns);
+  if (!payload) return null;
+
+  payload.summaryLines = summarizeLivePayload(payload);
+  return payload;
+}
+
 function normalizeLocation(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9,&]/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -149,4 +248,167 @@ function toTitleCase(value: string): string {
 
 function clonePayload(payload: LocationAssistantPayload): LocationAssistantPayload {
   return JSON.parse(JSON.stringify(payload)) as LocationAssistantPayload;
+}
+
+async function findDirectoryTable(db: D1Database): Promise<DirectoryTableInfo | null> {
+  try {
+    const tables = await db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all<{ name: string }>();
+    const names = tables.results.map((row) => row.name);
+    const preferred = DIRECTORY_TABLE_PREFERENCES.find((candidate) =>
+      names.some((name) => name.toLowerCase() === candidate),
+    );
+    const selectedName =
+      preferred ||
+      names.find((name) => /utility|provider|domain/i.test(name)) ||
+      names[0];
+
+    if (!selectedName) return null;
+    const columns = await fetchTableColumns(db, selectedName);
+    if (columns.length === 0) return null;
+    return { name: selectedName, columns };
+  } catch (error) {
+    console.warn("Utility directory lookup failed:", error);
+    return null;
+  }
+}
+
+async function fetchTableColumns(db: D1Database, tableName: string): Promise<string[]> {
+  try {
+    const safeTableName = escapeIdentifier(tableName);
+    const result = await db
+      .prepare(`PRAGMA table_info(${safeTableName})`)
+      .all<{ name: string }>();
+    return result.results.map((row) => row.name);
+  } catch (error) {
+    console.warn("Failed to inspect utility directory schema:", error);
+    return [];
+  }
+}
+
+async function findDirectoryMatch(
+  db: D1Database,
+  tableInfo: DirectoryTableInfo,
+  normalized: string,
+): Promise<Record<string, unknown> | null> {
+  const searchableColumns = buildSearchableColumns(tableInfo.columns);
+  if (searchableColumns.length === 0) return null;
+
+  const tokens = buildLocationTokens(normalized);
+  const searchTerms = tokens.length > 0 ? tokens : [normalized];
+  const predicates = searchableColumns
+    .flatMap((column) => searchTerms.map(() => `lower(${column}) LIKE ?`))
+    .join(" OR ");
+  const safeTableName = escapeIdentifier(tableInfo.name);
+  const statement = db
+    .prepare(`SELECT * FROM ${safeTableName} WHERE ${predicates} LIMIT 1`)
+    .bind(
+      ...searchableColumns.flatMap(() =>
+        searchTerms.map((term) => `%${term}%`),
+      ),
+    );
+
+  try {
+    const row = await statement.first<Record<string, unknown>>();
+    return row || null;
+  } catch (error) {
+    console.warn("Utility directory search failed:", error);
+    return null;
+  }
+}
+
+function buildSearchableColumns(columns: string[]): string[] {
+  const lowered = columns.map((column) => column.toLowerCase());
+  const desired = new Set([...NAME_COLUMNS, ...LOCATION_COLUMNS]);
+  const matches: string[] = [];
+  lowered.forEach((name, index) => {
+    if (desired.has(name)) {
+      matches.push(columns[index]);
+    }
+  });
+  return matches;
+}
+
+function buildLocationTokens(normalized: string): string[] {
+  const rawTokens = normalized.split(/[ ,/]+/).map((token) => token.trim());
+  const filtered = rawTokens.filter((token) => token.length > 1);
+  const unique = Array.from(new Set([normalized, ...filtered]));
+  return unique.slice(0, 8);
+}
+
+function escapeIdentifier(value: string): string {
+  return `"${value.replace(/"/g, "\"\"")}"`;
+}
+
+function mapDirectoryMatchToPayload(
+  row: Record<string, unknown>,
+  columns: string[],
+): LocationAssistantPayload | null {
+  const nameColumn = findColumn(columns, NAME_COLUMNS);
+  const websiteColumn = findColumn(columns, WEBSITE_COLUMNS);
+  const paymentColumn = findColumn(columns, PAYMENT_COLUMNS);
+  const phoneColumn = findColumn(columns, PHONE_COLUMNS);
+  const oversightColumn = findColumn(columns, OVERSIGHT_COLUMNS);
+  const oversightUrlColumn = findColumn(columns, OVERSIGHT_URL_COLUMNS);
+  const assistanceColumn = findColumn(columns, ASSISTANCE_COLUMNS);
+
+  const departmentName = coerceString(row[nameColumn ?? ""]);
+  const departmentWebsiteUrl = normalizeUrlValue(coerceString(row[websiteColumn ?? ""]));
+  const billPaymentUrl = normalizeUrlValue(coerceString(row[paymentColumn ?? ""])) || departmentWebsiteUrl;
+  const phoneNumber = coerceString(row[phoneColumn ?? ""]);
+  const oversightDepartment = coerceString(row[oversightColumn ?? ""]);
+  const oversightUrl = normalizeUrlValue(coerceString(row[oversightUrlColumn ?? ""]));
+  const grantsOrAidUrl = normalizeUrlValue(coerceString(row[assistanceColumn ?? ""]));
+
+  if (!departmentName && !departmentWebsiteUrl && !billPaymentUrl && !phoneNumber) {
+    return null;
+  }
+
+  return {
+    departmentName: departmentName || null,
+    billPaymentUrl: billPaymentUrl || null,
+    phoneNumber: phoneNumber || null,
+    departmentWebsiteUrl: departmentWebsiteUrl || null,
+    oversightDepartment: oversightDepartment || null,
+    oversightUrl: oversightUrl || null,
+    grantsOrAidUrl: grantsOrAidUrl || null,
+  } satisfies LocationAssistantPayload;
+}
+
+function findColumn(columns: string[], aliases: string[]): string | null {
+  const lowered = columns.map((column) => column.toLowerCase());
+  for (const alias of aliases) {
+    const index = lowered.indexOf(alias);
+    if (index >= 0) return columns[index];
+  }
+  return null;
+}
+
+function coerceString(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return `${value}`;
+  return "";
+}
+
+function normalizeUrlValue(value: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[\w.-]+\.[a-z]{2,}/i.test(trimmed)) return `https://${trimmed}`;
+  return trimmed;
+}
+
+function summarizeLivePayload(payload: LocationAssistantPayload): string[] {
+  const summaries: string[] = [
+    "Matched from a live utility directory.",
+    payload.billPaymentUrl
+      ? "Use the official payment portal above."
+      : "Visit the official utility site for billing.",
+    payload.phoneNumber
+      ? "Call customer service for account help."
+      : "Confirm phone details on the utility site.",
+  ];
+  return summaries.slice(0, 3);
 }

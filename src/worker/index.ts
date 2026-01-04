@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { stylesCss, appJs } from "./assets";
 import { BUILD_DATE as COPY_BUILD_DATE, copy } from "../copy";
-import { buildFallbackLocationPayload } from "./locationFallback";
+import { buildFallbackLocationPayload, lookupLiveLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT, DEFAULT_ADSENSE_SLOTS, DEFAULT_ADSENSE_STICKY_LAYOUT_KEY } from "../config/adsense";
 import { GA_MEASUREMENT_ID as DEFAULT_GA_MEASUREMENT_ID } from "../config/analytics";
@@ -2058,7 +2058,14 @@ async function resolveLocationHtml(
   let htmlResult: ReturnType<typeof transformLocationAssistantContent> | null =
     null;
 
-  if (openAiEnabled) {
+  const livePayload = await lookupLiveLocationPayload(location, env);
+  if (livePayload) {
+    htmlResult = renderLocationPayload(livePayload, {
+      fallbackLocation: location,
+    });
+  }
+
+  if (!htmlResult && openAiEnabled) {
     try {
       const prompt = buildLocationPrompt(location);
       const openAiData = await analyzeTextWithOpenAI(env, {
@@ -2690,8 +2697,7 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
     return [];
   }
 
-  return parsed.results
-    .map((result) => {
+  const mappedResults: Array<RebateResult | null> = parsed.results.map((result) => {
       const program = sanitizeText(result.program);
       const provider = sanitizeText(result.provider);
       const amount = sanitizeText(result.amount);
@@ -2713,6 +2719,7 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
       if (!program || !provider || !howToApply || links.length === 0) {
         return null;
       }
+      const estimated = result.estimated === true ? true : undefined;
       return {
         program,
         provider,
@@ -2720,10 +2727,11 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
         eligibility,
         howToApply,
         links,
-        estimated: Boolean(result.estimated),
+        ...(estimated !== undefined ? { estimated } : {}),
       };
-    })
-    .filter((result): result is RebateResult => Boolean(result));
+    });
+
+  return mappedResults.filter((result): result is RebateResult => result !== null);
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
