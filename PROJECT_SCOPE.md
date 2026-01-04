@@ -1,19 +1,21 @@
 # Project Scope Tracker
 
 ## Completed
-- Built a multi-page, sitemap-driven Cloudflare Worker using Hono with canonical metadata, JSON-LD, modals, and trust/legal routes.
-- Implemented cached static assets for shared CSS/JS powering calculators, wizards, modals, copy/print helpers, and GA/AdSense hooks.
-- Preserved legacy upload and location flows by routing POST `/` to the new `/api/analyze-bill` handler with Document AI + OpenAI calls.
-- Generated `/sitemap.xml`, `/robots.txt`, and a human sitemap page from a single `siteRoutes` source of truth.
+- Built a multi-page Cloudflare Worker (Hono) that serves the full marketing and tools surface: home, bill analyzer, provider finder, savings plan, calculators hub + per-calculator pages, leak check, rebates wizard, guides hub + guides, blog articles, about/contact, trust/legal pages, and the human sitemap.
+- Centralized SEO metadata + JSON-LD in `src/seo/seoConfig.js` and wired canonical redirects, prerendered markup, and per-route titles/descriptions across public pages.
+- Implemented cached static assets (`/assets/styles.css`, `/assets/app.js`) that power calculators, wizards, modals, copy/print helpers, ad fallbacks, and analytics events.
+- Preserved legacy upload and location flows by routing POST `/` and `/api/upload` to `/api/analyze-bill` with Document AI + OpenAI processing.
+- Shipped Worker endpoints for location lookup, rebates lookup, usage defaults, and Stripe checkout (`/api/credits/checkout`) alongside diagnostic routes (`/__ads`, `ads.txt`, `robots.txt`, `sitemap.xml`, `security.txt`, `humans.txt`).
+- Integrated GA4 + AdSense with consent-aware script loading and reserved layout slots to minimize CLS.
 
 ## Outstanding / Follow Up Items
-- Validate Document AI and OpenAI bindings in the target Cloudflare environment to confirm bill analysis works end-to-end.
-- Add real provider lookup data in `locationFallback` or connect a live data source so `/api/location` can return utility details beyond the placeholder payload.
-- Harden calculator and wizard analytics by verifying GA events in production and adding any missing events for new routes.
-- Expand tests or linting to cover Worker render helpers and client-side JS to catch regressions before deploy.
+- Validate Document AI, OpenAI, and Stripe bindings in the target Cloudflare environment to confirm bill analysis and credit checkout work end-to-end.
+- Replace placeholder provider/rebate data in the location and rebates flows with live sources so `/api/location` and `/api/rebates` return authoritative utility data.
+- Harden calculator and wizard analytics by verifying GA events in production and adding any missing events for new routes or funnels.
+- Expand tests or linting to cover Worker render helpers, API handlers, and client-side JS to catch regressions before deploy.
 
 ## Next prompt for continuation
-Use this prompt with the next agent to operationalize the Dec 2025 audit requirements while aligning changes to the existing Cloudflare Worker pages, wizards, and bill-analysis flows documented above:
+Use this prompt with the next agent to operationalize the Dec 2025 audit requirements while aligning changes to the existing Cloudflare Worker pages, wizards, calculators, rebates, and bill-analysis flows documented above:
 
 ```
 Hardening tasks
