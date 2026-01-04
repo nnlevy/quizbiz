@@ -32,6 +32,7 @@ const RootRouter = () => {
 
   useEffect(() => {
     initializeAnalytics();
+    const lastTrackedPath = { current: window.location.pathname };
     logPageView();
     const consent = getEffectiveConsent();
     if (consent.ads) {
@@ -47,9 +48,16 @@ const RootRouter = () => {
         ensureAdSenseLoaded();
         initializeAllAdSlots();
       }
+      const currentPath = window.location.pathname;
+      const pathChanged = currentPath !== lastTrackedPath.current;
       if (updatedConsent.analytics) {
         ensureAnalyticsLoaded();
-        logPageView();
+        if (pathChanged) {
+          logPageView();
+        }
+      }
+      if (pathChanged) {
+        lastTrackedPath.current = currentPath;
       }
     });
     const unsubscribeConsent = subscribeToConsentChanges((consent) => {
@@ -59,7 +67,10 @@ const RootRouter = () => {
       }
       if (consent.analytics) {
         ensureAnalyticsLoaded();
-        logPageView();
+        if (window.location.pathname !== lastTrackedPath.current) {
+          lastTrackedPath.current = window.location.pathname;
+          logPageView();
+        }
       }
     });
     return () => {
