@@ -10,7 +10,7 @@ import ReadWaterBillPage from "../pages/ReadWaterBillPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
-import { ensureAnalyticsLoaded, initializeAnalytics } from "./analytics";
+import { ensureAnalyticsLoaded, initializeAnalytics, logPageView } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
@@ -32,6 +32,8 @@ const RootRouter = () => {
 
   useEffect(() => {
     initializeAnalytics();
+    const lastTrackedPath = { current: window.location.pathname };
+    logPageView();
     const consent = getEffectiveConsent();
     if (consent.ads) {
       ensureAdSenseLoaded();
@@ -46,8 +48,16 @@ const RootRouter = () => {
         ensureAdSenseLoaded();
         initializeAllAdSlots();
       }
+      const currentPath = window.location.pathname;
+      const pathChanged = currentPath !== lastTrackedPath.current;
       if (updatedConsent.analytics) {
         ensureAnalyticsLoaded();
+        if (pathChanged) {
+          logPageView();
+        }
+      }
+      if (pathChanged) {
+        lastTrackedPath.current = currentPath;
       }
     });
     const unsubscribeConsent = subscribeToConsentChanges((consent) => {
@@ -57,6 +67,10 @@ const RootRouter = () => {
       }
       if (consent.analytics) {
         ensureAnalyticsLoaded();
+        if (window.location.pathname !== lastTrackedPath.current) {
+          lastTrackedPath.current = window.location.pathname;
+          logPageView();
+        }
       }
     });
     return () => {

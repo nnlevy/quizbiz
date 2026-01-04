@@ -85,3 +85,20 @@ export function logEvent(eventName: string, params: AnalyticsEventParams = {}) {
     gtagFn("event", eventName, params);
   }
 }
+
+export function logPageView() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (!getEffectiveConsent().analytics) {
+    return;
+  }
+  const gtagFn = (window as typeof window & { gtag?: (...args: unknown[]) => void }).gtag;
+  if (typeof gtagFn === "function") {
+    gtagFn("event", "page_view", {
+      page_path: window.location.pathname,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }
+}
