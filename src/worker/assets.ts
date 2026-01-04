@@ -80,6 +80,18 @@ function clientScript() {
     }
   }
 
+  let pageViewSent = false;
+  const trackPageView = () => {
+    if (pageViewSent) return;
+    if (!hasAnalyticsConsent()) return;
+    pageViewSent = true;
+    track('page_view', {
+      page_path: window.location.pathname,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  };
+
   const defaultConsent: ConsentState = privacySignal || consentRequired
     ? { functional: true, analytics: false, ads: false }
     : { functional: true, analytics: true, ads: true };
@@ -244,6 +256,11 @@ function clientScript() {
       if (pill) pill.classList.toggle('active', active);
       if (active && step.dataset.stepIndex) {
         wizard.dataset.currentStep = step.dataset.stepIndex;
+        track('ws_wizard_step_view', {
+          wizard: wizard.dataset.wizard,
+          step: step.dataset.step,
+          step_index: Number(step.dataset.stepIndex),
+        });
       }
     });
   }
@@ -446,7 +463,7 @@ function clientScript() {
       e.preventDefault();
       const location = (form.querySelector('input[name="location"]') as HTMLInputElement | null)?.value || '';
       if (!location.trim()) return;
-      track('ws_provider_search');
+      track('ws_provider_search', { location_length: location.trim().length });
       result.innerHTML = '<p class="muted">Searching…</p>';
       try {
         const searchUrl = `/api/location?location=${encodeURIComponent(location.trim())}`;
@@ -685,7 +702,10 @@ function clientScript() {
         status.textContent = 'That file is too large. Please upload a PDF under 10MB.';
         return;
       }
-      track('ws_bill_analyze_submit');
+      track('ws_bill_analyze_submit', {
+        file_type: file.type,
+        file_size_kb: Math.round(file.size / 1024),
+      });
       const data = new FormData();
       data.append('file', file);
       const stepper = (step: number) =>
@@ -1174,7 +1194,12 @@ function clientScript() {
     initModals();
     initConsentBanner();
     ensureAnalyticsLoaded();
-    window.addEventListener('ws-consent-updated', ensureAnalyticsLoaded);
+    trackPageView();
+    const handleConsentUpdate = () => {
+      ensureAnalyticsLoaded();
+      trackPageView();
+    };
+    window.addEventListener('ws-consent-updated', handleConsentUpdate);
     initAds();
     if (isAdsDebugMode()) {
       updateDiagnosticsPanel();

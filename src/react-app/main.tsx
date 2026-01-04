@@ -10,7 +10,7 @@ import ReadWaterBillPage from "../pages/ReadWaterBillPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
-import { ensureAnalyticsLoaded, initializeAnalytics } from "./analytics";
+import { ensureAnalyticsLoaded, initializeAnalytics, logPageView } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
@@ -32,6 +32,7 @@ const RootRouter = () => {
 
   useEffect(() => {
     initializeAnalytics();
+    logPageView();
     const consent = getEffectiveConsent();
     if (consent.ads) {
       ensureAdSenseLoaded();
@@ -48,6 +49,7 @@ const RootRouter = () => {
       }
       if (updatedConsent.analytics) {
         ensureAnalyticsLoaded();
+        logPageView();
       }
     });
     const unsubscribeConsent = subscribeToConsentChanges((consent) => {
@@ -57,6 +59,7 @@ const RootRouter = () => {
       }
       if (consent.analytics) {
         ensureAnalyticsLoaded();
+        logPageView();
       }
     });
     return () => {
