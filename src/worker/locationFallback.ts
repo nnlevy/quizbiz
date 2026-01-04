@@ -111,23 +111,48 @@ type DirectoryTableInfo = {
   columns: string[];
 };
 
-const NAME_COLUMNS = ["name", "utility", "provider", "department", "agency"];
-const WEBSITE_COLUMNS = ["website", "url", "site", "homepage", "domain", "web"];
+const NAME_COLUMNS = [
+  "name",
+  "utility",
+  "utility_name",
+  "provider",
+  "department",
+  "agency",
+];
+const WEBSITE_COLUMNS = [
+  "website",
+  "website_url",
+  "url",
+  "site",
+  "homepage",
+  "domain",
+  "web",
+];
 const PAYMENT_COLUMNS = [
   "payment_url",
+  "payment_portal",
   "billing_url",
+  "billing_portal",
   "bill_url",
   "pay_url",
   "payment",
   "billing",
 ];
-const PHONE_COLUMNS = ["phone", "phone_number", "contact_phone", "customer_service"];
+const PHONE_COLUMNS = [
+  "phone",
+  "phone_number",
+  "contact_phone",
+  "customer_service",
+  "customer_service_phone",
+];
 const OVERSIGHT_COLUMNS = ["oversight_department", "oversight", "regulator", "governing_body"];
 const OVERSIGHT_URL_COLUMNS = ["oversight_url", "regulator_url", "governing_url"];
 const ASSISTANCE_COLUMNS = [
   "assistance_url",
+  "assistance_link",
   "aid_url",
   "grants_url",
+  "grants_link",
   "relief_url",
   "assistance",
 ];
@@ -251,8 +276,9 @@ async function findDirectoryTable(db: D1Database): Promise<DirectoryTableInfo | 
 
 async function fetchTableColumns(db: D1Database, tableName: string): Promise<string[]> {
   try {
+    const safeTableName = escapeIdentifier(tableName);
     const result = await db
-      .prepare(`PRAGMA table_info(${tableName})`)
+      .prepare(`PRAGMA table_info(${safeTableName})`)
       .all<{ name: string }>();
     return result.results.map((row) => row.name);
   } catch (error) {
@@ -274,8 +300,9 @@ async function findDirectoryMatch(
   const predicates = searchableColumns
     .flatMap((column) => searchTerms.map(() => `lower(${column}) LIKE ?`))
     .join(" OR ");
+  const safeTableName = escapeIdentifier(tableInfo.name);
   const statement = db
-    .prepare(`SELECT * FROM ${tableInfo.name} WHERE ${predicates} LIMIT 1`)
+    .prepare(`SELECT * FROM ${safeTableName} WHERE ${predicates} LIMIT 1`)
     .bind(
       ...searchableColumns.flatMap(() =>
         searchTerms.map((term) => `%${term}%`),
@@ -308,6 +335,10 @@ function buildLocationTokens(normalized: string): string[] {
   const filtered = rawTokens.filter((token) => token.length > 1);
   const unique = Array.from(new Set([normalized, ...filtered]));
   return unique.slice(0, 8);
+}
+
+function escapeIdentifier(value: string): string {
+  return `"${value.replace(/"/g, "\"\"")}"`;
 }
 
 function mapDirectoryMatchToPayload(
