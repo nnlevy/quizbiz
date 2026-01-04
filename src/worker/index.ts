@@ -3253,3 +3253,12 @@ function toTitleCase(value: string): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+export {
+  buildBreadcrumbs,
+  injectAdSlots,
+  renderAdSlot,
+  renderAdsDiagnosticsPage,
+  renderBreadcrumbs,
+  renderModals,
+};

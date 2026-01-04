@@ -26,7 +26,7 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 @media print{.site-header,.footer,.ad-slot-placeholder,.actions,.wizard-actions,.nav-links{display:none!important;} body{background:white;} .layout-slab{box-shadow:none;border-color:#e2e8f0;} .hero{padding-top:0;}}
 `;
 
-function clientScript() {
+export function clientScript() {
   const ADSENSE_CLIENT =
     (window as typeof window & { __WS_ADSENSE_CLIENT__?: string }).__WS_ADSENSE_CLIENT__ ||
     DEFAULT_ADSENSE_CLIENT;
