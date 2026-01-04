@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { stylesCss, appJs } from "./assets";
 import { BUILD_DATE as COPY_BUILD_DATE, copy } from "../copy";
-import { buildFallbackLocationPayload } from "./locationFallback";
+import { buildFallbackLocationPayload, lookupLiveLocationPayload } from "./locationFallback";
 import { LocationAssistantPayload } from "./locationTypes";
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT, DEFAULT_ADSENSE_SLOTS, DEFAULT_ADSENSE_STICKY_LAYOUT_KEY } from "../config/adsense";
 import { GA_MEASUREMENT_ID as DEFAULT_GA_MEASUREMENT_ID } from "../config/analytics";
@@ -2058,7 +2058,14 @@ async function resolveLocationHtml(
   let htmlResult: ReturnType<typeof transformLocationAssistantContent> | null =
     null;
 
-  if (openAiEnabled) {
+  const livePayload = await lookupLiveLocationPayload(location, env);
+  if (livePayload) {
+    htmlResult = renderLocationPayload(livePayload, {
+      fallbackLocation: location,
+    });
+  }
+
+  if (!htmlResult && openAiEnabled) {
     try {
       const prompt = buildLocationPrompt(location);
       const openAiData = await analyzeTextWithOpenAI(env, {
