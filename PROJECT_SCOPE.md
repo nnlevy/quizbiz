@@ -14,6 +14,20 @@
 - Harden calculator and wizard analytics by verifying GA events in production and adding any missing events for new routes or funnels.
 - Expand tests or linting to cover Worker render helpers, API handlers, and client-side JS to catch regressions before deploy.
 
+## Action Plan
+1. **Production verification**
+   - Run the Worker smoke check in the target environment and confirm `analysis.topMoves` returns for `/api/analyze-bill`.
+   - Exercise the Stripe checkout flow end-to-end using a test card to confirm success + cancel routes and webhook handling.
+2. **Live data integrations**
+   - Identify authoritative sources for utility/provider data and rebates, then map them into the `/api/location` and `/api/rebates` responses.
+   - Add lightweight caching for provider/rebate lookups to keep response times consistent in the Worker runtime.
+3. **Analytics hardening**
+   - Validate GA4 events in production with debug view for calculators, wizards, uploads, and provider searches.
+   - Add missing events or parameters in `src/assets/app.js` and document them in `docs/analytics-events.md`.
+4. **Test coverage + automation**
+   - Add targeted unit tests for render helpers and API handlers; prioritize document parsing and upload validation.
+   - Add lint checks for client-side JS and worker routes, then wire them into CI.
+
 ## Next prompt for continuation
 Use this prompt with the next agent to operationalize the Dec 2025 audit requirements while aligning changes to the existing Cloudflare Worker pages, wizards, calculators, rebates, and bill-analysis flows documented above:
 
