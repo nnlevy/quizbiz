@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   type FocusEvent as ReactFocusEvent,
   type PointerEvent as ReactPointerEvent,
+  useCallback,
   useEffect,
   type KeyboardEvent as ReactKeyboardEvent,
   useRef,
@@ -53,6 +54,26 @@ const SiteNav = ({
   const [showModeBar, setShowModeBar] = useState(true);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownToggleRef = useRef<HTMLButtonElement | null>(null);
+  const creditInfoModalRef = useRef<HTMLDivElement | null>(null);
+  const creditInfoTriggerRef = useRef<HTMLElement | null>(null);
+  const wasCreditInfoOpen = useRef(false);
+
+  const getFocusableElements = useCallback((container: HTMLElement | null) => {
+    if (!container) {
+      return [];
+    }
+    const selectors = [
+      "a[href]",
+      "button",
+      "input",
+      "select",
+      "textarea",
+      "[tabindex]:not([tabindex=\"-1\"])",
+    ];
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(","))).filter(
+      (element) => !element.hasAttribute("disabled") && element.tabIndex !== -1,
+    );
+  }, []);
 
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -279,6 +300,71 @@ const SiteNav = ({
     dropdownToggleRef.current?.focus();
   };
 
+  const openCreditInfo = () => {
+    creditInfoTriggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setShowCreditInfo(true);
+  };
+
+  const closeCreditInfo = useCallback(() => {
+    setShowCreditInfo(false);
+  }, []);
+
+  useEffect(() => {
+    if (!showCreditInfo) {
+      return undefined;
+    }
+    const modal = creditInfoModalRef.current;
+    const focusTimer = requestAnimationFrame(() => {
+      const focusable = getFocusableElements(modal);
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      }
+    });
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCreditInfo();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable = getFocusableElements(modal);
+      if (focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || !modal?.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      cancelAnimationFrame(focusTimer);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeCreditInfo, getFocusableElements, showCreditInfo]);
+
+  useEffect(() => {
+    if (showCreditInfo) {
+      wasCreditInfoOpen.current = true;
+      return;
+    }
+    if (wasCreditInfoOpen.current) {
+      wasCreditInfoOpen.current = false;
+      creditInfoTriggerRef.current?.focus();
+    }
+  }, [showCreditInfo]);
+
   return (
     <header
       className={`app-header ${isNavVisible ? "nav-visible" : "nav-hidden"}`}
@@ -308,7 +394,7 @@ const SiteNav = ({
             type="button"
             className="credit-info-button"
             aria-label="Learn about credits"
-            onClick={() => setShowCreditInfo(true)}
+            onClick={openCreditInfo}
           >
             i
           </button>
@@ -436,15 +522,20 @@ const SiteNav = ({
         ))}
       </div>
       {showCreditInfo && (
-        <div className="credit-info-modal" role="dialog" aria-modal="true" aria-label="Credit information">
-          <div className="credit-info-card">
+        <div
+          className="credit-info-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="credit-info-title"
+        >
+          <div className="credit-info-card" ref={creditInfoModalRef}>
             <div className="credit-info-header">
-              <h3>How credits work</h3>
+              <h3 id="credit-info-title">How credits work</h3>
               <button
                 type="button"
                 className="ghost-close"
                 aria-label="Close credit information"
-                onClick={() => setShowCreditInfo(false)}
+                onClick={closeCreditInfo}
               >
                 ✕
               </button>

@@ -543,12 +543,31 @@ function App({ focusUpload = false }: AppProps) {
   const [upgradeTopic, setUpgradeTopic] = useState<UpgradeModalTopic | null>(
     null,
   );
+  const upgradeModalRef = useRef<HTMLDivElement | null>(null);
+  const upgradeModalTriggerRef = useRef<HTMLElement | null>(null);
+  const wasUpgradeModalOpen = useRef(false);
   const [ctaPreference, setCtaPreference] = useState<PurchasePreference | null>(
     null,
   );
   const [ctaRecommendation, setCtaRecommendation] = useState("");
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState<string | null>(null);
+  const getFocusableElements = useCallback((container: HTMLElement | null) => {
+    if (!container) {
+      return [];
+    }
+    const selectors = [
+      "a[href]",
+      "button",
+      "input",
+      "select",
+      "textarea",
+      "[tabindex]:not([tabindex=\"-1\"])",
+    ];
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(","))).filter(
+      (element) => !element.hasAttribute("disabled") && element.tabIndex !== -1,
+    );
+  }, []);
 
   useEffect(() => {
     if (locationInput.trim().length < 3) {
@@ -1595,21 +1614,78 @@ function App({ focusUpload = false }: AppProps) {
     }
   };
 
-  const openUpgradeModal = (topic: UpgradeModalTopic) => {
+  const openUpgradeModal = useCallback((topic: UpgradeModalTopic) => {
+    upgradeModalTriggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setUpgradeTopic(topic);
     setIsUpgradeModalOpen(true);
     setCtaRecommendation("");
     setCtaPreference(null);
     setCtaError(null);
-  };
+  }, []);
 
-  const closeUpgradeModal = () => {
+  const closeUpgradeModal = useCallback(() => {
     setIsUpgradeModalOpen(false);
     setUpgradeTopic(null);
     setCtaRecommendation("");
     setCtaPreference(null);
     setCtaError(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isUpgradeModalOpen) {
+      return undefined;
+    }
+    const modal = upgradeModalRef.current;
+    const focusTimer = requestAnimationFrame(() => {
+      const focusable = getFocusableElements(modal);
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      }
+    });
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeUpgradeModal();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable = getFocusableElements(modal);
+      if (focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || !modal?.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      cancelAnimationFrame(focusTimer);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeUpgradeModal, getFocusableElements, isUpgradeModalOpen]);
+
+  useEffect(() => {
+    if (isUpgradeModalOpen) {
+      wasUpgradeModalOpen.current = true;
+      return;
+    }
+    if (wasUpgradeModalOpen.current) {
+      wasUpgradeModalOpen.current = false;
+      upgradeModalTriggerRef.current?.focus();
+    }
+  }, [isUpgradeModalOpen]);
 
   const handleLocationSearch = async () => {
     const trimmedLocation = locationInput.trim();
@@ -3058,7 +3134,11 @@ function App({ focusUpload = false }: AppProps) {
           aria-modal="true"
           aria-labelledby="upgrade-modal-title"
         >
-          <div className="upgrade-modal" aria-label="Upgrade appliances and fixtures modal">
+          <div
+            ref={upgradeModalRef}
+            className="upgrade-modal"
+            aria-label="Upgrade appliances and fixtures modal"
+          >
             <div className="upgrade-modal-header">
               <div>
                 <p className="eyebrow">Personalized call to action</p>
