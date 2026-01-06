@@ -34,7 +34,7 @@ type SiteNavProps = {
   credits?: number;
   pulse?: boolean;
   onCreditsClick?: () => void;
-  onCreditsKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
+  onCreditsKeyDown?: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
 };
 
 const SiteNav = ({
@@ -293,24 +293,22 @@ const SiteNav = ({
           </span>
           <span className="tagline">{copy.brand.tagline}</span>
         </a>
-        <div
-          className={`credit-meter ${pulse ? "is-animating" : ""}`}
-          role="button"
-          tabIndex={0}
-          aria-label={`Credits available: ${credits}. Add more credits.`}
-          onClick={onCreditsClick}
-          onKeyDown={onCreditsKeyDown}
-        >
-          <span className="credit-meter__label">Credits</span>
-          <span className="credit-meter__value">{credits}</span>
+        <div className="credit-meter">
+          <button
+            type="button"
+            className={`credit-meter__button ${pulse ? "is-animating" : ""}`}
+            aria-label={`Credits available: ${credits}. Add more credits.`}
+            onClick={onCreditsClick}
+            onKeyDown={onCreditsKeyDown}
+          >
+            <span className="credit-meter__label">Credits</span>
+            <span className="credit-meter__value">{credits}</span>
+          </button>
           <button
             type="button"
             className="credit-info-button"
             aria-label="Learn about credits"
-            onClick={(event) => {
-              event.stopPropagation();
-              setShowCreditInfo(true);
-            }}
+            onClick={() => setShowCreditInfo(true)}
           >
             i
           </button>
