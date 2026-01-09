@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import SiteFooter from "../react-app/components/SiteFooter";
 import SiteNav from "../react-app/components/SiteNav";
 import "../react-app/App.css";
+import { useCredits } from "../react-app/context/CreditsContext";
+import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 type Feature = {
   title: string;
@@ -37,12 +39,18 @@ const features: Feature[] = [
 
 const LandingPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { credits, pulse, setPulse } = useCredits();
+  const triggerCreditPulse = useCallback(() => {
+    setPulse(true);
+    setTimeout(() => setPulse(false), 750);
+  }, [setPulse]);
+  const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
 
   const activeFeature = useMemo(() => features[activeIndex], [activeIndex]);
 
   return (
     <div className="app landing-page">
-      <SiteNav />
+      <SiteNav credits={credits} pulse={pulse} onCreditsClick={startCheckout} />
       <main className="landing-main">
         <section className="landing-hero">
           <p className="landing-eyebrow">WaterShortcut mobile</p>
@@ -57,6 +65,9 @@ const LandingPage = () => {
             </a>
             <a className="secondary-button" href="/calculators">
               Try a calculator
+            </a>
+            <a className="secondary-button" href="/water-iq">
+              Take the Water IQ Challenge
             </a>
           </div>
           <div className="landing-proof">
