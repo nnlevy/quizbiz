@@ -7,6 +7,7 @@ import {
   hasGlobalPrivacySignal,
   isConsentRequired,
   saveConsent,
+  shouldShowPrivacyControls,
 } from "../consent";
 
 const ConsentBanner = () => {
@@ -48,6 +49,7 @@ const ConsentBanner = () => {
     setVisible(false);
   };
 
+  if (!shouldShowPrivacyControls()) return null;
   if (!visible) return null;
 
   return (

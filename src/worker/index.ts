@@ -185,6 +185,11 @@ function resolveGaMeasurementId(env: WorkerEnv): string {
   return env.GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID;
 }
 
+function isEuropeanCountry(country?: string | null): boolean {
+  if (!country) return false;
+  return CONSENT_REQUIRED_COUNTRIES.has(country.toUpperCase());
+}
+
 function isConsentRequired(country?: string | null): boolean {
   if (!country) return true;
   return CONSENT_REQUIRED_COUNTRIES.has(country.toUpperCase());
@@ -604,9 +609,9 @@ app.get("/__ads", (c) => {
   const adsenseSlots = buildAdsenseSlots(c.env);
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
-  const consentRequired = isConsentRequired(
-    (c.req.raw.cf as { country?: string } | undefined)?.country,
-  );
+  const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
+  const consentRequired = isConsentRequired(country);
+  const showPrivacyControls = isEuropeanCountry(country);
   const cspNonce = c.get("cspNonce") as string;
   return c.html(
     layout({
@@ -619,6 +624,7 @@ app.get("/__ads", (c) => {
       adsenseClient,
       gaMeasurementId,
       consentRequired,
+      showPrivacyControls,
       cspNonce,
     }),
   );
@@ -629,9 +635,9 @@ siteRoutes.forEach((route) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
     const adsenseClient = resolveAdsenseClient(c.env);
     const gaMeasurementId = resolveGaMeasurementId(c.env);
-    const consentRequired = isConsentRequired(
-      (c.req.raw.cf as { country?: string } | undefined)?.country,
-    );
+    const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
+    const consentRequired = isConsentRequired(country);
+    const showPrivacyControls = isEuropeanCountry(country);
     const cspNonce = c.get("cspNonce") as string;
     const bodyHtml = route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body;
     return c.html(
@@ -647,6 +653,7 @@ siteRoutes.forEach((route) => {
         adsenseClient,
         gaMeasurementId,
         consentRequired,
+        showPrivacyControls,
         cspNonce,
       }),
     );
@@ -699,6 +706,7 @@ function layout(options: {
   adsenseClient: string;
   gaMeasurementId: string;
   consentRequired: boolean;
+  showPrivacyControls: boolean;
   cspNonce: string;
 }): string {
   const {
@@ -712,6 +720,7 @@ function layout(options: {
     adsenseClient,
     gaMeasurementId,
     consentRequired,
+    showPrivacyControls,
     cspNonce,
   } = options;
   const adsenseSlots = options.adsenseSlots || defaultAdsenseSlots;
@@ -720,6 +729,39 @@ function layout(options: {
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const useEjectNav = isWaterEjectRoute(canonicalPath);
   const isGameRoute = canonicalPath.startsWith("/game") || canonicalPath.startsWith("/leak-patrol");
+  const renderedFooterLinks = (showPrivacyControls
+    ? footerLinks
+    : footerLinks.filter((link) => link.label !== "Change privacy settings")
+  )
+    .map((link) => {
+      const modalAttr = link.modal ? ` data-modal-target="${link.modal}"` : "";
+      const settingsAttr = link.label === "Change privacy settings" ? ` data-consent-open` : "";
+      return `<a href="${link.href}"${modalAttr}${settingsAttr}>${link.label}</a>`;
+    })
+    .join("");
+  const consentBanner = showPrivacyControls
+    ? `
+      <div class="consent-banner" data-consent-banner hidden>
+        <div class="consent-copy">
+          <strong>Your privacy controls</strong>
+          <p class="muted">
+            We use cookies for analytics and ads to keep WaterShortcut free. Choose what to allow.
+            See <a href="/privacy">privacy details</a>.
+          </p>
+        </div>
+        <div class="consent-options">
+          <label><input type="checkbox" data-consent-option="functional" checked disabled /> Functional (required)</label>
+          <label><input type="checkbox" data-consent-option="analytics" /> Analytics</label>
+          <label><input type="checkbox" data-consent-option="ads" /> Ads</label>
+        </div>
+        <div class="consent-actions">
+          <button class="btn secondary" type="button" data-consent-reject>Reject non-essential</button>
+          <button class="btn secondary" type="button" data-consent-save>Save choices</button>
+          <button class="btn primary" type="button" data-consent-accept>Accept all</button>
+        </div>
+      </div>
+    `
+    : "";
   const navLinks = useEjectNav
     ? waterEjectNavLinks
     : [
@@ -818,6 +860,7 @@ function layout(options: {
       <script nonce="${cspNonce}">
         window.__WS_ADSENSE_CLIENT__ = "${adsenseClient}";
         window.__WS_CONSENT_REQUIRED__ = ${consentRequired ? "true" : "false"};
+        window.__WS_SHOW_PRIVACY_CONTROLS__ = ${showPrivacyControls ? "true" : "false"};
         window.__WS_GA_MEASUREMENT_ID__ = "${gaMeasurementId}";
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -866,6 +909,11 @@ function layout(options: {
         gtag("js", new Date());
         gtag("config", "${gaMeasurementId}", { anonymize_ip: true, send_page_view: false });
         window.addEventListener("DOMContentLoaded", () => {
+          if (!window.__WS_SHOW_PRIVACY_CONTROLS__) {
+            document.querySelectorAll("[data-privacy-controls]").forEach((element) => {
+              element.remove();
+            });
+          }
           document.querySelectorAll("[data-mode-bar-close]").forEach((button) => {
             button.addEventListener("click", () => {
               const bar = button.closest(".mode-bar");
@@ -928,14 +976,7 @@ function layout(options: {
               <div class="footnote">${escapeHtml(copy.footer.help)}</div>
             </div>
             <div class="footer-links">
-              ${footerLinks
-                .map((link) => {
-                  const modalAttr = link.modal ? ` data-modal-target="${link.modal}"` : "";
-                  const settingsAttr =
-                    link.label === "Change privacy settings" ? ` data-consent-open` : "";
-                  return `<a href="${link.href}"${modalAttr}${settingsAttr}>${link.label}</a>`;
-                })
-                .join("")}
+              ${renderedFooterLinks}
             </div>
           </div>
         </footer>
@@ -950,25 +991,7 @@ function layout(options: {
         </div>
       </div>
       ${renderModals()}
-      <div class="consent-banner" data-consent-banner hidden>
-        <div class="consent-copy">
-          <strong>Your privacy controls</strong>
-          <p class="muted">
-            We use cookies for analytics and ads to keep WaterShortcut free. Choose what to allow.
-            See <a href="/privacy">privacy details</a>.
-          </p>
-        </div>
-        <div class="consent-options">
-          <label><input type="checkbox" data-consent-option="functional" checked disabled /> Functional (required)</label>
-          <label><input type="checkbox" data-consent-option="analytics" /> Analytics</label>
-          <label><input type="checkbox" data-consent-option="ads" /> Ads</label>
-        </div>
-        <div class="consent-actions">
-          <button class="btn secondary" type="button" data-consent-reject>Reject non-essential</button>
-          <button class="btn secondary" type="button" data-consent-save>Save choices</button>
-          <button class="btn primary" type="button" data-consent-accept>Accept all</button>
-        </div>
-      </div>
+      ${consentBanner}
     </body>
   </html>`;
 }
@@ -1863,7 +1886,9 @@ function renderTrustPage(kind: "privacy" | "terms" | "affiliate" | "disclaimer")
       ? `<section class="section layout-slab"><h2>TL;DR</h2><ul class="bullet-list">${copy.trust.privacy.tldr
           .map((line) => `<li>${escapeHtml(line)}</li>`)
           .join("")}</ul>
-          <p class="muted"><a href="#privacy-settings" data-consent-open>${escapeHtml(copy.footer.privacySettings)}</a></p>
+          <p class="muted" data-privacy-controls><a href="#privacy-settings" data-consent-open>${escapeHtml(
+            copy.footer.privacySettings,
+          )}</a></p>
         </section>`
       : "";
   return `
