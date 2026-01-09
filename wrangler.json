@@ -11,6 +11,7 @@
   "vars": {
     "Google_Document_AI_Processor_Prediction_Endpoint": "https://us-documentai.googleapis.com/v1/projects/32766728438/locations/us/processors/dc3fed4aeef15611:process",
     "STRIPE_API_KEY": "${STRIPE_API_KEY}",
+    "STRIPE_PUBLISHABLE_KEY": "${STRIPE_PUBLISHABLE_KEY}",
     "ADSENSE_CLIENT": "ca-pub-1860356577073395",
     "GA_MEASUREMENT_ID": "G-98170RDCDD"
   },

@@ -35,6 +35,7 @@ type WorkerEnv = {
   "Google-Service-Account-FINAL": string;
   "domains-db"?: D1Database;
   STRIPE_API_KEY?: string;
+  STRIPE_PUBLISHABLE_KEY?: string;
   ADSENSE_CLIENT?: string;
   GA_MEASUREMENT_ID?: string;
   ADSENSE_SLOT_INLINE?: string;
@@ -604,6 +605,7 @@ app.get("/__ads", (c) => {
   const adsenseSlots = buildAdsenseSlots(c.env);
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
+  const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -618,6 +620,7 @@ app.get("/__ads", (c) => {
       adsenseSlots,
       adsenseClient,
       gaMeasurementId,
+      stripePublishableKey,
       consentRequired,
       showPrivacyControls,
       cspNonce,
@@ -630,6 +633,7 @@ siteRoutes.forEach((route) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
     const adsenseClient = resolveAdsenseClient(c.env);
     const gaMeasurementId = resolveGaMeasurementId(c.env);
+    const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
     const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
     const consentRequired = isConsentRequired(country);
     const showPrivacyControls = consentRequired;
@@ -647,6 +651,7 @@ siteRoutes.forEach((route) => {
         adsenseSlots,
         adsenseClient,
         gaMeasurementId,
+        stripePublishableKey,
         consentRequired,
         showPrivacyControls,
         cspNonce,
@@ -700,6 +705,7 @@ function layout(options: {
   adsenseSlots?: Required<AdsenseSlots>;
   adsenseClient: string;
   gaMeasurementId: string;
+  stripePublishableKey: string;
   consentRequired: boolean;
   showPrivacyControls: boolean;
   cspNonce: string;
@@ -714,6 +720,7 @@ function layout(options: {
     extraJsonLd,
     adsenseClient,
     gaMeasurementId,
+    stripePublishableKey,
     consentRequired,
     showPrivacyControls,
     cspNonce,
@@ -857,6 +864,7 @@ function layout(options: {
         window.__WS_CONSENT_REQUIRED__ = ${consentRequired ? "true" : "false"};
         window.__WS_SHOW_PRIVACY_CONTROLS__ = ${showPrivacyControls ? "true" : "false"};
         window.__WS_GA_MEASUREMENT_ID__ = "${gaMeasurementId}";
+        window.__WS_STRIPE_PUBLISHABLE_KEY__ = "${escapeHtml(stripePublishableKey)}";
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         window.gtag = window.gtag || gtag;
@@ -2141,9 +2149,9 @@ app.post("/api/credits/checkout", async (c) => {
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": "usd",
     "line_items[0][price_data][unit_amount]": "500",
-    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (5 pack)",
+    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (10 pack)",
     "line_items[0][price_data][product_data][description]":
-      "Add 5 credits for water eject and bill analysis tools.",
+      "Add 10 credits for water eject and bill analysis tools.",
   });
 
   const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {

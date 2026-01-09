@@ -544,7 +544,7 @@ const SiteNav = ({
             <ul>
               <li>Utility lookups cost 1 credit once results are delivered.</li>
               <li>Bill uploads and AI reviews draw 1 credit after analysis.</li>
-              <li>You can top up in packs of 5 credits.</li>
+              <li>You can top up in packs of 10 credits.</li>
             </ul>
             <p>Need more? Tap the credit counter to purchase additional credits.</p>
           </div>
