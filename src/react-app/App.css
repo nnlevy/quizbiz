@@ -1516,6 +1516,25 @@ blockquote {
   width: 100%;
 }
 
+.ws-margin-ad {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+.ws-margin-ad.ws-margin-ad--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.ws-margin-ad.ws-margin-ad--hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
 .site-footer a {
   font-weight: 600;
 }

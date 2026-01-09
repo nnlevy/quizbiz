@@ -15,6 +15,20 @@ let historyPatched = false;
 let scriptLoadPromise: Promise<void> | null = null;
 let autoAdsQueued = false;
 let dimensionPatchApplied = false;
+let marginAdsObserver: MutationObserver | null = null;
+let marginAdsRaf = 0;
+
+const MARGIN_AD_CLASS = "ws-margin-ad";
+const MARGIN_AD_VISIBLE_CLASS = "ws-margin-ad--visible";
+const MARGIN_AD_HIDDEN_CLASS = "ws-margin-ad--hidden";
+const MARGIN_AD_VISIBILITY_MS = 10_000;
+
+type MarginAdState = {
+  shownAt: number;
+  baselineScrollY: number;
+};
+
+const marginAdStates = new WeakMap<HTMLElement, MarginAdState>();
 
 const normalizeCalcDimension = (value: string): string | null => {
   const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
@@ -218,6 +232,60 @@ const initializeSlot = (slot: HTMLElement) => {
   }
 };
 
+const isMarginAdCandidate = (slot: HTMLElement) => {
+  if (!slot.classList.contains("adsbygoogle")) return false;
+  if (slot.closest("#root")) return false;
+  const style = window.getComputedStyle(slot);
+  if (style.position !== "fixed") return false;
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  return style.left !== "auto" || style.right !== "auto";
+};
+
+const showMarginAd = (slot: HTMLElement) => {
+  slot.classList.add(MARGIN_AD_CLASS, MARGIN_AD_VISIBLE_CLASS);
+  slot.classList.remove(MARGIN_AD_HIDDEN_CLASS);
+  marginAdStates.set(slot, { shownAt: Date.now(), baselineScrollY: window.scrollY });
+};
+
+const hideMarginAd = (slot: HTMLElement) => {
+  slot.classList.add(MARGIN_AD_HIDDEN_CLASS);
+  slot.classList.remove(MARGIN_AD_VISIBLE_CLASS);
+};
+
+const updateMarginAds = () => {
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>("ins.adsbygoogle"));
+  candidates.forEach((slot) => {
+    if (!isMarginAdCandidate(slot)) return;
+    const state = marginAdStates.get(slot);
+    if (!state || !slot.classList.contains(MARGIN_AD_VISIBLE_CLASS)) {
+      showMarginAd(slot);
+      return;
+    }
+    const elapsed = Date.now() - state.shownAt;
+    const scrolled = Math.abs(window.scrollY - state.baselineScrollY);
+    if (elapsed >= MARGIN_AD_VISIBILITY_MS || scrolled >= window.innerHeight) {
+      hideMarginAd(slot);
+    }
+  });
+};
+
+const scheduleMarginAdsUpdate = () => {
+  if (marginAdsRaf) return;
+  marginAdsRaf = window.requestAnimationFrame(() => {
+    marginAdsRaf = 0;
+    updateMarginAds();
+  });
+};
+
+const observeMarginAds = () => {
+  if (marginAdsObserver) return;
+  marginAdsObserver = new MutationObserver(() => scheduleMarginAdsUpdate());
+  marginAdsObserver.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("scroll", scheduleMarginAdsUpdate, { passive: true });
+  window.addEventListener("resize", scheduleMarginAdsUpdate);
+  scheduleMarginAdsUpdate();
+};
+
 export const initializeAllAdSlots = () => {
   if (!hasAdsConsent()) return;
   if (!hasEligibleSlots()) {
@@ -236,6 +304,7 @@ export const ensureAdSenseLoaded = () => {
     return;
   }
   patchAdDimensionSetters();
+  observeMarginAds();
   (window as typeof window & { __WS_ADSENSE_MANAGED__?: string }).__WS_ADSENSE_MANAGED__ = "react";
   if (!scriptLoadPromise) {
     const script = ensureScriptPresent();
