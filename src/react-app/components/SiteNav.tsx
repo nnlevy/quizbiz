@@ -22,6 +22,7 @@ const secondaryLinks = [
   { href: "/leak-check", label: "Leak check" },
   { href: "/rebates", label: "Rebates" },
   { href: "/guides", label: "Guides" },
+  { href: "/site-map", label: "Site map" },
 ];
 
 const waterEjectLinks = [
