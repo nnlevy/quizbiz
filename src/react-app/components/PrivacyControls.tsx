@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getEffectiveConsent, saveConsent } from "../consent";
+import { getEffectiveConsent, saveConsent, shouldShowPrivacyControls } from "../consent";
 
 const PrivacyControls = () => {
   const [analytics, setAnalytics] = useState(false);
@@ -15,6 +15,8 @@ const PrivacyControls = () => {
   const handleSave = () => {
     saveConsent({ functional: true, analytics, ads });
   };
+
+  if (!shouldShowPrivacyControls()) return null;
 
   return (
     <div className="privacy-controls">

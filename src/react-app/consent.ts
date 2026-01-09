@@ -34,6 +34,13 @@ export const isConsentRequired = () => {
   return Boolean((window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean }).__WS_CONSENT_REQUIRED__);
 };
 
+export const shouldShowPrivacyControls = () => {
+  if (typeof window === "undefined") return false;
+  return Boolean(
+    (window as typeof window & { __WS_SHOW_PRIVACY_CONTROLS__?: boolean }).__WS_SHOW_PRIVACY_CONTROLS__,
+  );
+};
+
 export const getStoredConsent = (): ConsentState | null => {
   if (typeof window === "undefined") return null;
   try {
