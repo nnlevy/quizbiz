@@ -1336,22 +1336,6 @@ export function clientScript() {
     return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   };
 
-  const waterIqDecodeToken = (encoded: string) => {
-    try {
-      const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-      const json = new TextDecoder().decode(bytes);
-      const parsed = JSON.parse(json);
-      if (!parsed || parsed.v !== 2) return null;
-      if (typeof parsed.score !== 'number') return null;
-      return parsed;
-    } catch (err) {
-      return null;
-    }
-  };
-
   const waterIqIsCorrect = (qid: string, answers: Record<string, unknown>) => {
     const q = (WATER_IQ_QUESTIONS || []).find((qq) => qq.id === qid);
     if (!q || q.kind !== 'mcq' || !q.correctOptionId) return false;
@@ -1632,7 +1616,9 @@ export function clientScript() {
           <div class="wsFoot"><span>Private by default.</span><span>Sources included.</span></div>
         `;
         root.querySelector<HTMLInputElement>('[data-iq-analytics]')?.addEventListener('change', (event) => {
-          analyticsOn = event.currentTarget.checked;
+          const target = event.currentTarget as HTMLInputElement | null;
+          if (!target) return;
+          analyticsOn = target.checked;
           setWaterIqAnalyticsOptIn(analyticsOn);
           if (analyticsOn && ref) void trackWaterIqEvent('ref_landing', ref);
         });
@@ -1790,7 +1776,7 @@ export function clientScript() {
           ? `<div class="wsNav">
               <button class="wsBtnGhost" data-iq-back>Back</button>
               ${
-                !(showExplanation && currentQ.correctOptionId)
+                !(showExplanation && currentQ.kind === 'mcq' && currentQ.correctOptionId)
                   ? `<button class="wsBtnPrimary" data-iq-next ${
                       currentQ.required &&
                       (answers[currentQ.id] == null ||
@@ -1869,7 +1855,8 @@ export function clientScript() {
       root.querySelector<HTMLButtonElement>('[data-iq-next]')?.addEventListener('click', () => next());
 
       root.querySelector<HTMLInputElement>('[data-iq-number]')?.addEventListener('input', (event) => {
-        const input = event.currentTarget;
+        const input = event.currentTarget as HTMLInputElement | null;
+        if (!input) return;
         const v = input.value.trim();
         const n = v === '' ? null : Number(v);
         if (n === null || Number.isFinite(n)) answers[currentQ.id] = n ?? null;
@@ -2002,7 +1989,7 @@ export function clientScript() {
     let socialProofShareText = '';
     if (socialProof && token) {
       fetch(`/api/water-iq/social-proof?token=${encodeURIComponent(token)}`)
-        .then((res) => res.json())
+        .then((res) => res.json() as Promise<any>)
         .then((json) => {
           if (!json?.data?.ok) {
             socialProof.textContent = 'Social proof is unavailable (you may have opted out of analytics).';
@@ -2046,7 +2033,9 @@ export function clientScript() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ token, city }),
       }).catch(() => null);
-      const res = await fetch(`/api/water-iq/city-average?city=${encodeURIComponent(city)}`).then((r) => r.json()).catch(() => null);
+      const res = await fetch(`/api/water-iq/city-average?city=${encodeURIComponent(city)}`)
+        .then((r) => r.json() as Promise<any>)
+        .catch(() => null);
       if (cityResult) {
         if (res?.data?.ok) {
           cityForShare = res.data.city;
@@ -2063,14 +2052,15 @@ export function clientScript() {
     followupForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const email = followupForm.querySelector<HTMLInputElement>('input[name=\"email\"]')?.value?.trim() || '';
-      const days = Number(followupForm.querySelector<HTMLSelectElement>('select[name=\"days\"]')?.value || 7);
+      const daysSelect = followupForm.querySelector('select[name="days"]') as HTMLSelectElement | null;
+      const days = Number(daysSelect?.value || 7);
       const consent = Boolean(followupForm.querySelector<HTMLInputElement>('input[name=\"consent\"]')?.checked);
       if (!email || !consent) return;
       const res = await fetch('/api/water-iq/followup', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ token, email, days, consent }),
-      }).then((r) => r.json()).catch(() => null);
+      }).then((r) => r.json() as Promise<any>).catch(() => null);
       if (followupStatus) {
         followupStatus.textContent = res?.ok ? '✅ Scheduled. We’ll check in soon.' : `❌ ${res?.error ?? 'Could not schedule'}`;
       }
@@ -2090,7 +2080,7 @@ export function clientScript() {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ token, action }),
-        }).then((r) => r.json()).catch(() => null);
+        }).then((r) => r.json() as Promise<any>).catch(() => null);
         const status = panel.querySelector<HTMLElement>('[data-water-iq-reward-status]');
         if (res?.ok && res.awarded) {
           try {

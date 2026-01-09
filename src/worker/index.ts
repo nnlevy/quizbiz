@@ -1498,16 +1498,6 @@ function renderWaterIqResult(input: {
   moves: Array<{ id: string; title: string; href: string }>;
 }): string {
   const { token, persona, score, badge, delta, hook, moves } = input;
-  const sourcesHtml = hook.sources.length
-    ? `<div class="wsSources"><div class="wsMuted">Sources:</div><ul>${hook.sources
-        .map(
-          (s) =>
-            `<li><a class="wsLink" href="${escapeHtml(s.url)}" target="_blank" rel="noreferrer">${escapeHtml(
-              s.label,
-            )}</a></li>`,
-        )
-        .join("")}</ul></div>`
-    : "";
   const movesHtml = moves
     .map(
       (m) => `
@@ -2379,7 +2369,7 @@ app.post("/api/water-iq/reward", async (c) => {
 
   const res = storeReward(token, action);
   if (!res.ok) return c.json({ ok: false, error: res.error }, 400);
-  return c.json({ ok: true, ...res });
+  return c.json(res);
 });
 
 app.get("/api/water-iq/followup/due", (c) => {
