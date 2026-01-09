@@ -185,11 +185,6 @@ function resolveGaMeasurementId(env: WorkerEnv): string {
   return env.GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID;
 }
 
-function isEuropeanCountry(country?: string | null): boolean {
-  if (!country) return false;
-  return CONSENT_REQUIRED_COUNTRIES.has(country.toUpperCase());
-}
-
 function isConsentRequired(country?: string | null): boolean {
   if (!country) return true;
   return CONSENT_REQUIRED_COUNTRIES.has(country.toUpperCase());
@@ -611,7 +606,7 @@ app.get("/__ads", (c) => {
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
-  const showPrivacyControls = isEuropeanCountry(country);
+  const showPrivacyControls = consentRequired;
   const cspNonce = c.get("cspNonce") as string;
   return c.html(
     layout({
@@ -637,7 +632,7 @@ siteRoutes.forEach((route) => {
     const gaMeasurementId = resolveGaMeasurementId(c.env);
     const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
     const consentRequired = isConsentRequired(country);
-    const showPrivacyControls = isEuropeanCountry(country);
+    const showPrivacyControls = consentRequired;
     const cspNonce = c.get("cspNonce") as string;
     const bodyHtml = route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body;
     return c.html(
