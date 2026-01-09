@@ -2789,13 +2789,6 @@ function App({ focusUpload = false }: AppProps) {
         >
           <section className="container analyzer-col" id="upload">
             <div className="upload-grid">
-              <div className="image-container">
-                <img
-                  src="https://res.cloudinary.com/dlxzgqi9g/image/upload/v1733631746/quizbiz_husband_wife_and_golden_doodle_tighten_an_outdoor_tap_42a5be20-23eb-4352-9493-e39d2bcd8e81_3_kjswaw.png"
-                  alt="Family tightening an outdoor tap to conserve water"
-                  loading="lazy"
-                />
-              </div>
               <div className="upload-panel">
                 <h1>{copy.analyze.title}</h1>
                 <h2>{copy.analyze.subtitle}</h2>
