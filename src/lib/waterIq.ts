@@ -499,6 +499,21 @@ export function decodeToken(encoded: string): WaterIqShareTokenV2 | null {
     if (typeof parsed.score !== "number" || typeof parsed.k !== "number" || typeof parsed.h !== "number") return null;
     if (typeof parsed.persona !== "string" || typeof parsed.badge !== "string" || typeof parsed.hook !== "string") return null;
     if (!Array.isArray(parsed.moves)) return null;
+    const allowedMoves = new Set<WaterIqMoveId>([
+      "leak_check",
+      "toilet_dye_test",
+      "fix_faucet",
+      "sprinkler_check",
+      "shower_timer",
+      "install_aerator",
+      "watersense_toilet",
+      "irrigation_controller",
+      "savings_plan",
+      "analyze_bill",
+    ]);
+    if (!parsed.moves.every((move: unknown) => typeof move === "string" && allowedMoves.has(move as WaterIqMoveId))) {
+      return null;
+    }
     return parsed as WaterIqShareTokenV2;
   } catch {
     return null;
