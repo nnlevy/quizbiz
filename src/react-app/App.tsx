@@ -39,6 +39,7 @@ declare global {
   interface Window {
     webkitAudioContext?: typeof AudioContext;
     Stripe?: (publishableKey: string) => StripeClient;
+    __WS_STRIPE_PUBLISHABLE_KEY__?: string;
   }
 }
 
@@ -55,10 +56,12 @@ const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
 const CREDIT_TOPUP_FLAG = "creditTopUpRequested";
+const CREDIT_TOPUP_AMOUNT = 10;
+const CREDIT_TOPUP_PRICE = 5;
 const STRIPE_JS_SRC = "https://js.stripe.com/v3";
 const STRIPE_JS_SCRIPT_ID = "stripe-js-sdk";
 const STRIPE_PUBLISHABLE_KEY =
-  "pk_live_51KdlIMIzTeKgjbPrtxvb3gyKXu5k1DHh6cenXiWiaGC0zH355gAlsYznGssDrSX7KxOv7hsvLIUDM36JM5Fw6evG00StF8cIZ6";
+  (typeof window !== "undefined" && window.__WS_STRIPE_PUBLISHABLE_KEY__) || "";
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
@@ -667,6 +670,12 @@ function App({ focusUpload = false }: AppProps) {
       return stripeClient;
     }
 
+    if (!isNonEmptyString(STRIPE_PUBLISHABLE_KEY)) {
+      setCreditNotice("Checkout unavailable right now. Please try again soon.");
+      triggerCreditPulse();
+      return null;
+    }
+
     if (stripeLoaderRef.current) {
       return stripeLoaderRef.current;
     }
@@ -728,12 +737,12 @@ function App({ focusUpload = false }: AppProps) {
     const pendingTopUp = window.localStorage.getItem(CREDIT_TOPUP_FLAG);
 
     if (sessionId && pendingTopUp && redirectStatus === "succeeded") {
-      const updatedCredits = creditsRef.current + 5;
+      const updatedCredits = creditsRef.current + CREDIT_TOPUP_AMOUNT;
       creditsRef.current = updatedCredits;
       setGlobalCredits(updatedCredits);
-      setCreditNotice("Purchase confirmed. 5 credits added.");
+      setCreditNotice(`Purchase confirmed. ${CREDIT_TOPUP_AMOUNT} credits added.`);
       setCreditCelebrationMessage(
-        `Thanks for topping up—5 credits added. You now have ${updatedCredits}.`,
+        `Thanks for topping up—${CREDIT_TOPUP_AMOUNT} credits added. You now have ${updatedCredits}.`,
       );
       setShowCreditCelebration(true);
       triggerCreditPulse();
@@ -800,7 +809,9 @@ function App({ focusUpload = false }: AppProps) {
         console.error("Unable to persist credit purchase flag", error);
       }
 
-      setCreditNotice("Launching $5 checkout for 5 credits...");
+      setCreditNotice(
+        `Launching $${CREDIT_TOPUP_PRICE} checkout for ${CREDIT_TOPUP_AMOUNT} credits...`,
+      );
       triggerCreditPulse();
 
       const result = await client.redirectToCheckout({
@@ -1942,7 +1953,7 @@ function App({ focusUpload = false }: AppProps) {
 
   return (
     <div className="app">
-      <SiteNav credits={credits} pulse={pulse} />
+      <SiteNav credits={credits} pulse={pulse} onCreditsClick={handleCreditsClick} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
       {showCreditCelebration && (
@@ -1962,7 +1973,7 @@ function App({ focusUpload = false }: AppProps) {
               ))}
             </div>
             <p className="eyebrow">Bonus unlocked</p>
-            <h3>Five extra credits added!</h3>
+            <h3>{CREDIT_TOPUP_AMOUNT} extra credits added!</h3>
             <p className="credit-note">{creditCelebrationMessage}</p>
             <p className="subdued">
               Your credits refresh instantly after checkout so you can keep
@@ -2049,8 +2060,8 @@ function App({ focusUpload = false }: AppProps) {
                         className="tertiary-button eject-button"
                         onClick={handleCreditsClick}
                       >
-                        Buy 5 credits for $5
-                        <span className="credit-chip">+5 credits</span>
+                        Buy {CREDIT_TOPUP_AMOUNT} credits for ${CREDIT_TOPUP_PRICE}
+                        <span className="credit-chip">+{CREDIT_TOPUP_AMOUNT} credits</span>
                       </button>
                       <p className="credit-note" aria-live="polite">
                         {creditNotice}
@@ -2943,7 +2954,7 @@ function App({ focusUpload = false }: AppProps) {
                     className="primary-button eject-button"
                     onClick={handleCreditsClick}
                   >
-                    Buy 5 credits for $5 via Stripe
+                    Buy {CREDIT_TOPUP_AMOUNT} credits for ${CREDIT_TOPUP_PRICE} via Stripe
                   </button>
                   <p className="credit-note" aria-live="polite">
                     Secure checkout with Stripe. Credits refresh automatically after
