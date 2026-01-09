@@ -5,8 +5,10 @@ import App from "./App.tsx";
 import LeakPatrol from "./LeakPatrol";
 import HiddenLeaksPage from "../pages/HiddenLeaksPage";
 import LeakDetectionPage from "../pages/LeakDetectionPage";
+import LandingPage from "../pages/LandingPage";
 import PrivacyPage from "../pages/PrivacyPage";
 import ReadWaterBillPage from "../pages/ReadWaterBillPage";
+import SiteMapPage from "../pages/SiteMapPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
@@ -82,6 +84,12 @@ const RootRouter = () => {
   const routeComponent = useMemo(() => {
     if (pathname.startsWith("/leak-patrol") || pathname.startsWith("/game")) {
       return <LeakPatrol />;
+    }
+    if (pathname.startsWith("/landing")) {
+      return <LandingPage />;
+    }
+    if (pathname.startsWith("/site-map")) {
+      return <SiteMapPage />;
     }
     if (pathname.startsWith("/learn/read-water-bill")) {
       return <ReadWaterBillPage />;
