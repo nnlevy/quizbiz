@@ -496,7 +496,14 @@ export function decodeToken(encoded: string): WaterIqShareTokenV2 | null {
   try {
     const parsed = JSON.parse(base64UrlDecode(encoded));
     if (!parsed || parsed.v !== 2) return null;
-    if (typeof parsed.score !== "number" || typeof parsed.k !== "number" || typeof parsed.h !== "number") return null;
+    if (
+      typeof parsed.score !== "number" ||
+      typeof parsed.k !== "number" ||
+      typeof parsed.h !== "number" ||
+      typeof parsed.delta !== "number"
+    ) {
+      return null;
+    }
     if (typeof parsed.persona !== "string" || typeof parsed.badge !== "string" || typeof parsed.hook !== "string") return null;
     if (!Array.isArray(parsed.moves)) return null;
     const allowedMoves = new Set<WaterIqMoveId>([
