@@ -1245,22 +1245,10 @@ button[type="submit"] {
 
 .upload-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--card-gap);
-  align-items: center;
+  align-items: stretch;
   min-width: 0;
-}
-
-.image-container {
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: 0 24px 48px rgba(12, 33, 68, 0.18);
-}
-
-.image-container img {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 .upload-panel h1 {
