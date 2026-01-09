@@ -30,24 +30,18 @@ import { detectIphone } from "./utils/device";
 import { buildSearchKeywords, buildSearchQuery, buildSearchUrl } from "./utils/searchLinks";
 import { logEvent } from "./analytics";
 import { useCredits } from "./context/CreditsContext";
+import { useCreditsCheckout } from "./hooks/useCreditsCheckout";
 import UtilityResultCard, { type UtilityPayload } from "./components/UtilityResultCard";
 import { copy } from "../copy";
 import demoResult from "./data/demo.json";
 import type { AnalysisMove, AnalysisResult } from "./types";
+import { CREDIT_TOPUP_AMOUNT, CREDIT_TOPUP_FLAG, CREDIT_TOPUP_PRICE } from "./utils/credits";
 
 declare global {
   interface Window {
     webkitAudioContext?: typeof AudioContext;
-    Stripe?: (publishableKey: string) => StripeClient;
-    __WS_STRIPE_PUBLISHABLE_KEY__?: string;
   }
 }
-
-type StripeClient = {
-  redirectToCheckout: (options: {
-    sessionId: string;
-  }) => Promise<{ error?: { message?: string } | null }>;
-};
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -55,13 +49,6 @@ const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 
 const WATERING_GALLONS_PER_MINUTE = 4;
-const CREDIT_TOPUP_FLAG = "creditTopUpRequested";
-const CREDIT_TOPUP_AMOUNT = 10;
-const CREDIT_TOPUP_PRICE = 5;
-const STRIPE_JS_SRC = "https://js.stripe.com/v3";
-const STRIPE_JS_SCRIPT_ID = "stripe-js-sdk";
-const STRIPE_PUBLISHABLE_KEY =
-  (typeof window !== "undefined" && window.__WS_STRIPE_PUBLISHABLE_KEY__) || "";
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
@@ -536,8 +523,6 @@ function App({ focusUpload = false }: AppProps) {
   const [creditNotice, setCreditNotice] = useState(
     "You start with 5 credits to trigger an instant iPhone water eject.",
   );
-  const [stripeClient, setStripeClient] = useState<StripeClient | null>(null);
-  const stripeLoaderRef = useRef<Promise<StripeClient | null> | null>(null);
   const [deviceInfo, setDeviceInfo] = useState({ isIphone: false, ready: false });
   const [isWaterEjectMode, setIsWaterEjectMode] = useState(false);
   const [showCreditCelebration, setShowCreditCelebration] = useState(false);
@@ -660,75 +645,15 @@ function App({ focusUpload = false }: AppProps) {
     setIsWaterEjectCollapsed((prev) => !prev);
   };
 
-  const triggerCreditPulse = () => {
+  const triggerCreditPulse = useCallback(() => {
     setPulse(true);
     setTimeout(() => setPulse(false), 750);
-  };
+  }, [setPulse]);
 
-  const loadStripeClient = useCallback(async () => {
-    if (stripeClient) {
-      return stripeClient;
-    }
-
-    if (!isNonEmptyString(STRIPE_PUBLISHABLE_KEY)) {
-      setCreditNotice("Checkout unavailable right now. Please try again soon.");
-      triggerCreditPulse();
-      return null;
-    }
-
-    if (stripeLoaderRef.current) {
-      return stripeLoaderRef.current;
-    }
-
-    stripeLoaderRef.current = new Promise<StripeClient | null>((resolve) => {
-      const existingScript = document.getElementById(
-        STRIPE_JS_SCRIPT_ID,
-      ) as HTMLScriptElement | null;
-
-      const hydrateStripeClient = () => {
-        if (typeof window !== "undefined" && typeof window.Stripe === "function") {
-          const client = window.Stripe(STRIPE_PUBLISHABLE_KEY);
-          setStripeClient(client);
-          resolve(client);
-          return;
-        }
-
-        resolve(null);
-      };
-
-      const handleStripeError = () => {
-        setCreditNotice("Checkout unavailable right now. Please try again soon.");
-        triggerCreditPulse();
-        resolve(null);
-      };
-
-      if (existingScript && existingScript.getAttribute("data-ready") === "true") {
-        hydrateStripeClient();
-        return;
-      }
-
-      const script = existingScript ?? document.createElement("script");
-      script.id = STRIPE_JS_SCRIPT_ID;
-      script.src = STRIPE_JS_SRC;
-      script.async = true;
-
-      const handleStripeReady = () => {
-        script.setAttribute("data-ready", "true");
-        hydrateStripeClient();
-      };
-
-      script.addEventListener("load", handleStripeReady);
-      script.addEventListener("error", handleStripeError);
-
-      if (!existingScript) {
-        document.head.appendChild(script);
-      }
-    });
-
-    const client = await stripeLoaderRef.current;
-    stripeLoaderRef.current = null;
-    return client;
-  }, [stripeClient]);
+  const { startCheckout } = useCreditsCheckout({
+    onNotice: setCreditNotice,
+    onPulse: triggerCreditPulse,
+  });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -784,50 +709,9 @@ function App({ focusUpload = false }: AppProps) {
     }
   }, []);
 
-  const handleCreditsClick = async () => {
-    const client = await loadStripeClient();
-    if (!client) {
-      setCreditNotice("Checkout unavailable right now. Please try again soon.");
-      triggerCreditPulse();
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/credits/checkout", { method: "POST" });
-      if (!response.ok) {
-        throw new Error(`Stripe checkout failed with status ${response.status}`);
-      }
-
-      const payload = (await response.json()) as { id?: string };
-      if (!payload.id) {
-        throw new Error("Stripe checkout session missing");
-      }
-
-      try {
-        window.localStorage.setItem(CREDIT_TOPUP_FLAG, "pending");
-      } catch (error) {
-        console.error("Unable to persist credit purchase flag", error);
-      }
-
-      setCreditNotice(
-        `Launching $${CREDIT_TOPUP_PRICE} checkout for ${CREDIT_TOPUP_AMOUNT} credits...`,
-      );
-      triggerCreditPulse();
-
-      const result = await client.redirectToCheckout({
-        sessionId: payload.id,
-      });
-
-      if (result.error?.message) {
-        setCreditNotice(result.error.message);
-        triggerCreditPulse();
-      }
-    } catch (error) {
-      console.error("Stripe checkout error", error);
-      setCreditNotice("Unable to start checkout right now. Please try again.");
-      triggerCreditPulse();
-    }
-  };
+  const handleCreditsClick = useCallback(async () => {
+    await startCheckout();
+  }, [startCheckout]);
 
   const spendCredit = (successPrefix?: string) => {
     const nextCredits = deduct(1);
