@@ -24,6 +24,7 @@ const SiteFooter = () => {
           </button>
         ) : null}
         <a href="/blog-how-to-eject.html">{copy.nav.ejectLabel}</a>
+        <a href="/water-iq">Water IQ Challenge</a>
         <a href="/learn/water-saving-tips">Water-Saving Tips</a>
         <a href="/learn/leak-detection">Leak Detection</a>
       </div>

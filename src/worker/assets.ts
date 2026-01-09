@@ -1,8 +1,10 @@
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
+import { COPY as WATER_IQ_COPY, FLOW as WATER_IQ_FLOW, QUESTIONS as WATER_IQ_QUESTIONS } from "../lib/waterIq";
 
 export const stylesCss = `:root{color-scheme:light;font-family:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;background:#f7fbff;}
 *{box-sizing:border-box;}body{margin:0;color:#0f172a;background:#f7fbff;}a{color:#0d6efd;text-decoration:none;}a:hover{text-decoration:underline;}header,main,footer{width:100%;}img{max-width:100%;display:block;}button,input,select,textarea{font-family:inherit;}button{cursor:pointer;}body.prefers-reduced-motion *{transition:none!important;animation:none!important;}
 .app-shell{min-height:100vh;display:flex;flex-direction:column;} .site-header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,0.92);backdrop-filter:blur(6px);border-bottom:1px solid #e2e8f0;} .nav-bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;} .brand a{font-weight:700;color:#0f172a;font-size:18px;display:flex;align-items:center;gap:10px;text-decoration:none;} .brand-mark{display:inline-block;padding:6px 10px;border-radius:12px;background:#e0f2ff;color:#075985;font-weight:700;} .brand-text{display:flex;flex-direction:column;gap:2px;line-height:1;} .brand-name{letter-spacing:.08em;text-transform:uppercase;} .brand-dotcom{font-size:.7em;letter-spacing:.04em;text-transform:lowercase;margin-left:2px;} .tagline{font-size:12px;color:#64748b;font-weight:600;letter-spacing:.02em;} .nav-links{display:flex;align-items:center;gap:12px;flex-wrap:wrap;} .nav-link{padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;transition:all .2s ease;background:none;border:none;} .nav-link:hover,.nav-link:focus-visible{background:#e0f2ff;outline:none;} .nav-dropdown{position:relative;display:inline-flex;align-items:center;} .dropdown-toggle{cursor:pointer;gap:6px;display:inline-flex;align-items:center;} .dropdown-caret{font-size:12px;line-height:1;} .dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;min-width:220px;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px;box-shadow:0 12px 30px rgba(15,23,42,0.12);opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .2s ease,transform .2s ease;z-index:20;} .nav-dropdown:hover .dropdown-panel,.nav-dropdown:focus-within .dropdown-panel{opacity:1;pointer-events:auto;transform:translateY(0);} .dropdown-link{display:block;padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;} .dropdown-link:hover,.dropdown-link:focus-visible{background:#e0f2ff;outline:none;} .primary-cta{background:#0ea5e9;color:white;} .primary-cta:hover,.primary-cta:focus-visible{background:#0284c7;color:white;}
+.nav-badge{display:inline-flex;align-items:center;gap:6px;background:#ecfeff;border:1px solid #bae6fd;color:#0f172a;font-weight:700;}
 main{flex:1;} .hero{max-width:1100px;margin:0 auto;padding:40px 18px 18px;display:grid;gap:14px;} .hero h1{margin:0;font-size:32px;color:#0f172a;} .hero p{margin:0;color:#1f2937;font-size:17px;max-width:70ch;} .hero .actions{display:flex;gap:12px;flex-wrap:wrap;} .btn{padding:12px 14px;border-radius:12px;border:1px solid #0ea5e9;background:white;color:#0ea5e9;font-weight:700;transition:transform .2s ease,box-shadow .2s ease;} .btn:hover,.btn:focus-visible{transform:translateY(-1px);box-shadow:0 10px 30px rgba(14,165,233,0.18);outline:none;} .btn.primary{background:#0ea5e9;color:white;border-color:#0ea5e9;} .btn.secondary{border-color:#e2e8f0;color:#0f172a;} .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#e0f2ff;color:#075985;font-weight:700;font-size:13px;}
 .section{max-width:1100px;margin:0 auto;padding:28px 18px;} .section h2{margin:0 0 12px;font-size:24px;} .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;} .card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;box-shadow:0 8px 24px rgba(15,23,42,0.05);display:flex;flex-direction:column;gap:10px;} .card h3{margin:0;font-size:18px;} .card p{margin:0;color:#334155;} .card .small{font-size:14px;color:#475569;} .inline-list{display:flex;gap:10px;flex-wrap:wrap;} .inline-list a{padding:8px 10px;border-radius:10px;background:#e0f2ff;color:#075985;font-weight:700;}
 .blog-page main{display:flex;justify-content:center;} .blog-shell{max-width:800px;width:100%;margin:0 auto;padding:28px 18px;} .blog-article{background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 12px 36px rgba(15,23,42,0.08);display:grid;gap:18px;padding:22px;} .blog-header h1{margin:0;font-size:32px;color:#0f172a;} .blog-header .lead{margin:8px 0 0;color:#1f2937;font-size:17px;line-height:1.6;} .blog-section{display:grid;gap:10px;} .blog-section h2{margin:0;font-size:22px;color:#0f172a;} .blog-section p,.blog-section li{color:#1f2937;line-height:1.6;} .blog-section ol{padding-left:20px;display:grid;gap:8px;} .blog-footer{margin-top:6px;} .eyebrow{letter-spacing:0.08em;text-transform:uppercase;font-weight:800;color:#075985;margin:0;} .lead{font-weight:600;}
@@ -22,6 +24,7 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 .results-grid{display:grid;gap:16px;} .result-card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;display:grid;gap:10px;} .result-card h3{margin:0;} .result-meta{display:flex;gap:12px;font-size:13px;color:#475569;font-weight:700;flex-wrap:wrap;}
 .share-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
 .help-accordion summary{font-weight:700;cursor:pointer;margin-bottom:6px;}
+.water-iq{display:flex;justify-content:center;} .water-iq-card{max-width:860px;width:100%;border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:18px;background:#fff;} .wsH1{font-size:28px;line-height:1.15;margin:0 0 10px;} .wsH2{font-size:18px;margin:6px 0 6px;} .wsP{margin:8px 0 10px;line-height:1.45;} .wsQ{margin:10px 0 8px;font-size:18px;line-height:1.35;} .wsMuted{color:rgba(0,0,0,.62);font-size:13px;} .wsRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;} .wsBtnPrimary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;} .wsBtnPrimary:disabled{opacity:.45;cursor:not-allowed;} .wsBtnGhost{background:transparent;color:#111;border:1px solid rgba(0,0,0,.16);border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block;} .wsCallout{margin:10px 0 6px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);} .wsDisclosure{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.02);} .wsTopBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;} .wsProgressWrap{flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;} .wsProgress{height:100%;background:#111;border-radius:999px;} .wsChoices{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsChoice{padding:12px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.14);background:#fff;text-align:left;cursor:pointer;} .wsChoice.isSelected{border-color:#111;box-shadow:0 0 0 2px rgba(0,0,0,.06) inset;} .wsChoice:disabled{opacity:.5;cursor:not-allowed;} .wsExplain{margin:10px 0 12px;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.03);} .wsGood,.wsBad{font-weight:750;margin-bottom:8px;} .wsSources{margin-top:10px;} .wsSources ul{margin:6px 0 0;padding-left:18px;} .wsLink{text-decoration:underline;} .wsNav{display:flex;justify-content:space-between;gap:10px;margin-top:8px;} .wsNumWrap{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsNum{padding:12px;border:1px solid rgba(0,0,0,.14);border-radius:12px;font-size:16px;} .wsFoot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;color:rgba(0,0,0,.55);font-size:12px;} .wsGrid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:10px;margin-top:10px;} .wsStat{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#fff;} .wsStatTitle{font-weight:800;} .wsStatValue{font-size:20px;font-weight:900;margin-top:4px;} .wsResultMoves{display:grid;gap:10px;margin-top:10px;} .wsResultMove{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);text-decoration:none;color:#111;background:#fff;display:block;} .wsResultMove strong{display:block;} .wsResultMove span{display:block;margin-top:4px;color:rgba(0,0,0,.65);font-size:13px;}
 @media (min-width:768px){.hero{grid-template-columns:2fr 1fr;align-items:center;} .hero h1{font-size:40px;} }
 @media print{.site-header,.footer,.ad-slot-placeholder,.actions,.wizard-actions,.nav-links{display:none!important;} body{background:white;} .layout-slab{box-shadow:none;border-color:#e2e8f0;} .hero{padding-top:0;}}
 `;
@@ -41,6 +44,7 @@ export function clientScript() {
     : '';
   const GTAG_SCRIPT_SELECTOR = 'script[src*="www.googletagmanager.com/gtag/js"]';
   const CONSENT_STORAGE_KEY = 'ws-consent-v1';
+  const WATER_IQ_ANALYTICS_KEY = 'ws_water_iq_analytics';
   const consentRequired = Boolean(
     (window as typeof window & { __WS_CONSENT_REQUIRED__?: boolean }).__WS_CONSENT_REQUIRED__,
   );
@@ -159,6 +163,21 @@ export function clientScript() {
 
   const hasAdsConsent = () => getEffectiveConsent().ads;
   const hasAnalyticsConsent = () => getEffectiveConsent().analytics;
+  const getWaterIqAnalyticsOptIn = () => {
+    try {
+      return localStorage.getItem(WATER_IQ_ANALYTICS_KEY) === 'true';
+    } catch (err) {
+      return false;
+    }
+  };
+  const setWaterIqAnalyticsOptIn = (value: boolean) => {
+    try {
+      localStorage.setItem(WATER_IQ_ANALYTICS_KEY, value ? 'true' : 'false');
+    } catch (err) {
+      // ignore
+    }
+  };
+  const canTrackWaterIq = () => hasAnalyticsConsent() && getWaterIqAnalyticsOptIn();
 
   const ensureAnalyticsLoaded = () => {
     if (!GA_MEASUREMENT_ID) return;
@@ -1246,6 +1265,848 @@ export function clientScript() {
 
   patchAdDimensionSetters();
 
+  const getOrCreateWaterIqSessionId = () => {
+    try {
+      const key = 'ws_water_iq_sid_v2';
+      const existing = localStorage.getItem(key);
+      if (existing) return existing;
+      const sid = Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
+      localStorage.setItem(key, sid);
+      return sid;
+    } catch (err) {
+      return 'anon-' + Math.random().toString(36).slice(2);
+    }
+  };
+
+  const waterIqAssignVariant = (seed: string) => {
+    let h = 2166136261;
+    for (let i = 0; i < seed.length; i += 1) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    const arm = h % 2 === 0 ? 'A' : 'B';
+    return { v: 1, arm };
+  };
+
+  const waterIqPersonaFor = (score: number) => {
+    if (score >= 9) return { code: 'WW', name: 'Water Wizard', emoji: '🧙‍♂️', tagline: 'High efficiency. High leverage. Rare combo.' };
+    if (score >= 7) return { code: 'LS', name: 'Leak Sleuth', emoji: '🕵️‍♂️', tagline: 'You hunt silent waste. That’s power.' };
+    if (score >= 4) return { code: 'PS', name: 'Practical Saver', emoji: '🛠️', tagline: 'You focus on moves that actually matter.' };
+    return { code: 'CS', name: 'Curious Starter', emoji: '💧', tagline: 'You’re building a better water compass.' };
+  };
+
+  const waterIqPersonaFromCode = (code: string) => {
+    const map = {
+      CS: { code: 'CS', name: 'Curious Starter', emoji: '💧', tagline: 'You’re building a better water compass.' },
+      PS: { code: 'PS', name: 'Practical Saver', emoji: '🛠️', tagline: 'You focus on moves that actually matter.' },
+      LS: { code: 'LS', name: 'Leak Sleuth', emoji: '🕵️‍♂️', tagline: 'You hunt silent waste. That’s power.' },
+      WW: { code: 'WW', name: 'Water Wizard', emoji: '🧙‍♂️', tagline: 'High efficiency. High leverage. Rare combo.' },
+    };
+    return map[code as keyof typeof map] ?? map.CS;
+  };
+
+  const waterIqHookFactById = (id: string) => {
+    const map = {
+      drip: { short: 'A 1‑drip/sec faucet can waste 3,000+ gallons/year (EPA).', sources: [{ label: 'EPA WaterSense: Fix a Leak Week', url: 'https://www.epa.gov/watersense/fix-leak-week' }] },
+      irrig: { short: 'A tiny sprinkler leak can waste ~6,300 gallons/month (EPA).', sources: [{ label: 'EPA WaterSense: Fix a Leak Week', url: 'https://www.epa.gov/watersense/fix-leak-week' }] },
+      toilet: { short: 'WaterSense toilets can save ~13,000 gallons/year (EPA).', sources: [{ label: 'EPA WaterSense: Statistics & Facts', url: 'https://www.epa.gov/watersense/statistics-and-facts' }] },
+      leaks: { short: 'Household leaks can waste ~9,400 gallons/year (EPA).', sources: [{ label: 'EPA WaterSense: Statistics & Facts', url: 'https://www.epa.gov/watersense/statistics-and-facts' }] },
+    };
+    const item = map[id as keyof typeof map] ?? map.leaks;
+    return { id, short: item.short, sources: item.sources };
+  };
+
+  const waterIqCoerceNumber = (value: unknown) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (typeof value === 'string' && value.trim() !== '') {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+
+  const waterIqClamp = (num: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, num));
+
+  const waterIqEncodeToken = (token: Record<string, unknown>) => {
+    const bytes = new TextEncoder().encode(JSON.stringify(token));
+    let binary = '';
+    for (const b of bytes) binary += String.fromCharCode(b);
+    const b64 = btoa(binary);
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  };
+
+  const waterIqDecodeToken = (encoded: string) => {
+    try {
+      const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((encoded.length + 3) % 4);
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const json = new TextDecoder().decode(bytes);
+      const parsed = JSON.parse(json);
+      if (!parsed || parsed.v !== 2) return null;
+      if (typeof parsed.score !== 'number') return null;
+      return parsed;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const waterIqIsCorrect = (qid: string, answers: Record<string, unknown>) => {
+    const q = (WATER_IQ_QUESTIONS || []).find((qq) => qq.id === qid);
+    if (!q || q.kind !== 'mcq' || !q.correctOptionId) return false;
+    return String(answers[qid] ?? '') === q.correctOptionId;
+  };
+
+  const waterIqAsFocus = (value: unknown) => {
+    const s = String(value ?? '');
+    if (s === 'indoor' || s === 'outdoor' || s === 'both') return s;
+    return 'both';
+  };
+
+  const waterIqAsBudget = (value: unknown) => {
+    const s = String(value ?? 'na');
+    if (s === '0' || s === 'low' || s === 'med' || s === 'high' || s === 'na') return s;
+    return 'na';
+  };
+
+  const waterIqAsHome = (value: unknown) => {
+    const s = String(value ?? '');
+    if (s === 'homeowner' || s === 'renter' || s === 'other') return s;
+    return 'other';
+  };
+
+  const waterIqPickImpactStats = (focus: string) => {
+    const stats = [
+      {
+        id: 'stat_leaks_9400',
+        title: 'Household leaks add up',
+        value: '≈ 180 gallons/week (≈ 9,400/year)',
+        why: 'Leaks are common, quiet, and high-odds. Check first before you sacrifice comfort.',
+        tags: ['indoor', 'outdoor', 'both'],
+        sources: [{ label: 'EPA WaterSense: Statistics & Facts', url: 'https://www.epa.gov/watersense/statistics-and-facts' }],
+      },
+      {
+        id: 'stat_irrig_6300',
+        title: 'Tiny sprinkler leaks are huge',
+        value: '≈ 6,300 gallons/month',
+        why: 'Outdoor leaks can burn through water fast without looking dramatic.',
+        tags: ['outdoor', 'both'],
+        sources: [{ label: 'EPA WaterSense: Fix a Leak Week', url: 'https://www.epa.gov/watersense/fix-leak-week' }],
+      },
+      {
+        id: 'stat_toilet_13000',
+        title: 'Toilet upgrade can be massive',
+        value: '≈ 13,000 gallons/year (≈ $130/year)',
+        why: 'Toilets are always-on. Efficient fixtures compound savings daily.',
+        tags: ['indoor', 'both'],
+        sources: [{ label: 'EPA WaterSense: Statistics & Facts', url: 'https://www.epa.gov/watersense/statistics-and-facts' }],
+      },
+      {
+        id: 'stat_brush_8',
+        title: 'A tiny habit still matters',
+        value: '≈ 8 gallons/day',
+        why: 'Turning off the tap while brushing is a simple behavior win — great for households with $0 budget.',
+        tags: ['indoor', 'both'],
+        sources: [{ label: 'EPA WaterSense: Statistics & Facts', url: 'https://www.epa.gov/watersense/statistics-and-facts' }],
+      },
+    ];
+    const leaks = stats.find((s) => s.id === 'stat_leaks_9400');
+    const pool = stats.filter((s) => s.tags.includes(focus) || (focus === 'both' && s.tags.includes('both')));
+    const chosen = leaks ? [leaks, ...pool.filter((s) => s.id !== leaks.id)] : pool;
+    return chosen.slice(0, 3);
+  };
+
+  const waterIqRecommendMoves = (input: {
+    homeSituation: string;
+    focus: string;
+    budgetTier: string;
+    answers: Record<string, unknown>;
+    pledge: string;
+  }) => {
+    const moves: string[] = [];
+    const checkedLeaks = String(input.answers.h_leaks_checked ?? '') === 'yes';
+    const constrained = input.budgetTier === '0' || input.budgetTier === 'low' || input.homeSituation === 'renter';
+
+    if (!checkedLeaks) moves.push('leak_check');
+
+    if (input.focus === 'outdoor') {
+      moves.push('sprinkler_check');
+      if (!constrained) moves.push('irrigation_controller');
+    } else {
+      moves.push('toilet_dye_test');
+      if (!constrained) moves.push('watersense_toilet');
+      moves.push('install_aerator');
+    }
+
+    if (input.pledge === 'analyze_bill') moves.unshift('analyze_bill');
+    if (input.pledge === 'savings_plan') moves.unshift('savings_plan');
+
+    moves.push('savings_plan');
+    const uniq = Array.from(new Set(moves)).slice(0, 3);
+    const meta: Record<string, { title: string; href: string }> = {
+      leak_check: { title: '3‑minute leak check', href: '/leak-check' },
+      toilet_dye_test: { title: 'Dye test: toilet leaks', href: '/leak-check' },
+      fix_faucet: { title: 'Fix a dripping faucet', href: '/learn/water-saving-tips' },
+      sprinkler_check: { title: 'Sprinkler walk-through', href: '/guides' },
+      shower_timer: { title: 'Shower timer plan', href: '/calculators/shower' },
+      install_aerator: { title: 'Install a faucet aerator', href: '/learn/water-saving-tips' },
+      watersense_toilet: { title: 'Upgrade to WaterSense toilet', href: '/learn/water-saving-tips' },
+      irrigation_controller: { title: 'Irrigation controller upgrade', href: '/guides' },
+      savings_plan: { title: 'Build a savings plan', href: '/savings-plan' },
+      analyze_bill: { title: 'Analyze your water bill', href: '/analyze-water-bill' },
+    };
+    return uniq.map((id) => {
+      const costLabel =
+        input.budgetTier === '0' || input.homeSituation === 'renter'
+          ? 'Free / low-cost'
+          : input.budgetTier === 'low'
+            ? 'Low-cost'
+            : input.budgetTier === 'med'
+              ? 'Mid-cost'
+              : input.budgetTier === 'high'
+                ? 'Higher-cost (optional)'
+                : 'Varies';
+      const why =
+        id === 'leak_check'
+          ? input.homeSituation === 'renter'
+            ? 'Leak checks help you document issues for a landlord without spending money.'
+            : 'Leaks are common and high-impact. Start here before you chase tiny habits.'
+          : id === 'sprinkler_check'
+            ? 'Outdoor issues can waste thousands quickly — a walk-through is fast and revealing.'
+            : id === 'toilet_dye_test'
+              ? 'Silent toilet leaks are common and cheap to detect.'
+              : id === 'watersense_toilet'
+                ? 'If you can upgrade, toilets offer large year-round savings (EPA estimates).'
+                : id === 'install_aerator'
+                  ? 'One of the simplest low-cost upgrades with immediate savings.'
+                  : id === 'irrigation_controller'
+                    ? 'If you irrigate, a smarter controller can reduce waste without lifestyle changes.'
+                    : id === 'analyze_bill'
+                      ? 'Bills reveal spikes, tier jumps, and ‘silent’ waste patterns.'
+                      : 'Get a prioritized checklist—impact first, effort second.';
+      const info = meta[id] ?? { title: 'Next step', href: '/' };
+      return { id, title: info.title, href: info.href, why, costLabel };
+    });
+  };
+
+  const waterIqCompute = (variant: { v: number; arm: string }, answers: Record<string, unknown>) => {
+    const preDrip = waterIqIsCorrect('k_drip_pre', answers);
+    const postDrip = waterIqIsCorrect('k_drip_post', answers);
+    const preIrr = waterIqIsCorrect('k_irrig_pre', answers);
+    const postIrr = waterIqIsCorrect('k_irrig_post', answers);
+    const preScore = (preDrip ? 1 : 0) + (preIrr ? 1 : 0);
+    const postScore = (postDrip ? 1 : 0) + (postIrr ? 1 : 0);
+    const delta = postScore - preScore;
+
+    const knowledgeIds = ['k_drip_post', 'k_irrig_post', 'k_toilet'];
+    const knowledgeScore = knowledgeIds.reduce((s, id) => s + (waterIqIsCorrect(id, answers) ? 1 : 0), 0);
+
+    const shower = waterIqCoerceNumber(answers.h_shower_min);
+    const showerScore = shower == null ? 0 : shower <= 6 ? 2 : shower <= 8 ? 1 : 0;
+    const leakCheckScore = String(answers.h_leaks_checked ?? '') === 'yes' ? 1 : 0;
+    const budgetTier = waterIqAsBudget(answers.c_budget);
+    const budgetScore = budgetTier === '0' || budgetTier === 'low' ? 1 : 0;
+    const habitScore = waterIqClamp(showerScore + leakCheckScore + budgetScore, 0, 4);
+    const knowledgeScaled = Math.round((knowledgeScore / 3) * 6);
+    const totalScore = waterIqClamp(knowledgeScaled + habitScore, 0, 10);
+
+    const focus = waterIqAsFocus(answers.q_focus);
+    const homeSituation = waterIqAsHome(answers.q_home);
+    const pledge = String(answers.p_pledge ?? '');
+
+    const persona = waterIqPersonaFor(totalScore);
+    const badge = (() => {
+      const checkedLeaks = String(answers.h_leaks_checked ?? '') === 'yes';
+      if (focus === 'outdoor') return { id: 'irrigation_optimizer', label: 'Irrigation Optimizer', emoji: '🌿', reason: 'Outdoor focus: your biggest wins are often outside.' };
+      if (checkedLeaks) return { id: 'leak_detective', label: 'Leak Detective', emoji: '🔍', reason: 'Leak awareness is high leverage.' };
+      if (budgetTier === 'high' || budgetTier === 'med') return { id: 'bathroom_roi_hero', label: 'Bathroom ROI Hero', emoji: '🚽', reason: 'You can turn upgrades into compounding savings.' };
+      if (delta > 0) return { id: 'habit_hacker', label: 'Habit Hacker', emoji: '⏱️', reason: 'You learned fast and can execute small wins.' };
+      return { id: 'starter', label: 'Starter', emoji: '✨', reason: 'Begin with the quickest, cheapest wins.' };
+    })();
+
+    const impactRevealStats = waterIqPickImpactStats(focus);
+    const recommendedMoves = waterIqRecommendMoves({ homeSituation, focus, budgetTier, answers, pledge });
+    const hookId = !waterIqIsCorrect('k_irrig_post', answers)
+      ? 'irrig'
+      : !waterIqIsCorrect('k_drip_post', answers)
+        ? 'drip'
+        : !waterIqIsCorrect('k_toilet', answers)
+          ? 'toilet'
+          : 'leaks';
+    const hookFact = waterIqHookFactById(hookId);
+
+    return {
+      version: 2,
+      variant,
+      score: { total: totalScore, knowledge: knowledgeScaled, habit: habitScore },
+      knowledgeDelta: { pre: preScore, post: postScore, delta },
+      persona,
+      badge,
+      hookFact,
+      focus,
+      segmentKey: `${homeSituation}|${focus}|${budgetTier}`,
+      recommendedMoves,
+      impactRevealStats,
+      pledge,
+      budgetTier,
+      homeSituation,
+    };
+  };
+
+  const waterIqBuildShareToken = (computed: ReturnType<typeof waterIqCompute>) => {
+    const nonce = Math.random().toString(36).slice(2, 8);
+    const ts = Math.floor(Date.now() / 1000);
+    return {
+      v: 2,
+      n: nonce,
+      ts,
+      score: computed.score.total,
+      k: computed.score.knowledge,
+      h: computed.score.habit,
+      delta: computed.knowledgeDelta.delta,
+      persona: computed.persona.code,
+      badge: computed.badge.id,
+      hook: computed.hookFact.id,
+      moves: computed.recommendedMoves.slice(0, 3).map((m) => m.id),
+    };
+  };
+
+  const waterIqShareCopy = (arm: 'A' | 'B', payload: { score: number; persona: string; badge: string; challengeUrl: string; city?: string }) => {
+    const copy = (WATER_IQ_COPY || { A: { shareBodyTemplate: () => '' }, B: { shareBodyTemplate: () => '' } }) as typeof WATER_IQ_COPY;
+    return copy[arm].shareBodyTemplate(payload);
+  };
+
+  const trackWaterIqEvent = async (type: string, ref?: string | null) => {
+    if (!canTrackWaterIq()) return;
+    try {
+      await fetch('/api/water-iq/event', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type, ref }),
+        keepalive: true,
+      });
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const initWaterIq = () => {
+    const root = document.querySelector<HTMLElement>('[data-water-iq-root]');
+    if (!root) return;
+    const questions = typeof WATER_IQ_QUESTIONS === 'undefined' ? [] : WATER_IQ_QUESTIONS;
+    const flow = typeof WATER_IQ_FLOW === 'undefined' ? questions.map((q) => q.id) : WATER_IQ_FLOW;
+    const copy = (WATER_IQ_COPY || { A: {}, B: {} }) as typeof WATER_IQ_COPY;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    const answers: Record<string, unknown> = {};
+    const variant = waterIqAssignVariant(getOrCreateWaterIqSessionId());
+    const arm = variant.arm as 'A' | 'B';
+    let analyticsOn = getWaterIqAnalyticsOptIn();
+    let stepMode: 'landing' | 'question' | 'impact' | 'submitting' | 'error' = 'landing';
+    let questionIndex = 0;
+    let showExplanation = false;
+
+    const render = () => {
+      const totalQuestions = flow.length;
+      const currentId = flow[questionIndex];
+      const currentQ = questions.find((q) => q.id === currentId);
+
+      if (stepMode === 'landing') {
+        root.innerHTML = `
+          <h1 class="wsH1">${escapeHtml(copy[arm].landingTitle)}</h1>
+          <p class="wsP">${escapeHtml(copy[arm].landingSubtitle)}</p>
+          ${ref ? `<div class="wsCallout"><strong>Challenge link detected.</strong> Beat their score — and then tag 3 friends.</div>` : ''}
+          <details class="wsDisclosure">
+            <summary><strong>${escapeHtml(copy[arm].disclosureTitle)}</strong></summary>
+            <p class="wsMuted" style="margin-top:8px;">${escapeHtml(copy[arm].disclosureBody)}</p>
+            <label class="wsRow" style="gap:8px;">
+              <input type="checkbox" data-iq-analytics ${analyticsOn ? 'checked' : ''} />
+              <span class="wsMuted">Allow anonymous analytics (recommended)</span>
+            </label>
+          </details>
+          <div class="wsRow" style="margin-top:12px;">
+            <button class="wsBtnPrimary" data-iq-start>Start</button>
+            <a class="wsBtnGhost" href="/savings-plan">Build a savings plan instead</a>
+          </div>
+          <div class="wsFoot"><span>Private by default.</span><span>Sources included.</span></div>
+        `;
+        root.querySelector<HTMLInputElement>('[data-iq-analytics]')?.addEventListener('change', (event) => {
+          analyticsOn = event.currentTarget.checked;
+          setWaterIqAnalyticsOptIn(analyticsOn);
+          if (analyticsOn && ref) void trackWaterIqEvent('ref_landing', ref);
+        });
+        root.querySelector('[data-iq-start]')?.addEventListener('click', () => {
+          if (analyticsOn) void trackWaterIqEvent('quiz_start', ref);
+          stepMode = 'question';
+          questionIndex = 0;
+          showExplanation = false;
+          render();
+        });
+        return;
+      }
+
+      if (stepMode === 'impact') {
+        const computed = waterIqCompute(variant, answers);
+        root.innerHTML = `
+          <h2 class="wsH2">${escapeHtml(copy[arm].impactTitle)}</h2>
+          <p class="wsMuted">${escapeHtml(copy[arm].impactSubtitle)}</p>
+          <div class="wsGrid">
+            ${computed.impactRevealStats
+              .map(
+                (s) => `
+                  <div class="wsStat">
+                    <div class="wsStatTitle">${escapeHtml(s.title)}</div>
+                    <div class="wsStatValue">${escapeHtml(s.value)}</div>
+                    <div class="wsMuted" style="margin-top:6px;">${escapeHtml(s.why)}</div>
+                    <div class="wsMuted" style="margin-top:8px;">
+                      Sources: ${s.sources
+                        .map(
+                          (src, idx) =>
+                            `<a class="wsLink" href="${escapeHtml(src.url)}" target="_blank" rel="noreferrer">${escapeHtml(
+                              src.label,
+                            )}</a>${idx < s.sources.length - 1 ? ' · ' : ''}`,
+                        )
+                        .join('')}
+                    </div>
+                  </div>`,
+              )
+              .join('')}
+          </div>
+          <button class="wsBtnPrimary" data-iq-impact-continue style="margin-top:12px;">Continue (and improve your score)</button>
+          <div class="wsFoot"><span>We celebrate improvement.</span><span>Private by default.</span></div>
+        `;
+        root.querySelector('[data-iq-impact-continue]')?.addEventListener('click', () => {
+          if (analyticsOn) void trackWaterIqEvent('impact_continue', ref);
+          const idx = flow.indexOf('__impact_reveal__');
+          stepMode = 'question';
+          questionIndex = idx + 1;
+          showExplanation = false;
+          render();
+        });
+        if (analyticsOn) void trackWaterIqEvent('impact_view', ref);
+        return;
+      }
+
+      if (stepMode === 'submitting') {
+        root.innerHTML = `
+          <h2 class="wsH2">Scoring…</h2>
+          <p class="wsMuted">Building your badge and next steps.</p>
+        `;
+        return;
+      }
+
+      if (stepMode === 'error') {
+        root.innerHTML = `
+          <h2 class="wsH2">Something went wrong</h2>
+          <p class="wsP">Try again in a moment.</p>
+          <button class="wsBtnPrimary" data-iq-restart>Restart</button>
+        `;
+        root.querySelector('[data-iq-restart]')?.addEventListener('click', () => {
+          stepMode = 'landing';
+          render();
+        });
+        return;
+      }
+
+      if (!currentQ) {
+        stepMode = 'error';
+        render();
+        return;
+      }
+
+      const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100);
+      const isKnowledge = currentQ.kind === 'mcq' && Boolean(currentQ.correctOptionId);
+
+      const choicesHtml =
+        currentQ.kind === 'mcq'
+          ? `<div class="wsChoices">${currentQ.options
+              .map((opt) => {
+                const selected = answers[currentQ.id] === opt.id;
+                return `<button class="wsChoice ${selected ? 'isSelected' : ''}" data-iq-choice="${opt.id}">${escapeHtml(
+                  opt.label,
+                )}</button>`;
+              })
+              .join('')}</div>`
+          : '';
+
+      const numberHtml =
+        currentQ.kind === 'number'
+          ? `<div class="wsNumWrap">
+              <input class="wsNum" inputmode="numeric" min="${currentQ.min}" max="${currentQ.max}" step="${
+                currentQ.step ?? 1
+              }" placeholder="${escapeHtml(currentQ.placeholder ?? '')}" value="${escapeHtml(
+                typeof answers[currentQ.id] === 'number' ? String(answers[currentQ.id]) : (answers[currentQ.id] as string) || '',
+              )}" data-iq-number />
+              <button class="wsBtnPrimary" data-iq-next>Next</button>
+            </div>`
+          : '';
+
+      const top2Html =
+        currentQ.kind === 'top2'
+          ? `<div class="wsChoices">
+              ${currentQ.options
+                .map((opt) => {
+                  const selected = Array.isArray(answers[currentQ.id]) && (answers[currentQ.id] as string[]).includes(opt.id);
+                  const disabled = !selected && Array.isArray(answers[currentQ.id]) && (answers[currentQ.id] as string[]).length >= 2;
+                  return `<button class="wsChoice ${selected ? 'isSelected' : ''}" data-iq-top2="${opt.id}" ${
+                    disabled ? 'disabled' : ''
+                  }><strong style="display:block;">${escapeHtml(opt.label)}</strong>${opt.hint ? `<span class="wsMuted">${escapeHtml(opt.hint)}</span>` : ''}</button>`;
+                })
+                .join('')}
+              <div class="wsMuted">Selected: ${(Array.isArray(answers[currentQ.id]) ? (answers[currentQ.id] as string[]).length : 0)}/2</div>
+            </div>`
+          : '';
+
+      const explanationHtml =
+        currentQ.kind === 'mcq' && showExplanation && currentQ.correctOptionId
+          ? `<div class="wsExplain">
+              <div class="${answers[currentQ.id] === currentQ.correctOptionId ? 'wsGood' : 'wsBad'}">${
+                answers[currentQ.id] === currentQ.correctOptionId ? '✅ Correct.' : '❌ Close. Here’s the shortcut truth:'
+              }</div>
+              ${
+                currentQ.explanationByArm?.[arm] || currentQ.explanationDefault
+                  ? `<p class="wsP">${escapeHtml(currentQ.explanationByArm?.[arm] || currentQ.explanationDefault || '')}</p>`
+                  : ''
+              }
+              ${
+                currentQ.sources?.length
+                  ? `<div class="wsSources"><div class="wsMuted">Sources:</div><ul>${currentQ.sources
+                      .map(
+                        (s) =>
+                          `<li><a class="wsLink" href="${escapeHtml(s.url)}" target="_blank" rel="noreferrer">${escapeHtml(
+                            s.label,
+                          )}</a></li>`,
+                      )
+                      .join('')}</ul></div>`
+                  : ''
+              }
+              <button class="wsBtnPrimary" data-iq-next>Next</button>
+            </div>`
+          : '';
+
+      const navHtml =
+        currentQ.kind === 'mcq' || currentQ.kind === 'top2'
+          ? `<div class="wsNav">
+              <button class="wsBtnGhost" data-iq-back>Back</button>
+              ${
+                !(showExplanation && currentQ.correctOptionId)
+                  ? `<button class="wsBtnPrimary" data-iq-next ${
+                      currentQ.required &&
+                      (answers[currentQ.id] == null ||
+                        answers[currentQ.id] === '' ||
+                        (currentQ.kind === 'top2' && ((answers[currentQ.id] as string[] | undefined)?.length ?? 0) !== 2))
+                        ? 'disabled'
+                        : ''
+                    }>Next</button>`
+                  : ''
+              }
+            </div>`
+          : `<div class="wsNav"><button class="wsBtnGhost" data-iq-back>Back</button></div>`;
+
+      root.innerHTML = `
+        <div class="wsTopBar">
+          <div class="wsProgressWrap"><div class="wsProgress" style="width:${progress}%"></div></div>
+          <div class="wsMuted">${questionIndex + 1}/${totalQuestions}</div>
+        </div>
+        <h2 class="wsH2">${escapeHtml(currentQ.stepTitle)}</h2>
+        <p class="wsQ">${escapeHtml(currentQ.prompt)}</p>
+        ${currentQ.helper ? `<p class="wsMuted">${escapeHtml(currentQ.helper)}</p>` : ''}
+        ${choicesHtml}
+        ${top2Html}
+        ${numberHtml}
+        ${explanationHtml}
+        ${navHtml}
+        <div class="wsFoot"><span>Private by default.</span><span>Sources included.</span></div>
+      `;
+
+      root.querySelectorAll<HTMLButtonElement>('[data-iq-choice]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const value = button.getAttribute('data-iq-choice') || '';
+          answers[currentQ.id] = value;
+          if (isKnowledge) {
+            showExplanation = true;
+            render();
+            return;
+          }
+          showExplanation = false;
+          setTimeout(() => next(), 150);
+        });
+      });
+
+      root.querySelectorAll<HTMLButtonElement>('[data-iq-top2]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const value = button.getAttribute('data-iq-top2') || '';
+          const current = Array.isArray(answers[currentQ.id]) ? (answers[currentQ.id] as string[]) : [];
+          const set = new Set(current);
+          if (set.has(value)) {
+            set.delete(value);
+          } else if (set.size < 2) {
+            set.add(value);
+          }
+          answers[currentQ.id] = Array.from(set);
+          render();
+        });
+      });
+
+      root.querySelector<HTMLButtonElement>('[data-iq-back]')?.addEventListener('click', () => {
+        if (questionIndex === 0) {
+          stepMode = 'landing';
+          render();
+          return;
+        }
+        const prevIndex = questionIndex - 1;
+        if (flow[prevIndex] === '__impact_reveal__') {
+          stepMode = 'impact';
+          render();
+          return;
+        }
+        questionIndex = Math.max(0, prevIndex);
+        showExplanation = false;
+        render();
+      });
+
+      root.querySelector<HTMLButtonElement>('[data-iq-next]')?.addEventListener('click', () => next());
+
+      root.querySelector<HTMLInputElement>('[data-iq-number]')?.addEventListener('input', (event) => {
+        const input = event.currentTarget;
+        const v = input.value.trim();
+        const n = v === '' ? null : Number(v);
+        if (n === null || Number.isFinite(n)) answers[currentQ.id] = n ?? null;
+      });
+    };
+
+    const next = () => {
+      const nextIndex = questionIndex + 1;
+      if (nextIndex >= flow.length) {
+        void submit();
+        return;
+      }
+      const nextId = flow[nextIndex];
+      if (nextId === '__impact_reveal__') {
+        stepMode = 'impact';
+        render();
+        return;
+      }
+      questionIndex = nextIndex;
+      showExplanation = false;
+      render();
+    };
+
+    const submit = async () => {
+      stepMode = 'submitting';
+      render();
+      const computed = waterIqCompute(variant, answers);
+      const tokenObj = waterIqBuildShareToken(computed);
+      const token = waterIqEncodeToken(tokenObj);
+      try {
+        localStorage.setItem('ws_water_iq_badge', computed.badge.id);
+      } catch (err) {
+        // ignore
+      }
+      if (analyticsOn && hasAnalyticsConsent()) {
+        try {
+          await fetch('/api/water-iq/submit', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ answers, variant, token, ref }),
+          });
+        } catch (err) {
+          // ignore
+        }
+        void trackWaterIqEvent('quiz_complete', ref);
+      }
+      window.location.href = `/water-iq/r/${token}`;
+    };
+
+    render();
+  };
+
+  const initWaterIqBadge = () => {
+    const badgeLabel = (() => {
+      try {
+        return localStorage.getItem('ws_water_iq_badge');
+      } catch (err) {
+        return null;
+      }
+    })();
+    const badgeEls = document.querySelectorAll<HTMLElement>('[data-water-iq-badge]');
+    badgeEls.forEach((el) => {
+      if (badgeLabel) {
+        el.textContent = `Water IQ: ${badgeLabel.replace(/_/g, ' ')}`;
+      } else {
+        el.textContent = 'Water IQ Challenge';
+      }
+    });
+  };
+
+  const initWaterIqResult = () => {
+    const panel = document.querySelector<HTMLElement>('[data-water-iq-result]');
+    if (!panel) return;
+    const token = panel.dataset.token || '';
+    const score = Number(panel.dataset.score || 0);
+    const badge = panel.dataset.badge || 'starter';
+    const personaCode = panel.dataset.persona || 'CS';
+    const delta = Number(panel.dataset.delta || 0);
+    const origin = window.location.origin;
+    const challengeUrl = `${origin}/water-iq?ref=${token}`;
+    const shareUrl = `${origin}/water-iq/r/${token}`;
+    const arm = waterIqAssignVariant(getOrCreateWaterIqSessionId()).arm as 'A' | 'B';
+    const persona = waterIqPersonaFromCode(personaCode);
+    const badgeLabel = badge.replace(/_/g, ' ').replace(/\\b\\w/g, (m) => m.toUpperCase());
+
+    let cityForShare: string | undefined;
+
+    const share = async () => {
+      await trackWaterIqEvent('share_click');
+      const shareText = waterIqShareCopy(arm, {
+        score,
+        persona: persona.name,
+        badge: badgeLabel,
+        challengeUrl,
+        city: cityForShare,
+      });
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Water IQ Challenge', text: shareText, url: shareUrl });
+          return;
+        } catch (err) {
+          // fall back
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(`${shareText}\\n${shareUrl}`);
+        alert('Copied share text + link.');
+      } catch (err) {
+        prompt('Copy your link:', shareUrl);
+      }
+    };
+
+    panel.querySelector<HTMLButtonElement>('[data-water-iq-share]')?.addEventListener('click', () => void share());
+    panel.querySelector<HTMLButtonElement>('[data-water-iq-challenge]')?.addEventListener('click', async () => {
+      await trackWaterIqEvent('cta_click');
+      try {
+        await navigator.clipboard.writeText(challengeUrl);
+        alert('Challenge link copied.');
+      } catch (err) {
+        prompt('Copy challenge link:', challengeUrl);
+      }
+    });
+
+    panel.querySelectorAll<HTMLElement>('[data-water-iq-cta]').forEach((cta) => {
+      cta.addEventListener('click', () => void trackWaterIqEvent('cta_click'));
+    });
+
+    const socialProof = panel.querySelector<HTMLElement>('[data-water-iq-social]');
+    const shareProofButton = panel.querySelector<HTMLButtonElement>('[data-water-iq-share-proof]');
+    let socialProofShareText = '';
+    if (socialProof && token) {
+      fetch(`/api/water-iq/social-proof?token=${encodeURIComponent(token)}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json?.data?.ok) {
+            socialProof.textContent = 'Social proof is unavailable (you may have opted out of analytics).';
+            return;
+          }
+          const data = json.data;
+          socialProof.innerHTML = `${escapeHtml((WATER_IQ_COPY as typeof WATER_IQ_COPY)[arm].socialProofPrefix)} <strong>${escapeHtml(
+            data.topPledge.label,
+          )}</strong> (${data.topPledge.pct}%). <span class="wsMuted">${escapeHtml(
+            (WATER_IQ_COPY as typeof WATER_IQ_COPY)[arm].socialProofCaveat,
+          )} n=${data.n}. ${escapeHtml((WATER_IQ_COPY as typeof WATER_IQ_COPY)[arm].socialProofSuffix)}</span>`;
+          socialProofShareText = `${(WATER_IQ_COPY as typeof WATER_IQ_COPY)[arm].socialProofPrefix} ${data.topPledge.label} (${data.topPledge.pct}%). n=${data.n}. ${shareUrl}`;
+          if (shareProofButton) shareProofButton.disabled = false;
+        })
+        .catch(() => {
+          socialProof.textContent = 'Social proof is unavailable (you may have opted out of analytics).';
+        });
+    }
+    if (shareProofButton) {
+      shareProofButton.disabled = true;
+      shareProofButton.addEventListener('click', async () => {
+        if (!socialProofShareText) return;
+        await trackWaterIqEvent('share_click');
+        try {
+          await navigator.clipboard.writeText(socialProofShareText);
+          alert('Social proof copied.');
+        } catch (err) {
+          prompt('Copy social proof:', socialProofShareText);
+        }
+      });
+    }
+
+    const cityInput = panel.querySelector<HTMLInputElement>('[data-water-iq-city]');
+    const cityButton = panel.querySelector<HTMLButtonElement>('[data-water-iq-city-submit]');
+    const cityResult = panel.querySelector<HTMLElement>('[data-water-iq-city-result]');
+    cityButton?.addEventListener('click', async () => {
+      const city = cityInput?.value?.trim() || '';
+      if (!city) return;
+      await fetch('/api/water-iq/city', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, city }),
+      }).catch(() => null);
+      const res = await fetch(`/api/water-iq/city-average?city=${encodeURIComponent(city)}`).then((r) => r.json()).catch(() => null);
+      if (cityResult) {
+        if (res?.data?.ok) {
+          cityForShare = res.data.city;
+          cityResult.textContent = `${res.data.city} average score: ${res.data.avgScore} (n=${res.data.n}).`;
+        } else {
+          cityResult.textContent = 'City averages appear once enough people in your city participate.';
+        }
+      }
+      void trackWaterIqEvent('city_set');
+    });
+
+    const followupForm = panel.querySelector<HTMLFormElement>('[data-water-iq-followup]');
+    const followupStatus = panel.querySelector<HTMLElement>('[data-water-iq-followup-status]');
+    followupForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = followupForm.querySelector<HTMLInputElement>('input[name=\"email\"]')?.value?.trim() || '';
+      const days = Number(followupForm.querySelector<HTMLSelectElement>('select[name=\"days\"]')?.value || 7);
+      const consent = Boolean(followupForm.querySelector<HTMLInputElement>('input[name=\"consent\"]')?.checked);
+      if (!email || !consent) return;
+      const res = await fetch('/api/water-iq/followup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, email, days, consent }),
+      }).then((r) => r.json()).catch(() => null);
+      if (followupStatus) {
+        followupStatus.textContent = res?.ok ? '✅ Scheduled. We’ll check in soon.' : `❌ ${res?.error ?? 'Could not schedule'}`;
+      }
+      if (res?.ok) void trackWaterIqEvent('followup_optin');
+    });
+
+    const deltaEl = panel.querySelector<HTMLElement>('[data-water-iq-delta]');
+    if (deltaEl) {
+      deltaEl.textContent = `Knowledge delta: ${delta >= 0 ? '+' : ''}${delta}`;
+    }
+
+    panel.querySelectorAll<HTMLButtonElement>('[data-water-iq-reward]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const action = button.getAttribute('data-water-iq-reward') || '';
+        if (!action) return;
+        const res = await fetch('/api/water-iq/reward', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ token, action }),
+        }).then((r) => r.json()).catch(() => null);
+        const status = panel.querySelector<HTMLElement>('[data-water-iq-reward-status]');
+        if (res?.ok && res.awarded) {
+          try {
+            const existing = Number(localStorage.getItem('ws_credits') || '5');
+            const updated = existing + 1;
+            localStorage.setItem('ws_credits', String(updated));
+          } catch (err) {
+            // ignore
+          }
+          if (status) status.textContent = '✅ Credit added to your account.';
+        } else if (status) {
+          status.textContent = res?.error || 'Credit already claimed for this step.';
+        }
+      });
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     initFaq();
     initWizards();
@@ -1254,6 +2115,9 @@ export function clientScript() {
     initRebatesTool();
     initBillUpload();
     initDemoAndManual();
+    initWaterIq();
+    initWaterIqResult();
+    initWaterIqBadge();
     initModals();
     initConsentBanner();
     ensureAnalyticsLoaded();
@@ -1271,4 +2135,11 @@ export function clientScript() {
   });
 }
 
-export const appJs = `(${clientScript.toString()})();`;
+const waterIqQuestionsJson = JSON.stringify(WATER_IQ_QUESTIONS);
+const waterIqFlowJson = JSON.stringify(WATER_IQ_FLOW);
+const waterIqCopyJson = JSON.stringify(WATER_IQ_COPY);
+
+export const appJs = `const WATER_IQ_QUESTIONS = ${waterIqQuestionsJson};
+const WATER_IQ_FLOW = ${waterIqFlowJson};
+const WATER_IQ_COPY = ${waterIqCopyJson};
+(${clientScript.toString()})();`;

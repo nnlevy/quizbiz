@@ -8,6 +8,26 @@ import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT, DEFAULT_ADSENSE_SLOTS, DEFAUL
 import { GA_MEASUREMENT_ID as DEFAULT_GA_MEASUREMENT_ID } from "../config/analytics";
 import { pages as seoPages, site as seoSite, canonicalUrl as seoCanonicalUrl } from "../seo/seoConfig.js";
 import type { PageSeo } from "../seo/seoConfig.js";
+import {
+  computeWaterIq,
+  decodeToken,
+  hookFactById,
+  moveMeta,
+  personaFor,
+} from "../lib/waterIq";
+import type { WaterIqAnswers, WaterIqVariant } from "../lib/waterIq";
+import {
+  getCityAverage,
+  getFollowupsDue,
+  getSocialProofFor,
+  getStats,
+  storeCity,
+  storeEvent,
+  storeFollowup,
+  storeReward,
+  storeSubmit,
+} from "../lib/waterIqStore";
+import { runWaterIqAudit } from "../lib/waterIqAudit";
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -41,6 +61,7 @@ type WorkerEnv = {
   ADSENSE_SLOT_INLINE?: string;
   ADSENSE_SLOT_FOOTER?: string;
   ADSENSE_SLOT_STICKY?: string;
+  WS_ADMIN_EXPORT_KEY?: string;
 };
 
 type ChatCompletionResponse = {
@@ -226,6 +247,7 @@ const homeownerDropdownLinks = [
   { label: "Analyze", href: "/analyze-water-bill" },
   { label: "Plan", href: "/savings-plan" },
   { label: "Calculators", href: "/calculators" },
+  { label: "Water IQ Challenge", href: "/water-iq" },
   { label: "Leaks", href: "/leak-check" },
   { label: "Rebates", href: "/rebates" },
   { label: "Guides", href: "/guides" },
@@ -245,6 +267,7 @@ const footerLinks = [
   { label: "Disclaimer", href: "/disclaimer", modal: "disclaimer-modal" },
   { label: "Change privacy settings", href: "#privacy-settings" },
   { label: "Water Eject (iPhone)", href: "/blog-how-to-eject.html" },
+  { label: "Water IQ Challenge", href: "/water-iq" },
   { label: "Contact", href: "/contact" },
   { label: "Sitemap", href: "/sitemap", modal: "sitemap-modal" },
 ];
@@ -313,6 +336,13 @@ const siteRoutes: SiteRoute[] = [
     description:
       "Answer a few questions to get a personalized, prioritized plan to lower your water bill.",
     body: renderSavingsPlan(),
+  },
+  {
+    path: "/water-iq",
+    title: "Water IQ Challenge | WaterShortcut",
+    description:
+      "Take the 2–3 minute Water IQ Challenge to get your score, a shareable badge, and your next best water-saving moves.",
+    body: renderWaterIq(),
   },
   {
     path: "/calculators",
@@ -628,6 +658,99 @@ app.get("/__ads", (c) => {
   );
 });
 
+app.get("/water-iq/og/:token", (c) => {
+  const token = c.req.param("token");
+  const decoded = decodeToken(token);
+  const score = decoded?.score ?? 0;
+  const persona = personaFor(score);
+  const badge = decoded?.badge ? decoded.badge.replace(/_/g, " ").toUpperCase() : "STARTER";
+  const hook = decoded ? hookFactById(decoded.hook) : { short: "Small fixes add up fast.", sources: [] };
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+  <rect width="1200" height="630" fill="#ffffff" stroke="#111111" stroke-width="16" />
+  <text x="60" y="120" font-size="52" font-family="system-ui, -apple-system, sans-serif" font-weight="800" fill="#111111">${escapeHtml(
+    `${persona.emoji} ${persona.name}`,
+  )}</text>
+  <text x="1140" y="120" text-anchor="end" font-size="52" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#111111">${score}/10</text>
+  <text x="60" y="260" font-size="34" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#111111">${escapeHtml(
+    badge,
+  )}</text>
+  <text x="60" y="320" font-size="32" font-family="system-ui, -apple-system, sans-serif" fill="#111111">${escapeHtml(
+    hook.short,
+  )}</text>
+  <text x="60" y="560" font-size="26" font-family="system-ui, -apple-system, sans-serif" fill="rgba(0,0,0,0.72)">Water IQ Challenge · Tag 3 friends</text>
+  <text x="1140" y="560" text-anchor="end" font-size="26" font-family="system-ui, -apple-system, sans-serif" font-weight="800" fill="#111111">watershortcut.com</text>
+</svg>`;
+  return c.body(svg, 200, {
+    "Content-Type": "image/svg+xml; charset=utf-8",
+    "Cache-Control": "public, max-age=3600",
+  });
+});
+
+app.get("/water-iq/r/:token", (c) => {
+  const token = c.req.param("token");
+  const decoded = decodeToken(token);
+  const adsenseSlots = buildAdsenseSlots(c.env);
+  const adsenseClient = resolveAdsenseClient(c.env);
+  const gaMeasurementId = resolveGaMeasurementId(c.env);
+  const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
+  const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
+  const consentRequired = isConsentRequired(country);
+  const showPrivacyControls = consentRequired;
+  const cspNonce = c.get("cspNonce") as string;
+
+  if (!decoded) {
+    return c.html(
+      layout({
+        title: "Invalid result link | WaterShortcut",
+        description: "This link looks broken. Try the Water IQ Challenge again.",
+        canonicalPath: `/water-iq/r/${token}`,
+        bodyHtml:
+          '<section class="section"><h1>Invalid result link</h1><p>This link looks broken. Try the quiz again.</p><a class="btn secondary" href="/water-iq">Go to Water IQ Challenge</a></section>',
+        adsenseSlots,
+        adsenseClient,
+        gaMeasurementId,
+        stripePublishableKey,
+        consentRequired,
+        showPrivacyControls,
+        cspNonce,
+      }),
+    );
+  }
+
+  const persona = personaFor(decoded.score);
+  const hook = hookFactById(decoded.hook);
+  const moves = decoded.moves.map((id) => ({ id, ...moveMeta(id) })).filter((m) => m && m.href && m.title);
+  const title = `${persona.emoji} ${persona.name} — ${decoded.score}/10 Water IQ`;
+  const description =
+    "Take the 2–3 minute Water IQ Challenge. Get a shareable badge + practical next steps to save water and lower bills.";
+  return c.html(
+    layout({
+      title,
+      description,
+      canonicalPath: `/water-iq/r/${token}`,
+      ogImageUrl: `/water-iq/og/${token}`,
+      twitterCard: "summary_large_image",
+      bodyHtml: renderWaterIqResult({
+        token,
+        persona,
+        score: decoded.score,
+        badge: decoded.badge,
+        delta: decoded.delta,
+        hook,
+        moves,
+      }),
+      adsenseSlots,
+      adsenseClient,
+      gaMeasurementId,
+      stripePublishableKey,
+      consentRequired,
+      showPrivacyControls,
+      cspNonce,
+    }),
+  );
+});
+
 siteRoutes.forEach((route) => {
   app.get(route.path, (c) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
@@ -702,6 +825,8 @@ function layout(options: {
   pageCssClass?: string;
   breadcrumbs?: Array<{ name: string; path: string }>;
   extraJsonLd?: Array<Record<string, unknown>>;
+  ogImageUrl?: string;
+  twitterCard?: string;
   adsenseSlots?: Required<AdsenseSlots>;
   adsenseClient: string;
   gaMeasurementId: string;
@@ -718,6 +843,8 @@ function layout(options: {
     pageCssClass,
     breadcrumbs,
     extraJsonLd,
+    ogImageUrl,
+    twitterCard,
     adsenseClient,
     gaMeasurementId,
     stripePublishableKey,
@@ -731,6 +858,9 @@ function layout(options: {
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const useEjectNav = isWaterEjectRoute(canonicalPath);
   const isGameRoute = canonicalPath.startsWith("/game") || canonicalPath.startsWith("/leak-patrol");
+  const resolvedTwitterCard = twitterCard ?? "summary";
+  const resolvedOgImage =
+    ogImageUrl && ogImageUrl.startsWith("http") ? ogImageUrl : ogImageUrl ? `${DOMAIN}${ogImageUrl}` : null;
   const renderedFooterLinks = (showPrivacyControls
     ? footerLinks
     : footerLinks.filter((link) => link.label !== "Change privacy settings")
@@ -764,6 +894,7 @@ function layout(options: {
       </div>
     `
     : "";
+  const badgeLink = `<a class="nav-link nav-badge" href="/water-iq" data-water-iq-badge>Water IQ Challenge</a>`;
   const navLinks = useEjectNav
     ? waterEjectNavLinks
     : [
@@ -853,9 +984,11 @@ function layout(options: {
       <meta property="og:description" content="${escapeHtml(description)}" />
       <meta property="og:url" content="${canonicalUrl}" />
       <meta property="og:type" content="website" />
-      <meta name="twitter:card" content="summary" />
+      ${resolvedOgImage ? `<meta property="og:image" content="${escapeHtml(resolvedOgImage)}" />` : ""}
+      <meta name="twitter:card" content="${resolvedTwitterCard}" />
       <meta name="twitter:title" content="${escapeHtml(title)}" />
       <meta name="twitter:description" content="${escapeHtml(description)}" />
+      ${resolvedOgImage ? `<meta name="twitter:image" content="${escapeHtml(resolvedOgImage)}" />` : ""}
       <link rel="preload" href="/assets/styles.css" as="style" />
       <link rel="stylesheet" href="/assets/styles.css" />
       <script nonce="${cspNonce}" type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
@@ -953,6 +1086,7 @@ function layout(options: {
                       .join("")
                   : toolsDropdown
               }
+              ${badgeLink}
               ${
                 useEjectNav
                   ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
@@ -1335,6 +1469,150 @@ function renderSavingsPlan(): string {
           <button class="btn secondary" data-copy-plan>Copy my plan</button>
           <button class="btn secondary" data-print-plan>Download PDF</button>
         </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderWaterIq(): string {
+  return `
+    <section class="section water-iq">
+      <div class="water-iq-card" data-water-iq-root>
+        <noscript>
+          <h1 class="wsH1">Water IQ Challenge</h1>
+          <p class="wsP">This quiz needs JavaScript to run. Please enable it and reload.</p>
+          <a class="wsBtnPrimary" href="/water-iq">Reload</a>
+        </noscript>
+      </div>
+    </section>
+  `;
+}
+
+function renderWaterIqResult(input: {
+  token: string;
+  persona: { code: string; name: string; emoji: string; tagline: string };
+  score: number;
+  badge: string;
+  delta: number;
+  hook: { short: string; sources: { label: string; url: string }[] };
+  moves: Array<{ id: string; title: string; href: string }>;
+}): string {
+  const { token, persona, score, badge, delta, hook, moves } = input;
+  const sourcesHtml = hook.sources.length
+    ? `<div class="wsSources"><div class="wsMuted">Sources:</div><ul>${hook.sources
+        .map(
+          (s) =>
+            `<li><a class="wsLink" href="${escapeHtml(s.url)}" target="_blank" rel="noreferrer">${escapeHtml(
+              s.label,
+            )}</a></li>`,
+        )
+        .join("")}</ul></div>`
+    : "";
+  const movesHtml = moves
+    .map(
+      (m) => `
+        <a class="wsResultMove" data-water-iq-cta="${escapeHtml(m.id)}" href="${escapeHtml(m.href)}">
+          <strong>${escapeHtml(m.title)}</strong>
+          <span>Tap to open in WaterShortcut.</span>
+        </a>`,
+    )
+    .join("");
+
+  const badgeLabel = badge.replace(/_/g, " ");
+  return `
+    <section class="section water-iq">
+      <div class="water-iq-card" data-water-iq-result data-token="${escapeHtml(token)}" data-persona="${escapeHtml(
+    persona.code ?? "CS",
+  )}" data-score="${score}" data-badge="${escapeHtml(badge)}" data-delta="${delta}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <h1 class="wsH1" style="margin:0;">${escapeHtml(persona.emoji)} ${escapeHtml(persona.name)}</h1>
+          <div style="font-weight:750;font-size:16px;">${score}/10</div>
+        </div>
+        <p class="wsP wsMuted">${escapeHtml(persona.tagline)}</p>
+        <div style="margin-top:6px;"><strong>Badge:</strong> ${escapeHtml(badgeLabel)}</div>
+
+        <div class="wsExplain">
+          <div style="font-weight:750;margin-bottom:6px;">The “did you know?” fact</div>
+          <div style="font-size:16px;line-height:1.35;">${escapeHtml(hook.short)}</div>
+          ${sourcesHtml}
+        </div>
+
+        <div class="wsExplain">
+          <div style="font-weight:750;margin-bottom:6px;">Your learning delta</div>
+          <div class="wsMuted" data-water-iq-delta>Knowledge delta: ${delta >= 0 ? "+" : ""}${delta}</div>
+          <div class="wsMuted" style="margin-top:6px;font-size:12px;">
+            We repeat two questions to measure whether the Impact Reveal changes intuition.
+          </div>
+        </div>
+
+        <h2 class="wsH2">Your next best steps</h2>
+        <div class="wsResultMoves">${movesHtml}</div>
+        <div class="wsExplain">
+          <div style="font-weight:750;margin-bottom:6px;">Completed a big step?</div>
+          <p class="wsMuted">Claim 1 WaterShortcut credit for each top action you finish.</p>
+          <div class="wsRow">
+            ${moves
+              .map(
+                (m) =>
+                  `<button class="wsBtnGhost" data-water-iq-reward="${escapeHtml(m.id)}">Mark ${escapeHtml(
+                    m.title,
+                  )} done (+1 credit)</button>`,
+              )
+              .join("")}
+          </div>
+          <div class="wsMuted" data-water-iq-reward-status></div>
+        </div>
+
+        <div class="wsExplain">
+          <div style="font-weight:750;margin-bottom:6px;">Social proof (transparent)</div>
+          <div data-water-iq-social class="wsMuted">Loading social proof…</div>
+          <button class="wsBtnGhost" data-water-iq-share-proof style="margin-top:8px;">Share social proof</button>
+          <div class="wsMuted" style="margin-top:8px;font-size:12px;">
+            Note: In constrained contexts, social norms can land differently. See <a class="wsLink" href="https://www.sciencedirect.com/science/article/pii/S0095069623000700" target="_blank" rel="noreferrer">Brick et al. (2023)</a>.
+          </div>
+        </div>
+
+        <div class="wsExplain">
+          <div style="font-weight:750;margin-bottom:6px;">Beat your city average (optional)</div>
+          <div class="wsRow" style="margin-top:0;">
+            <input class="wsNum" data-water-iq-city placeholder="Enter your city" />
+            <button class="wsBtnPrimary" data-water-iq-city-submit>Compare</button>
+          </div>
+          <div class="wsMuted" data-water-iq-city-result>City averages appear once enough people in your city participate.</div>
+        </div>
+
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.10);">
+          <h3 style="margin:0 0 8px;">Make it viral (in a good way)</h3>
+          <p class="wsMuted" style="margin:0 0 10px;">Post your score. Tag 3 friends. Beat your city average.</p>
+          <div class="wsRow">
+            <button class="wsBtnPrimary" data-water-iq-share>Share my result</button>
+            <button class="wsBtnGhost" data-water-iq-challenge>Copy challenge link</button>
+            <a class="wsBtnGhost" href="/water-iq">Take again</a>
+          </div>
+          <div class="wsMuted" style="margin-top:10px;font-size:12px;">Private by default — you choose if you share.</div>
+        </div>
+
+        <div class="wsExplain">
+          <div style="font-weight:750;margin-bottom:6px;">Optional follow-up (7–21 days)</div>
+          <div class="wsMuted" style="margin-bottom:8px;">If you opt in, we’ll send one check-in email. No spam.</div>
+          <form data-water-iq-followup>
+            <div class="wsRow" style="margin-top:0;">
+              <input class="wsNum" name="email" placeholder="Email address" />
+              <select class="wsNum" name="days">
+                <option value="7">7-day check-in</option>
+                <option value="21">21-day check-in</option>
+              </select>
+              <button class="wsBtnPrimary" type="submit">Schedule</button>
+            </div>
+            <label class="wsRow" style="gap:8px;">
+              <input type="checkbox" name="consent" />
+              <span class="wsMuted">I consent to receive one check-in email about my pledge.</span>
+            </label>
+          </form>
+          <div class="wsMuted" data-water-iq-followup-status></div>
+        </div>
+
+        <div class="wsFoot"><span>We celebrate improvement.</span><span>Private by default.</span></div>
       </div>
     </section>
   `;
@@ -1974,6 +2252,146 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
 
 app.get("/api/location", handleLocationQuery);
 app.post("/api/location", handleLocationQuery);
+
+app.post("/api/water-iq/submit", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ ok: false, error: "Invalid JSON" }, 400);
+
+  const answers = (body.answers ?? {}) as WaterIqAnswers;
+  const variant = (body.variant ?? { v: 1, arm: "A" }) as WaterIqVariant;
+  const token = String(body.token ?? "");
+  const ref = body.ref ? String(body.ref) : null;
+
+  const decoded = decodeToken(token);
+  if (!decoded) return c.json({ ok: false, error: "Invalid token" }, 400);
+
+  const computed = computeWaterIq(variant, answers);
+
+  const rec = storeSubmit({
+    token,
+    createdAt: Date.now(),
+    variant,
+    answers,
+    computed,
+    ref,
+    ua: c.req.header("user-agent"),
+  });
+
+  storeEvent({ type: "quiz_complete", ref });
+
+  return c.json({ ok: true, id: rec.id });
+});
+
+app.get("/api/water-iq/stats", (c) => c.json({ ok: true, stats: getStats() }));
+
+app.post("/api/water-iq/event", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ ok: false, error: "Invalid JSON" }, 400);
+
+  const type = String(body.type ?? "");
+  const ref = body.ref ? String(body.ref) : null;
+
+  const allowed = new Set([
+    "ref_landing",
+    "quiz_start",
+    "impact_view",
+    "impact_continue",
+    "quiz_complete",
+    "share_click",
+    "cta_click",
+    "city_set",
+    "followup_optin",
+  ]);
+
+  if (!allowed.has(type)) return c.json({ ok: false, error: "Unknown event type" }, 400);
+
+  storeEvent({ type: type as any, ref });
+
+  return c.json({ ok: true });
+});
+
+app.get("/api/water-iq/social-proof", (c) => {
+  const url = new URL(c.req.url);
+  const token = url.searchParams.get("token") ?? "";
+  const data = getSocialProofFor(token);
+  return c.json({ ok: true, data });
+});
+
+app.post("/api/water-iq/city", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ ok: false, error: "Invalid JSON" }, 400);
+
+  const token = String(body.token ?? "");
+  const city = String(body.city ?? "");
+  if (!token) return c.json({ ok: false, error: "Missing token" }, 400);
+
+  const res = storeCity(token, city);
+  return c.json(res);
+});
+
+app.get("/api/water-iq/city-average", (c) => {
+  const url = new URL(c.req.url);
+  const city = url.searchParams.get("city") ?? "";
+  const data = getCityAverage(city);
+  return c.json({ ok: true, data });
+});
+
+app.post("/api/water-iq/followup", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ ok: false, error: "Invalid JSON" }, 400);
+
+  const token = String(body.token ?? "");
+  const email = String(body.email ?? "").trim();
+  const days = Number(body.days ?? 0) as 7 | 21;
+  const consent = Boolean(body.consent);
+
+  if (!token) return c.json({ ok: false, error: "Missing token" }, 400);
+  if (!consent) return c.json({ ok: false, error: "Consent required" }, 400);
+  if (!(days === 7 || days === 21)) return c.json({ ok: false, error: "Days must be 7 or 21" }, 400);
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return c.json({ ok: false, error: "Invalid email" }, 400);
+
+  const f = storeFollowup({ token, email, days, consent: true });
+  return c.json({ ok: true, followup: { id: f.id, dueAt: f.dueAt } });
+});
+
+app.post("/api/water-iq/reward", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ ok: false, error: "Invalid JSON" }, 400);
+
+  const token = String(body.token ?? "");
+  const action = String(body.action ?? "");
+
+  if (!token) return c.json({ ok: false, error: "Missing token" }, 400);
+  if (!action) return c.json({ ok: false, error: "Missing action" }, 400);
+
+  const decoded = decodeToken(token);
+  if (!decoded) return c.json({ ok: false, error: "Invalid token" }, 400);
+
+  const allowed = new Set(decoded.moves);
+  if (!allowed.has(action as typeof decoded.moves[number])) {
+    return c.json({ ok: false, error: "Action not eligible for reward" }, 400);
+  }
+
+  const res = storeReward(token, action);
+  if (!res.ok) return c.json({ ok: false, error: res.error }, 400);
+  return c.json({ ok: true, ...res });
+});
+
+app.get("/api/water-iq/followup/due", (c) => {
+  const url = new URL(c.req.url);
+  const key = url.searchParams.get("key") ?? "";
+  const required = c.env.WS_ADMIN_EXPORT_KEY ?? "";
+  if (!required || key !== required) return c.json({ ok: false, error: "Unauthorized" }, 401);
+
+  const now = Date.now();
+  const due = getFollowupsDue(now);
+  return c.json({ ok: true, now, due });
+});
+
+app.get("/api/water-iq/audit", (c) => {
+  const audit = runWaterIqAudit();
+  return c.json({ ok: true, audit });
+});
 
 async function extractLocationInput(
   c: Context<{ Bindings: WorkerEnv }>,

@@ -20,6 +20,7 @@ const primaryLinks = [
 
 const secondaryLinks = [
   { href: "/leak-check", label: "Leak check" },
+  { href: "/water-iq", label: "Water IQ Challenge" },
   { href: "/rebates", label: "Rebates" },
   { href: "/guides", label: "Guides" },
   { href: "/site-map", label: "Site map" },
@@ -53,6 +54,7 @@ const SiteNav = ({
   const [showCreditInfo, setShowCreditInfo] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showModeBar, setShowModeBar] = useState(true);
+  const [waterIqBadge, setWaterIqBadge] = useState<string | null>(null);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownToggleRef = useRef<HTMLButtonElement | null>(null);
   const creditInfoModalRef = useRef<HTMLDivElement | null>(null);
@@ -115,6 +117,25 @@ const SiteNav = ({
     setIsMobileMenuOpen(false);
     document.body.classList.remove("nav-open");
     document.body.style.overflow = "";
+  }, []);
+
+  useEffect(() => {
+    const readBadge = () => {
+      try {
+        const stored = window.localStorage.getItem("ws_water_iq_badge");
+        setWaterIqBadge(stored);
+      } catch {
+        setWaterIqBadge(null);
+      }
+    };
+    readBadge();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "ws_water_iq_badge") {
+        setWaterIqBadge(event.newValue);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -407,6 +428,9 @@ const SiteNav = ({
                 {link.label}
               </a>
             ))}
+            <a className="nav-link nav-link--badge" href="/water-iq" onClick={closeMenu}>
+              Water IQ{waterIqBadge ? `: ${waterIqBadge.replace(/_/g, " ")}` : ""}
+            </a>
             <div
               className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
               onBlur={handleDropdownBlur}

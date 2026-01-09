@@ -165,6 +165,17 @@ const pages = {
     bodyHtml:
       '<section class="seo-section"><h2>How the game helps</h2><ul><li>See how small habit tweaks add up over a month.</li><li>Compare the impact of hardware upgrades versus behavior changes.</li><li>Share tips with family members to keep everyone on track.</li></ul></section>',
   },
+  "/water-iq": {
+    title: "Water IQ Challenge | WaterShortcut",
+    description:
+      "Take the 2–3 minute Water IQ Challenge to get your score, a shareable badge, and your next best water-saving moves.",
+    canonicalPath: "/water-iq",
+    h1: "Water IQ Challenge",
+    intro:
+      "Test your water-saving knowledge in minutes, then get practical next steps you can share.",
+    bodyHtml:
+      '<section class="seo-section"><h2>What you’ll learn</h2><ul><li>Mythbuster facts that reveal the biggest leaks.</li><li>Habit questions that highlight your fastest wins.</li><li>A shareable badge and next-step checklist.</li></ul></section>',
+  },
 };
 
 function buildTitle(pageTitle) {
