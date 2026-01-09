@@ -1521,20 +1521,25 @@ function renderWaterIqResult(input: {
   const badgeLabel = badge.replace(/_/g, " ");
   return `
     <section class="section water-iq">
-      <div class="water-iq-card" data-water-iq-result data-token="${escapeHtml(token)}" data-persona="${escapeHtml(
+      <div class="water-iq-card water-iq-card--result" data-water-iq-result data-token="${escapeHtml(token)}" data-persona="${escapeHtml(
     persona.code ?? "CS",
   )}" data-score="${score}" data-badge="${escapeHtml(badge)}" data-delta="${delta}">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <h1 class="wsH1" style="margin:0;">${escapeHtml(persona.emoji)} ${escapeHtml(persona.name)}</h1>
-          <div style="font-weight:750;font-size:16px;">${score}/10</div>
+        <div class="water-iq-result-header">
+          <h1 class="water-iq-title">Water IQ Challenge</h1>
+          <span class="water-iq-ellipsis" aria-hidden="true">•••</span>
         </div>
-        <p class="wsP wsMuted">${escapeHtml(persona.tagline)}</p>
-        <div style="margin-top:6px;"><strong>Badge:</strong> ${escapeHtml(badgeLabel)}</div>
-
-        <div class="wsExplain">
-          <div style="font-weight:750;margin-bottom:6px;">The “did you know?” fact</div>
-          <div style="font-size:16px;line-height:1.35;">${escapeHtml(hook.short)}</div>
-          ${sourcesHtml}
+        <div class="water-iq-divider" role="presentation"></div>
+        <div class="water-iq-result-meta">
+          <div class="water-iq-score-circle" aria-label="Score">
+            <div class="water-iq-score-value">${score}<span>/10</span></div>
+          </div>
+          <div class="water-iq-result-copy">
+            <div class="water-iq-badge-pill">
+              <span class="water-iq-badge-icon" aria-hidden="true">💧</span>
+              ${escapeHtml(badgeLabel)}
+            </div>
+            <div class="water-iq-fact">${escapeHtml(hook.short)}</div>
+          </div>
         </div>
 
         <div class="wsExplain">
@@ -1585,7 +1590,7 @@ function renderWaterIqResult(input: {
           <h3 style="margin:0 0 8px;">Make it viral (in a good way)</h3>
           <p class="wsMuted" style="margin:0 0 10px;">Post your score. Tag 3 friends. Beat your city average.</p>
           <div class="wsRow">
-            <button class="wsBtnPrimary" data-water-iq-share>Share my result</button>
+            <button class="wsBtnPrimary wsBtnPrimary--pill" data-water-iq-share>Challenge 3 friends</button>
             <button class="wsBtnGhost" data-water-iq-challenge>Copy challenge link</button>
             <a class="wsBtnGhost" href="/water-iq">Take again</a>
           </div>
