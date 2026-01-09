@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -19,8 +20,17 @@ export type CreditsContextValue = {
 const CreditsContext = createContext<CreditsContextValue | undefined>(undefined);
 
 export const CreditsProvider = ({ children }: PropsWithChildren) => {
-  const [credits, setCredits] = useState(5);
+  const [credits, setCredits] = useState(() => {
+    if (typeof window === "undefined") return 5;
+    const stored = Number(window.localStorage.getItem("ws_credits") || "5");
+    return Number.isFinite(stored) ? stored : 5;
+  });
   const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("ws_credits", String(credits));
+  }, [credits]);
 
   const deduct = useCallback(
     (amount: number) => {
