@@ -16,13 +16,49 @@ const Analyze = () => {
   const [progress, setProgress] = useState(0);
   const [complete, setComplete] = useState(false);
 
+  const isDemo = state.mode === "demo";
+  const isManual = state.mode === "manual";
+  const hasUpload = state.mode === "upload" || Boolean(state.fileName);
+  const hasMode = isDemo || isManual || hasUpload;
+
   const modeLabel = useMemo(() => {
     if (state.mode === "demo") return "Demo bill";
     if (state.mode === "manual") return "Manual entry";
-    return state.fileName ? `Uploaded: ${state.fileName}` : "Uploaded bill";
-  }, [state.mode, state.fileName]);
+    if (state.fileName) return `Uploaded: ${state.fileName}`;
+    return hasMode ? "Uploaded bill" : "No bill selected yet";
+  }, [hasMode, state.mode, state.fileName]);
+
+  const heroEyebrow = complete ? "Analysis complete" : "Analysis in progress";
+  const heroTitle = complete
+    ? isDemo
+      ? "Demo insights are ready."
+      : isManual
+        ? "Manual insights are ready."
+        : "Your bill insights are ready."
+    : isDemo
+      ? "Reviewing the demo bill."
+      : isManual
+        ? "Preparing your manual insights."
+        : hasUpload
+          ? "We’re reading your bill with care."
+          : "Ready when you are.";
+
+  const heroSupport = complete
+    ? isDemo
+      ? "See how things change with a real bill upload."
+      : isManual
+        ? "Upload a PDF later to refine the insights."
+        : "Keep the momentum going with extra tools below."
+    : hasMode
+      ? "We translate usage tiers, spikes, and leak signals into clear actions."
+      : "Pick a mode to start your analysis.";
 
   useEffect(() => {
+    if (!hasMode) {
+      setProgress(0);
+      setComplete(false);
+      return;
+    }
     let current = 0;
     setComplete(false);
     const interval = window.setInterval(() => {
@@ -35,17 +71,39 @@ const Analyze = () => {
       setProgress(current);
     }, 450);
     return () => window.clearInterval(interval);
-  }, [state.mode, state.fileName]);
+  }, [hasMode, state.mode, state.fileName]);
 
   return (
     <section className="ws-page" aria-labelledby="analysis-title">
       <div className="ws-hero">
-        <p className="eyebrow">Analysis in progress</p>
-        <h1 id="analysis-title">We’re reading your bill with care.</h1>
+        <p className="eyebrow">{heroEyebrow}</p>
+        <h1 id="analysis-title">{heroTitle}</h1>
+        <p>{heroSupport}</p>
         <p>{modeLabel}</p>
+        {isDemo && (
+          <div className="ws-demo-cta">
+            <p>Want custom insights? Upload your own bill for a tailored plan.</p>
+            <button className="ws-button-secondary" type="button" onClick={() => navigate("/")}>
+              Upload my bill
+            </button>
+          </div>
+        )}
       </div>
 
-      {!complete ? (
+      {!hasMode ? (
+        <div className="ws-progress" role="status" aria-live="polite">
+          <h2>Start your analysis</h2>
+          <p>Upload a PDF, try the demo bill, or enter numbers manually to generate insights.</p>
+          <div className="ws-tool-grid">
+            <button className="ws-button" type="button" onClick={() => navigate("/")}>
+              Go to upload options
+            </button>
+            <button className="ws-button-secondary" type="button" onClick={() => navigate("/legacy#manual-entry")}>
+              Enter numbers manually
+            </button>
+          </div>
+        </div>
+      ) : !complete ? (
         <div className="ws-progress" role="status" aria-live="polite">
           <p>Analyzing usage tiers, spikes, and leak signals…</p>
           <progress value={progress} max={100} aria-label="Analysis progress" />
@@ -109,10 +167,13 @@ const Analyze = () => {
 
           <div id="more-tools" className="ws-progress">
             <h2>More tools</h2>
-            <p>Need a quick iPhone fix? Trigger the iOS shortcut that ejects water.</p>
-            <RouterLink className="ws-footer-link" to="/eject-water">
-              Open Eject Water
-            </RouterLink>
+            <p>Keep exploring while your insights are fresh.</p>
+            <div className="ws-tool-grid">
+              <RouterLink to="/game">Play Leak Patrol</RouterLink>
+              <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
+              <RouterLink to="/research">Build a research plan</RouterLink>
+              <RouterLink to="/eject-water">Open Eject Water</RouterLink>
+            </div>
           </div>
         </>
       )}

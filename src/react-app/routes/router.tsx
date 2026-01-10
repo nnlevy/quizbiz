@@ -48,6 +48,18 @@ export const RouterProvider = ({ children }: PropsWithChildren) => {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!location.hash) return;
+    const id = location.hash.replace("#", "");
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (!target) return;
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [location.hash]);
+
   const navigate = useCallback((to: string, options?: NavigateOptions) => {
     if (typeof window === "undefined") return;
     const nextState = { __ws_state: options?.state ?? null };
