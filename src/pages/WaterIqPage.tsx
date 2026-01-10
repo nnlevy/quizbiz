@@ -1,6 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { decodeToken, hookFactById, moveMeta, personaFor } from "../lib/waterIq";
+import SiteFooter from "../react-app/components/SiteFooter";
+import SiteNav from "../react-app/components/SiteNav";
+import "../react-app/App.css";
+import { useCredits } from "../react-app/context/CreditsContext";
+import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 const WORKER_STYLES_ID = "ws-worker-styles";
 const WORKER_APP_SCRIPT_ID = "ws-worker-app-js";
@@ -37,7 +42,13 @@ const waitForScriptLoad = (script: HTMLScriptElement) =>
 const ensureWorkerScript = () => {
   const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) {
-    return { loadPromise: waitForScriptLoad(existing), alreadyLoaded: true };
+    const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
+    const hasLoaded =
+      existing.dataset.loaded === "true" || readyState === "complete" || readyState === "loaded";
+    if (hasLoaded && existing.dataset.loaded !== "true") {
+      existing.dataset.loaded = "true";
+    }
+    return { loadPromise: waitForScriptLoad(existing), alreadyLoaded: hasLoaded };
   }
   const script = document.createElement("script");
   script.id = WORKER_APP_SCRIPT_ID;
@@ -53,7 +64,10 @@ const useWorkerAssets = () => {
     ensureWorkerStyles();
     const { loadPromise, alreadyLoaded } = ensureWorkerScript();
     void loadPromise.then(() => {
-      document.dispatchEvent(new Event("DOMContentLoaded"));
+      if (!alreadyLoaded) {
+        document.dispatchEvent(new Event("DOMContentLoaded"));
+        return;
+      }
       (
         window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
       ).__WS_REINIT_WATER_IQ__?.();
@@ -267,14 +281,24 @@ const WaterIqResult = ({ token }: { token: string }) => {
 
 const WaterIqPage = () => {
   useWorkerAssets();
+  const { credits, pulse, setPulse } = useCredits();
+  const triggerCreditPulse = useCallback(() => {
+    setPulse(true);
+    setTimeout(() => setPulse(false), 750);
+  }, [setPulse]);
+  const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/water-iq";
   const tokenMatch = pathname.match(/^\/water-iq\/r\/([^/]+)$/);
 
-  if (tokenMatch) {
-    return <WaterIqResult token={tokenMatch[1]} />;
-  }
-
-  return <WaterIqQuiz />;
+  return (
+    <div className="app">
+      <SiteNav credits={credits} pulse={pulse} onCreditsClick={startCheckout} />
+      <main className="main-wrapper">
+        {tokenMatch ? <WaterIqResult token={tokenMatch[1]} /> : <WaterIqQuiz />}
+      </main>
+      <SiteFooter />
+    </div>
+  );
 };
 
 export default WaterIqPage;
