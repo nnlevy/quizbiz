@@ -12,6 +12,7 @@ import SiteMapPage from "../pages/SiteMapPage";
 import TermsPage from "../pages/TermsPage";
 import WaterBillSpikesPage from "../pages/WaterBillSpikesPage";
 import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
+import WaterIqPage from "../pages/WaterIqPage";
 import { ensureAnalyticsLoaded, initializeAnalytics, logPageView } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
@@ -111,6 +112,9 @@ const RootRouter = () => {
     }
     if (pathname.startsWith("/terms")) {
       return <TermsPage />;
+    }
+    if (pathname.startsWith("/water-iq")) {
+      return <WaterIqPage />;
     }
     return <App focusUpload={pathname === "/upload"} />;
   }, [pathname]);
