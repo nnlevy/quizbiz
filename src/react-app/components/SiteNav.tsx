@@ -39,6 +39,7 @@ type SiteNavProps = {
   pulse?: boolean;
   onCreditsClick?: () => void;
   onCreditsKeyDown?: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
+  hideCredits?: boolean;
 };
 
 const SiteNav = ({
@@ -46,6 +47,7 @@ const SiteNav = ({
   pulse = false,
   onCreditsClick,
   onCreditsKeyDown,
+  hideCredits = false,
 }: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDraggingNav, setIsDraggingNav] = useState(false);
@@ -409,26 +411,28 @@ const SiteNav = ({
           </span>
           <span className="tagline">{copy.brand.tagline}</span>
         </a>
-        <div className="credit-meter">
-          <button
-            type="button"
-            className={`credit-meter__button ${pulse ? "is-animating" : ""}`}
-            aria-label={`Credits available: ${credits}. Add more credits.`}
-            onClick={onCreditsClick}
-            onKeyDown={onCreditsKeyDown}
-          >
-            <span className="credit-meter__label">Credits</span>
-            <span className="credit-meter__value">{credits}</span>
-          </button>
-          <button
-            type="button"
-            className="credit-info-button"
-            aria-label="Learn about credits"
-            onClick={openCreditInfo}
-          >
-            i
-          </button>
-        </div>
+        {!hideCredits && (
+          <div className="credit-meter">
+            <button
+              type="button"
+              className={`credit-meter__button ${pulse ? "is-animating" : ""}`}
+              aria-label={`Credits available: ${credits}. Add more credits.`}
+              onClick={onCreditsClick}
+              onKeyDown={onCreditsKeyDown}
+            >
+              <span className="credit-meter__label">Credits</span>
+              <span className="credit-meter__value">{credits}</span>
+            </button>
+            <button
+              type="button"
+              className="credit-info-button"
+              aria-label="Learn about credits"
+              onClick={openCreditInfo}
+            >
+              i
+            </button>
+          </div>
+        )}
         <nav className="global-nav" aria-label="Primary navigation">
           <div className="nav-links">
             {navLinks.map((link) => (
@@ -555,7 +559,7 @@ const SiteNav = ({
           </a>
         ))}
       </div>
-      {showCreditInfo && (
+      {!hideCredits && showCreditInfo && (
         <div
           className="credit-info-modal"
           role="dialog"

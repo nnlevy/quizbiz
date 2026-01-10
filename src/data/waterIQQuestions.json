@@ -1,0 +1,52 @@
+[
+  {
+    "question": "How much water does a typical 10-minute shower use?",
+    "choices": ["About 10 gallons", "About 25 gallons", "About 40 gallons", "About 70 gallons"],
+    "answerIndex": 2
+  },
+  {
+    "question": "Which household fixture usually uses the most water indoors?",
+    "choices": ["Toilets", "Kitchen faucet", "Dishwasher", "Clothes washer"],
+    "answerIndex": 0
+  },
+  {
+    "question": "What is one simple way to reduce outdoor water waste?",
+    "choices": ["Water at noon", "Repair broken sprinkler heads", "Run sprinklers daily", "Skip mulch"],
+    "answerIndex": 1
+  },
+  {
+    "question": "A faucet dripping once per second can waste roughly how much water per year?",
+    "choices": ["300 gallons", "1,000 gallons", "3,000 gallons", "10,000 gallons"],
+    "answerIndex": 2
+  },
+  {
+    "question": "Which action saves the most water immediately?",
+    "choices": ["Shortening a shower by 2 minutes", "Hand-washing a small load of dishes", "Running a half-full washer", "Letting a hose run while washing the car"],
+    "answerIndex": 0
+  },
+  {
+    "question": "What is a common sign of a silent toilet leak?",
+    "choices": ["Bowl water ripples periodically", "Water is cold", "Lid feels warm", "Tank makes no sound"],
+    "answerIndex": 0
+  },
+  {
+    "question": "Which landscaping choice is most water-efficient?",
+    "choices": ["Turf grass only", "Mulched native plants", "Daily watering", "Sprinklers at noon"],
+    "answerIndex": 1
+  },
+  {
+    "question": "How much water can WaterSense-labeled showerheads typically save?",
+    "choices": ["Up to 10%", "Up to 20%", "Up to 30%", "Up to 50%"],
+    "answerIndex": 2
+  },
+  {
+    "question": "Which habit helps reduce water use in the kitchen?",
+    "choices": ["Thawing food under running water", "Using a bowl to rinse produce", "Pre-rinsing every dish", "Letting the tap run while brushing"],
+    "answerIndex": 1
+  },
+  {
+    "question": "When is the best time to water outdoor plants to reduce evaporation?",
+    "choices": ["Midday", "Late afternoon", "Early morning", "Anytime is the same"],
+    "answerIndex": 2
+  }
+]
