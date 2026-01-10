@@ -124,9 +124,19 @@ type SiteRoute = {
   extraJsonLd?: Array<Record<string, unknown>>;
 };
 
+type InlineScript = {
+  script: string;
+  onlyIfMissing?: string;
+};
+
 const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = COPY_BUILD_DATE;
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
+const WATER_IQ_INLINE_BOOTSTRAP = `window.addEventListener("DOMContentLoaded", () => {
+  if (!window.__WS_REINIT_WATER_IQ__) {
+    ${appJs}
+  }
+});`;
 
 type AdsenseSlots = {
   inline?: string | null;
@@ -709,6 +719,7 @@ app.get("/water-iq/r/:token", (c) => {
         canonicalPath: `/water-iq/r/${token}`,
         bodyHtml:
           '<section class="section"><h1>Invalid result link</h1><p>This link looks broken. Try the quiz again.</p><a class="btn secondary" href="/water-iq">Go to Water IQ Challenge</a></section>',
+        inlineScripts: [{ script: WATER_IQ_INLINE_BOOTSTRAP }],
         adsenseSlots,
         adsenseClient,
         gaMeasurementId,
@@ -742,6 +753,7 @@ app.get("/water-iq/r/:token", (c) => {
         hook,
         moves,
       }),
+      inlineScripts: [{ script: WATER_IQ_INLINE_BOOTSTRAP }],
       adsenseSlots,
       adsenseClient,
       gaMeasurementId,
@@ -764,6 +776,8 @@ siteRoutes.forEach((route) => {
     const showPrivacyControls = consentRequired;
     const cspNonce = c.get("cspNonce") as string;
     const bodyHtml = route.path === "/sitemap" ? renderHumanSitemap(siteRoutes) : route.body;
+    const inlineScripts =
+      route.path === "/water-iq" ? [{ script: WATER_IQ_INLINE_BOOTSTRAP }] : undefined;
     return c.html(
       layout({
         title: route.title,
@@ -773,6 +787,7 @@ siteRoutes.forEach((route) => {
         pageCssClass: route.pageCssClass,
         breadcrumbs: route.breadcrumbs,
         extraJsonLd: route.extraJsonLd,
+        inlineScripts,
         adsenseSlots,
         adsenseClient,
         gaMeasurementId,
@@ -830,6 +845,7 @@ function layout(options: {
   ogImageUrl?: string;
   twitterCard?: string;
   adsenseSlots?: Required<AdsenseSlots>;
+  inlineScripts?: InlineScript[];
   adsenseClient: string;
   gaMeasurementId: string;
   stripePublishableKey: string;
@@ -855,6 +871,7 @@ function layout(options: {
     cspNonce,
   } = options;
   const adsenseSlots = options.adsenseSlots || defaultAdsenseSlots;
+  const inlineScripts = options.inlineScripts || [];
   const processedBodyHtml = injectAdSlots(bodyHtml, adsenseSlots, adsenseClient);
   const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
@@ -972,6 +989,15 @@ function layout(options: {
 
   const combinedJsonLd = extraJsonLd?.length ? [...jsonLd, ...extraJsonLd] : jsonLd;
 
+  const inlineScriptTags = inlineScripts
+    .map((inline) => {
+      const guard = inline.onlyIfMissing
+        ? `if (!window.${inline.onlyIfMissing}) {${inline.script}}`
+        : inline.script;
+      return `<script nonce="${cspNonce}">${guard}</script>`;
+    })
+    .join("");
+
   return `<!DOCTYPE html>
   <html lang="en">
     <head>
@@ -1061,6 +1087,7 @@ function layout(options: {
         });
       </script>
       <script defer src="/assets/app.js"></script>
+      ${inlineScriptTags}
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
       <div class="app-shell">
