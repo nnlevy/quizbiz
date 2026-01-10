@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 
 import { decodeToken, hookFactById, moveMeta, personaFor } from "../lib/waterIq";
+import { appJs, stylesCss } from "../worker/assets";
 import SiteFooter from "../react-app/components/SiteFooter";
 import SiteNav from "../react-app/components/SiteNav";
 import "../react-app/App.css";
@@ -9,34 +10,62 @@ import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 const WORKER_STYLES_ID = "ws-worker-styles";
 const WORKER_APP_SCRIPT_ID = "ws-worker-app-js";
+const WORKER_INLINE_STYLES_ID = "ws-worker-inline-styles";
+const WORKER_INLINE_SCRIPT_ID = "ws-worker-inline-app-js";
+
+const ensureInlineWorkerStyles = () => {
+  if (document.getElementById(WORKER_INLINE_STYLES_ID)) return;
+  const style = document.createElement("style");
+  style.id = WORKER_INLINE_STYLES_ID;
+  style.textContent = stylesCss;
+  document.head.appendChild(style);
+};
 
 const ensureWorkerStyles = () => {
-  if (document.getElementById(WORKER_STYLES_ID)) return;
+  if (document.getElementById(WORKER_STYLES_ID) || document.getElementById(WORKER_INLINE_STYLES_ID)) {
+    return;
+  }
   const link = document.createElement("link");
   link.id = WORKER_STYLES_ID;
   link.rel = "stylesheet";
   link.href = "/assets/styles.css";
+  link.addEventListener(
+    "error",
+    () => {
+      link.remove();
+      ensureInlineWorkerStyles();
+    },
+    { once: true },
+  );
   document.head.appendChild(link);
 };
 
 const waitForScriptLoad = (script: HTMLScriptElement) =>
-  new Promise<void>((resolve) => {
+  new Promise<boolean>((resolve) => {
     if (script.dataset.loaded === "true") {
-      resolve();
+      resolve(true);
+      return;
+    }
+    if (script.dataset.loaded === "false") {
+      resolve(false);
       return;
     }
     const readyState = (script as HTMLScriptElement & { readyState?: string }).readyState;
     if (readyState === "complete" || readyState === "loaded") {
       script.dataset.loaded = "true";
-      resolve();
+      resolve(true);
       return;
     }
     const handleLoad = () => {
       script.dataset.loaded = "true";
-      resolve();
+      resolve(true);
+    };
+    const handleError = () => {
+      script.dataset.loaded = "false";
+      resolve(false);
     };
     script.addEventListener("load", handleLoad, { once: true });
-    script.addEventListener("error", () => resolve(), { once: true });
+    script.addEventListener("error", handleError, { once: true });
   });
 
 const ensureWorkerScript = () => {
@@ -59,18 +88,54 @@ const ensureWorkerScript = () => {
   return { loadPromise, alreadyLoaded: false };
 };
 
+const ensureInlineWorkerScript = () => {
+  const existing = document.getElementById(WORKER_INLINE_SCRIPT_ID) as HTMLScriptElement | null;
+  if (existing) {
+    const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
+    const hasLoaded =
+      existing.dataset.loaded === "true" || readyState === "complete" || readyState === "loaded";
+    if (hasLoaded && existing.dataset.loaded !== "true") {
+      existing.dataset.loaded = "true";
+    }
+    return { loadPromise: waitForScriptLoad(existing), alreadyLoaded: hasLoaded };
+  }
+  const script = document.createElement("script");
+  const blobUrl = URL.createObjectURL(new Blob([appJs], { type: "application/javascript" }));
+  script.id = WORKER_INLINE_SCRIPT_ID;
+  script.src = blobUrl;
+  script.defer = true;
+  const loadPromise = waitForScriptLoad(script).then((loaded) => {
+    URL.revokeObjectURL(blobUrl);
+    return loaded;
+  });
+  document.body.appendChild(script);
+  return { loadPromise, alreadyLoaded: false };
+};
+
+const triggerWorkerBoot = (alreadyLoaded: boolean) => {
+  if (!alreadyLoaded) {
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    return;
+  }
+  (
+    window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
+  ).__WS_REINIT_WATER_IQ__?.();
+};
+
 const useWorkerAssets = () => {
   useEffect(() => {
     ensureWorkerStyles();
     const { loadPromise, alreadyLoaded } = ensureWorkerScript();
-    void loadPromise.then(() => {
-      if (!alreadyLoaded) {
-        document.dispatchEvent(new Event("DOMContentLoaded"));
+    void loadPromise.then((loaded) => {
+      if (!loaded) {
+        const { loadPromise: inlineLoadPromise } = ensureInlineWorkerScript();
+        void inlineLoadPromise.then((inlineLoaded) => {
+          if (!inlineLoaded) return;
+          triggerWorkerBoot(false);
+        });
         return;
       }
-      (
-        window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
-      ).__WS_REINIT_WATER_IQ__?.();
+      triggerWorkerBoot(alreadyLoaded);
     });
   }, []);
 };
