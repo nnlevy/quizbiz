@@ -6205,6 +6205,7 @@ interface D1Response {
     error?: never;
 }
 type D1Result<T = unknown> = D1Response & {
+    changes?: number;
     results: T[];
 };
 interface D1ExecResult {
