@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RouterLink, useLocation, useNavigate } from "./router";
 
 type AnalyzeState = {
   mode?: "upload" | "demo" | "manual";
@@ -102,17 +102,17 @@ const Analyze = () => {
               Learn what neighbors are doing to save water and check local programs for equipment
               rebates.
             </p>
-            <Link className="ws-footer-link" to="/research">
+            <RouterLink className="ws-footer-link" to="/research">
               Research rebates and alerts →
-            </Link>
+            </RouterLink>
           </div>
 
           <div id="more-tools" className="ws-progress">
             <h2>More tools</h2>
             <p>Need a quick iPhone fix? Trigger the iOS shortcut that ejects water.</p>
-            <Link className="ws-footer-link" to="/eject-water">
+            <RouterLink className="ws-footer-link" to="/eject-water">
               Open Eject Water
-            </Link>
+            </RouterLink>
           </div>
         </>
       )}

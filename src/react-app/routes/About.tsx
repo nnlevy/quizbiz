@@ -1,6 +1,5 @@
-import { Link } from "react-router-dom";
-
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RouterLink } from "./router";
 
 const About = () => {
   useDocumentTitle("WaterShortcut | About");
@@ -26,12 +25,12 @@ const About = () => {
       </div>
 
       <div className="ws-tool-grid">
-        <Link className="ws-footer-link" to="/analyze">
+        <RouterLink className="ws-footer-link" to="/analyze">
           Start analysis →
-        </Link>
-        <Link className="ws-footer-link" to="/research">
+        </RouterLink>
+        <RouterLink className="ws-footer-link" to="/research">
           Explore research →
-        </Link>
+        </RouterLink>
       </div>
     </section>
   );

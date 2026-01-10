@@ -1,12 +1,5 @@
-import { StrictMode, Suspense, lazy, useEffect, useRef } from "react";
+import { StrictMode, Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-} from "react-router-dom";
 import "./index.css";
 import App from "./App.tsx";
 import LeakPatrol from "./LeakPatrol";
@@ -26,6 +19,7 @@ import { ensureAdSenseLoaded, initializeAllAdSlots } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
 import { useScrollUnlock } from "./hooks/useScrollUnlock";
 import AppShell from "./routes/AppShell";
+import { RouterProvider, useLocation } from "./routes/router";
 
 const Home = lazy(() => import("./routes/Home"));
 const Analyze = lazy(() => import("./routes/Analyze"));
@@ -115,39 +109,103 @@ const RouteEffects = () => {
   return null;
 };
 
+const RouterView = () => {
+  const location = useLocation();
+
+  const routeComponent = useMemo(() => {
+    const pathname = location.pathname;
+    if (pathname === "/") {
+      return (
+        <AppShell>
+          <Home />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/analyze")) {
+      return (
+        <AppShell>
+          <Analyze />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/research")) {
+      return (
+        <AppShell>
+          <Research />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/about")) {
+      return (
+        <AppShell>
+          <About />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/eject-water")) {
+      return (
+        <AppShell>
+          <EjectWater />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/game") || pathname.startsWith("/leak-patrol")) {
+      return <LeakPatrol />;
+    }
+    if (pathname.startsWith("/legacy")) {
+      return <LegacyApp />;
+    }
+    if (pathname.startsWith("/upload")) {
+      return <LegacyApp focusUpload />;
+    }
+    if (pathname.startsWith("/landing")) {
+      return <LandingPage />;
+    }
+    if (pathname.startsWith("/site-map")) {
+      return <SiteMapPage />;
+    }
+    if (pathname.startsWith("/learn/read-water-bill")) {
+      return <ReadWaterBillPage />;
+    }
+    if (pathname.startsWith("/learn/leak-detection")) {
+      return <LeakDetectionPage />;
+    }
+    if (pathname.startsWith("/learn/water-saving-tips")) {
+      return <WaterSavingTipsPage />;
+    }
+    if (pathname.startsWith("/learn/water-bill-spikes")) {
+      return <WaterBillSpikesPage />;
+    }
+    if (pathname.startsWith("/learn/hidden-leaks")) {
+      return <HiddenLeaksPage />;
+    }
+    if (pathname.startsWith("/privacy")) {
+      return <PrivacyPage />;
+    }
+    if (pathname.startsWith("/terms")) {
+      return <TermsPage />;
+    }
+    if (pathname.startsWith("/water-iq")) {
+      return <WaterIqPage />;
+    }
+    return (
+      <AppShell>
+        <Home />
+      </AppShell>
+    );
+  }, [location.pathname]);
+
+  return <Suspense fallback={<div className="ws-progress">Loading…</div>}>{routeComponent}</Suspense>;
+};
+
 const RootRouter = () => (
   <StrictMode>
     <CreditsProvider>
-      <BrowserRouter>
+      <RouterProvider>
         <SeoHiddenNav />
         <RouteEffects />
-        <Suspense fallback={<div className="ws-progress">Loading…</div>}>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<Home />} />
-              <Route path="analyze" element={<Analyze />} />
-              <Route path="research" element={<Research />} />
-              <Route path="about" element={<About />} />
-              <Route path="eject-water" element={<EjectWater />} />
-            </Route>
-            <Route path="game" element={<LeakPatrol />} />
-            <Route path="leak-patrol" element={<LeakPatrol />} />
-            <Route path="legacy/*" element={<LegacyApp />} />
-            <Route path="upload" element={<LegacyApp focusUpload />} />
-            <Route path="landing" element={<LandingPage />} />
-            <Route path="site-map" element={<SiteMapPage />} />
-            <Route path="learn/read-water-bill" element={<ReadWaterBillPage />} />
-            <Route path="learn/leak-detection" element={<LeakDetectionPage />} />
-            <Route path="learn/water-saving-tips" element={<WaterSavingTipsPage />} />
-            <Route path="learn/water-bill-spikes" element={<WaterBillSpikesPage />} />
-            <Route path="learn/hidden-leaks" element={<HiddenLeaksPage />} />
-            <Route path="privacy" element={<PrivacyPage />} />
-            <Route path="terms" element={<TermsPage />} />
-            <Route path="water-iq" element={<WaterIqPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+        <RouterView />
+      </RouterProvider>
     </CreditsProvider>
   </StrictMode>
 );

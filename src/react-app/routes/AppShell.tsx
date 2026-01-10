@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { ReactNode, useEffect, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { useCredits } from "../context/CreditsContext";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
+import { RouterLink, useLocation } from "./router";
 
 import "./AppShell.css";
 
-const AppShell = () => {
+type AppShellProps = {
+  children: ReactNode;
+};
+
+const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const { credits } = useCredits();
@@ -18,15 +22,14 @@ const AppShell = () => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  const hideDeferredElements = location.pathname === "/";
-  const showDeferred = scrollUnlocked && !hideDeferredElements;
+  const showDeferred = scrollUnlocked;
 
   return (
     <div className="ws-shell">
       <header className="ws-header">
-        <Link className="ws-logo" to="/">
+        <RouterLink className="ws-logo" to="/">
           WaterShortcut
-        </Link>
+        </RouterLink>
         <button
           className="ws-menu-button"
           type="button"
@@ -57,16 +60,16 @@ const AppShell = () => {
           </button>
           <ul>
             <li>
-              <Link to="/analyze">Analyze my bill</Link>
+              <RouterLink to="/analyze">Analyze my bill</RouterLink>
             </li>
             <li>
-              <Link to="/research">Research</Link>
+              <RouterLink to="/research">Research</RouterLink>
             </li>
             <li>
               <span className="ws-nav-section">Experiences</span>
               <ul className="ws-subnav">
                 <li>
-                  <Link to="/game">Leak Patrol</Link>
+                  <RouterLink to="/game">Leak Patrol</RouterLink>
                 </li>
                 <li>
                   <a href="/analyze#more-tools">More tools</a>
@@ -74,14 +77,14 @@ const AppShell = () => {
               </ul>
             </li>
             <li>
-              <Link to="/about">About</Link>
+              <RouterLink to="/about">About</RouterLink>
             </li>
           </ul>
         </nav>
       </div>
 
       <main className="ws-main">
-        <Outlet />
+        {children}
       </main>
 
       {showDeferred && (

@@ -1,6 +1,5 @@
-import { Link } from "react-router-dom";
-
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RouterLink } from "./router";
 
 const EjectWater = () => {
   useDocumentTitle("WaterShortcut | Eject Water");
@@ -26,9 +25,9 @@ const EjectWater = () => {
         >
           Open iOS Shortcut
         </a>
-        <Link className="ws-footer-link" to="/analyze">
+        <RouterLink className="ws-footer-link" to="/analyze">
           Back to savings mode →
-        </Link>
+        </RouterLink>
       </div>
     </section>
   );

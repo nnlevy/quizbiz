@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RouterLink } from "./router";
 
 const LOCATIONS = [
   "Austin, TX",
@@ -71,12 +71,12 @@ const Research = () => {
             <li>Search for “{selected} leak adjustment policy” and record requirements.</li>
           </ul>
           <div className="ws-tool-grid">
-            <Link className="ws-footer-link" to="/analyze">
+            <RouterLink className="ws-footer-link" to="/analyze">
               Back to analysis →
-            </Link>
-            <Link className="ws-footer-link" to="/">
+            </RouterLink>
+            <RouterLink className="ws-footer-link" to="/">
               Return home →
-            </Link>
+            </RouterLink>
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import { ChangeEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { useNavigate } from "./router";
 
 const Home = () => {
   useDocumentTitle("WaterShortcut | Analyze your water bill");
