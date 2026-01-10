@@ -68,7 +68,14 @@ const waitForScriptLoad = (script: HTMLScriptElement) =>
     script.addEventListener("error", handleError, { once: true });
   });
 
+const hasWaterIqReinit = () =>
+  typeof (window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void })
+    .__WS_REINIT_WATER_IQ__ === "function";
+
 const ensureWorkerScript = () => {
+  if (hasWaterIqReinit()) {
+    return { loadPromise: Promise.resolve(true), alreadyLoaded: true };
+  }
   const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) {
     const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
@@ -89,6 +96,9 @@ const ensureWorkerScript = () => {
 };
 
 const ensureInlineWorkerScript = () => {
+  if (hasWaterIqReinit()) {
+    return { loadPromise: Promise.resolve(true), alreadyLoaded: true };
+  }
   const existing = document.getElementById(WORKER_INLINE_SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) {
     const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
@@ -128,10 +138,11 @@ const useWorkerAssets = () => {
     const { loadPromise, alreadyLoaded } = ensureWorkerScript();
     void loadPromise.then((loaded) => {
       if (!loaded) {
-        const { loadPromise: inlineLoadPromise } = ensureInlineWorkerScript();
+        const { loadPromise: inlineLoadPromise, alreadyLoaded: inlineAlreadyLoaded } =
+          ensureInlineWorkerScript();
         void inlineLoadPromise.then((inlineLoaded) => {
           if (!inlineLoaded) return;
-          triggerWorkerBoot(false);
+          triggerWorkerBoot(inlineAlreadyLoaded);
         });
         return;
       }
