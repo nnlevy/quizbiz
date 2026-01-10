@@ -50,6 +50,36 @@ export const RouterProvider = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!location.hash) return undefined;
+    const id = location.hash.replace("#", "");
+    if (!id) return undefined;
+    let attempts = 0;
+    const maxAttempts = 12;
+    let timeoutId: number | null = null;
+
+    const tryScroll = () => {
+      const target = document.getElementById(id);
+      if (target) {
+        requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        return;
+      }
+      attempts += 1;
+      if (attempts >= maxAttempts) {
+        return;
+      }
+      timeoutId = window.setTimeout(tryScroll, 120);
+    };
+
+    tryScroll();
+
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [location.hash, location.pathname]);
     if (!location.hash) return;
     const id = location.hash.replace("#", "");
     if (!id) return;
