@@ -22,6 +22,7 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
         </div>
       )}
       <div className="footer-links">
+        <a href="/site-map">Site map</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         {showPrivacyControls ? (

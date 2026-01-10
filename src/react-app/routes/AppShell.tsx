@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
+import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { useCredits } from "../context/CreditsContext";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
@@ -72,7 +73,10 @@ const AppShell = ({ children }: AppShellProps) => {
                   <RouterLink to="/game">Leak Patrol</RouterLink>
                 </li>
                 <li>
-                  <a href="/analyze#more-tools">More tools</a>
+                  <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/#more-tools">More tools</RouterLink>
                 </li>
               </ul>
             </li>
@@ -98,6 +102,8 @@ const AppShell = ({ children }: AppShellProps) => {
           <AdSenseSlot slotId={DEFAULT_ADSENSE_SLOTS.footer} format="auto" />
         </section>
       )}
+
+      <SiteFooter hideAds />
     </div>
   );
 };
