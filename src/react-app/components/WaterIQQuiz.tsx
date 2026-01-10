@@ -7,7 +7,17 @@ const SCORE_MESSAGES = [
   "You got {score}/{total} — your Water IQ is high!",
 ];
 
-const getScoreMessage = (score, total) => {
+type WaterIQQuestion = {
+  question: string;
+  choices: string[];
+  answerIndex: number;
+};
+
+type WaterIQQuizProps = {
+  onComplete?: () => void;
+};
+
+const getScoreMessage = (score: number, total: number) => {
   const ratio = total ? score / total : 0;
   if (ratio < 0.4) return SCORE_MESSAGES[0];
   if (ratio < 0.7) return SCORE_MESSAGES[1];
@@ -15,13 +25,13 @@ const getScoreMessage = (score, total) => {
   return SCORE_MESSAGES[3];
 };
 
-const WaterIQQuiz = ({ onComplete }) => {
+const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
   // Core quiz state: questions, progress, and result tracking.
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<WaterIQQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
@@ -39,7 +49,7 @@ const WaterIQQuiz = ({ onComplete }) => {
       if (!Array.isArray(data) || data.length === 0) {
         throw new Error("Questions not found");
       }
-      setQuestions(data);
+      setQuestions(data as WaterIQQuestion[]);
       setCurrentIndex(0);
       setSelectedIndex(null);
       setScore(0);
@@ -68,7 +78,7 @@ const WaterIQQuiz = ({ onComplete }) => {
     [scoreMessage, score, totalQuestions],
   );
 
-  const handleSelect = (index) => {
+  const handleSelect = (index: number) => {
     setSelectedIndex(index);
   };
 
@@ -162,7 +172,9 @@ const WaterIQQuiz = ({ onComplete }) => {
     <section className="section water-iq-quiz">
       <div className="water-iq-card">
         <header className="water-iq-header">
-          <p className="water-iq-progress">Question {currentIndex + 1} of {totalQuestions}</p>
+          <p className="water-iq-progress">
+            Question {currentIndex + 1} of {totalQuestions}
+          </p>
           <h1 className="wsH1">Water IQ Challenge</h1>
         </header>
         <h2 className="water-iq-question">{currentQuestion?.question}</h2>
