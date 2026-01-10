@@ -1870,7 +1870,10 @@ export function clientScript() {
         if (!input) return;
         const v = input.value.trim();
         const n = v === '' ? null : Number(v);
-        if (n === null || Number.isFinite(n)) answers[currentQ.id] = n ?? null;
+        if (n === null || Number.isFinite(n)) {
+          answers[currentQ.id] = n ?? null;
+          render();
+        }
       });
     };
 
