@@ -37,7 +37,7 @@ const waitForScriptLoad = (script: HTMLScriptElement) =>
 const ensureWorkerScript = () => {
   const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) {
-    return waitForScriptLoad(existing);
+    return { loadPromise: waitForScriptLoad(existing), alreadyLoaded: true };
   }
   const script = document.createElement("script");
   script.id = WORKER_APP_SCRIPT_ID;
@@ -45,13 +45,14 @@ const ensureWorkerScript = () => {
   script.defer = true;
   const loadPromise = waitForScriptLoad(script);
   document.body.appendChild(script);
-  return loadPromise;
+  return { loadPromise, alreadyLoaded: false };
 };
 
 const useWorkerAssets = () => {
   useEffect(() => {
     ensureWorkerStyles();
-    void ensureWorkerScript().then(() => {
+    const { loadPromise, alreadyLoaded } = ensureWorkerScript();
+    void loadPromise.then(() => {
       document.dispatchEvent(new Event("DOMContentLoaded"));
       (
         window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
