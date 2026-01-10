@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo } from "react";
+import { StrictMode, Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
@@ -15,8 +15,17 @@ import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import WaterIqPage from "../pages/WaterIqPage";
 import { ensureAnalyticsLoaded, initializeAnalytics, logPageView } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
-import { ensureAdSenseLoaded, initializeAllAdSlots, subscribeToRouteChanges } from "./adsense";
+import { ensureAdSenseLoaded, initializeAllAdSlots } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
+import { useScrollUnlock } from "./hooks/useScrollUnlock";
+import AppShell from "./routes/AppShell";
+import { RouterProvider, useLocation } from "./routes/router";
+
+const Home = lazy(() => import("./routes/Home"));
+const Analyze = lazy(() => import("./routes/Analyze"));
+const Research = lazy(() => import("./routes/Research"));
+const About = lazy(() => import("./routes/About"));
+const EjectWater = lazy(() => import("./routes/EjectWater"));
 
 if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
@@ -30,61 +39,124 @@ if (typeof window !== "undefined") {
     globalWindow.__WS_ADSENSE_MANAGED__ = "react";
   }
 }
-const RootRouter = () => {
-  const pathname = window.location.pathname;
+
+const SeoHiddenNav = () => (
+  <nav className="sr-only" aria-hidden="true">
+    <a href="/">Home</a>
+    <a href="/analyze">Analyze my bill</a>
+    <a href="/research">Research</a>
+    <a href="/game">Leak Patrol</a>
+    <a href="/eject-water">Eject Water</a>
+    <a href="/about">About</a>
+    {/* Legacy SPA link kept for SEO discovery without exposing in primary navigation. */}
+    <a href="/legacy">Legacy WaterShortcut</a>
+  </nav>
+);
+
+const LegacyApp = ({ focusUpload = false }: { focusUpload?: boolean }) => {
+  // Legacy SPA mounted as-is for /legacy to preserve existing functionality.
+  return <App focusUpload={focusUpload} />;
+};
+
+const RouteEffects = () => {
+  const location = useLocation();
+  const { scrollUnlocked } = useScrollUnlock();
+  const lastTrackedPath = useRef<string | null>(null);
 
   useEffect(() => {
     initializeAnalytics();
-    const lastTrackedPath = { current: window.location.pathname };
-    logPageView();
+  }, []);
+
+  useEffect(() => {
+    const consent = getEffectiveConsent();
+    if (consent.analytics) {
+      ensureAnalyticsLoaded();
+      if (lastTrackedPath.current !== location.pathname) {
+        logPageView();
+        lastTrackedPath.current = location.pathname;
+      }
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!scrollUnlocked) return;
     const consent = getEffectiveConsent();
     if (consent.ads) {
       ensureAdSenseLoaded();
       initializeAllAdSlots();
     }
-    if (consent.analytics) {
-      ensureAnalyticsLoaded();
-    }
-    const unsubscribe = subscribeToRouteChanges(() => {
-      const updatedConsent = getEffectiveConsent();
-      if (updatedConsent.ads) {
-        ensureAdSenseLoaded();
-        initializeAllAdSlots();
-      }
-      const currentPath = window.location.pathname;
-      const pathChanged = currentPath !== lastTrackedPath.current;
-      if (updatedConsent.analytics) {
-        ensureAnalyticsLoaded();
-        if (pathChanged) {
-          logPageView();
-        }
-      }
-      if (pathChanged) {
-        lastTrackedPath.current = currentPath;
-      }
-    });
+  }, [location.pathname, scrollUnlocked]);
+
+  useEffect(() => {
     const unsubscribeConsent = subscribeToConsentChanges((consent) => {
-      if (consent.ads) {
-        ensureAdSenseLoaded();
-        initializeAllAdSlots();
-      }
       if (consent.analytics) {
         ensureAnalyticsLoaded();
-        if (window.location.pathname !== lastTrackedPath.current) {
-          lastTrackedPath.current = window.location.pathname;
+        if (lastTrackedPath.current !== location.pathname) {
           logPageView();
+          lastTrackedPath.current = location.pathname;
         }
+      }
+      if (consent.ads && scrollUnlocked) {
+        ensureAdSenseLoaded();
+        initializeAllAdSlots();
       }
     });
     return () => {
-      unsubscribe();
       unsubscribeConsent();
     };
-  }, []);
+  }, [location.pathname, scrollUnlocked]);
+
+  return null;
+};
+
+const RouterView = () => {
+  const location = useLocation();
 
   const routeComponent = useMemo(() => {
-    if (pathname.startsWith("/leak-patrol") || pathname.startsWith("/game")) {
+    const pathname = location.pathname;
+    if (pathname === "/") {
+      return (
+        <AppShell>
+          <Home />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/analyze")) {
+      return (
+        <AppShell>
+          <Analyze />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/research")) {
+      return (
+        <AppShell>
+          <Research />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/about")) {
+      return (
+        <AppShell>
+          <About />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/eject-water")) {
+      return (
+        <AppShell>
+          <EjectWater />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/game") || pathname.startsWith("/leak-patrol")) {
       return <LeakPatrol />;
+    }
+    if (pathname.startsWith("/legacy")) {
+      return <LegacyApp />;
+    }
+    if (pathname.startsWith("/upload")) {
+      return <LegacyApp focusUpload />;
     }
     if (pathname.startsWith("/landing")) {
       return <LandingPage />;
@@ -116,15 +188,27 @@ const RootRouter = () => {
     if (pathname.startsWith("/water-iq")) {
       return <WaterIqPage />;
     }
-    return <App focusUpload={pathname === "/upload"} />;
-  }, [pathname]);
+    return (
+      <AppShell>
+        <Home />
+      </AppShell>
+    );
+  }, [location.pathname]);
 
-  return (
-    <StrictMode>
-      <CreditsProvider>{routeComponent}</CreditsProvider>
-    </StrictMode>
-  );
+  return <Suspense fallback={<div className="ws-progress">Loading…</div>}>{routeComponent}</Suspense>;
 };
+
+const RootRouter = () => (
+  <StrictMode>
+    <CreditsProvider>
+      <RouterProvider>
+        <SeoHiddenNav />
+        <RouteEffects />
+        <RouterView />
+      </RouterProvider>
+    </CreditsProvider>
+  </StrictMode>
+);
 
 createRoot(document.getElementById("root")!).render(<RootRouter />);
 
