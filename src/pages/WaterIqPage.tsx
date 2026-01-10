@@ -16,15 +16,38 @@ const ensureWorkerStyles = () => {
 
 const ensureWorkerScript = () =>
   new Promise<void>((resolve) => {
-    if (document.getElementById(WORKER_APP_SCRIPT_ID)) {
-      resolve();
+    const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) {
+      if (existing.dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+      const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
+      if (readyState === "complete" || readyState === "loaded") {
+        existing.dataset.loaded = "true";
+        resolve();
+        return;
+      }
+      const handleLoad = () => {
+        existing.dataset.loaded = "true";
+        resolve();
+      };
+      existing.addEventListener("load", handleLoad, { once: true });
+      existing.addEventListener("error", () => resolve(), { once: true });
       return;
     }
     const script = document.createElement("script");
     script.id = WORKER_APP_SCRIPT_ID;
     script.src = "/assets/app.js";
     script.defer = true;
-    script.addEventListener("load", () => resolve(), { once: true });
+    script.addEventListener(
+      "load",
+      () => {
+        script.dataset.loaded = "true";
+        resolve();
+      },
+      { once: true },
+    );
     script.addEventListener("error", () => resolve(), { once: true });
     document.body.appendChild(script);
   });
