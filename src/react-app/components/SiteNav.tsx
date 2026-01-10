@@ -468,7 +468,7 @@ const SiteNav = ({
                       href={link.href}
                       onClick={() => {
                         closeMenu();
-                        closeDropdown();
+                        setIsDropdownOpen(false);
                       }}
                     >
                       {link.label}
