@@ -1,173 +1,15 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import "../react-app/App.css";
 import { decodeToken, hookFactById, moveMeta, personaFor } from "../lib/waterIq";
-import { appJs, stylesCss } from "../worker/assets";
 import SiteFooter from "../react-app/components/SiteFooter";
 import SiteNav from "../react-app/components/SiteNav";
-import "../react-app/App.css";
+import WaterIQQuiz from "../react-app/components/WaterIQQuiz";
 import { useCredits } from "../react-app/context/CreditsContext";
 import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
-const WORKER_STYLES_ID = "ws-worker-styles";
-const WORKER_APP_SCRIPT_ID = "ws-worker-app-js";
-const WORKER_INLINE_STYLES_ID = "ws-worker-inline-styles";
-const WORKER_INLINE_SCRIPT_ID = "ws-worker-inline-app-js";
-
-const ensureInlineWorkerStyles = () => {
-  if (document.getElementById(WORKER_INLINE_STYLES_ID)) return;
-  const style = document.createElement("style");
-  style.id = WORKER_INLINE_STYLES_ID;
-  style.textContent = stylesCss;
-  document.head.appendChild(style);
-};
-
-const ensureWorkerStyles = () => {
-  if (document.getElementById(WORKER_STYLES_ID) || document.getElementById(WORKER_INLINE_STYLES_ID)) {
-    return;
-  }
-  const link = document.createElement("link");
-  link.id = WORKER_STYLES_ID;
-  link.rel = "stylesheet";
-  link.href = "/assets/styles.css";
-  link.addEventListener(
-    "error",
-    () => {
-      link.remove();
-      ensureInlineWorkerStyles();
-    },
-    { once: true },
-  );
-  document.head.appendChild(link);
-};
-
-const waitForScriptLoad = (script: HTMLScriptElement) =>
-  new Promise<boolean>((resolve) => {
-    if (script.dataset.loaded === "true") {
-      resolve(true);
-      return;
-    }
-    if (script.dataset.loaded === "false") {
-      resolve(false);
-      return;
-    }
-    const readyState = (script as HTMLScriptElement & { readyState?: string }).readyState;
-    if (readyState === "complete" || readyState === "loaded") {
-      script.dataset.loaded = "true";
-      resolve(true);
-      return;
-    }
-    const handleLoad = () => {
-      script.dataset.loaded = "true";
-      resolve(true);
-    };
-    const handleError = () => {
-      script.dataset.loaded = "false";
-      resolve(false);
-    };
-    script.addEventListener("load", handleLoad, { once: true });
-    script.addEventListener("error", handleError, { once: true });
-  });
-
-const hasWaterIqReinit = () =>
-  typeof (window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void })
-    .__WS_REINIT_WATER_IQ__ === "function";
-
-const ensureWorkerScript = () => {
-  if (hasWaterIqReinit()) {
-    return { loadPromise: Promise.resolve(true), alreadyLoaded: true };
-  }
-  const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
-  if (existing) {
-    const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
-    const hasLoaded =
-      existing.dataset.loaded === "true" || readyState === "complete" || readyState === "loaded";
-    if (hasLoaded && existing.dataset.loaded !== "true") {
-      existing.dataset.loaded = "true";
-    }
-    return { loadPromise: waitForScriptLoad(existing), alreadyLoaded: hasLoaded };
-  }
-  const script = document.createElement("script");
-  script.id = WORKER_APP_SCRIPT_ID;
-  script.src = "/assets/app.js";
-  script.defer = true;
-  const loadPromise = waitForScriptLoad(script);
-  document.body.appendChild(script);
-  return { loadPromise, alreadyLoaded: false };
-};
-
-const ensureInlineWorkerScript = () => {
-  if (hasWaterIqReinit()) {
-    return { loadPromise: Promise.resolve(true), alreadyLoaded: true };
-  }
-  const existing = document.getElementById(WORKER_INLINE_SCRIPT_ID) as HTMLScriptElement | null;
-  if (existing) {
-    const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
-    const hasLoaded =
-      existing.dataset.loaded === "true" || readyState === "complete" || readyState === "loaded";
-    if (hasLoaded && existing.dataset.loaded !== "true") {
-      existing.dataset.loaded = "true";
-    }
-    return { loadPromise: waitForScriptLoad(existing), alreadyLoaded: hasLoaded };
-  }
-  const script = document.createElement("script");
-  const blobUrl = URL.createObjectURL(new Blob([appJs], { type: "application/javascript" }));
-  script.id = WORKER_INLINE_SCRIPT_ID;
-  script.src = blobUrl;
-  script.defer = true;
-  const loadPromise = waitForScriptLoad(script).then((loaded) => {
-    URL.revokeObjectURL(blobUrl);
-    return loaded;
-  });
-  document.body.appendChild(script);
-  return { loadPromise, alreadyLoaded: false };
-};
-
-const triggerWorkerBoot = (alreadyLoaded: boolean) => {
-  if (!alreadyLoaded) {
-    document.dispatchEvent(new Event("DOMContentLoaded"));
-    return;
-  }
-  (
-    window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
-  ).__WS_REINIT_WATER_IQ__?.();
-};
-
-const useWorkerAssets = () => {
-  useEffect(() => {
-    ensureWorkerStyles();
-    const { loadPromise, alreadyLoaded } = ensureWorkerScript();
-    void loadPromise.then((loaded) => {
-      if (!loaded) {
-        const { loadPromise: inlineLoadPromise, alreadyLoaded: inlineAlreadyLoaded } =
-          ensureInlineWorkerScript();
-        void inlineLoadPromise.then((inlineLoaded) => {
-          if (!inlineLoaded) return;
-          triggerWorkerBoot(inlineAlreadyLoaded);
-        });
-        return;
-      }
-      triggerWorkerBoot(alreadyLoaded);
-    });
-  }, []);
-};
-
-const WaterIqQuiz = () => (
-  <section className="section water-iq">
-    <div className="water-iq-card" data-water-iq-root>
-      <h1 className="wsH1">Water IQ Challenge</h1>
-      <p className="wsP">Loading the 3-minute quiz…</p>
-      <p className="wsMuted">
-        If this stays blank, refresh the page or open the challenge in a new tab.
-      </p>
-      <a className="wsBtnPrimary" href="/water-iq">
-        Reload the challenge
-      </a>
-      <noscript>
-        <p className="wsP">This quiz needs JavaScript to run. Please enable it and reload.</p>
-      </noscript>
-    </div>
-  </section>
-);
+const COMPLETION_KEY = "ws_water_iq_completed";
+const VISIT_KEY = "ws_water_iq_visited";
 
 const WaterIqInvalid = () => (
   <section className="section water-iq">
@@ -198,15 +40,7 @@ const WaterIqResult = ({ token }: { token: string }) => {
 
   return (
     <section className="section water-iq">
-      <div
-        className="water-iq-card water-iq-card--result"
-        data-water-iq-result
-        data-token={token}
-        data-persona={payload.persona.code ?? "CS"}
-        data-score={decoded.score}
-        data-badge={decoded.badge}
-        data-delta={decoded.delta}
-      >
+      <div className="water-iq-card water-iq-card--result">
         <div className="water-iq-result-header">
           <h1 className="water-iq-title">Water IQ Challenge</h1>
           <span className="water-iq-ellipsis" aria-hidden="true">
@@ -234,7 +68,7 @@ const WaterIqResult = ({ token }: { token: string }) => {
 
         <div className="wsExplain">
           <div style={{ fontWeight: 750, marginBottom: 6 }}>Your learning delta</div>
-          <div className="wsMuted" data-water-iq-delta>
+          <div className="wsMuted">
             Knowledge delta: {decoded.delta >= 0 ? "+" : ""}
             {decoded.delta}
           </div>
@@ -246,109 +80,26 @@ const WaterIqResult = ({ token }: { token: string }) => {
         <h2 className="wsH2">Your next best steps</h2>
         <div className="wsResultMoves">
           {payload.moves.map((move) => (
-            <a key={move.id} className="wsResultMove" data-water-iq-cta={move.id} href={move.href}>
+            <a key={move.id} className="wsResultMove" href={move.href}>
               <strong>{move.title}</strong>
               <span>Tap to open in WaterShortcut.</span>
             </a>
           ))}
         </div>
 
-        <div className="wsExplain">
-          <div style={{ fontWeight: 750, marginBottom: 6 }}>Completed a big step?</div>
-          <p className="wsMuted">Claim 1 WaterShortcut credit for each top action you finish.</p>
-          <div className="wsRow">
-            {payload.moves.map((move) => (
-              <button key={move.id} className="wsBtnGhost" data-water-iq-reward={move.id}>
-                Mark {move.title} done (+1 credit)
-              </button>
-            ))}
-          </div>
-          <div className="wsMuted" data-water-iq-reward-status></div>
-        </div>
-
-        <div className="wsExplain">
-          <div style={{ fontWeight: 750, marginBottom: 6 }}>Social proof (transparent)</div>
-          <div data-water-iq-social className="wsMuted">
-            Loading social proof…
-          </div>
-          <button className="wsBtnGhost" data-water-iq-share-proof style={{ marginTop: 8 }}>
-            Share social proof
-          </button>
-          <div className="wsMuted" style={{ marginTop: 8, fontSize: 12 }}>
-            Note: In constrained contexts, social norms can land differently. See{" "}
-            <a
-              className="wsLink"
-              href="https://www.sciencedirect.com/science/article/pii/S0095069623000700"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Brick et al. (2023)
-            </a>
-            .
-          </div>
-        </div>
-
-        <div className="wsExplain">
-          <div style={{ fontWeight: 750, marginBottom: 6 }}>Beat your city average (optional)</div>
-          <div className="wsRow" style={{ marginTop: 0 }}>
-            <input className="wsNum" data-water-iq-city placeholder="Enter your city" />
-            <button className="wsBtnPrimary" data-water-iq-city-submit>
-              Compare
-            </button>
-          </div>
-          <div className="wsMuted" data-water-iq-city-result>
-            City averages appear once enough people in your city participate.
-          </div>
-        </div>
-
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(0,0,0,.10)" }}>
-          <h3 style={{ margin: "0 0 8px" }}>Make it viral (in a good way)</h3>
+          <h3 style={{ margin: "0 0 8px" }}>Keep the momentum going</h3>
           <p className="wsMuted" style={{ margin: "0 0 10px" }}>
-            Post your score. Tag 3 friends. Beat your city average.
+            Share your score or run the quiz again to track progress.
           </p>
           <div className="wsRow">
-            <button className="wsBtnPrimary wsBtnPrimary--pill" data-water-iq-share>
-              Challenge 3 friends
-            </button>
-            <button className="wsBtnGhost" data-water-iq-challenge>
-              Copy challenge link
-            </button>
-            <a className="wsBtnGhost" href="/water-iq">
+            <a className="wsBtnPrimary wsBtnPrimary--pill" href="/water-iq">
               Take again
             </a>
+            <a className="wsBtnGhost" href="/">
+              Return home
+            </a>
           </div>
-          <div className="wsMuted" style={{ marginTop: 10, fontSize: 12 }}>
-            Private by default — you choose if you share.
-          </div>
-        </div>
-
-        <div className="wsExplain">
-          <div style={{ fontWeight: 750, marginBottom: 6 }}>Optional follow-up (7–21 days)</div>
-          <div className="wsMuted" style={{ marginBottom: 8 }}>
-            If you opt in, we’ll send one check-in email. No spam.
-          </div>
-          <form data-water-iq-followup>
-            <div className="wsRow" style={{ marginTop: 0 }}>
-              <input className="wsNum" name="email" placeholder="Email address" />
-              <select className="wsNum" name="days">
-                <option value="7">7-day check-in</option>
-                <option value="21">21-day check-in</option>
-              </select>
-              <button className="wsBtnPrimary" type="submit">
-                Schedule
-              </button>
-            </div>
-            <label className="wsRow" style={{ gap: 8 }}>
-              <input type="checkbox" name="consent" />
-              <span className="wsMuted">I consent to receive one check-in email about my pledge.</span>
-            </label>
-          </form>
-          <div className="wsMuted" data-water-iq-followup-status></div>
-        </div>
-
-        <div className="wsFoot">
-          <span>We celebrate improvement.</span>
-          <span>Private by default.</span>
         </div>
       </div>
     </section>
@@ -356,23 +107,66 @@ const WaterIqResult = ({ token }: { token: string }) => {
 };
 
 const WaterIqPage = () => {
-  useWorkerAssets();
   const { credits, pulse, setPulse } = useCredits();
   const triggerCreditPulse = useCallback(() => {
     setPulse(true);
     setTimeout(() => setPulse(false), 750);
   }, [setPulse]);
   const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
+  const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/water-iq";
   const tokenMatch = pathname.match(/^\/water-iq\/r\/([^/]+)$/);
 
+  useEffect(() => {
+    // Read localStorage to see if this is a first visit and whether the quiz was completed.
+    try {
+      const completed = window.localStorage.getItem(COMPLETION_KEY) === "true";
+      const hasVisited = window.localStorage.getItem(VISIT_KEY) === "true";
+      if (!hasVisited) {
+        window.localStorage.setItem(VISIT_KEY, "true");
+      }
+      setHasCompletedQuiz(completed);
+    } catch {
+      setHasCompletedQuiz(false);
+    }
+  }, []);
+
+  const handleQuizComplete = useCallback(() => {
+    // Persist completion so ads + credits stay visible on future visits.
+    setHasCompletedQuiz(true);
+    try {
+      window.localStorage.setItem(COMPLETION_KEY, "true");
+    } catch {
+      // Ignore storage failures (privacy mode, etc.).
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tokenMatch) {
+      setHasCompletedQuiz(true);
+    }
+  }, [tokenMatch]);
+
   return (
     <div className="app">
-      <SiteNav credits={credits} pulse={pulse} onCreditsClick={startCheckout} />
+      <SiteNav
+        credits={credits}
+        pulse={pulse}
+        onCreditsClick={startCheckout}
+        hideCredits={!hasCompletedQuiz}
+      />
       <main className="main-wrapper">
-        {tokenMatch ? <WaterIqResult token={tokenMatch[1]} /> : <WaterIqQuiz />}
+        {/* Hidden nav keeps the Water IQ route discoverable for crawlers. */}
+        <nav className="ws-hidden-nav" aria-hidden="true">
+          <a href="/water-iq">Water IQ Challenge</a>
+        </nav>
+        {tokenMatch ? (
+          <WaterIqResult token={tokenMatch[1]} />
+        ) : (
+          <WaterIQQuiz onComplete={handleQuizComplete} />
+        )}
       </main>
-      <SiteFooter />
+      <SiteFooter hideAds={!hasCompletedQuiz} />
     </div>
   );
 };

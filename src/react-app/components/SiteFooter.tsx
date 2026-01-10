@@ -3,14 +3,24 @@ import { copy } from "../../copy";
 import { shouldShowPrivacyControls } from "../consent";
 import AdSenseSlot from "./AdSenseSlot";
 
-const SiteFooter = () => {
+type SiteFooterProps = {
+  hideAds?: boolean;
+};
+
+const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
   const showPrivacyControls = shouldShowPrivacyControls();
 
   return (
     <footer className="site-footer">
-      <div className="footer-ad">
-        <AdSenseSlot slotId={DEFAULT_ADSENSE_SLOTS.footer} format="autorelaxed" className="ad-slot" />
-      </div>
+      {!hideAds && (
+        <div className="footer-ad">
+          <AdSenseSlot
+            slotId={DEFAULT_ADSENSE_SLOTS.footer}
+            format="autorelaxed"
+            className="ad-slot"
+          />
+        </div>
+      )}
       <div className="footer-links">
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
