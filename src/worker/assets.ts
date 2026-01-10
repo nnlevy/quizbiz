@@ -2132,6 +2132,14 @@ export function clientScript() {
     });
   };
 
+  const reinitWaterIq = () => {
+    initWaterIq();
+    initWaterIqResult();
+    initWaterIqBadge();
+  };
+  (window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }).__WS_REINIT_WATER_IQ__ =
+    reinitWaterIq;
+
   let booted = false;
   const boot = () => {
     if (booted) return;
@@ -2143,9 +2151,7 @@ export function clientScript() {
     initRebatesTool();
     initBillUpload();
     initDemoAndManual();
-    initWaterIq();
-    initWaterIqResult();
-    initWaterIqBadge();
+    reinitWaterIq();
     initModals();
     initConsentBanner();
     ensureAnalyticsLoaded();

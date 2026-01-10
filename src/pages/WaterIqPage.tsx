@@ -53,6 +53,9 @@ const useWorkerAssets = () => {
     ensureWorkerStyles();
     void ensureWorkerScript().then(() => {
       document.dispatchEvent(new Event("DOMContentLoaded"));
+      (
+        window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
+      ).__WS_REINIT_WATER_IQ__?.();
     });
   }, []);
 };
