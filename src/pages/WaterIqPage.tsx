@@ -60,12 +60,16 @@ const useWorkerAssets = () => {
 const WaterIqQuiz = () => (
   <section className="section water-iq">
     <div className="water-iq-card" data-water-iq-root>
+      <h1 className="wsH1">Water IQ Challenge</h1>
+      <p className="wsP">Loading the 3-minute quiz…</p>
+      <p className="wsMuted">
+        If this stays blank, refresh the page or open the challenge in a new tab.
+      </p>
+      <a className="wsBtnPrimary" href="/water-iq">
+        Reload the challenge
+      </a>
       <noscript>
-        <h1 className="wsH1">Water IQ Challenge</h1>
         <p className="wsP">This quiz needs JavaScript to run. Please enable it and reload.</p>
-        <a className="wsBtnPrimary" href="/water-iq">
-          Reload
-        </a>
       </noscript>
     </div>
   </section>
