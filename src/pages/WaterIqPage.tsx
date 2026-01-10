@@ -54,11 +54,9 @@ const useWorkerAssets = () => {
     const { loadPromise, alreadyLoaded } = ensureWorkerScript();
     void loadPromise.then(() => {
       document.dispatchEvent(new Event("DOMContentLoaded"));
-      if (alreadyLoaded) {
-        (
-          window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
-        ).__WS_REINIT_WATER_IQ__?.();
-      }
+      (
+        window as typeof window & { __WS_REINIT_WATER_IQ__?: () => void }
+      ).__WS_REINIT_WATER_IQ__?.();
     });
   }, []);
 };
