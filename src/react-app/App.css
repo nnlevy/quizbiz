@@ -2965,7 +2965,8 @@ blockquote {
   border: 0;
 }
 
-.water-iq-quiz .water-iq-card {
+.water-iq-quiz .water-iq-card,
+.water-iq .water-iq-card {
   background: var(--surface-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
@@ -2973,6 +2974,65 @@ blockquote {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+.water-iq-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 2.4vw + 1rem, 2.6rem);
+}
+
+.water-iq-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.water-iq-divider {
+  height: 1px;
+  background: rgba(15, 35, 95, 0.1);
+}
+
+.water-iq-result-meta {
+  display: grid;
+  gap: 1rem;
+  align-items: center;
+}
+
+.water-iq-score-circle {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, rgba(97, 213, 255, 0.25), rgba(79, 155, 255, 0.2));
+  box-shadow: 0 14px 32px rgba(45, 107, 255, 0.2);
+}
+
+.water-iq-score-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.water-iq-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(79, 155, 255, 0.12);
+  font-weight: 600;
+}
+
+.water-iq-fact {
+  margin-top: 0.5rem;
+  color: var(--muted-text);
+}
+
+@media (min-width: 720px) {
+  .water-iq-result-meta {
+    grid-template-columns: auto 1fr;
+  }
 }
 
 .water-iq-header {
