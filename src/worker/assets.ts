@@ -2098,7 +2098,10 @@ export function clientScript() {
     });
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  let booted = false;
+  const boot = () => {
+    if (booted) return;
+    booted = true;
     initFaq();
     initWizards();
     initCalculators();
@@ -2123,7 +2126,12 @@ export function clientScript() {
       updateDiagnosticsPanel();
       window.setInterval(updateDiagnosticsPanel, 2000);
     }
-  });
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
 }
 
 const waterIqQuestionsJson = JSON.stringify(WATER_IQ_QUESTIONS);
