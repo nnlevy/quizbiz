@@ -631,6 +631,8 @@ app.get("/ads.txt", (c) =>
   c.text("google.com, pub-1860356577073395, DIRECT, f08c47fec0942fa0"),
 );
 
+app.get("/water-iq/", (c) => c.redirect("/water-iq", 301));
+
 app.get("/__ads", (c) => {
   const adsenseSlots = buildAdsenseSlots(c.env);
   const adsenseClient = resolveAdsenseClient(c.env);
