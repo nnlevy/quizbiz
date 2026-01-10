@@ -1480,10 +1480,14 @@ function renderWaterIq(): string {
   return `
     <section class="section water-iq">
       <div class="water-iq-card" data-water-iq-root>
+        <h1 class="wsH1">Water IQ Challenge</h1>
+        <p class="wsP">Loading the 3‑minute quiz…</p>
+        <p class="wsMuted">
+          If nothing appears, refresh this page or open the challenge in a new tab.
+        </p>
+        <a class="wsBtnPrimary" href="/water-iq">Reload the challenge</a>
         <noscript>
-          <h1 class="wsH1">Water IQ Challenge</h1>
           <p class="wsP">This quiz needs JavaScript to run. Please enable it and reload.</p>
-          <a class="wsBtnPrimary" href="/water-iq">Reload</a>
         </noscript>
       </div>
     </section>

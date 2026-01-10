@@ -1234,20 +1234,6 @@ function App({ focusUpload = false }: AppProps) {
   }, [locationCountdown]);
 
   useEffect(() => {
-    const scriptUrl = "https://js.stripe.com/v3/buy-button.js";
-    if (document.querySelector(`script[src='${scriptUrl}']`)) {
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = scriptUrl;
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  useEffect(() => {
     const runOverflowCheck = (label: string) => {
       const doc = document.documentElement;
       const scrollWidth = doc.scrollWidth;
