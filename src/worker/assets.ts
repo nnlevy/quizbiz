@@ -1590,6 +1590,14 @@ export function clientScript() {
     let stepMode: 'landing' | 'question' | 'impact' | 'submitting' | 'error' = 'landing';
     let questionIndex = 0;
     let showExplanation = false;
+    const isValidNumberAnswer = (question: (typeof questions)[number]) => {
+      if (question.kind !== 'number') return true;
+      const raw = answers[question.id];
+      if (raw == null || raw === '') return !question.required;
+      const value = Number(raw);
+      if (!Number.isFinite(value)) return false;
+      return value >= question.min && value <= question.max;
+    };
 
     const render = () => {
       const totalQuestions = flow.length;
@@ -1703,6 +1711,8 @@ export function clientScript() {
 
       const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100);
       const isKnowledge = currentQ.kind === 'mcq' && Boolean(currentQ.correctOptionId);
+      const numberValid = isValidNumberAnswer(currentQ);
+      const showNumberError = currentQ.kind === 'number' && !numberValid;
 
       const choicesHtml =
         currentQ.kind === 'mcq'
@@ -1724,7 +1734,8 @@ export function clientScript() {
               }" placeholder="${escapeHtml(currentQ.placeholder ?? '')}" value="${escapeHtml(
                 typeof answers[currentQ.id] === 'number' ? String(answers[currentQ.id]) : (answers[currentQ.id] as string) || '',
               )}" data-iq-number />
-              <button class="wsBtnPrimary" data-iq-next>Next</button>
+              <button class="wsBtnPrimary" data-iq-next ${showNumberError ? 'disabled' : ''}>Next</button>
+              ${showNumberError ? `<div class="wsMuted">Enter a number between ${currentQ.min} and ${currentQ.max}.</div>` : ''}
             </div>`
           : '';
 
@@ -1864,6 +1875,12 @@ export function clientScript() {
     };
 
     const next = () => {
+      const currentId = flow[questionIndex];
+      const currentQ = questions.find((q) => q.id === currentId);
+      if (currentQ && currentQ.kind === 'number' && !isValidNumberAnswer(currentQ)) {
+        render();
+        return;
+      }
       const nextIndex = questionIndex + 1;
       if (nextIndex >= flow.length) {
         void submit();
@@ -2027,7 +2044,12 @@ export function clientScript() {
     const cityResult = panel.querySelector<HTMLElement>('[data-water-iq-city-result]');
     cityButton?.addEventListener('click', async () => {
       const city = cityInput?.value?.trim() || '';
-      if (!city) return;
+      if (!city) {
+        if (cityResult) {
+          cityResult.textContent = 'Enter a city to see how your area compares.';
+        }
+        return;
+      }
       await fetch('/api/water-iq/city', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -2055,7 +2077,14 @@ export function clientScript() {
       const daysSelect = followupForm.querySelector('select[name="days"]') as HTMLSelectElement | null;
       const days = Number(daysSelect?.value || 7);
       const consent = Boolean(followupForm.querySelector<HTMLInputElement>('input[name=\"consent\"]')?.checked);
-      if (!email || !consent) return;
+      if (!email) {
+        if (followupStatus) followupStatus.textContent = 'Enter an email to schedule your check-in.';
+        return;
+      }
+      if (!consent) {
+        if (followupStatus) followupStatus.textContent = 'Please confirm consent to schedule your check-in.';
+        return;
+      }
       const res = await fetch('/api/water-iq/followup', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -2090,6 +2119,8 @@ export function clientScript() {
           } catch (err) {
             // ignore
           }
+          button.disabled = true;
+          button.textContent = 'Credit claimed (+1)';
           if (status) status.textContent = '✅ Credit added to your account.';
         } else if (status) {
           status.textContent = res?.error || 'Credit already claimed for this step.';

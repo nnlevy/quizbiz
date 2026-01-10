@@ -45,9 +45,17 @@ export const useCreditsCheckout = ({ onNotice, onPulse }: CreditsCheckoutOptions
 
     const publishableKey =
       typeof window !== "undefined" ? window.__WS_STRIPE_PUBLISHABLE_KEY__ : "";
+    const envKey =
+      typeof import.meta !== "undefined"
+        ? (import.meta.env?.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined)
+        : undefined;
+    const resolvedKey = isNonEmptyString(publishableKey)
+      ? publishableKey
+      : isNonEmptyString(envKey)
+        ? envKey
+        : "";
 
-    if (!isNonEmptyString(publishableKey)) {
-      emitNotice("Checkout unavailable right now. Please try again soon.");
+    if (!isNonEmptyString(resolvedKey)) {
       return null;
     }
 
@@ -62,7 +70,7 @@ export const useCreditsCheckout = ({ onNotice, onPulse }: CreditsCheckoutOptions
 
       const hydrateStripeClient = () => {
         if (typeof window !== "undefined" && typeof window.Stripe === "function") {
-          const client = window.Stripe(publishableKey);
+          const client = window.Stripe(resolvedKey);
           stripeClientRef.current = client;
           resolve(client);
           return;
@@ -72,7 +80,6 @@ export const useCreditsCheckout = ({ onNotice, onPulse }: CreditsCheckoutOptions
       };
 
       const handleStripeError = () => {
-        emitNotice("Checkout unavailable right now. Please try again soon.");
         resolve(null);
       };
 
@@ -102,22 +109,23 @@ export const useCreditsCheckout = ({ onNotice, onPulse }: CreditsCheckoutOptions
     const client = await stripeLoaderRef.current;
     stripeLoaderRef.current = null;
     return client;
-  }, [emitNotice]);
+  }, []);
 
   const startCheckout = useCallback(async () => {
-    const client = await loadStripeClient();
-    if (!client) {
-      return;
-    }
-
     try {
       const response = await fetch("/api/credits/checkout", { method: "POST" });
+      const payload = (await response
+        .json()
+        .catch(() => null)) as
+        | { id?: string; url?: string; error?: string; details?: string }
+        | null;
       if (!response.ok) {
-        throw new Error(`Stripe checkout failed with status ${response.status}`);
+        const serverMessage =
+          payload?.error || payload?.details || `Status ${response.status}`;
+        throw new Error(serverMessage);
       }
 
-      const payload = (await response.json()) as { id?: string };
-      if (!payload.id) {
+      if (!payload?.id && !payload?.url) {
         throw new Error("Stripe checkout session missing");
       }
 
@@ -131,16 +139,36 @@ export const useCreditsCheckout = ({ onNotice, onPulse }: CreditsCheckoutOptions
         `Launching $${CREDIT_TOPUP_PRICE} checkout for ${CREDIT_TOPUP_AMOUNT} credits...`,
       );
 
-      const result = await client.redirectToCheckout({
-        sessionId: payload.id,
-      });
+      const client = await loadStripeClient();
 
-      if (result.error?.message) {
-        emitNotice(result.error.message);
+      if (client && payload?.id) {
+        const result = await client.redirectToCheckout({
+          sessionId: payload.id,
+        });
+
+        if (result.error?.message) {
+          if (payload.url) {
+            window.location.assign(payload.url);
+            return;
+          }
+          emitNotice(result.error.message);
+        }
+        return;
       }
+
+      if (payload?.url) {
+        window.location.assign(payload.url);
+        return;
+      }
+
+      emitNotice("Unable to launch checkout. Please try again.");
     } catch (error) {
       console.error("Stripe checkout error", error);
-      emitNotice("Unable to start checkout right now. Please try again.");
+      emitNotice(
+        error instanceof Error
+          ? `Unable to start checkout: ${error.message}`
+          : "Unable to start checkout right now. Please try again.",
+      );
     }
   }, [emitNotice, loadStripeClient]);
 
