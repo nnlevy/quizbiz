@@ -496,6 +496,17 @@ function App({ focusUpload = false }: AppProps) {
     if (typeof window === "undefined") {
       return;
     }
+    if (window.location.hash === "#manual-entry") {
+      window.setTimeout(() => {
+        document.getElementById("manual-entry")?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
     setIsWaterEjectMode(
       window.location.pathname.startsWith("/blog-how-to-eject") ||
         window.location.pathname.startsWith("/water-eject"),
