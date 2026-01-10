@@ -775,12 +775,26 @@ export function clientScript() {
   }
 
   function initDemoAndManual() {
+    const safeStorageGet = (key: string) => {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    };
+    const safeStorageSet = (key: string, value: string) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        // ignore storage failures
+      }
+    };
     const demoButton = document.querySelector<HTMLButtonElement>('[data-demo-run]');
     const demoOutput = document.querySelector<HTMLElement>('[data-demo-output]');
     if (demoButton && demoOutput) {
       demoButton.addEventListener('click', () => {
         renderAnalysis(demoResult, demoOutput);
-        localStorage.setItem('ws-latest-plan', JSON.stringify(demoResult));
+        safeStorageSet('ws-latest-plan', JSON.stringify(demoResult));
       });
     }
 
@@ -828,11 +842,11 @@ export function clientScript() {
           confidenceNote: 'Manual entry is less precise than a full bill upload.',
         };
         renderAnalysis(result, manualOutput);
-        localStorage.setItem('ws-latest-plan', JSON.stringify(result));
+        safeStorageSet('ws-latest-plan', JSON.stringify(result));
       });
     }
 
-    const stored = localStorage.getItem('ws-latest-plan');
+    const stored = safeStorageGet('ws-latest-plan');
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as AnalysisResult;
