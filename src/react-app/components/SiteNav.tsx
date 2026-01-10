@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   useRef,
   useState,
   type TouchEvent as ReactTouchEvent,
@@ -57,6 +58,7 @@ const SiteNav = ({
   const [waterIqBadge, setWaterIqBadge] = useState<string | null>(null);
   const navTouchStart = useRef<{ x: number; y: number } | null>(null);
   const dropdownToggleRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const creditInfoModalRef = useRef<HTMLDivElement | null>(null);
   const creditInfoTriggerRef = useRef<HTMLElement | null>(null);
   const wasCreditInfoOpen = useRef(false);
@@ -302,9 +304,15 @@ const SiteNav = ({
     transition: "opacity 0.2s ease",
   };
 
-  const closeDropdown = () => setIsDropdownOpen(false);
-
   const handleDropdownToggle = () => setIsDropdownOpen((prev) => !prev);
+
+  const handleDropdownMouseLeave = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const nextTarget = event.relatedTarget as Node | null;
+    if (dropdownRef.current?.contains(nextTarget)) {
+      return;
+    }
+    setIsDropdownOpen(false);
+  };
 
   const handleDropdownBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
     if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -433,10 +441,11 @@ const SiteNav = ({
             </a>
             <div
               className={`nav-dropdown ${isDropdownOpen ? "open" : ""}`}
+              ref={dropdownRef}
               onBlur={handleDropdownBlur}
               onKeyDown={handleDropdownKeyDown}
               onMouseEnter={() => setIsDropdownOpen(true)}
-              onMouseLeave={closeDropdown}
+              onMouseLeave={handleDropdownMouseLeave}
             >
               <button
                 ref={dropdownToggleRef}
