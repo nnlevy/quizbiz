@@ -14,43 +14,39 @@ const ensureWorkerStyles = () => {
   document.head.appendChild(link);
 };
 
-const ensureWorkerScript = () =>
+const waitForScriptLoad = (script: HTMLScriptElement) =>
   new Promise<void>((resolve) => {
-    const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existing) {
-      if (existing.dataset.loaded === "true") {
-        resolve();
-        return;
-      }
-      const readyState = (existing as HTMLScriptElement & { readyState?: string }).readyState;
-      if (readyState === "complete" || readyState === "loaded") {
-        existing.dataset.loaded = "true";
-        resolve();
-        return;
-      }
-      const handleLoad = () => {
-        existing.dataset.loaded = "true";
-        resolve();
-      };
-      existing.addEventListener("load", handleLoad, { once: true });
-      existing.addEventListener("error", () => resolve(), { once: true });
+    if (script.dataset.loaded === "true") {
+      resolve();
       return;
     }
-    const script = document.createElement("script");
-    script.id = WORKER_APP_SCRIPT_ID;
-    script.src = "/assets/app.js";
-    script.defer = true;
-    script.addEventListener(
-      "load",
-      () => {
-        script.dataset.loaded = "true";
-        resolve();
-      },
-      { once: true },
-    );
+    const readyState = (script as HTMLScriptElement & { readyState?: string }).readyState;
+    if (readyState === "complete" || readyState === "loaded") {
+      script.dataset.loaded = "true";
+      resolve();
+      return;
+    }
+    const handleLoad = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.addEventListener("load", handleLoad, { once: true });
     script.addEventListener("error", () => resolve(), { once: true });
-    document.body.appendChild(script);
   });
+
+const ensureWorkerScript = () => {
+  const existing = document.getElementById(WORKER_APP_SCRIPT_ID) as HTMLScriptElement | null;
+  if (existing) {
+    return waitForScriptLoad(existing);
+  }
+  const script = document.createElement("script");
+  script.id = WORKER_APP_SCRIPT_ID;
+  script.src = "/assets/app.js";
+  script.defer = true;
+  const loadPromise = waitForScriptLoad(script);
+  document.body.appendChild(script);
+  return loadPromise;
+};
 
 const useWorkerAssets = () => {
   useEffect(() => {
