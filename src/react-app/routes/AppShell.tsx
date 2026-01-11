@@ -132,7 +132,7 @@ const AppShell = ({ children }: AppShellProps) => {
         </section>
       )}
 
-      <SiteFooter hideAds={adsRemoved} />
+      <SiteFooter hideAds={adsRemoved || showAds} />
     </div>
   );
 };
