@@ -2,11 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import "../react-app/App.css";
 import { decodeToken, hookFactById, moveMeta, personaFor } from "../lib/waterIq";
-import SiteFooter from "../react-app/components/SiteFooter";
-import SiteNav from "../react-app/components/SiteNav";
 import WaterIQQuiz from "../react-app/components/WaterIQQuiz";
 import { useCredits } from "../react-app/context/CreditsContext";
-import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 const COMPLETION_KEY = "ws_water_iq_completed";
 const VISIT_KEY = "ws_water_iq_visited";
@@ -273,12 +270,7 @@ const WaterIqResult = ({ token }: { token: string }) => {
 };
 
 const WaterIqPage = () => {
-  const { credits, pulse, setPulse, refund } = useCredits();
-  const triggerCreditPulse = useCallback(() => {
-    setPulse(true);
-    setTimeout(() => setPulse(false), 750);
-  }, [setPulse]);
-  const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
+  const { refund } = useCredits();
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/water-iq";
@@ -351,12 +343,6 @@ const WaterIqPage = () => {
 
   return (
     <div className="app">
-      <SiteNav
-        credits={credits}
-        pulse={pulse}
-        onCreditsClick={startCheckout}
-        hideCredits={!hasCompletedQuiz}
-      />
       <main className="main-wrapper">
         {/* Hidden nav keeps the Water IQ route discoverable for crawlers. */}
         <nav className="ws-hidden-nav" aria-hidden="true">
@@ -368,7 +354,6 @@ const WaterIqPage = () => {
           <WaterIQQuiz onComplete={handleQuizComplete} rewardMessage={rewardMessage} />
         )}
       </main>
-      <SiteFooter hideAds={!hasCompletedQuiz} />
     </div>
   );
 };

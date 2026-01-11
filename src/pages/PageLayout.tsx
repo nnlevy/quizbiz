@@ -4,7 +4,6 @@ import SiteFooter from "../react-app/components/SiteFooter";
 import SiteNav from "../react-app/components/SiteNav";
 import "../react-app/App.css";
 import { useCredits } from "../react-app/context/CreditsContext";
-import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 const PageLayout = ({
   title,
@@ -20,11 +19,14 @@ const PageLayout = ({
     setPulse(true);
     setTimeout(() => setPulse(false), 750);
   }, [setPulse]);
-  const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
+  const handleCreditsClick = useCallback(() => {
+    triggerCreditPulse();
+    window.location.assign("/credits");
+  }, [triggerCreditPulse]);
 
   return (
     <div className="app content-page">
-      <SiteNav credits={credits} pulse={pulse} onCreditsClick={startCheckout} />
+      <SiteNav credits={credits} pulse={pulse} onCreditsClick={handleCreditsClick} />
       <main className="content-wrapper">
         <div className="content-hero">
           <p className="eyebrow">WaterShortcut Learn</p>

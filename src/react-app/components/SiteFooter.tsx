@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
+
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { copy } from "../../copy";
 import { shouldShowPrivacyControls } from "../consent";
+import { ADS_FREE_FLAG } from "../utils/credits";
 import AdSenseSlot from "./AdSenseSlot";
 
 type SiteFooterProps = {
@@ -9,10 +12,30 @@ type SiteFooterProps = {
 
 const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
   const showPrivacyControls = shouldShowPrivacyControls();
+  const [adsRemoved, setAdsRemoved] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const readAdsSetting = () => {
+      try {
+        setAdsRemoved(window.localStorage.getItem(ADS_FREE_FLAG) === "true");
+      } catch {
+        setAdsRemoved(false);
+      }
+    };
+    readAdsSetting();
+    const handleAdsUpdate = () => readAdsSetting();
+    window.addEventListener("ws-ads-updated", handleAdsUpdate);
+    window.addEventListener("storage", handleAdsUpdate);
+    return () => {
+      window.removeEventListener("ws-ads-updated", handleAdsUpdate);
+      window.removeEventListener("storage", handleAdsUpdate);
+    };
+  }, []);
 
   return (
     <footer className="site-footer">
-      {!hideAds && (
+      {!hideAds && !adsRemoved && (
         <div className="footer-ad">
           <AdSenseSlot
             slotId={DEFAULT_ADSENSE_SLOTS.footer}

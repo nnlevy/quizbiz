@@ -3,7 +3,6 @@ import SiteFooter from "../react-app/components/SiteFooter";
 import SiteNav from "../react-app/components/SiteNav";
 import "../react-app/App.css";
 import { useCredits } from "../react-app/context/CreditsContext";
-import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 type Feature = {
   title: string;
@@ -44,13 +43,16 @@ const LandingPage = () => {
     setPulse(true);
     setTimeout(() => setPulse(false), 750);
   }, [setPulse]);
-  const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
+  const handleCreditsClick = useCallback(() => {
+    triggerCreditPulse();
+    window.location.assign("/credits");
+  }, [triggerCreditPulse]);
 
   const activeFeature = useMemo(() => features[activeIndex], [activeIndex]);
 
   return (
     <div className="app landing-page">
-      <SiteNav credits={credits} pulse={pulse} onCreditsClick={startCheckout} />
+      <SiteNav credits={credits} pulse={pulse} onCreditsClick={handleCreditsClick} />
       <main className="landing-main">
         <section className="landing-hero">
           <p className="landing-eyebrow">WaterShortcut mobile</p>

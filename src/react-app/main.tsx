@@ -26,6 +26,7 @@ const Analyze = lazy(() => import("./routes/Analyze"));
 const Research = lazy(() => import("./routes/Research"));
 const About = lazy(() => import("./routes/About"));
 const EjectWater = lazy(() => import("./routes/EjectWater"));
+const Credits = lazy(() => import("./routes/Credits"));
 
 if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
@@ -142,6 +143,13 @@ const RouterView = () => {
         </AppShell>
       );
     }
+    if (pathname.startsWith("/credits")) {
+      return (
+        <AppShell>
+          <Credits />
+        </AppShell>
+      );
+    }
     if (pathname.startsWith("/eject-water")) {
       return (
         <AppShell>
@@ -186,7 +194,11 @@ const RouterView = () => {
       return <TermsPage />;
     }
     if (pathname.startsWith("/water-iq")) {
-      return <WaterIqPage />;
+      return (
+        <AppShell>
+          <WaterIqPage />
+        </AppShell>
+      );
     }
     return (
       <AppShell>

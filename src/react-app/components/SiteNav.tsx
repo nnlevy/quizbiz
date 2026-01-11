@@ -419,7 +419,13 @@ const SiteNav = ({
               type="button"
               className={`credit-meter__button ${pulse ? "is-animating" : ""}`}
               aria-label={`Credits available: ${credits}. Add more credits.`}
-              onClick={onCreditsClick}
+              onClick={() => {
+                if (onCreditsClick) {
+                  onCreditsClick();
+                  return;
+                }
+                window.location.assign("/credits");
+              }}
               onKeyDown={onCreditsKeyDown}
             >
               <span className="credit-meter__label">Credits</span>
