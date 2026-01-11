@@ -105,24 +105,49 @@ export const buildInsightCacheKey = (inputs: ViralWaterIqInputs, score: number, 
   });
 };
 
-const encodeBase64Url = (value: string): string => {
+const binaryToBase64 = (binary: string): string => {
   if (typeof btoa === "function") {
-    return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    return btoa(binary);
   }
-  return Buffer.from(value, "utf-8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  const maybeBuffer = (globalThis as typeof globalThis & {
+    Buffer?: { from: (input: string, encoding: string) => { toString: (encoding: string) => string } };
+  }).Buffer;
+  return maybeBuffer?.from(binary, "binary").toString("base64");
+};
+
+const base64ToBinary = (value: string): string | null => {
+  if (typeof atob === "function") {
+    return atob(value);
+  }
+  const maybeBuffer = (globalThis as typeof globalThis & {
+    Buffer?: { from: (input: string, encoding: string) => { toString: (encoding: string) => string } };
+  }).Buffer;
+  if (maybeBuffer) {
+    return maybeBuffer.from(value, "base64").toString("binary");
+  }
+  return null;
+};
+
+const encodeBase64Url = (value: string): string => {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  const base64 = binaryToBase64(binary);
+  if (!base64) {
+    throw new Error("Base64 encoding unavailable");
+  }
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 };
 
 const decodeBase64Url = (value: string): string | null => {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
   try {
-    if (typeof atob === "function") {
-      return atob(padded);
-    }
-    return Buffer.from(padded, "base64").toString("utf-8");
+    const binary = base64ToBinary(padded);
+    if (!binary) return null;
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
   } catch {
     return null;
   }
