@@ -24,6 +24,7 @@ import { RouterProvider, useLocation } from "./routes/router";
 const Home = lazy(() => import("./routes/Home"));
 const Analyze = lazy(() => import("./routes/Analyze"));
 const ManualEntry = lazy(() => import("./routes/ManualEntry"));
+const BillLookup = lazy(() => import("./routes/BillLookup"));
 const Research = lazy(() => import("./routes/Research"));
 const About = lazy(() => import("./routes/About"));
 const EjectWater = lazy(() => import("./routes/EjectWater"));
@@ -46,6 +47,7 @@ const SeoHiddenNav = () => (
   <nav className="sr-only" aria-hidden="true">
     <a href="/">Home</a>
     <a href="/analyze">Analyze my bill</a>
+    <a href="/bill-lookup">Look up my water bill</a>
     <a href="/research">Research</a>
     <a href="/game">Leak Patrol</a>
     <a href="/eject-water">Eject Water</a>
@@ -134,6 +136,13 @@ const RouterView = () => {
       return (
         <AppShell>
           <ManualEntry />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/bill-lookup")) {
+      return (
+        <AppShell>
+          <BillLookup />
         </AppShell>
       );
     }
