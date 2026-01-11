@@ -2791,6 +2791,82 @@ const handleAnalyzeBill = async (c: any) => {
   }
 };
 
+type ManualEntryPayload = {
+  period?: unknown;
+  usage?: unknown;
+  unit?: unknown;
+  cost?: unknown;
+  rate?: unknown;
+  household?: unknown;
+  notes?: unknown;
+};
+
+const parseManualNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  try {
+    validateLocationEnv(c.env);
+    let payload: ManualEntryPayload;
+    try {
+      payload = (await c.req.json()) as ManualEntryPayload;
+    } catch (error) {
+      console.error("Manual entry payload error:", error);
+      return c.json({ error: "Invalid manual entry payload." }, 400);
+    }
+
+    const period = typeof payload.period === "string" ? payload.period.trim() : "";
+    const unit = typeof payload.unit === "string" ? payload.unit.trim() : "";
+    const notes = typeof payload.notes === "string" ? payload.notes.trim() : "";
+    const usage = parseManualNumber(payload.usage);
+    const cost = parseManualNumber(payload.cost);
+    const rate = parseManualNumber(payload.rate);
+    const household = parseManualNumber(payload.household);
+
+    const details: string[] = [];
+    if (period) details.push(`Billing period: ${period}`);
+    if (usage != null) {
+      details.push(`Total usage: ${usage}${unit ? ` ${unit}` : ""}`);
+    }
+    if (cost != null) details.push(`Total cost: $${cost}`);
+    if (rate != null) details.push(`Water rate: $${rate}${unit ? ` per ${unit}` : ""}`);
+    if (household != null) details.push(`Household size: ${household}`);
+    if (notes) details.push(`Notes: ${notes}`);
+
+    if (details.length === 0) {
+      return c.json({ error: "Please provide at least one manual bill detail." }, 400);
+    }
+
+    const content = `Manual bill entry:\n${details.map((entry) => `- ${entry}`).join("\n")}`;
+    const openAiData = await analyzeTextWithOpenAI(c.env, {
+      content,
+      includeWaterContext: true,
+    });
+    const analysis = parseAnalysisPayload(openAiData);
+
+    return c.json({
+      analysis,
+      html: renderAnalysisResponse(openAiData),
+    });
+  } catch (error) {
+    console.error("Manual analysis failed:", error);
+    return c.json(
+      {
+        error: "An error occurred while analyzing the manual entry.",
+      },
+      500,
+    );
+  }
+};
+
 const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
   let payload: {
     zip?: string;
@@ -2863,6 +2939,7 @@ const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
 app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);
 app.post("/", handleAnalyzeBill);
+app.post("/api/analyze-manual", handleManualAnalyze);
 app.post("/api/rebates", handleRebateSearch);
 
 app.get("/api/usage-defaults", (c) =>

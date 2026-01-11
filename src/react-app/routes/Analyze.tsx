@@ -98,7 +98,7 @@ const Analyze = () => {
             <button className="ws-button" type="button" onClick={() => navigate("/")}>
               Go to upload options
             </button>
-            <button className="ws-button-secondary" type="button" onClick={() => navigate("/legacy#manual-entry")}>
+            <button className="ws-button-secondary" type="button" onClick={() => navigate("/manual-entry")}>
               Enter numbers manually
             </button>
           </div>

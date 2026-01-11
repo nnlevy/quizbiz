@@ -38,11 +38,11 @@
   gap: 0.35rem;
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
-  background: rgba(15, 118, 110, 0.12);
-  color: #0f766e;
+  background: rgba(14, 116, 144, 0.12);
+  color: #0b4f4a;
   font-size: 0.85rem;
   font-weight: 700;
-  border: 1px solid rgba(15, 118, 110, 0.25);
+  border: 1px solid rgba(14, 116, 144, 0.25);
   text-decoration: none;
   cursor: pointer;
 }
@@ -172,16 +172,18 @@
   cursor: pointer;
   position: relative;
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  text-decoration: none;
 }
 
 .ws-button {
-  background: #0f766e;
+  background: #0f6f63;
   color: #fff;
 }
 
 .ws-button-secondary {
-  background: #e0f2fe;
-  color: #075985;
+  background: rgba(14, 116, 144, 0.12);
+  color: #0b4f4a;
+  border: 1px solid rgba(14, 116, 144, 0.25);
 }
 
 .ws-button:hover,
@@ -199,6 +201,14 @@
 .ws-button-secondary:focus-visible {
   outline: 3px solid rgba(14, 116, 144, 0.35);
   outline-offset: 2px;
+}
+
+.ws-button:disabled,
+.ws-button-secondary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .ws-button.is-loading,
@@ -310,11 +320,86 @@
   gap: 1rem;
 }
 
+.ws-form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.ws-field {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #102a43;
+}
+
 .ws-input {
   padding: 0.8rem 1rem;
   border-radius: 0.75rem;
   border: 1px solid #cbd5f5;
   font-size: 1rem;
+}
+
+.ws-textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.ws-form-meta {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ws-form-error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.ws-result-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.ws-result-card {
+  border-radius: 1rem;
+  border: 1px solid #d9e2ec;
+  background: #fff;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ws-result-card h3 {
+  margin-bottom: 0.35rem;
+}
+
+.ws-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #52606d;
+  font-size: 0.9rem;
+}
+
+.ws-result-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #52606d;
+}
+
+.ws-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ws-result-summary {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ws-result-summary h3 {
+  margin-bottom: 0.35rem;
 }
 
 .ws-tool-grid a {
@@ -324,6 +409,16 @@
 .ws-tool-grid a:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+@media (min-width: 640px) {
+  .ws-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ws-result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .ws-ads {
