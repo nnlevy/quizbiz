@@ -30,6 +30,13 @@ export type ViralWaterIqPayload = {
   in: string;
 };
 
+const BADGE_IDS = new Set<ViralWaterIqBadgeId>([
+  "leak_detective",
+  "utility_insider",
+  "water_roi_optimizer",
+  "efficiency_thinker",
+]);
+
 const SHOWER_RANGE = { min: 5, max: 30 };
 const SINK_RANGE = { min: 5, max: 30 };
 const IRRIGATION_RANGE = { min: 1, max: 20 };
@@ -105,14 +112,14 @@ export const buildInsightCacheKey = (inputs: ViralWaterIqInputs, score: number, 
   });
 };
 
-const binaryToBase64 = (binary: string): string => {
+const binaryToBase64 = (binary: string): string | null => {
   if (typeof btoa === "function") {
     return btoa(binary);
   }
   const maybeBuffer = (globalThis as typeof globalThis & {
     Buffer?: { from: (input: string, encoding: string) => { toString: (encoding: string) => string } };
   }).Buffer;
-  return maybeBuffer?.from(binary, "binary").toString("base64");
+  return maybeBuffer ? maybeBuffer.from(binary, "binary").toString("base64") : null;
 };
 
 const base64ToBinary = (value: string): string | null => {
@@ -162,6 +169,18 @@ export const decodeViralPayload = (token: string): ViralWaterIqPayload | null =>
   try {
     const parsed = JSON.parse(decoded) as ViralWaterIqPayload;
     if (parsed?.v !== 1) return null;
+    if (
+      typeof parsed.sh !== "number" ||
+      typeof parsed.si !== "number" ||
+      typeof parsed.ir !== "number" ||
+      typeof parsed.sc !== "number"
+    ) {
+      return null;
+    }
+    if (parsed.bl !== 0 && parsed.bl !== 1) return null;
+    if (parsed.lk !== 0 && parsed.lk !== 1) return null;
+    if (!parsed.in || typeof parsed.in !== "string") return null;
+    if (!BADGE_IDS.has(parsed.bd)) return null;
     return parsed;
   } catch {
     return null;
