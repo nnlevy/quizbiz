@@ -55,6 +55,9 @@ const Home = () => {
         <div>
           <h2>Analyze my water bill</h2>
           <p className="ws-subtitle">Pick the mode that fits your time right now.</p>
+          <RouterLink className="ws-footer-link" to="/bill-lookup">
+            Click here to look up your water bill
+          </RouterLink>
         </div>
         <div className="ws-mode-grid" role="group" aria-label="Choose a starting mode">
           <button
