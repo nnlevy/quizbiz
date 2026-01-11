@@ -33,6 +33,7 @@ const waterEjectLinks = [
 ];
 
 const NAV_SWIPE_THRESHOLD = 42;
+const NAV_EDGE_ACTIVATION = 64;
 
 type SiteNavProps = {
   credits?: number;
@@ -51,7 +52,7 @@ const SiteNav = ({
 }: SiteNavProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDraggingNav, setIsDraggingNav] = useState(false);
-  const [navDragStartY, setNavDragStartY] = useState<number | null>(null);
+  const [navDragStartX, setNavDragStartX] = useState<number | null>(null);
   const [navDragOffset, setNavDragOffset] = useState(0);
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [showCreditInfo, setShowCreditInfo] = useState(false);
@@ -172,23 +173,16 @@ const SiteNav = ({
     if (!isMobileViewport() || isMobileMenuOpen) {
       return;
     }
-
-    if (
-      event.target instanceof HTMLElement &&
-      event.target.closest(".mobile-nav")
-    ) {
-      navTouchStart.current = null;
-      return;
-    }
-
-    if (
-      event.target instanceof HTMLElement &&
-      event.target.closest(".mobile-nav")
-    ) {
+    if (event.target instanceof HTMLElement && event.target.closest(".mobile-nav")) {
       navTouchStart.current = null;
       return;
     }
     const touch = event.touches[0];
+    const viewportWidth = window.innerWidth || 0;
+    if (viewportWidth && touch.clientX < viewportWidth - NAV_EDGE_ACTIVATION) {
+      navTouchStart.current = null;
+      return;
+    }
     navTouchStart.current = { x: touch.clientX, y: touch.clientY };
   };
 
@@ -198,18 +192,7 @@ const SiteNav = ({
       return;
     }
 
-    if (
-      event.target instanceof HTMLElement &&
-      event.target.closest(".mobile-nav")
-    ) {
-      navTouchStart.current = null;
-      return;
-    }
-
-    if (
-      event.target instanceof HTMLElement &&
-      event.target.closest(".mobile-nav")
-    ) {
+    if (event.target instanceof HTMLElement && event.target.closest(".mobile-nav")) {
       navTouchStart.current = null;
       return;
     }
@@ -221,14 +204,11 @@ const SiteNav = ({
     const touch = event.changedTouches[0];
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    if (Math.abs(dy) <= Math.abs(dx) || Math.abs(dy) < NAV_SWIPE_THRESHOLD) {
+    if (Math.abs(dx) <= Math.abs(dy) || Math.abs(dx) < NAV_SWIPE_THRESHOLD) {
       return;
     }
-    if (dy > NAV_SWIPE_THRESHOLD && !isMobileMenuOpen) {
+    if (dx < -NAV_SWIPE_THRESHOLD && !isMobileMenuOpen) {
       setIsMobileMenuOpen(true);
-    }
-    if (dy < -NAV_SWIPE_THRESHOLD && isMobileMenuOpen) {
-      setIsMobileMenuOpen(false);
     }
   };
 
@@ -241,18 +221,18 @@ const SiteNav = ({
       return;
     }
     setIsDraggingNav(true);
-    setNavDragStartY(event.clientY);
+    setNavDragStartX(event.clientX);
     setNavDragOffset(0);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
   const handleNavPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!isDraggingNav || navDragStartY === null) {
+    if (!isDraggingNav || navDragStartX === null) {
       return;
     }
-    const deltaY = event.clientY - navDragStartY;
-    if (deltaY > 0) {
-      setNavDragOffset(deltaY);
+    const deltaX = event.clientX - navDragStartX;
+    if (deltaX > 0) {
+      setNavDragOffset(deltaX);
     }
   };
 
@@ -265,7 +245,7 @@ const SiteNav = ({
       setIsMobileMenuOpen(false);
     }
     setIsDraggingNav(false);
-    setNavDragStartY(null);
+    setNavDragStartX(null);
     setNavDragOffset(0);
   };
 
@@ -275,13 +255,13 @@ const SiteNav = ({
     }
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     setIsDraggingNav(false);
-    setNavDragStartY(null);
+    setNavDragStartX(null);
     setNavDragOffset(0);
   };
 
   const navDragStyle = isMobileMenuOpen
     ? {
-        transform: isDraggingNav ? `translateY(${Math.max(navDragOffset, 0)}px)` : undefined,
+        transform: isDraggingNav ? `translateX(${Math.max(navDragOffset, 0)}px)` : undefined,
       }
     : undefined;
 
@@ -291,8 +271,8 @@ const SiteNav = ({
       isMobileMenuOpen && navDragStyle?.transform !== undefined
         ? navDragStyle.transform
         : isMobileMenuOpen
-          ? "translateY(0)"
-          : "translateY(105%)",
+          ? "translateX(0)"
+          : "translateX(105%)",
     visibility: (isMobileMenuOpen ? "visible" : "hidden") as CSSProperties["visibility"],
     pointerEvents: (isMobileMenuOpen ? "auto" : "none") as CSSProperties["pointerEvents"],
     transition: isDraggingNav
