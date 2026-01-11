@@ -32,6 +32,15 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 `;
 
 export function clientScript(defaultAdsenseClient: string) {
+  const globalWindow = window as typeof window & { __WS_APP_BOOTED__?: boolean };
+  if (globalWindow.__WS_APP_BOOTED__) {
+    return;
+  }
+  globalWindow.__WS_APP_BOOTED__ = true;
+  const appScript = document.querySelector<HTMLScriptElement>('script[data-ws-app]');
+  if (appScript) {
+    appScript.dataset.loaded = 'true';
+  }
   const ADSENSE_CLIENT =
     (window as typeof window & { __WS_ADSENSE_CLIENT__?: string }).__WS_ADSENSE_CLIENT__ ||
     defaultAdsenseClient;

@@ -228,7 +228,9 @@ const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = COPY_BUILD_DATE;
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
 const WATER_IQ_INLINE_BOOTSTRAP = `window.addEventListener("DOMContentLoaded", () => {
-  if (!window.__WS_REINIT_WATER_IQ__) {
+  const workerScript = document.querySelector('script[data-ws-app]');
+  const alreadyLoaded = workerScript && workerScript.dataset.loaded === "true";
+  if (!alreadyLoaded && !window.__WS_REINIT_WATER_IQ__) {
     ${appJs}
   }
 });`;
@@ -777,13 +779,23 @@ const buildLogoutCookie = (env: WorkerEnv): string => {
   return cookieParts.join("; ");
 };
 
-const sanitizeReturnTo = (value: string | undefined | null, fallback = "/"): string => {
+const sanitizeReturnTo = (
+  value: string | undefined | null,
+  origin: string,
+  fallback = "/",
+): string => {
   if (!value) return fallback;
+  if (value.startsWith("//")) {
+    return fallback;
+  }
   if (value.startsWith("/")) {
     return value;
   }
   try {
     const parsed = new URL(value);
+    if (parsed.origin !== origin) {
+      return fallback;
+    }
     return `${parsed.pathname}${parsed.search}${parsed.hash}` || fallback;
   } catch {
     return fallback;
@@ -847,7 +859,15 @@ const ensureSession = async (c: Context) => {
       .bind(sessionId)
       .first()) as { user_id: string; expires_at: string } | null;
     if (authRow && authRow.expires_at > now) {
-      session = { userId: authRow.user_id, credits: DEFAULT_CREDITS, createdAt: now };
+      const userRow = (await db
+        .prepare("SELECT credits FROM users WHERE id = ?1")
+        .bind(authRow.user_id)
+        .first()) as { credits: number } | null;
+      session = {
+        userId: authRow.user_id,
+        credits: userRow?.credits ?? DEFAULT_CREDITS,
+        createdAt: now,
+      };
     }
   }
 
@@ -982,7 +1002,8 @@ app.get("/auth/google", async (c) => {
   }
   const state = crypto.randomUUID();
   const createdAt = new Date().toISOString();
-  const returnTo = sanitizeReturnTo(c.req.query("return_to"));
+  const origin = new URL(c.req.url).origin;
+  const returnTo = sanitizeReturnTo(c.req.query("return_to"), origin);
   await c.env.UserSessionsAcrossDomains.put(
     `oauth:state:${state}`,
     JSON.stringify({ createdAt, returnTo, sessionId }),
@@ -1015,7 +1036,8 @@ app.get("/auth/google/callback", async (c) => {
   }
   await c.env.UserSessionsAcrossDomains.delete(stateKey);
   const statePayload = storedState as { returnTo?: string; sessionId?: string };
-  const returnTo = sanitizeReturnTo(statePayload.returnTo, "/");
+  const origin = new URL(c.req.url).origin;
+  const returnTo = sanitizeReturnTo(statePayload.returnTo, origin, "/");
 
   const redirectUri = "https://www.watershortcut.com/auth/google/callback";
   const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
@@ -1755,7 +1777,7 @@ function layout(options: {
           });
         });
       </script>
-      <script defer src="/assets/app.js"></script>
+      <script defer src="/assets/app.js" data-ws-app data-loaded="false"></script>
       ${inlineScriptTags}
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
