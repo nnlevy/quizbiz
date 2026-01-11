@@ -1,4 +1,35 @@
 {
+  "analysisId": "demo-001",
+  "billingSummary": {
+    "billingPeriod": "Aug 1–Aug 31",
+    "totalUsage": { "value": 8200, "unit": "Gallons" },
+    "totalCost": 86,
+    "rateTiers": [
+      { "name": "Tier 1", "usageLimit": "0-6k gal", "rate": "$4.10 / 1k gal", "cost": 24.6 },
+      { "name": "Tier 2", "usageLimit": "6k-12k gal", "rate": "$6.25 / 1k gal", "cost": 37.5 },
+      { "name": "Tier 3", "usageLimit": "12k+ gal", "rate": "$8.90 / 1k gal", "cost": 23.9 }
+    ]
+  },
+  "usageHistory": [
+    { "label": "Oct", "usage": 7800, "cost": 62, "average": 7200 },
+    { "label": "Nov", "usage": 6900, "cost": 58, "average": 7100 },
+    { "label": "Dec", "usage": 6400, "cost": 54, "average": 7000 },
+    { "label": "Jan", "usage": 6600, "cost": 55, "average": 6900 },
+    { "label": "Feb", "usage": 7100, "cost": 59, "average": 6900 },
+    { "label": "Mar", "usage": 7600, "cost": 64, "average": 7000 },
+    { "label": "Apr", "usage": 8900, "cost": 74, "average": 7200 },
+    { "label": "May", "usage": 10200, "cost": 88, "average": 7400 },
+    { "label": "Jun", "usage": 12050, "cost": 108, "average": 7600 },
+    { "label": "Jul", "usage": 13400, "cost": 121, "average": 7800 },
+    { "label": "Aug", "usage": 12800, "cost": 115, "average": 7700 },
+    { "label": "Sep", "usage": 9800, "cost": 82, "average": 7500 }
+  ],
+  "alerts": [
+    { "id": "leak", "title": "Possible leak: overnight flow detected.", "detail": "Check toilets and irrigation valves for steady flow." },
+    { "id": "tier", "title": "Tier jump risk at 12k gallons.", "detail": "Trim outdoor watering to stay below Tier 3." },
+    { "id": "wastewater", "title": "Wastewater charges rose 15%.", "detail": "Reduce indoor laundry loads and verify meter reads." }
+  ],
+  "savingsSummary": "Reduce outdoor watering by 20% to save around 1,000 gallons per month.",
   "topMoves": [
     {
       "title": "Stop silent toilet leaks",

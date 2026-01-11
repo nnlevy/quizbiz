@@ -29,6 +29,10 @@ const Research = lazy(() => import("./routes/Research"));
 const About = lazy(() => import("./routes/About"));
 const EjectWater = lazy(() => import("./routes/EjectWater"));
 const Credits = lazy(() => import("./routes/Credits"));
+const AnalysisResults = lazy(() => import("./routes/AnalysisResults"));
+const SignIn = lazy(() => import("./routes/SignIn"));
+const SignUp = lazy(() => import("./routes/SignUp"));
+const Dashboard = lazy(() => import("./routes/Dashboard"));
 
 if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
@@ -125,6 +129,13 @@ const RouterView = () => {
         </AppShell>
       );
     }
+    if (pathname.startsWith("/analysis-results")) {
+      return (
+        <AppShell>
+          <AnalysisResults />
+        </AppShell>
+      );
+    }
     if (pathname.startsWith("/analyze")) {
       return (
         <AppShell>
@@ -164,6 +175,27 @@ const RouterView = () => {
       return (
         <AppShell>
           <Credits />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/dashboard")) {
+      return (
+        <AppShell>
+          <Dashboard />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/sign-in")) {
+      return (
+        <AppShell>
+          <SignIn />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/sign-up")) {
+      return (
+        <AppShell>
+          <SignUp />
         </AppShell>
       );
     }

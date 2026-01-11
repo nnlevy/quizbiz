@@ -101,7 +101,42 @@ type AnalysisMove = {
   ctaHref: string;
 };
 
+type AnalysisTier = {
+  name: string;
+  usageLimit: string;
+  rate: string;
+  cost: number;
+};
+
+type UsageHistoryPoint = {
+  label: string;
+  usage: number;
+  cost: number;
+  average: number;
+};
+
+type AnalysisAlert = {
+  id: string;
+  title: string;
+  detail: string;
+};
+
+type AnalysisSummary = {
+  billingPeriod: string;
+  totalUsage: {
+    value: number;
+    unit: string;
+  };
+  totalCost: number;
+  rateTiers: AnalysisTier[];
+};
+
 type AnalysisResult = {
+  analysisId: string;
+  billingSummary: AnalysisSummary;
+  usageHistory: UsageHistoryPoint[];
+  alerts: AnalysisAlert[];
+  savingsSummary: string;
   topMoves: AnalysisMove[];
   payingFor: string;
   nextStep: string;
@@ -121,6 +156,13 @@ type RebateResult = {
 type RebateResponse = {
   lastChecked: string;
   results: RebateResult[];
+};
+
+type LocalTrendReport = {
+  summary: string;
+  seasonalPatterns: Array<{ season: string; trend: string; drivers: string[] }>;
+  recommendations: string[];
+  utilityPrograms: Array<{ name: string; detail: string }>;
 };
 
 type DocumentAIResponse = {
@@ -3131,11 +3173,50 @@ const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
   }
 };
 
+const handleLocalTrends = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: { city?: string; state?: string; zip?: string } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Local trend payload error:", error);
+    return c.json({ error: "Invalid trend request body." }, 400);
+  }
+
+  const zip = typeof payload.zip === "string" ? payload.zip.trim() : "";
+  if (!zip) {
+    return c.json({ error: "ZIP code is required to research local trends." }, 400);
+  }
+
+  const prompt = buildLocalTrendPrompt({
+    zip,
+    city: typeof payload.city === "string" ? payload.city.trim() : "",
+    state: typeof payload.state === "string" ? payload.state.trim() : "",
+  });
+
+  try {
+    const openAiData = await analyzeLocalTrendsWithOpenAI(c.env, prompt);
+    const parsed = parseLocalTrendPayload(openAiData);
+    if (!parsed) {
+      return c.json({ error: "We couldn’t parse the trend report yet." }, 502);
+    }
+    return c.json(parsed);
+  } catch (error) {
+    console.error("Local trend lookup failed:", error);
+    return c.json(
+      {
+        error: "We hit a snag researching local trends. Please try again.",
+      },
+      500,
+    );
+  }
+};
+
 app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);
 app.post("/", handleAnalyzeBill);
 app.post("/api/analyze-manual", handleManualAnalyze);
 app.post("/api/rebates", handleRebateSearch);
+app.post("/api/local-trends", handleLocalTrends);
 
 app.get("/api/usage-defaults", (c) =>
   c.json({
@@ -3379,7 +3460,7 @@ async function analyzeTextWithOpenAI(
   const { content, includeWaterContext = true } = options;
 
   const prompt = includeWaterContext
-    ? `You are a world-leading expert in water conservation and efficiency.\nReturn ONLY valid JSON matching this schema (no markdown, no prose):\n{\n  "topMoves": [\n    {\n      "title": string,\n      "why": string,\n      "effort": "Low" | "Med" | "High",\n      "impact": string,\n      "steps": string[],\n      "ctaLabel": string,\n      "ctaHref": string\n    }\n  ],\n  "payingFor": string,\n  "nextStep": string,\n  "confidenceNote": string\n}\nRules:\n- Provide exactly 3 topMoves.\n- Keep language short, plain-English, and action-first.\n- Use realistic impact ranges instead of guarantees.\n- Use internal links for ctaHref when possible (e.g., /leak-check, /calculators/shower).\n\nBill text:\n${content}`
+    ? `You are a world-leading expert in water conservation and efficiency.\nReturn ONLY valid JSON matching this schema (no markdown, no prose):\n{\n  \"analysisId\": string,\n  \"billingSummary\": {\n    \"billingPeriod\": string,\n    \"totalUsage\": { \"value\": number, \"unit\": string },\n    \"totalCost\": number,\n    \"rateTiers\": [\n      { \"name\": string, \"usageLimit\": string, \"rate\": string, \"cost\": number }\n    ]\n  },\n  \"usageHistory\": [\n    { \"label\": string, \"usage\": number, \"cost\": number, \"average\": number }\n  ],\n  \"alerts\": [\n    { \"id\": string, \"title\": string, \"detail\": string }\n  ],\n  \"savingsSummary\": string,\n  \"topMoves\": [\n    {\n      \"title\": string,\n      \"why\": string,\n      \"effort\": \"Low\" | \"Med\" | \"High\",\n      \"impact\": string,\n      \"steps\": string[],\n      \"ctaLabel\": string,\n      \"ctaHref\": string\n    }\n  ],\n  \"payingFor\": string,\n  \"nextStep\": string,\n  \"confidenceNote\": string\n}\nRules:\n- Provide exactly 3 topMoves.\n- Provide 12 usageHistory items labeled with short month names (e.g., \"Jan\").\n- Provide at least 3 alerts with specific fixes.\n- Ensure billingSummary and rateTiers align with the bill text inputs.\n- Keep language short, plain-English, and action-first.\n- Use realistic impact ranges instead of guarantees.\n- Use internal links for ctaHref when possible (e.g., /leak-check, /calculators/shower).\n\nBill text:\n${content}`
     : content;
 
   const headers: Record<string, string> = {
@@ -3417,6 +3498,51 @@ async function analyzeTextWithOpenAI(
   }
 
   return data;
+}
+
+async function analyzeLocalTrendsWithOpenAI(
+  env: WorkerEnv,
+  prompt: string,
+): Promise<ChatCompletionResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
+  };
+
+  if (env.OPENAI_ORG_ID) {
+    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: 1600,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    }),
+  });
+
+  const data = (await response.json()) as ChatCompletionResponse;
+
+  if (!response.ok) {
+    console.error("OpenAI trends request failed:", JSON.stringify(data, null, 2));
+    throw new Error("Failed to analyze local trends with OpenAI");
+  }
+
+  return data;
+}
+
+function buildLocalTrendPrompt(input: { zip: string; city: string; state: string }): string {
+  const locationLabel = [input.city, input.state].filter(Boolean).join(", ");
+  const locationDescriptor = locationLabel ? `${locationLabel} (ZIP ${input.zip})` : `ZIP ${input.zip}`;
+
+  return `You are a water utility analyst. Return ONLY valid JSON (no markdown) matching:\n{\n  \"summary\": string,\n  \"seasonalPatterns\": [\n    { \"season\": string, \"trend\": string, \"drivers\": string[] }\n  ],\n  \"recommendations\": string[],\n  \"utilityPrograms\": [\n    { \"name\": string, \"detail\": string }\n  ]\n}\nRules:\n- Base insights on typical residential water patterns for the location.\n- Provide 3-4 seasonalPatterns with concrete drivers (e.g., irrigation, drought rules).\n- Provide 3-5 recommendations that are actionable.\n- Provide 2-3 utilityPrograms; if unsure, mark them as \"Potential\" in the name.\n\nLocation:\n${locationDescriptor}`;
 }
 
 function buildRebatePrompt(input: {
@@ -3693,6 +3819,16 @@ function parseAnalysisPayload(data: ChatCompletionResponse): AnalysisResult | nu
   try {
     const parsed = JSON.parse(jsonBlock) as AnalysisResult;
     if (
+      !parsed.billingSummary ||
+      !isNonEmptyString(parsed.billingSummary.billingPeriod) ||
+      !parsed.billingSummary.totalUsage ||
+      !Number.isFinite(parsed.billingSummary.totalUsage.value) ||
+      !isNonEmptyString(parsed.billingSummary.totalUsage.unit) ||
+      !Number.isFinite(parsed.billingSummary.totalCost) ||
+      !Array.isArray(parsed.billingSummary.rateTiers) ||
+      !Array.isArray(parsed.usageHistory) ||
+      !Array.isArray(parsed.alerts) ||
+      !isNonEmptyString(parsed.savingsSummary) ||
       !Array.isArray(parsed?.topMoves) ||
       parsed.topMoves.length !== 3 ||
       !isNonEmptyString(parsed.payingFor) ||
@@ -3702,6 +3838,9 @@ function parseAnalysisPayload(data: ChatCompletionResponse): AnalysisResult | nu
     }
     if (!parsed.topMoves.every((move) => isAnalysisMove(move))) {
       return null;
+    }
+    if (!isNonEmptyString(parsed.analysisId)) {
+      parsed.analysisId = crypto.randomUUID();
     }
     return parsed;
   } catch (error) {
@@ -3770,6 +3909,28 @@ function renderAnalysisResponse(data: ChatCompletionResponse): string {
       </div>
     </div>
   `;
+}
+
+function parseLocalTrendPayload(data: ChatCompletionResponse): LocalTrendReport | null {
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return null;
+  const jsonBlock = extractJsonObject(content);
+  if (!jsonBlock) return null;
+  try {
+    const parsed = JSON.parse(jsonBlock) as LocalTrendReport;
+    if (
+      !isNonEmptyString(parsed.summary) ||
+      !Array.isArray(parsed.seasonalPatterns) ||
+      !Array.isArray(parsed.recommendations) ||
+      !Array.isArray(parsed.utilityPrograms)
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
+    console.error("Failed to parse trend JSON:", error);
+    return null;
+  }
 }
 
 function validateFile(file: File): boolean {

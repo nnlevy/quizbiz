@@ -2,16 +2,21 @@ import { ChangeEvent, useRef, useState } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { RouterLink, useNavigate } from "./router";
+import { saveAnalysisRecord } from "../utils/dashboard";
+import type { AnalysisResult } from "../types";
+import { isAnalysisResult, toAnalysisRecord } from "../utils/analysisTransform";
 
 const Home = () => {
   useDocumentTitle("WaterShortcut | Analyze your water bill");
   const navigate = useNavigate();
   const [fileName, setFileName] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<"upload" | "demo" | "manual" | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const transitionDelayMs = 320;
 
-  const handleUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       setActiveAction(null);
@@ -19,10 +24,36 @@ const Home = () => {
     }
     setFileName(file.name);
     setActiveAction("upload");
-    window.setTimeout(
-      () => navigate("/analyze", { state: { mode: "upload", fileName: file.name } }),
-      transitionDelayMs,
-    );
+    setIsUploading(true);
+    setErrorMessage(null);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await fetch("/api/analyze-bill", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: formData,
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "We couldn’t analyze that file yet.");
+      }
+      const payload = (await response.json()) as { analysis?: AnalysisResult | null };
+      if (!payload.analysis || !isAnalysisResult(payload.analysis)) {
+        throw new Error("The AI response was incomplete. Please try again.");
+      }
+      const record = toAnalysisRecord(payload.analysis, "upload");
+      saveAnalysisRecord(record);
+      window.setTimeout(
+        () => navigate(`/analysis-results/${record.id}`, { state: { record, mode: "upload" } }),
+        transitionDelayMs,
+      );
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+      setActiveAction(null);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleUploadClick = () => {
@@ -65,6 +96,7 @@ const Home = () => {
             type="button"
             onClick={handleUploadClick}
             aria-busy={activeAction === "upload"}
+            disabled={isUploading}
           >
             <span className="ws-button__label">Upload a PDF</span>
             <span className="ws-button__spinner" aria-hidden />
@@ -99,6 +131,11 @@ const Home = () => {
           />
         </div>
         {fileName && <p aria-live="polite">Selected: {fileName}</p>}
+        {errorMessage && (
+          <p className="ws-form-error" role="alert">
+            {errorMessage}
+          </p>
+        )}
       </div>
 
       <div className="ws-info-card" aria-label="Privacy reassurance">

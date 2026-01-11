@@ -13,6 +13,10 @@ const About = () => {
           WaterShortcut turns confusing bills into easy-to-follow steps. Our goal is to help you
           spot leaks early, avoid tier jumps, and keep conservation stress-free.
         </p>
+        <p>
+          Have feedback or need support? Email us at{" "}
+          <a href="mailto:admin@watershortcut.com">admin@watershortcut.com</a>.
+        </p>
       </div>
 
       <div className="ws-progress">
