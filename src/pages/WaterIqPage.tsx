@@ -25,6 +25,9 @@ const WaterIqInvalid = () => (
 
 const WaterIqResult = ({ token }: { token: string }) => {
   const decoded = useMemo(() => decodeToken(token), [token]);
+  const { refund } = useCredits();
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [draftText, setDraftText] = useState("");
 
   const payload = useMemo(() => {
     if (!decoded) return null;
@@ -37,6 +40,60 @@ const WaterIqResult = ({ token }: { token: string }) => {
   if (!decoded || !payload) return <WaterIqInvalid />;
 
   const badgeLabel = decoded.badge.replace(/_/g, " ");
+  const challengeLink = `/water-iq?ref=${token}`;
+  const shareUrl =
+    typeof window !== "undefined" ? window.location.href : `/water-iq/r/${token}`;
+  const scoreAngle = Math.min(Math.max(decoded.score, 0), 10) * 36;
+  const shareText = `I scored ${decoded.score}/10 on WaterShortcut’s Water IQ (${badgeLabel}). ${payload.hook.short}`;
+
+  const rewardShareCredit = useCallback(
+    (channel: string) => {
+      const rewardKey = `ws_water_iq_share_reward_${token}`;
+      try {
+        if (window.localStorage.getItem(rewardKey) === "true") {
+          setShareStatus("Thanks for sharing—credit already claimed.");
+          return;
+        }
+        window.localStorage.setItem(rewardKey, "true");
+      } catch {
+        // Ignore storage errors.
+      }
+      refund(1);
+      setShareStatus(`Shared via ${channel}. +1 credit added.`);
+    },
+    [refund, token],
+  );
+
+  const handleCopyShare = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      rewardShareCredit("copy link");
+    } catch {
+      setShareStatus("Copy failed. Please select the link manually.");
+    }
+  }, [rewardShareCredit, shareText, shareUrl]);
+
+  const handleCopyDraft = useCallback(async () => {
+    const draft = draftText ? `${draftText}\n\n${shareUrl}` : `${shareText} ${shareUrl}`;
+    try {
+      await navigator.clipboard.writeText(draft);
+      rewardShareCredit("draft share");
+    } catch {
+      setShareStatus("Copy failed. Please select the draft text manually.");
+    }
+  }, [draftText, rewardShareCredit, shareText, shareUrl]);
+
+  const handleGenerateDraft = useCallback(() => {
+    const draft = `🌊 I just scored ${decoded.score}/10 on WaterShortcut’s Water IQ (${badgeLabel}).\n\n${payload.hook.short}\n\nTry it and tag 3 friends: ${challengeLink}`;
+    setDraftText(draft);
+  }, [badgeLabel, challengeLink, decoded.score, payload.hook.short]);
+
+  const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    `${shareText} ${shareUrl}`,
+  )}`;
+  const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+    shareUrl,
+  )}`;
 
   return (
     <section className="section water-iq">
@@ -49,7 +106,11 @@ const WaterIqResult = ({ token }: { token: string }) => {
         </div>
         <div className="water-iq-divider" role="presentation"></div>
         <div className="water-iq-result-meta">
-          <div className="water-iq-score-circle" aria-label="Score">
+          <div
+            className="water-iq-score-circle"
+            style={{ ["--score-angle" as string]: `${scoreAngle}deg` }}
+            aria-label="Score"
+          >
             <div className="water-iq-score-value">
               {decoded.score}
               <span>/10</span>
@@ -96,9 +157,113 @@ const WaterIqResult = ({ token }: { token: string }) => {
             <a className="wsBtnPrimary wsBtnPrimary--pill" href="/water-iq">
               Take again
             </a>
+            <a className="wsBtnGhost" href="#results-dashboard">
+              View results dashboard
+            </a>
             <a className="wsBtnGhost" href="/">
               Return home
             </a>
+          </div>
+        </div>
+
+        <div className="water-iq-share">
+          <h3>Share your score</h3>
+          <p className="wsMuted">
+            Earn +1 credit when you share on social. Pick a channel or copy the link.
+          </p>
+          <div className="water-iq-share__actions">
+            <a
+              className="wsBtnPrimary wsBtnPrimary--pill"
+              href={twitterShareUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => rewardShareCredit("X")}
+            >
+              Share on X
+            </a>
+            <a
+              className="wsBtnGhost"
+              href={linkedInShareUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => rewardShareCredit("LinkedIn")}
+            >
+              Share on LinkedIn
+            </a>
+            <button type="button" className="wsBtnGhost" onClick={handleCopyShare}>
+              Copy share link
+            </button>
+          </div>
+          {shareStatus && <div className="wsMuted">{shareStatus}</div>}
+        </div>
+
+        <div className="water-iq-draft">
+          <div className="water-iq-draft__header">
+            <h3>AI-assisted post draft</h3>
+            <button type="button" className="wsBtnGhost" onClick={handleGenerateDraft}>
+              Generate draft
+            </button>
+          </div>
+          <textarea
+            className="water-iq-draft__text"
+            rows={5}
+            value={draftText}
+            onChange={(event) => setDraftText(event.target.value)}
+            placeholder="Generate a post draft to share your results."
+          />
+          <div className="water-iq-draft__actions">
+            <button type="button" className="wsBtnPrimary wsBtnPrimary--pill" onClick={handleCopyDraft}>
+              Copy draft + link
+            </button>
+          </div>
+        </div>
+
+        <div className="water-iq-dashboard" id="results-dashboard">
+          <div className="water-iq-dashboard__header">
+            <h3>Results dashboard</h3>
+            <p className="wsMuted">
+              Keep your Water IQ badge handy and inspire friends to compare scores.
+            </p>
+          </div>
+          <div className="water-iq-badge-grid">
+            <div className="water-iq-badge-card is-earned">
+              <span className="water-iq-badge-emoji" aria-hidden="true">
+                💧
+              </span>
+              <div>
+                <strong>{badgeLabel}</strong>
+                <span className="wsMuted">Current badge</span>
+              </div>
+            </div>
+            <div className="water-iq-badge-card">
+              <span className="water-iq-badge-emoji" aria-hidden="true">
+                🔎
+              </span>
+              <div>
+                <strong>Leak Detective</strong>
+                <span className="wsMuted">Finish a leak check to unlock</span>
+              </div>
+            </div>
+            <div className="water-iq-badge-card">
+              <span className="water-iq-badge-emoji" aria-hidden="true">
+                🌿
+              </span>
+              <div>
+                <strong>Garden Guardian</strong>
+                <span className="wsMuted">Share your score to unlock</span>
+              </div>
+            </div>
+          </div>
+          <div className="water-iq-dashboard__actions">
+            <a className="wsBtnPrimary wsBtnPrimary--pill" href={challengeLink}>
+              Challenge 3 friends
+            </a>
+            <a className="wsBtnGhost" href={challengeLink}>
+              Copy share link
+            </a>
+          </div>
+          <div className="wsMuted" style={{ fontSize: 12 }}>
+            Your dashboard is private until you share it.
           </div>
         </div>
       </div>
@@ -107,13 +272,14 @@ const WaterIqResult = ({ token }: { token: string }) => {
 };
 
 const WaterIqPage = () => {
-  const { credits, pulse, setPulse } = useCredits();
+  const { credits, pulse, setPulse, refund } = useCredits();
   const triggerCreditPulse = useCallback(() => {
     setPulse(true);
     setTimeout(() => setPulse(false), 750);
   }, [setPulse]);
   const { startCheckout } = useCreditsCheckout({ onPulse: triggerCreditPulse });
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
+  const [rewardMessage, setRewardMessage] = useState<string | null>(null);
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/water-iq";
   const tokenMatch = pathname.match(/^\/water-iq\/r\/([^/]+)$/);
 
@@ -131,15 +297,29 @@ const WaterIqPage = () => {
     }
   }, []);
 
-  const handleQuizComplete = useCallback(() => {
-    // Persist completion so ads + credits stay visible on future visits.
-    setHasCompletedQuiz(true);
-    try {
-      window.localStorage.setItem(COMPLETION_KEY, "true");
-    } catch {
-      // Ignore storage failures (privacy mode, etc.).
-    }
-  }, []);
+  const handleQuizComplete = useCallback(
+    (payload: { score: number; total: number }) => {
+      const perfectScore = payload.total > 0 && payload.score === payload.total;
+      const highScore = payload.total > 0 && payload.score >= 8;
+      if (perfectScore) {
+        refund(2);
+        setRewardMessage("Perfect score! You just earned +2 WaterShortcut credits.");
+      } else if (highScore) {
+        refund(1);
+        setRewardMessage("Nice work! You earned +1 WaterShortcut credit for a top score.");
+      } else {
+        setRewardMessage(null);
+      }
+      // Persist completion so ads + credits stay visible on future visits.
+      setHasCompletedQuiz(true);
+      try {
+        window.localStorage.setItem(COMPLETION_KEY, "true");
+      } catch {
+        // Ignore storage failures (privacy mode, etc.).
+      }
+    },
+    [refund],
+  );
 
   useEffect(() => {
     if (tokenMatch) {
@@ -163,7 +343,7 @@ const WaterIqPage = () => {
         {tokenMatch ? (
           <WaterIqResult token={tokenMatch[1]} />
         ) : (
-          <WaterIQQuiz onComplete={handleQuizComplete} />
+          <WaterIQQuiz onComplete={handleQuizComplete} rewardMessage={rewardMessage} />
         )}
       </main>
       <SiteFooter hideAds={!hasCompletedQuiz} />

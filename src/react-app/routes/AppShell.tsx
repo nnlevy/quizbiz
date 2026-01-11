@@ -16,7 +16,7 @@ type AppShellProps = {
 const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const { credits } = useCredits();
+  const { credits, pulse } = useCredits();
   const { scrollUnlocked } = useScrollUnlock();
 
   useEffect(() => {
@@ -28,9 +28,20 @@ const AppShell = ({ children }: AppShellProps) => {
   return (
     <div className="ws-shell">
       <header className="ws-header">
-        <RouterLink className="ws-logo" to="/">
-          WaterShortcut
-        </RouterLink>
+        <div className="ws-header__brand">
+          <RouterLink className="ws-logo" to="/">
+            WaterShortcut
+          </RouterLink>
+          {showDeferred && (
+            <div
+              className={`ws-header__credits ${pulse ? "is-animating" : ""}`}
+              role="status"
+              aria-live="polite"
+            >
+              Credits {credits}
+            </div>
+          )}
+        </div>
         <button
           className="ws-menu-button"
           type="button"
@@ -90,12 +101,6 @@ const AppShell = ({ children }: AppShellProps) => {
       <main className="ws-main">
         {children}
       </main>
-
-      {showDeferred && (
-        <div className="ws-credits-indicator" role="status" aria-live="polite">
-          Credits {credits}
-        </div>
-      )}
 
       {showDeferred && (
         <section className="ws-ads" aria-label="Sponsored">

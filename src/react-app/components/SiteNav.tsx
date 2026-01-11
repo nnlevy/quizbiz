@@ -149,6 +149,8 @@ const SiteNav = ({
     (window.location.pathname.startsWith("/blog-how-to-eject") ||
       window.location.pathname.startsWith("/blog-is-it-safe") ||
       window.location.pathname.startsWith("/water-eject"));
+  const isWaterIqRoute =
+    typeof window !== "undefined" && window.location.pathname.startsWith("/water-iq");
   const isGameRoute =
     typeof window !== "undefined" &&
     (window.location.pathname.startsWith("/game") ||
@@ -499,7 +501,10 @@ const SiteNav = ({
           <div className="mode-bar__content">
             <span className="mode-bar__label">{copy.nav.switcherLabel}</span>
             <div className="mode-bar__actions">
-              <a className={!isWaterEjectRoute && !isGameRoute ? "active" : ""} href="/analyze-water-bill">
+              <a
+                className={!isWaterEjectRoute && !isGameRoute && !isWaterIqRoute ? "active" : ""}
+                href="/analyze-water-bill"
+              >
                 {copy.nav.homeLabel}
               </a>
               <a className={isWaterEjectRoute ? "active" : ""} href="/blog-how-to-eject.html">
@@ -507,6 +512,9 @@ const SiteNav = ({
               </a>
               <a className={isGameRoute ? "active" : ""} href="/game">
                 {copy.nav.gameLabel}
+              </a>
+              <a className={isWaterIqRoute ? "active" : ""} href="/water-iq">
+                Water IQ
               </a>
             </div>
             <button

@@ -6,7 +6,7 @@ export const stylesCss = `:root{color-scheme:light;font-family:"Inter",system-ui
 .app-shell{min-height:100vh;display:flex;flex-direction:column;} .site-header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,0.92);backdrop-filter:blur(6px);border-bottom:1px solid #e2e8f0;} .nav-bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;} .brand a{font-weight:700;color:#0f172a;font-size:18px;display:flex;align-items:center;gap:10px;text-decoration:none;} .brand-mark{display:inline-block;padding:6px 10px;border-radius:12px;background:#e0f2ff;color:#075985;font-weight:700;} .brand-text{display:flex;flex-direction:column;gap:2px;line-height:1;} .brand-name{letter-spacing:.08em;text-transform:uppercase;} .brand-dotcom{font-size:.7em;letter-spacing:.04em;text-transform:lowercase;margin-left:2px;} .tagline{font-size:12px;color:#64748b;font-weight:600;letter-spacing:.02em;} .nav-links{display:flex;align-items:center;gap:12px;flex-wrap:wrap;} .nav-link{padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;transition:all .2s ease;background:none;border:none;} .nav-link:hover,.nav-link:focus-visible{background:#e0f2ff;outline:none;} .nav-dropdown{position:relative;display:inline-flex;align-items:center;} .dropdown-toggle{cursor:pointer;gap:6px;display:inline-flex;align-items:center;} .dropdown-caret{font-size:12px;line-height:1;} .dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;min-width:220px;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px;box-shadow:0 12px 30px rgba(15,23,42,0.12);opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .2s ease,transform .2s ease;z-index:20;} .nav-dropdown:hover .dropdown-panel,.nav-dropdown:focus-within .dropdown-panel{opacity:1;pointer-events:auto;transform:translateY(0);} .dropdown-link{display:block;padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;} .dropdown-link:hover,.dropdown-link:focus-visible{background:#e0f2ff;outline:none;} .primary-cta{background:#0ea5e9;color:white;} .primary-cta:hover,.primary-cta:focus-visible{background:#0284c7;color:white;}
 .nav-badge{display:inline-flex;align-items:center;gap:6px;background:#ecfeff;border:1px solid #bae6fd;color:#0f172a;font-weight:700;}
 main{flex:1;} .hero{max-width:1100px;margin:0 auto;padding:40px 18px 18px;display:grid;gap:14px;} .hero h1{margin:0;font-size:32px;color:#0f172a;} .hero p{margin:0;color:#1f2937;font-size:17px;max-width:70ch;} .hero .actions{display:flex;gap:12px;flex-wrap:wrap;} .btn{padding:12px 14px;border-radius:12px;border:1px solid #0ea5e9;background:white;color:#0ea5e9;font-weight:700;transition:transform .2s ease,box-shadow .2s ease;} .btn:hover,.btn:focus-visible{transform:translateY(-1px);box-shadow:0 10px 30px rgba(14,165,233,0.18);outline:none;} .btn.primary{background:#0ea5e9;color:white;border-color:#0ea5e9;} .btn.secondary{border-color:#e2e8f0;color:#0f172a;} .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#e0f2ff;color:#075985;font-weight:700;font-size:13px;}
-.section{max-width:1100px;margin:0 auto;padding:28px 18px;} .section h2{margin:0 0 12px;font-size:24px;} .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;} .card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;box-shadow:0 8px 24px rgba(15,23,42,0.05);display:flex;flex-direction:column;gap:10px;} .card h3{margin:0;font-size:18px;} .card p{margin:0;color:#334155;} .card .small{font-size:14px;color:#475569;} .inline-list{display:flex;gap:10px;flex-wrap:wrap;} .inline-list a{padding:8px 10px;border-radius:10px;background:#e0f2ff;color:#075985;font-weight:700;}
+.section{max-width:1100px;margin:0 auto;padding:28px 18px;} .section h2{margin:0 0 12px;font-size:24px;} .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;} .card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;box-shadow:0 8px 24px rgba(15,23,42,0.05);display:flex;flex-direction:column;gap:10px;} .card h3{margin:0;font-size:18px;} .card p{margin:0;color:#334155;} .card .small{font-size:14px;color:#475569;} .sitemap-card{color:#0f172a;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;} .sitemap-card:hover,.sitemap-card:focus-visible{transform:translateY(-2px);box-shadow:0 16px 32px rgba(59,130,246,0.18);border-color:#93c5fd;outline:none;} .sitemap-grid{align-items:stretch;} .inline-list{display:flex;gap:10px;flex-wrap:wrap;} .inline-list a{padding:8px 10px;border-radius:10px;background:#e0f2ff;color:#075985;font-weight:700;}
 .blog-page main{display:flex;justify-content:center;} .blog-shell{max-width:800px;width:100%;margin:0 auto;padding:28px 18px;} .blog-article{background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 12px 36px rgba(15,23,42,0.08);display:grid;gap:18px;padding:22px;} .blog-header h1{margin:0;font-size:32px;color:#0f172a;} .blog-header .lead{margin:8px 0 0;color:#1f2937;font-size:17px;line-height:1.6;} .blog-section{display:grid;gap:10px;} .blog-section h2{margin:0;font-size:22px;color:#0f172a;} .blog-section p,.blog-section li{color:#1f2937;line-height:1.6;} .blog-section ol{padding-left:20px;display:grid;gap:8px;} .blog-footer{margin-top:6px;} .eyebrow{letter-spacing:0.08em;text-transform:uppercase;font-weight:800;color:#075985;margin:0;} .lead{font-weight:600;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;} .bullet-list{padding-left:18px;display:grid;gap:8px;color:#1f2937;} .faq{border:1px solid #e2e8f0;border-radius:12px;background:white;} .faq-item{border-top:1px solid #e2e8f0;} .faq-item:first-of-type{border-top:none;} .faq button{width:100%;text-align:left;padding:14px;border:none;background:none;font-weight:700;display:flex;justify-content:space-between;align-items:center;} .faq .answer{padding:0 14px 14px;color:#334155;display:none;} .faq .answer.open{display:block;}
 .layout-slab{background:white;border-radius:18px;border:1px solid #e2e8f0;box-shadow:0 10px 40px rgba(15,23,42,0.06);padding:18px;} .meta-line{font-size:14px;color:#475569;}
@@ -24,8 +24,9 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 .results-grid{display:grid;gap:16px;} .result-card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;display:grid;gap:10px;} .result-card h3{margin:0;} .result-meta{display:flex;gap:12px;font-size:13px;color:#475569;font-weight:700;flex-wrap:wrap;}
 .share-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
 .help-accordion summary{font-weight:700;cursor:pointer;margin-bottom:6px;}
-.water-iq{display:flex;justify-content:center;} .water-iq-card{max-width:860px;width:100%;border:1px solid rgba(0,0,0,.12);border-radius:18px;padding:20px;background:#fff;} .water-iq-card--result{box-shadow:0 20px 50px rgba(15,23,42,.12);} .water-iq-result-header{display:flex;align-items:center;justify-content:space-between;gap:12px;} .water-iq-title{margin:0;font-size:22px;font-weight:750;color:#0f172a;} .water-iq-ellipsis{font-size:22px;letter-spacing:2px;color:#cbd5e1;} .water-iq-divider{height:1px;background:#e2e8f0;margin:12px 0 16px;} .water-iq-result-meta{display:flex;gap:18px;align-items:center;flex-wrap:wrap;} .water-iq-score-circle{width:120px;height:120px;border-radius:50%;background:conic-gradient(#7dd3fc 0 220deg,#bada55 220deg 310deg,#e2e8f0 310deg 360deg);display:flex;align-items:center;justify-content:center;position:relative;} .water-iq-score-circle::after{content:"";position:absolute;inset:10px;background:#f8fafc;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(148,163,184,.4);} .water-iq-score-value{position:relative;z-index:1;font-size:32px;font-weight:800;color:#0f172a;display:flex;align-items:baseline;gap:4px;} .water-iq-score-value span{font-size:16px;color:#64748b;font-weight:700;} .water-iq-result-copy{display:grid;gap:10px;min-width:200px;} .water-iq-badge-pill{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#5db5f3,#3f7acb);color:white;border-radius:999px;padding:10px 18px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;box-shadow:0 8px 20px rgba(59,130,246,.25);} .water-iq-badge-icon{background:white;color:#3f7acb;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;} .water-iq-fact{font-size:20px;line-height:1.35;font-weight:650;color:#0f172a;max-width:360px;} .wsH1{font-size:28px;line-height:1.15;margin:0 0 10px;} .wsH2{font-size:18px;margin:6px 0 6px;} .wsP{margin:8px 0 10px;line-height:1.45;} .wsQ{margin:10px 0 8px;font-size:18px;line-height:1.35;} .wsMuted{color:rgba(0,0,0,.62);font-size:13px;} .wsRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;} .wsBtnPrimary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;} .wsBtnPrimary--pill{border-radius:999px;padding:12px 20px;background:linear-gradient(135deg,#4f9fe3,#2f6db9);box-shadow:0 12px 22px rgba(37,99,235,.2);} .wsBtnPrimary:disabled{opacity:.45;cursor:not-allowed;} .wsBtnGhost{background:transparent;color:#111;border:1px solid rgba(0,0,0,.16);border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block;} .wsCallout{margin:10px 0 6px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);} .wsDisclosure{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.02);} .wsTopBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;} .wsProgressWrap{flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;} .wsProgress{height:100%;background:#111;border-radius:999px;} .wsChoices{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsChoice{padding:12px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.14);background:#fff;text-align:left;cursor:pointer;} .wsChoice.isSelected{border-color:#111;box-shadow:0 0 0 2px rgba(0,0,0,.06) inset;} .wsChoice:disabled{opacity:.5;cursor:not-allowed;} .wsExplain{margin:10px 0 12px;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.03);} .wsGood,.wsBad{font-weight:750;margin-bottom:8px;} .wsSources{margin-top:10px;} .wsSources ul{margin:6px 0 0;padding-left:18px;} .wsLink{text-decoration:underline;} .wsNav{display:flex;justify-content:space-between;gap:10px;margin-top:8px;} .wsNumWrap{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsNum{padding:12px;border:1px solid rgba(0,0,0,.14);border-radius:12px;font-size:16px;} .wsFoot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;color:rgba(0,0,0,.55);font-size:12px;} .wsGrid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:10px;margin-top:10px;} .wsStat{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#fff;} .wsStatTitle{font-weight:800;} .wsStatValue{font-size:20px;font-weight:900;margin-top:4px;} .wsResultMoves{display:grid;gap:10px;margin-top:10px;} .wsResultMove{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);text-decoration:none;color:#111;background:#fff;display:block;} .wsResultMove strong{display:block;} .wsResultMove span{display:block;margin-top:4px;color:rgba(0,0,0,.65);font-size:13px;}
+.water-iq{display:flex;justify-content:center;} .water-iq-card{max-width:860px;width:100%;border:1px solid rgba(0,0,0,.12);border-radius:18px;padding:20px;background:#fff;} .water-iq-card--result{box-shadow:0 20px 50px rgba(15,23,42,.12);} .water-iq-result-header{display:flex;align-items:center;justify-content:space-between;gap:12px;} .water-iq-title{margin:0;font-size:22px;font-weight:750;color:#0f172a;} .water-iq-ellipsis{font-size:22px;letter-spacing:2px;color:#cbd5e1;} .water-iq-divider{height:1px;background:#e2e8f0;margin:12px 0 16px;} .water-iq-result-meta{display:flex;gap:18px;align-items:center;flex-wrap:wrap;} .water-iq-score-circle{width:120px;height:120px;border-radius:50%;background:conic-gradient(rgba(79,155,255,.9) 0 var(--score-angle,0deg),rgba(79,155,255,.15) var(--score-angle,0deg) 360deg);display:flex;align-items:center;justify-content:center;position:relative;} .water-iq-score-circle::after{content:"";position:absolute;inset:10px;background:#f8fafc;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(148,163,184,.4);} .water-iq-score-value{position:relative;z-index:1;font-size:32px;font-weight:800;color:#0f172a;display:flex;align-items:baseline;gap:4px;} .water-iq-score-value span{font-size:16px;color:#64748b;font-weight:700;} .water-iq-result-copy{display:grid;gap:10px;min-width:200px;} .water-iq-badge-pill{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#5db5f3,#3f7acb);color:white;border-radius:999px;padding:10px 18px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;box-shadow:0 8px 20px rgba(59,130,246,.25);} .water-iq-badge-icon{background:white;color:#3f7acb;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;} .water-iq-fact{font-size:20px;line-height:1.35;font-weight:650;color:#0f172a;max-width:360px;} .water-iq-share,.water-iq-draft{padding:14px;border-radius:16px;border:1px solid rgba(59,130,246,.18);background:rgba(255,255,255,.9);display:grid;gap:10px;} .water-iq-share__actions{display:flex;flex-wrap:wrap;gap:10px;} .water-iq-draft__header{display:flex;align-items:center;justify-content:space-between;gap:10px;} .water-iq-draft__text{width:100%;min-height:120px;border-radius:12px;border:1px solid rgba(15,35,95,.2);padding:12px;font-family:inherit;font-size:14px;resize:vertical;} .water-iq-draft__actions{display:flex;justify-content:flex-end;} .wsH1{font-size:28px;line-height:1.15;margin:0 0 10px;} .wsH2{font-size:18px;margin:6px 0 6px;} .wsP{margin:8px 0 10px;line-height:1.45;} .wsQ{margin:10px 0 8px;font-size:18px;line-height:1.35;} .wsMuted{color:rgba(0,0,0,.62);font-size:13px;} .wsRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;} .wsBtnPrimary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;} .wsBtnPrimary--pill{border-radius:999px;padding:12px 20px;background:linear-gradient(135deg,#4f9fe3,#2f6db9);box-shadow:0 12px 22px rgba(37,99,235,.2);} .wsBtnPrimary:disabled{opacity:.45;cursor:not-allowed;} .wsBtnGhost{background:transparent;color:#111;border:1px solid rgba(0,0,0,.16);border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block;} .wsCallout{margin:10px 0 6px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);} .wsDisclosure{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.02);} .wsTopBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;} .wsProgressWrap{flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;} .wsProgress{height:100%;background:#111;border-radius:999px;} .wsChoices{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsChoice{padding:12px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.14);background:#fff;text-align:left;cursor:pointer;} .wsChoice.isSelected{border-color:#111;box-shadow:0 0 0 2px rgba(0,0,0,.06) inset;} .wsChoice:disabled{opacity:.5;cursor:not-allowed;} .wsExplain{margin:10px 0 12px;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.03);} .wsGood,.wsBad{font-weight:750;margin-bottom:8px;} .wsSources{margin-top:10px;} .wsSources ul{margin:6px 0 0;padding-left:18px;} .wsLink{text-decoration:underline;} .wsNav{display:flex;justify-content:space-between;gap:10px;margin-top:8px;} .wsNumWrap{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsNum{padding:12px;border:1px solid rgba(0,0,0,.14);border-radius:12px;font-size:16px;} .wsFoot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;color:rgba(0,0,0,.55);font-size:12px;} .wsGrid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:10px;margin-top:10px;} .wsStat{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#fff;} .wsStatTitle{font-weight:800;} .wsStatValue{font-size:20px;font-weight:900;margin-top:4px;} .wsResultMoves{display:grid;gap:10px;margin-top:10px;} .wsResultMove{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);text-decoration:none;color:#111;background:#fff;display:block;} .wsResultMove strong{display:block;} .wsResultMove span{display:block;margin-top:4px;color:rgba(0,0,0,.65);font-size:13px;} .water-iq-dashboard{margin-top:18px;padding:16px;border-radius:16px;border:1px solid rgba(59,130,246,.25);background:rgba(59,130,246,.08);display:grid;gap:12px;} .water-iq-dashboard__actions{display:flex;flex-wrap:wrap;gap:10px;} .water-iq-badge-grid{display:grid;gap:10px;} .water-iq-badge-card{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);box-shadow:0 10px 24px rgba(59,130,246,.12);} .water-iq-badge-card strong{display:block;} .water-iq-badge-card .wsMuted{display:block;font-size:12px;} .water-iq-badge-card.is-earned{border-color:rgba(59,130,246,.45);box-shadow:0 16px 28px rgba(59,130,246,.2);} .water-iq-badge-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(59,130,246,.12);font-size:18px;} .nav-link:hover,.nav-link:focus-visible,.btn:hover,.btn:focus-visible,.wsBtnPrimary:hover,.wsBtnPrimary:focus-visible,.wsBtnGhost:hover,.wsBtnGhost:focus-visible,.card:hover,.card:focus-visible,.wsResultMove:hover,.wsResultMove:focus-visible,.water-iq-badge-card:hover{animation:ws-wiggle .35s ease-in-out;} .wsBtnPrimary:hover,.wsBtnPrimary:focus-visible,.btn.primary:hover,.btn.primary:focus-visible{box-shadow:0 12px 28px rgba(59,130,246,.25);} .wsBtnGhost:hover,.wsBtnGhost:focus-visible{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.08);} .card:hover,.card:focus-visible,.wsResultMove:hover,.wsResultMove:focus-visible,.water-iq-badge-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(59,130,246,.16);} @keyframes ws-wiggle{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-2px) rotate(-0.35deg);}}
 @media (max-width:640px){.water-iq-card{padding:16px;border-radius:16px;} .water-iq-result-meta{flex-direction:column;align-items:flex-start;} .water-iq-score-circle{width:110px;height:110px;} .water-iq-fact{font-size:18px;} .wsRow{flex-direction:column;align-items:stretch;} .wsBtnPrimary,.wsBtnGhost{width:100%;text-align:center;} .wsBtnPrimary--pill{width:100%;} .wsNav{flex-direction:column;align-items:stretch;} .water-iq-badge-pill{width:100%;justify-content:center;text-align:center;}}
+@media (min-width:720px){.water-iq-badge-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media (min-width:768px){.hero{grid-template-columns:2fr 1fr;align-items:center;} .hero h1{font-size:40px;} }
 @media print{.site-header,.footer,.ad-slot-placeholder,.actions,.wizard-actions,.nav-links{display:none!important;} body{background:white;} .layout-slab{box-shadow:none;border-color:#e2e8f0;} .hero{padding-top:0;}}
 `;
@@ -1978,6 +1979,50 @@ export function clientScript(defaultAdsenseClient: string) {
 
     let cityForShare: string | undefined;
 
+    const applyCreditReward = (amount: number, message: string, statusEl?: HTMLElement | null) => {
+      try {
+        const existing = Number(localStorage.getItem('ws_credits') || '5');
+        const updated = existing + amount;
+        localStorage.setItem('ws_credits', String(updated));
+      } catch (err) {
+        // ignore
+      }
+      if (statusEl) {
+        statusEl.textContent = message;
+      }
+    };
+
+    const scoreRewardEl = panel.querySelector<HTMLElement>('[data-water-iq-score-reward]');
+    if (scoreRewardEl && token) {
+      const rewardKey = `ws_water_iq_score_reward_${token}`;
+      const alreadyRewarded = (() => {
+        try {
+          return localStorage.getItem(rewardKey) === 'true';
+        } catch (err) {
+          return false;
+        }
+      })();
+      if (!alreadyRewarded) {
+        if (score >= 10) {
+          try {
+            localStorage.setItem(rewardKey, 'true');
+          } catch (err) {
+            // ignore
+          }
+          scoreRewardEl.hidden = false;
+          applyCreditReward(2, 'Perfect score! +2 credits added.', scoreRewardEl);
+        } else if (score >= 8) {
+          try {
+            localStorage.setItem(rewardKey, 'true');
+          } catch (err) {
+            // ignore
+          }
+          scoreRewardEl.hidden = false;
+          applyCreditReward(1, 'Top score! +1 credit added.', scoreRewardEl);
+        }
+      }
+    }
+
     const share = async () => {
       await trackWaterIqEvent('share_click');
       const shareText = waterIqShareCopy(arm, {
@@ -2016,6 +2061,72 @@ export function clientScript(defaultAdsenseClient: string) {
 
     panel.querySelectorAll<HTMLElement>('[data-water-iq-cta]').forEach((cta) => {
       cta.addEventListener('click', () => void trackWaterIqEvent('cta_click'));
+    });
+
+    const shareStatus = panel.querySelector<HTMLElement>('[data-water-iq-share-status]');
+    const shareRewardKey = `ws_water_iq_share_reward_${token}`;
+    const rewardShareCredit = (channel: string) => {
+      let alreadyRewarded = false;
+      try {
+        alreadyRewarded = localStorage.getItem(shareRewardKey) === 'true';
+      } catch (err) {
+        alreadyRewarded = false;
+      }
+      if (alreadyRewarded) {
+        if (shareStatus) shareStatus.textContent = 'Thanks for sharing—credit already claimed.';
+        return;
+      }
+      try {
+        localStorage.setItem(shareRewardKey, 'true');
+      } catch (err) {
+        // ignore
+      }
+      applyCreditReward(1, `Shared via ${channel}. +1 credit added.`, shareStatus);
+    };
+
+    const shareX = panel.querySelector<HTMLAnchorElement>('[data-water-iq-share-x]');
+    const shareLinkedIn = panel.querySelector<HTMLAnchorElement>('[data-water-iq-share-linkedin]');
+    const shareCopy = panel.querySelector<HTMLButtonElement>('[data-water-iq-share-copy]');
+    const shareText = waterIqShareCopy(arm, {
+      score,
+      persona: persona.name,
+      badge: badgeLabel,
+      challengeUrl,
+      city: cityForShare,
+    });
+    const shareTextWithUrl = `${shareText} ${shareUrl}`;
+    if (shareX) {
+      shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTextWithUrl)}`;
+      shareX.addEventListener('click', () => rewardShareCredit('X'));
+    }
+    if (shareLinkedIn) {
+      shareLinkedIn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+      shareLinkedIn.addEventListener('click', () => rewardShareCredit('LinkedIn'));
+    }
+    shareCopy?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(shareTextWithUrl);
+        rewardShareCredit('copy link');
+      } catch (err) {
+        if (shareStatus) shareStatus.textContent = 'Copy failed. Please try again.';
+      }
+    });
+
+    const draftArea = panel.querySelector<HTMLTextAreaElement>('[data-water-iq-draft]');
+    const draftGenerate = panel.querySelector<HTMLButtonElement>('[data-water-iq-draft-generate]');
+    const draftCopy = panel.querySelector<HTMLButtonElement>('[data-water-iq-draft-copy]');
+    draftGenerate?.addEventListener('click', () => {
+      if (!draftArea) return;
+      draftArea.value = `🌊 I just scored ${score}/10 on WaterShortcut’s Water IQ (${badgeLabel}).\n\n${shareText}\n\nTry it here: ${challengeUrl}`;
+    });
+    draftCopy?.addEventListener('click', async () => {
+      const draft = draftArea?.value?.trim() || shareTextWithUrl;
+      try {
+        await navigator.clipboard.writeText(draft);
+        rewardShareCredit('draft share');
+      } catch (err) {
+        if (shareStatus) shareStatus.textContent = 'Copy failed. Please try again.';
+      }
     });
 
     const socialProof = panel.querySelector<HTMLElement>('[data-water-iq-social]');
