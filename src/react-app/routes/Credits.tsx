@@ -1,75 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useCredits } from "../context/CreditsContext";
 import { useCreditsCheckout } from "../hooks/useCreditsCheckout";
-import {
-  ADS_FREE_FLAG,
-  CREDIT_ACCOUNT_FLAG,
-  CREDIT_TOPUP_AMOUNT,
-  CREDIT_TOPUP_PRICE,
-} from "../utils/credits";
-
-const ACCOUNT_CREDIT_COST = 1;
-const ADS_REMOVAL_CREDIT_COST = 3;
+import { CREDIT_TOPUP_AMOUNT, CREDIT_TOPUP_PRICE } from "../utils/credits";
+import { RouterLink } from "./router";
 
 const Credits = () => {
   useDocumentTitle("WaterShortcut | Credits");
-  const { credits, deduct } = useCredits();
+  const { credits } = useCredits();
   const [notice, setNotice] = useState<string | null>(null);
-  const [accountCreated, setAccountCreated] = useState(false);
-  const [adsRemoved, setAdsRemoved] = useState(false);
   const { startCheckout } = useCreditsCheckout({ onNotice: setNotice });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      setAccountCreated(window.localStorage.getItem(CREDIT_ACCOUNT_FLAG) === "true");
-      setAdsRemoved(window.localStorage.getItem(ADS_FREE_FLAG) === "true");
-    } catch {
-      setAccountCreated(false);
-      setAdsRemoved(false);
-    }
-  }, []);
-
-  const handleCreateAccount = useCallback(() => {
-    if (accountCreated) {
-      setNotice("Your account is already active.");
-      return;
-    }
-    const nextCredits = deduct(ACCOUNT_CREDIT_COST);
-    if (nextCredits === null) {
-      setNotice("You need more credits to create an account.");
-      return;
-    }
-    try {
-      window.localStorage.setItem(CREDIT_ACCOUNT_FLAG, "true");
-    } catch {
-      // Ignore storage errors.
-    }
-    setAccountCreated(true);
-    setNotice("Account created! Your credits now sync across devices.");
-  }, [accountCreated, deduct]);
-
-  const handleRemoveAds = useCallback(() => {
-    if (adsRemoved) {
-      setNotice("Ads are already removed on this device.");
-      return;
-    }
-    const nextCredits = deduct(ADS_REMOVAL_CREDIT_COST);
-    if (nextCredits === null) {
-      setNotice("You need more credits to remove ads.");
-      return;
-    }
-    try {
-      window.localStorage.setItem(ADS_FREE_FLAG, "true");
-      window.dispatchEvent(new Event("ws-ads-updated"));
-    } catch {
-      // Ignore storage errors.
-    }
-    setAdsRemoved(true);
-    setNotice("Ads removed. Enjoy a cleaner WaterShortcut experience.");
-  }, [adsRemoved, deduct]);
 
   return (
     <section className="ws-page" aria-labelledby="credits-title">
@@ -80,6 +21,7 @@ const Credits = () => {
           Use credits to unlock bill analysis, create an account, and keep the experience ad-free.
         </p>
         <div className="ws-subtitle">Credits available: {credits}</div>
+        <div className="ws-subtitle">Cost per analysis: 1 credit</div>
       </div>
 
       <div className="ws-cta-card" aria-label="Buy more credits">
@@ -95,33 +37,20 @@ const Credits = () => {
         </button>
       </div>
 
-      <div className="ws-cta-card" aria-label="Account and ad-free upgrades">
+      <div className="ws-cta-card" aria-label="Manage credits">
         <div>
-          <h2>Account &amp; ad-free upgrades</h2>
+          <h2>How credits work</h2>
           <p className="ws-subtitle">
-            Credits unlock your account and remove ads across the WaterShortcut experience.
+            Each bill analysis uses 1 credit. Buy more credits any time to keep results flowing.
           </p>
         </div>
         <div className="ws-tool-grid" style={{ marginTop: "0.75rem" }}>
-          <div>
-            <h3>Create an account</h3>
-            <p className="ws-subtitle">
-              Spend {ACCOUNT_CREDIT_COST} credit to sync your progress and keep your credit balance
-              safe.
-            </p>
-            <button className="ws-button-secondary" type="button" onClick={handleCreateAccount}>
-              {accountCreated ? "Account ready" : "Create account"}
-            </button>
-          </div>
-          <div>
-            <h3>Remove ads</h3>
-            <p className="ws-subtitle">
-              Spend {ADS_REMOVAL_CREDIT_COST} credits to remove sponsored placements.
-            </p>
-            <button className="ws-button-secondary" type="button" onClick={handleRemoveAds}>
-              {adsRemoved ? "Ads removed" : "Go ad-free"}
-            </button>
-          </div>
+          <RouterLink className="ws-button-secondary" to="/dashboard">
+            View my dashboard
+          </RouterLink>
+          <RouterLink className="ws-button-secondary" to="/analyze">
+            Start a new analysis
+          </RouterLink>
         </div>
         {notice ? <p className="ws-subtitle">{notice}</p> : null}
       </div>

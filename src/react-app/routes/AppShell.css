@@ -437,6 +437,11 @@
   font-size: 0.95rem;
   color: #52606d;
   padding: 2rem 1.5rem 1.4rem;
+  position: sticky;
+  bottom: 0;
+  background: #f0f4f8;
+  border-top: 1px solid rgba(148, 163, 184, 0.4);
+  z-index: 2;
 }
 
 .footer-ad {
@@ -461,6 +466,213 @@
   justify-content: center;
   gap: 0.6rem 1.4rem;
   margin: 0 0 0.75rem;
+}
+
+.footer-trust {
+  max-width: 720px;
+  margin: 0 auto 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.footer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.footer-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.ws-chart {
+  width: 100%;
+  min-height: 260px;
+  margin: 1rem 0;
+}
+
+.ws-alert-grid,
+.ws-tip-grid,
+.ws-badge-grid,
+.ws-goal-grid,
+.ws-trend-grid,
+.ws-summary-grid,
+.ws-tier-grid,
+.ws-learn-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.ws-alert-card,
+.ws-tip-card,
+.ws-tier-card,
+.ws-goal-card,
+.ws-badge {
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.ws-alert-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.ws-alert-icon {
+  font-size: 1.4rem;
+}
+
+.ws-tip-card h4 {
+  margin: 0 0 0.35rem;
+}
+
+.ws-history-list,
+.ws-plan-list,
+.ws-alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ws-history-list li,
+.ws-plan-list li,
+.ws-alert-list li {
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ws-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.15);
+  color: #0b4f4a;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ws-badge.is-earned {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.ws-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.ws-tier-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.ws-learn-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.ws-tooltip-button {
+  margin-left: 0.5rem;
+  border: none;
+  background: rgba(14, 116, 144, 0.12);
+  color: #0b4f4a;
+  border-radius: 999px;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.ws-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.ws-tooltip-panel {
+  margin-top: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.ws-bill-sample {
+  margin-top: 0.75rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.75rem;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  font-size: 0.85rem;
+}
+
+.ws-bill-header {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.ws-bill-row {
+  padding: 0.2rem 0;
+}
+
+.ws-bill-highlight {
+  background: rgba(254, 215, 170, 0.8);
+  border-radius: 0.4rem;
+  padding-left: 0.4rem;
+}
+
+details.ws-info-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 680px) {
+  .ws-alert-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ws-tip-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ws-badge-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ws-trend-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .ws-chart {
+    min-height: 220px;
+  }
+
+  .ws-history-list li,
+  .ws-plan-list li,
+  .ws-alert-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .footer-links a,

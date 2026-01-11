@@ -96,22 +96,28 @@ const AppShell = ({ children }: AppShellProps) => {
           </button>
           <ul>
             <li>
-              <RouterLink to="/analyze">Analyze my bill</RouterLink>
+              <RouterLink to="/analyze">Analyze Bill</RouterLink>
             </li>
             <li>
-              <RouterLink to="/research">Research</RouterLink>
+              <RouterLink to="/manual-entry">Manual Entry</RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/dashboard">Dashboard</RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/research">Research Plan</RouterLink>
             </li>
             <li>
               <span className="ws-nav-section">Experiences</span>
               <ul className="ws-subnav">
                 <li>
-                  <RouterLink to="/game">Leak Patrol</RouterLink>
+                  <RouterLink to="/game">Leak Patrol Game</RouterLink>
                 </li>
                 <li>
                   <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
                 </li>
                 <li>
-                  <RouterLink to="/#more-tools">More tools</RouterLink>
+                  <RouterLink to="/learn/read-water-bill">Read Your Bill</RouterLink>
                 </li>
               </ul>
             </li>

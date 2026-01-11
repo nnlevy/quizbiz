@@ -1,8 +1,10 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RouterLink, useNavigate } from "./router";
+import { saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
-import { RouterLink } from "./router";
+import { isAnalysisResult, toAnalysisRecord } from "../utils/analysisTransform";
 
 type ManualFormState = {
   period: string;
@@ -18,6 +20,7 @@ const UNIT_OPTIONS = ["Gallons", "CCF", "HCF"];
 
 const ManualEntry = () => {
   useDocumentTitle("WaterShortcut | Manual entry");
+  const navigate = useNavigate();
   const [formState, setFormState] = useState<ManualFormState>({
     period: "",
     usage: "",
@@ -27,10 +30,10 @@ const ManualEntry = () => {
     household: "",
     notes: "",
   });
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showUsageHelp, setShowUsageHelp] = useState(false);
 
   const handleChange =
     (field: keyof ManualFormState) =>
@@ -43,8 +46,6 @@ const ManualEntry = () => {
     setError(null);
     setStatus("Sending your details to the AI...");
     setIsSubmitting(true);
-    setAnalysis(null);
-
     try {
       const response = await fetch("/api/analyze-manual", {
         method: "POST",
@@ -66,12 +67,14 @@ const ManualEntry = () => {
       }
 
       const payload = (await response.json()) as { analysis?: AnalysisResult | null };
-      if (!payload.analysis) {
+      if (!payload.analysis || !isAnalysisResult(payload.analysis)) {
         throw new Error("The AI response was incomplete. Please try again.");
       }
 
-      setAnalysis(payload.analysis);
       setStatus("Your manual insights are ready.");
+      const record = toAnalysisRecord(payload.analysis, "manual");
+      saveAnalysisRecord(record);
+      navigate(`/analysis-results/${record.id}`, { state: { record, mode: "manual" } });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Something went wrong.");
       setStatus(null);
@@ -104,7 +107,17 @@ const ManualEntry = () => {
             />
           </label>
           <label className="ws-field">
-            Total usage
+            <span className="ws-field-label">
+              Total usage
+              <button
+                type="button"
+                className="ws-tooltip-button"
+                aria-expanded={showUsageHelp}
+                onClick={() => setShowUsageHelp((prev) => !prev)}
+              >
+                i
+              </button>
+            </span>
             <input
               className="ws-input"
               type="number"
@@ -115,6 +128,20 @@ const ManualEntry = () => {
               placeholder="e.g., 8"
               required
             />
+            {showUsageHelp && (
+              <div className="ws-tooltip-panel">
+                <p>
+                  <strong>Where to find this:</strong> Total usage is often labeled “consumption”
+                  or “usage” in CCF or gallons. It’s usually found in the meter reading section.
+                </p>
+                <div className="ws-bill-sample" aria-hidden="true">
+                  <div className="ws-bill-header">Sample Bill</div>
+                  <div className="ws-bill-row">Account number · 123456</div>
+                  <div className="ws-bill-row ws-bill-highlight">Total usage · 8.2 CCF</div>
+                  <div className="ws-bill-row">Service charges · $28.00</div>
+                </div>
+              </div>
+            )}
           </label>
           <label className="ws-field">
             Unit
@@ -188,50 +215,16 @@ const ManualEntry = () => {
         </div>
       </form>
 
-      {analysis && (
-        <div className="ws-progress" aria-live="polite">
-          <h2>Your tailored results</h2>
-          <div className="ws-result-grid">
-            {analysis.topMoves.map((move) => (
-              <article key={move.title} className="ws-result-card">
-                <div>
-                  <h3>{move.title}</h3>
-                  <p>{move.why}</p>
-                </div>
-                <div className="ws-result-meta">
-                  <span>Effort: {move.effort}</span>
-                  <span>Impact: {move.impact}</span>
-                </div>
-                <ul className="ws-result-steps">
-                  {move.steps.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ul>
-                <div className="ws-result-actions">
-                  <a className="ws-button-secondary" href={move.ctaHref}>
-                    {move.ctaLabel}
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
-          <div className="ws-result-summary">
-            <div>
-              <h3>What you&apos;re paying for</h3>
-              <p>{analysis.payingFor}</p>
-            </div>
-            <div>
-              <h3>Your next best step</h3>
-              <p>{analysis.nextStep}</p>
-            </div>
-            {analysis.confidenceNote && <p className="ws-subtitle">{analysis.confidenceNote}</p>}
-          </div>
-          <div className="ws-tool-grid">
-            <RouterLink to="/">Upload a full PDF</RouterLink>
-            <RouterLink to="/research">Build a research plan</RouterLink>
-          </div>
+      <div className="ws-progress" aria-live="polite">
+        <h2>Next steps</h2>
+        <p className="ws-subtitle">
+          You&apos;ll be redirected to your results page after analysis completes.
+        </p>
+        <div className="ws-tool-grid">
+          <RouterLink to="/">Upload a full PDF</RouterLink>
+          <RouterLink to="/research">Build a research plan</RouterLink>
         </div>
-      )}
+      </div>
     </section>
   );
 };

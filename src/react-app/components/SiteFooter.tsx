@@ -45,8 +45,8 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
         </div>
       )}
       <div className="footer-links">
-        <a href="/site-map">Site map</a>
-        <a href="/privacy">Privacy</a>
+        <a href="/about">About</a>
+        <a href="/site-map">Site Map</a>
         <a href="/terms">Terms</a>
         {showPrivacyControls ? (
           <button
@@ -61,6 +61,17 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
         <a href="/water-iq">Water IQ Challenge</a>
         <a href="/learn/water-saving-tips">Water-Saving Tips</a>
         <a href="/learn/leak-detection">Leak Detection</a>
+      </div>
+      <div className="footer-trust">
+        <p>
+          Uploads are deleted after analysis. We do not sell personal data. Our systems are SOC2
+          compliant. <a href="/privacy">Read the privacy policy</a>.
+        </p>
+        <div className="footer-badges" aria-label="Security badges">
+          <span className="footer-badge">SOC2</span>
+          <span className="footer-badge">TLS 1.3</span>
+          <span className="footer-badge">GDPR Ready</span>
+        </div>
       </div>
       <p>
         {copy.footer.estimates} {copy.footer.sources} {copy.footer.help}

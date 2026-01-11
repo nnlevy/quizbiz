@@ -75,7 +75,20 @@ const isAnalysisMove = (value: unknown): value is AnalysisMove => {
 
 const isAnalysisResult = (value: unknown): value is AnalysisResult => {
   if (!isRecord(value)) return false;
+  const billingSummary = value.billingSummary as Record<string, unknown> | undefined;
+  const totalUsage = billingSummary?.totalUsage as Record<string, unknown> | undefined;
   return (
+    isNonEmptyString(value.analysisId) &&
+    isRecord(billingSummary) &&
+    isNonEmptyString(billingSummary?.billingPeriod) &&
+    isRecord(totalUsage) &&
+    typeof totalUsage?.value === "number" &&
+    isNonEmptyString(totalUsage?.unit) &&
+    typeof billingSummary?.totalCost === "number" &&
+    Array.isArray(billingSummary?.rateTiers) &&
+    Array.isArray(value.usageHistory) &&
+    Array.isArray(value.alerts) &&
+    isNonEmptyString(value.savingsSummary) &&
     Array.isArray(value.topMoves) &&
     value.topMoves.length === 3 &&
     value.topMoves.every((move) => isAnalysisMove(move)) &&
@@ -1697,60 +1710,50 @@ function App({ focusUpload = false }: AppProps) {
     }
   };
 
-  const buildManualResult = (): AnalysisResult => {
-    const usage = Number(manualForm.usage || 0);
-    const cost = Number(manualForm.cost || 0);
-    const household = Number(manualForm.household || 0);
-    return {
-      topMoves: [
-        {
-          title: "Check for leaks first",
-          why: "Leaks are the fastest, cheapest win.",
-          effort: "Low",
-          impact: usage ? `~${Math.round(usage * 0.15)} units/month` : "Fast impact",
-          steps: ["Run the leak check", "Fix toilets first", "Recheck your meter"],
-          ctaLabel: "Start leak check",
-          ctaHref: "/leak-check",
-        },
-        {
-          title: "Trim shower & faucet flow",
-          why: "Daily habits add up quickly.",
-          effort: "Low",
-          impact: household ? `${household} people × daily savings` : "Daily savings",
-          steps: ["Install WaterSense fixtures", "Shorten showers", "Monitor for drips"],
-          ctaLabel: "Open shower calculator",
-          ctaHref: "/calculators/shower",
-        },
-        {
-          title: "Watch outdoor watering",
-          why: "Outdoor use drives tier spikes.",
-          effort: "Medium",
-          impact: cost ? `Protect ~$${Math.round(cost * 0.1)}/mo` : "Avoid tier jumps",
-          steps: ["Water 2 days/week", "Fix spray heads", "Adjust seasonally"],
-          ctaLabel: "Outdoor tips",
-          ctaHref: "/calculators/outdoor",
-        },
-      ],
-      payingFor: "Manual entry suggests usage + sewer charges dominate the total bill.",
-      nextStep: "Confirm your unit rate on the next bill for a sharper estimate.",
-      confidenceNote: "Manual entry is less precise than a full bill upload.",
-    };
-  };
-
   const handleManualChange = (field: keyof typeof manualForm) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       setManualForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
-  const handleManualSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleManualSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = buildManualResult();
-    setAnalysisResult(result);
+    setResponseMessage("Sending your details to the AI...");
+    setAnalysisResult(null);
     setAnalysisHtml("");
-    window.localStorage.setItem("ws-latest-plan", JSON.stringify(result));
-    logEvent("cta_click", { type: "manual_entry" });
-    logEvent("plan_generated", { type: "manual" });
-    topMovesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    try {
+      const response = await fetch("/api/analyze-manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(manualForm),
+      });
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(
+          response,
+          "We couldn’t analyze the manual entry yet.",
+        );
+        setResponseMessage(errorMessage);
+        logEvent("analysis_error");
+        return;
+      }
+      const result = (await response.json()) as {
+        analysis?: AnalysisResult | null;
+        html?: string;
+      };
+      setResponseMessage("Success!");
+      if (result.analysis && isAnalysisResult(result.analysis)) {
+        setAnalysisResult(result.analysis);
+        window.localStorage.setItem("ws-latest-plan", JSON.stringify(result.analysis));
+      } else if (result.html) {
+        setAnalysisHtml(result.html);
+      }
+      logEvent("cta_click", { type: "manual_entry" });
+      logEvent("plan_generated", { type: "manual" });
+      topMovesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      console.error("Manual entry failed:", error);
+      setResponseMessage(copy.analyze.errors.aiFail);
+      logEvent("analysis_error");
+    }
   };
 
   const handleDemoRun = () => {

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { RouterLink, useLocation, useNavigate } from "./router";
+import UsageLineChart from "../components/UsageLineChart";
+import { addSavingsPlanItem, getAnalysisHistory } from "../utils/dashboard";
 
 type AnalyzeState = {
   mode?: "upload" | "demo" | "manual";
@@ -15,11 +17,21 @@ const Analyze = () => {
   const state = (location.state || {}) as AnalyzeState;
   const [progress, setProgress] = useState(0);
   const [complete, setComplete] = useState(false);
+  const [alertExpanded, setAlertExpanded] = useState<string | null>(null);
+  const [tipNotice, setTipNotice] = useState<string | null>(null);
 
   const isDemo = state.mode === "demo";
   const isManual = state.mode === "manual";
   const hasUpload = state.mode === "upload" || Boolean(state.fileName);
   const hasMode = isDemo || isManual || hasUpload;
+  const latestAnalysis = useMemo(() => getAnalysisHistory()[0] ?? null, []);
+  const spikes = useMemo(() => {
+    if (!latestAnalysis) return [];
+    return latestAnalysis.usageHistory
+      .map((point, index) => ({ index, usage: point.usage, average: point.average }))
+      .filter((point) => point.usage > point.average * 1.25)
+      .map((point) => point.index);
+  }, [latestAnalysis]);
 
   const modeLabel = useMemo(() => {
     if (state.mode === "demo") return "Demo bill";
@@ -72,6 +84,17 @@ const Analyze = () => {
     }, 450);
     return () => window.clearInterval(interval);
   }, [hasMode, state.mode, state.fileName]);
+
+  const handleTipSave = (title: string, description: string) => {
+    addSavingsPlanItem({
+      id: `${title.toLowerCase().replace(/\\s+/g, "-")}`,
+      title,
+      description,
+      createdAt: new Date().toISOString(),
+      source: "Community tips",
+    });
+    setTipNotice(`Saved “${title}” to your dashboard plan.`);
+  };
 
   return (
     <section className="ws-page" aria-labelledby="analysis-title">
@@ -144,22 +167,104 @@ const Analyze = () => {
 
           <div id="usage-insights" className="ws-progress">
             <h3>Usage insights</h3>
-            <p>
-              Track your weekday baseline and compare against weekends to spot silent usage creep.
-            </p>
+            {latestAnalysis ? (
+              <>
+                <p className="ws-subtitle">
+                  Compare your last 12 months to similar homes and spot summertime spikes.
+                </p>
+                <UsageLineChart
+                  data={latestAnalysis.usageHistory}
+                  title="Last 12 months of water use"
+                  highlightIndexes={spikes}
+                />
+                <p>
+                  {latestAnalysis.savingsSummary} Shift watering to early mornings to avoid heat
+                  loss.
+                </p>
+              </>
+            ) : (
+              <p className="ws-subtitle">
+                No recent analysis yet. Upload a bill to unlock personalized usage insights.
+              </p>
+            )}
           </div>
           <div id="abnormality-alerts" className="ws-progress">
             <h3>Abnormality alerts</h3>
-            <p>
-              Set a weekly meter check reminder so sudden spikes are flagged before the next bill.
-            </p>
+            {latestAnalysis ? (
+              <div className="ws-alert-grid">
+                {latestAnalysis.alerts.map((alert) => (
+                  <div key={alert.id} className="ws-alert-card">
+                    <div className="ws-alert-header">
+                      <span className="ws-alert-icon" aria-hidden="true">
+                        {alert.title.toLowerCase().includes("leak") ? "💧" : "📈"}
+                      </span>
+                      <div>
+                        <p>{alert.title}</p>
+                        <button
+                          className="ws-button-secondary"
+                          type="button"
+                          onClick={() =>
+                            setAlertExpanded((prev) => (prev === alert.id ? null : alert.id))
+                          }
+                        >
+                          View details
+                        </button>
+                      </div>
+                    </div>
+                    {alertExpanded === alert.id && (
+                      <p className="ws-subtitle">{alert.detail}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="ws-subtitle">
+                Run an analysis to see leak alerts, tier jumps, and wastewater anomalies.
+              </p>
+            )}
           </div>
           <div id="community-tips" className="ws-progress">
             <h3>Community tips</h3>
-            <p>
-              Learn what neighbors are doing to save water and check local programs for equipment
-              rebates.
+            <p className="ws-subtitle">
+              Tips crowdsourced from neighbors, plumbers, and utility experts.
             </p>
+            <div className="ws-tip-grid">
+              {[
+                {
+                  title: "Use a broom instead of a hose",
+                  description:
+                    "Sweep driveways and patios to save up to 150 gallons per cleanup.",
+                },
+                {
+                  title: "Install low-flow showerheads",
+                  description:
+                    "Switch to WaterSense showerheads to cut shower use by ~20%.",
+                },
+                {
+                  title: "Check toilet flappers monthly",
+                  description:
+                    "Silent leaks can waste 200 gallons a day. Replace worn flappers early.",
+                },
+                {
+                  title: "Group laundry into full loads",
+                  description:
+                    "Running full loads trims wastewater charges and keeps Tier 2 usage lower.",
+                },
+              ].map((tip) => (
+                <article key={tip.title} className="ws-tip-card">
+                  <h4>{tip.title}</h4>
+                  <p className="ws-subtitle">{tip.description}</p>
+                  <button
+                    className="ws-button-secondary"
+                    type="button"
+                    onClick={() => handleTipSave(tip.title, tip.description)}
+                  >
+                    Save to My Plan
+                  </button>
+                </article>
+              ))}
+            </div>
+            {tipNotice && <p className="ws-subtitle" aria-live="polite">{tipNotice}</p>}
             <RouterLink className="ws-footer-link" to="/research">
               Research rebates and alerts →
             </RouterLink>
