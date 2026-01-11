@@ -30,6 +30,22 @@
   text-decoration: none;
   font-size: 1.1rem;
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: inherit;
+}
+
+.ws-logo__image {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
+  display: block;
+  object-fit: contain;
+}
+
+.ws-logo__text {
+  font-weight: 700;
 }
 
 .ws-header__credits {

@@ -52,7 +52,16 @@ const AppShell = ({ children }: AppShellProps) => {
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
-            WaterShortcut
+            <img
+              className="ws-logo__image"
+              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813"
+              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_160/f9eb544bed7ab31e0ebda502440cd813 2x"
+              sizes="40px"
+              alt="WaterShortcut logo"
+              loading="eager"
+              decoding="async"
+            />
+            <span className="ws-logo__text">WaterShortcut</span>
           </RouterLink>
           {showDeferred && (
             <RouterLink
