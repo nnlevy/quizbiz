@@ -55,6 +55,14 @@ const viralEventCounts = {
   ctaClicked: 0,
 };
 
+const GOOGLE_OAUTH_SCOPES = "openid email profile";
+const GOOGLE_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+const GOOGLE_JWKS_ENDPOINT = "https://www.googleapis.com/oauth2/v3/certs";
+const OAUTH_STATE_TTL_SECONDS = 60 * 10;
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const JWKS_TTL_SECONDS = 60 * 60;
+
 const subtle = (() => {
   if (typeof crypto.subtle !== "undefined") {
     return crypto.subtle;
@@ -71,6 +79,8 @@ type WorkerEnv = {
   OPENAI_ORG_ID?: string;
   Google_Document_AI_Processor_Prediction_Endpoint: string;
   "Google-Service-Account-FINAL": string;
+  UsersAcrossAllDomains: D1Database;
+  UserSessionsAcrossDomains: KVNamespace;
   "domains-db"?: D1Database;
   STRIPE_API_KEY?: string;
   STRIPE_PUBLISHABLE_KEY?: string;
@@ -80,6 +90,10 @@ type WorkerEnv = {
   ADSENSE_SLOT_FOOTER?: string;
   ADSENSE_SLOT_STICKY?: string;
   WS_ADMIN_EXPORT_KEY?: string;
+  OAUTH_API_KEY?: string;
+  OAUTH_Client_ID: string;
+  OAUTH_DOMAIN?: string;
+  OUATH_Client_Secret: string;
 };
 
 type ChatCompletionResponse = {
@@ -89,6 +103,20 @@ type ChatCompletionResponse = {
     };
   }>;
   error?: unknown;
+};
+
+type GoogleIdTokenPayload = {
+  iss?: string;
+  sub?: string;
+  aud?: string | string[];
+  email?: string;
+  name?: string;
+  picture?: string;
+  exp?: number;
+};
+
+type GoogleJwks = {
+  keys: Array<JsonWebKey & { kid?: string }>;
 };
 
 type AnalysisMove = {
@@ -583,7 +611,19 @@ const siteRoutes: SiteRoute[] = [
     body: renderTrustPage("privacy"),
   },
   {
+    path: "/terms/privacy",
+    title: "Privacy | WaterShortcut",
+    description: "How we handle analytics, uploads, and data.",
+    body: renderTrustPage("privacy"),
+  },
+  {
     path: "/terms",
+    title: "Terms | WaterShortcut",
+    description: "Use at your own risk. Estimates only.",
+    body: renderTrustPage("terms"),
+  },
+  {
+    path: "/terms/tos",
     title: "Terms | WaterShortcut",
     description: "Use at your own risk. Estimates only.",
     body: renderTrustPage("terms"),
@@ -607,6 +647,113 @@ const siteRoutes: SiteRoute[] = [
     body: "",
   },
 ];
+
+const base64UrlToBytes = (value: string): Uint8Array => {
+  const padded = value.padEnd(value.length + ((4 - (value.length % 4)) % 4), "=");
+  const base64 = padded.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const base64UrlToJson = <T,>(value: string): T => {
+  const bytes = base64UrlToBytes(value);
+  const text = new TextDecoder().decode(bytes);
+  return JSON.parse(text) as T;
+};
+
+const getCachedJwks = async (env: WorkerEnv, forceRefresh = false): Promise<GoogleJwks> => {
+  const cacheKey = "oauth:google:jwks";
+  if (!forceRefresh) {
+    const cached = await env.UserSessionsAcrossDomains.get(cacheKey, "json");
+    if (cached && typeof cached === "object" && "keys" in cached) {
+      return cached as GoogleJwks;
+    }
+  }
+
+  const response = await fetch(GOOGLE_JWKS_ENDPOINT);
+  if (!response.ok) {
+    throw new Error("Unable to load Google JWKS.");
+  }
+  const jwks = (await response.json()) as GoogleJwks;
+  await env.UserSessionsAcrossDomains.put(cacheKey, JSON.stringify(jwks), {
+    expirationTtl: JWKS_TTL_SECONDS,
+  });
+  return jwks;
+};
+
+const verifyGoogleIdToken = async (token: string, env: WorkerEnv): Promise<GoogleIdTokenPayload> => {
+  const [headerSegment, payloadSegment, signatureSegment] = token.split(".");
+  if (!headerSegment || !payloadSegment || !signatureSegment) {
+    throw new Error("Invalid ID token format.");
+  }
+  const header = base64UrlToJson<{ alg?: string; kid?: string }>(headerSegment);
+  const payload = base64UrlToJson<GoogleIdTokenPayload>(payloadSegment);
+  if (header.alg !== "RS256" || !header.kid) {
+    throw new Error("Unsupported ID token header.");
+  }
+
+  let jwks = await getCachedJwks(env);
+  let jwk = jwks.keys.find((key) => key.kid === header.kid);
+  if (!jwk) {
+    jwks = await getCachedJwks(env, true);
+    jwk = jwks.keys.find((key) => key.kid === header.kid);
+  }
+  if (!jwk) {
+    throw new Error("Unable to find matching JWKS key.");
+  }
+
+  const key = await subtle.importKey(
+    "jwk",
+    jwk,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  const data = new TextEncoder().encode(`${headerSegment}.${payloadSegment}`);
+  const signature = base64UrlToBytes(signatureSegment);
+  const isValid = await subtle.verify("RSASSA-PKCS1-v1_5", key, signature, data);
+  if (!isValid) {
+    throw new Error("Invalid ID token signature.");
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const allowedIssuers = new Set(["https://accounts.google.com", "accounts.google.com"]);
+  if (!payload.iss || !allowedIssuers.has(payload.iss)) {
+    throw new Error("Invalid ID token issuer.");
+  }
+  const audiences = Array.isArray(payload.aud) ? payload.aud : payload.aud ? [payload.aud] : [];
+  if (!audiences.includes(env.OAUTH_Client_ID)) {
+    throw new Error("Invalid ID token audience.");
+  }
+  if (!payload.exp || payload.exp < nowSeconds - 60) {
+    throw new Error("Expired ID token.");
+  }
+
+  return payload;
+};
+
+const buildSessionCookie = (
+  sessionId: string,
+  env: WorkerEnv,
+  maxAgeSeconds: number,
+): string => {
+  const cookieParts = [
+    `ws_session=${sessionId}`,
+    "Path=/",
+    `Max-Age=${maxAgeSeconds}`,
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+  ];
+  if (env.OAUTH_DOMAIN) {
+    cookieParts.push(`Domain=${env.OAUTH_DOMAIN}`);
+  }
+  return cookieParts.join("; ");
+};
 
 const app = new Hono<{ Bindings: WorkerEnv; Variables: { cspNonce: string } }>();
 
@@ -685,6 +832,121 @@ app.use("/api/*", async (c, next) => {
   Object.entries(corsHeaders).forEach(([key, value]) => {
     c.res.headers.set(key, value);
   });
+});
+
+app.get("/auth/google", async (c) => {
+  const state = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  await c.env.UserSessionsAcrossDomains.put(
+    `oauth:state:${state}`,
+    JSON.stringify({ createdAt }),
+    { expirationTtl: OAUTH_STATE_TTL_SECONDS },
+  );
+
+  const redirectUri = "https://www.watershortcut.com/auth/google/callback";
+  const params = new URLSearchParams({
+    client_id: c.env.OAUTH_Client_ID,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: GOOGLE_OAUTH_SCOPES,
+    prompt: "select_account",
+    state,
+  });
+  return c.redirect(`${GOOGLE_AUTH_ENDPOINT}?${params.toString()}`, 302);
+});
+
+app.get("/auth/google/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  if (!code || !state) {
+    return c.text("Missing OAuth callback parameters.", 400);
+  }
+
+  const stateKey = `oauth:state:${state}`;
+  const storedState = await c.env.UserSessionsAcrossDomains.get(stateKey);
+  if (!storedState) {
+    return c.text("Invalid or expired OAuth state.", 400);
+  }
+  await c.env.UserSessionsAcrossDomains.delete(stateKey);
+
+  const redirectUri = "https://www.watershortcut.com/auth/google/callback";
+  const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: c.env.OAUTH_Client_ID,
+      client_secret: c.env.OUATH_Client_Secret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text();
+    return c.text(`OAuth token exchange failed: ${errorText}`, 400);
+  }
+
+  const tokenPayload = (await tokenResponse.json()) as { id_token?: string };
+  if (!tokenPayload.id_token) {
+    return c.text("Missing ID token from Google.", 400);
+  }
+
+  let idTokenPayload: GoogleIdTokenPayload;
+  try {
+    idTokenPayload = await verifyGoogleIdToken(tokenPayload.id_token, c.env);
+  } catch (error) {
+    return c.text(
+      `Invalid ID token: ${error instanceof Error ? error.message : "unknown error"}`,
+      400,
+    );
+  }
+
+  const subject = idTokenPayload.sub;
+  const email = idTokenPayload.email;
+  if (!subject || !email) {
+    return c.text("Google account is missing required identity claims.", 400);
+  }
+
+  const name = idTokenPayload.name ?? "";
+  const avatarUrl = idTokenPayload.picture ?? "";
+  const now = new Date().toISOString();
+  const db = c.env.UsersAcrossAllDomains;
+  const newUserId = crypto.randomUUID();
+  const userResult = await db
+    .prepare(
+      `INSERT INTO users (id, provider, provider_user_id, email, name, avatar_url, created_at, last_login)
+       VALUES (?1, 'google', ?2, ?3, ?4, ?5, ?6, ?7)
+       ON CONFLICT(provider_user_id) DO UPDATE SET
+         email=excluded.email,
+         name=excluded.name,
+         avatar_url=excluded.avatar_url,
+         last_login=excluded.last_login
+       RETURNING id`,
+    )
+    .bind(newUserId, subject, email, name, avatarUrl, now, now)
+    .first<{ id: string }>();
+
+  const userId = userResult?.id ?? newUserId;
+  const sessionId = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
+
+  await db
+    .prepare(
+      `INSERT INTO auth_sessions (session_id, user_id, created_at, expires_at)
+       VALUES (?1, ?2, ?3, ?4)`,
+    )
+    .bind(sessionId, userId, now, expiresAt)
+    .run();
+
+  await c.env.UserSessionsAcrossDomains.put(
+    `session:${sessionId}`,
+    JSON.stringify({ userId, createdAt: now }),
+    { expirationTtl: SESSION_TTL_SECONDS },
+  );
+
+  c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
+  return c.redirect("/", 302);
 });
 
 app.get("/assets/styles.css", (c) =>
