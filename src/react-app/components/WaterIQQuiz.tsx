@@ -14,7 +14,8 @@ type WaterIQQuestion = {
 };
 
 type WaterIQQuizProps = {
-  onComplete?: () => void;
+  onComplete?: (payload: { score: number; total: number }) => void;
+  rewardMessage?: string | null;
 };
 
 const getScoreMessage = (score: number, total: number) => {
@@ -25,7 +26,7 @@ const getScoreMessage = (score: number, total: number) => {
   return SCORE_MESSAGES[3];
 };
 
-const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
+const WaterIQQuiz = ({ onComplete, rewardMessage }: WaterIQQuizProps) => {
   // Core quiz state: questions, progress, and result tracking.
   const [questions, setQuestions] = useState<WaterIQQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +78,10 @@ const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
         .replace("{total}", String(totalQuestions)),
     [scoreMessage, score, totalQuestions],
   );
+  const scoreAngle = useMemo(() => {
+    if (!totalQuestions) return 0;
+    return Math.min(Math.max(score / totalQuestions, 0), 1) * 360;
+  }, [score, totalQuestions]);
 
   const handleSelect = (index: number) => {
     setSelectedIndex(index);
@@ -86,6 +91,8 @@ const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
     if (selectedIndex == null || !currentQuestion) return;
 
     // Update score before moving forward.
+    const nextScore =
+      selectedIndex === currentQuestion.answerIndex ? score + 1 : score;
     if (selectedIndex === currentQuestion.answerIndex) {
       setScore((prev) => prev + 1);
     }
@@ -96,7 +103,7 @@ const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
       setSelectedIndex(null);
     } else {
       setShowResults(true);
-      onComplete?.();
+      onComplete?.({ score: nextScore, total: totalQuestions });
     }
   };
 
@@ -145,14 +152,22 @@ const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
       <section className="section water-iq-quiz">
         <div className="water-iq-card water-iq-card--results">
           <h1 className="wsH1">Your Water IQ Results</h1>
-          <p className="water-iq-score">
-            {score}/{totalQuestions}
-          </p>
+          <div
+            className="water-iq-score-circle"
+            style={{ ["--score-angle" as string]: `${scoreAngle}deg` }}
+            aria-label="Score"
+          >
+            <div className="water-iq-score-value">
+              {score}
+              <span>/{totalQuestions}</span>
+            </div>
+          </div>
           <p className="wsP">{formattedScoreMessage}</p>
+          {rewardMessage && <div className="wsCallout">{rewardMessage}</div>}
           <div className="water-iq-results-actions">
             <button
               type="button"
-              className="wsBtnPrimary"
+              className="wsBtnPrimary wsBtnPrimary--pill"
               aria-label="Try the Water IQ quiz again"
               onClick={handleRestart}
             >
@@ -194,7 +209,7 @@ const WaterIQQuiz = ({ onComplete }: WaterIQQuizProps) => {
         </div>
         <button
           type="button"
-          className="wsBtnPrimary water-iq-next"
+          className="wsBtnPrimary wsBtnPrimary--pill water-iq-next"
           aria-label="Go to the next question"
           onClick={handleNext}
           disabled={selectedIndex == null}

@@ -877,6 +877,7 @@ function layout(options: {
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const useEjectNav = isWaterEjectRoute(canonicalPath);
   const isGameRoute = canonicalPath.startsWith("/game") || canonicalPath.startsWith("/leak-patrol");
+  const isWaterIqRoute = canonicalPath.startsWith("/water-iq");
   const resolvedTwitterCard = twitterCard ?? "summary";
   const resolvedOgImage =
     ogImageUrl && ogImageUrl.startsWith("http") ? ogImageUrl : ogImageUrl ? `${DOMAIN}${ogImageUrl}` : null;
@@ -940,7 +941,7 @@ function layout(options: {
       <div class="mode-bar__content">
         <span class="mode-bar__label">${escapeHtml(copy.nav.switcherLabel)}</span>
         <div class="mode-bar__actions">
-          <a class="${!useEjectNav && !isGameRoute ? "active" : ""}" href="/analyze-water-bill">${escapeHtml(
+          <a class="${!useEjectNav && !isGameRoute && !isWaterIqRoute ? "active" : ""}" href="/analyze-water-bill">${escapeHtml(
             copy.nav.homeLabel,
           )}</a>
           <a class="${useEjectNav ? "active" : ""}" href="/blog-how-to-eject.html">${escapeHtml(
@@ -949,6 +950,7 @@ function layout(options: {
           <a class="${isGameRoute ? "active" : ""}" href="/game">${escapeHtml(
             copy.nav.gameLabel,
           )}</a>
+          <a class="${isWaterIqRoute ? "active" : ""}" href="/water-iq">Water IQ</a>
         </div>
         <button type="button" class="mode-bar__close" data-mode-bar-close aria-label="Close mode bar">×</button>
       </div>
@@ -1542,6 +1544,7 @@ function renderWaterIqResult(input: {
     .join("");
 
   const badgeLabel = badge.replace(/_/g, " ");
+  const challengeLink = `/water-iq?ref=${encodeURIComponent(token)}`;
   return `
     <section class="section water-iq">
       <div class="water-iq-card water-iq-card--result" data-water-iq-result data-token="${escapeHtml(token)}" data-persona="${escapeHtml(
@@ -1553,7 +1556,7 @@ function renderWaterIqResult(input: {
         </div>
         <div class="water-iq-divider" role="presentation"></div>
         <div class="water-iq-result-meta">
-          <div class="water-iq-score-circle" aria-label="Score">
+          <div class="water-iq-score-circle" style="--score-angle:${Math.min(Math.max(score, 0), 10) * 36}deg;" aria-label="Score">
             <div class="water-iq-score-value">${score}<span>/10</span></div>
           </div>
           <div class="water-iq-result-copy">
@@ -1572,6 +1575,7 @@ function renderWaterIqResult(input: {
             We repeat two questions to measure whether the Impact Reveal changes intuition.
           </div>
         </div>
+        <div class="wsCallout" data-water-iq-score-reward hidden></div>
 
         <h2 class="wsH2">Your next best steps</h2>
         <div class="wsResultMoves">${movesHtml}</div>
@@ -1615,9 +1619,67 @@ function renderWaterIqResult(input: {
           <div class="wsRow">
             <button class="wsBtnPrimary wsBtnPrimary--pill" data-water-iq-share>Challenge 3 friends</button>
             <button class="wsBtnGhost" data-water-iq-challenge>Copy challenge link</button>
+            <a class="wsBtnGhost" href="#results-dashboard">View results dashboard</a>
             <a class="wsBtnGhost" href="/water-iq">Take again</a>
           </div>
           <div class="wsMuted" style="margin-top:10px;font-size:12px;">Private by default — you choose if you share.</div>
+        </div>
+
+        <div class="water-iq-share">
+          <h3>Share your score</h3>
+          <p class="wsMuted">Earn +1 credit when you share your results with friends.</p>
+          <div class="water-iq-share__actions">
+            <a class="wsBtnPrimary wsBtnPrimary--pill" data-water-iq-share-x target="_blank" rel="noreferrer">Share on X</a>
+            <a class="wsBtnGhost" data-water-iq-share-linkedin target="_blank" rel="noreferrer">Share on LinkedIn</a>
+            <button class="wsBtnGhost" type="button" data-water-iq-share-copy>Copy share link</button>
+          </div>
+          <div class="wsMuted" data-water-iq-share-status></div>
+        </div>
+
+        <div class="water-iq-draft">
+          <div class="water-iq-draft__header">
+            <h3>AI-assisted post draft</h3>
+            <button class="wsBtnGhost" type="button" data-water-iq-draft-generate>Generate draft</button>
+          </div>
+          <textarea class="water-iq-draft__text" rows="5" data-water-iq-draft placeholder="Generate a post draft to share your results."></textarea>
+          <div class="water-iq-draft__actions">
+            <button class="wsBtnPrimary wsBtnPrimary--pill" type="button" data-water-iq-draft-copy>Copy draft + link</button>
+          </div>
+        </div>
+
+        <div class="water-iq-dashboard" id="results-dashboard">
+          <div class="water-iq-dashboard__header">
+            <h3>Results dashboard</h3>
+            <p class="wsMuted">Show off your badge and invite friends to compare scores.</p>
+          </div>
+          <div class="water-iq-badge-grid">
+            <div class="water-iq-badge-card is-earned">
+              <span class="water-iq-badge-emoji" aria-hidden="true">💧</span>
+              <div>
+                <strong>${escapeHtml(badgeLabel)}</strong>
+                <span class="wsMuted">Current badge</span>
+              </div>
+            </div>
+            <div class="water-iq-badge-card">
+              <span class="water-iq-badge-emoji" aria-hidden="true">🔎</span>
+              <div>
+                <strong>Leak Detective</strong>
+                <span class="wsMuted">Finish a leak check to unlock</span>
+              </div>
+            </div>
+            <div class="water-iq-badge-card">
+              <span class="water-iq-badge-emoji" aria-hidden="true">🌿</span>
+              <div>
+                <strong>Garden Guardian</strong>
+                <span class="wsMuted">Share your score to unlock</span>
+              </div>
+            </div>
+          </div>
+          <div class="water-iq-dashboard__actions">
+            <a class="wsBtnPrimary wsBtnPrimary--pill" href="${challengeLink}">Challenge 3 friends</a>
+            <a class="wsBtnGhost" href="${challengeLink}">Copy share link</a>
+          </div>
+          <div class="wsMuted" style="font-size:12px;">Your dashboard is private until you share it.</div>
         </div>
 
         <div class="wsExplain">
@@ -2220,7 +2282,13 @@ function renderTrustPage(kind: "privacy" | "terms" | "affiliate" | "disclaimer")
 
 function renderHumanSitemap(routes: SiteRoute[]): string {
   const links = routes
-    .map((route) => `<li><a href="${route.path}">${escapeHtml(route.title)}</a></li>`)
+    .map(
+      (route) => `
+        <a class="card sitemap-card" href="${route.path}">
+          <h3>${escapeHtml(route.title)}</h3>
+          <p class="small">Open ${escapeHtml(route.title)} in WaterShortcut.</p>
+        </a>`,
+    )
     .join("");
   return `
     <section class="hero">
@@ -2229,7 +2297,9 @@ function renderHumanSitemap(routes: SiteRoute[]): string {
         <p>Browse every WaterShortcut page, tool, and guide.</p>
       </div>
     </section>
-    <section class="section layout-slab"><ul class="bullet-list">${links}</ul></section>
+    <section class="section layout-slab sitemap-section">
+      <div class="cards sitemap-grid">${links}</div>
+    </section>
   `;
 }
 

@@ -3004,7 +3004,10 @@ blockquote {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at top, rgba(97, 213, 255, 0.25), rgba(79, 155, 255, 0.2));
+  background: conic-gradient(
+    rgba(79, 155, 255, 0.9) 0 var(--score-angle, 0deg),
+    rgba(79, 155, 255, 0.15) var(--score-angle, 0deg) 360deg
+  );
   box-shadow: 0 14px 32px rgba(45, 107, 255, 0.2);
 }
 
@@ -3104,6 +3107,111 @@ blockquote {
   gap: 0.75rem;
 }
 
+.water-iq-share,
+.water-iq-draft {
+  padding: 1.1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(79, 155, 255, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.water-iq-share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.water-iq-draft__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.water-iq-draft__text {
+  width: 100%;
+  min-height: 120px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(15, 35, 95, 0.2);
+  padding: 0.85rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.water-iq-draft__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.water-iq-dashboard {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  background: rgba(79, 155, 255, 0.08);
+  border: 1px solid rgba(79, 155, 255, 0.2);
+  display: grid;
+  gap: 1rem;
+}
+
+.water-iq-dashboard__header h3 {
+  margin: 0 0 0.25rem;
+}
+
+.water-iq-dashboard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.water-iq-badge-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.water-iq-badge-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(15, 35, 95, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 24px rgba(45, 107, 255, 0.12);
+}
+
+.water-iq-badge-card strong {
+  display: block;
+}
+
+.water-iq-badge-card .wsMuted {
+  display: block;
+  font-size: 0.8rem;
+}
+
+.water-iq-badge-card.is-earned {
+  border-color: rgba(79, 155, 255, 0.45);
+  box-shadow: 0 16px 28px rgba(79, 155, 255, 0.22);
+}
+
+.water-iq-badge-emoji {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(79, 155, 255, 0.12);
+  font-size: 1.2rem;
+}
+
+@media (min-width: 720px) {
+  .water-iq-badge-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 720px) {
   .water-iq-results-actions {
     justify-content: center;
@@ -3113,6 +3221,74 @@ blockquote {
   .water-iq-next {
     align-self: flex-end;
     width: auto;
+  }
+}
+
+.nav-link:hover,
+.nav-link:focus-visible,
+.mode-bar__actions a:hover,
+.mode-bar__actions a:focus-visible,
+.wsBtnPrimary:hover,
+.wsBtnPrimary:focus-visible,
+.wsBtnGhost:hover,
+.wsBtnGhost:focus-visible,
+.water-iq-choice:hover,
+.water-iq-choice:focus-visible,
+.wsResultMove:hover,
+.wsResultMove:focus-visible {
+  animation: ws-wiggle 0.35s ease-in-out;
+}
+
+.wsBtnPrimary:hover,
+.wsBtnPrimary:focus-visible {
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.25);
+}
+
+.wsBtnGhost:hover,
+.wsBtnGhost:focus-visible,
+.mode-bar__actions a:hover,
+.mode-bar__actions a:focus-visible {
+  border-color: rgba(79, 155, 255, 0.45);
+  background: rgba(79, 155, 255, 0.08);
+}
+
+.wsResultMove:hover,
+.wsResultMove:focus-visible,
+.water-iq-badge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(79, 155, 255, 0.16);
+}
+
+@keyframes ws-wiggle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(-0.35deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link:hover,
+  .nav-link:focus-visible,
+  .mode-bar__actions a:hover,
+  .mode-bar__actions a:focus-visible,
+  .wsBtnPrimary:hover,
+  .wsBtnPrimary:focus-visible,
+  .wsBtnGhost:hover,
+  .wsBtnGhost:focus-visible,
+  .water-iq-choice:hover,
+  .water-iq-choice:focus-visible,
+  .wsResultMove:hover,
+  .wsResultMove:focus-visible {
+    animation: none;
+  }
+
+  .wsResultMove:hover,
+  .wsResultMove:focus-visible,
+  .water-iq-badge-card:hover {
+    transform: none;
   }
 }
 

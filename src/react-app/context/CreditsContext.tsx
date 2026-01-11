@@ -46,7 +46,7 @@ export const CreditsProvider = ({ children }: PropsWithChildren) => {
       setTimeout(() => setPulse(false), 650);
       return nextCredits;
     },
-    [credits],
+    [credits, setPulse],
   );
 
   const refund = useCallback(
@@ -56,9 +56,11 @@ export const CreditsProvider = ({ children }: PropsWithChildren) => {
       }
       const nextCredits = credits + amount;
       setCredits(nextCredits);
+      setPulse(true);
+      setTimeout(() => setPulse(false), 650);
       return nextCredits;
     },
-    [credits],
+    [credits, setPulse],
   );
 
   const value = useMemo(
