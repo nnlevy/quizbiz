@@ -209,7 +209,7 @@ const WaterIQQuiz = ({ onComplete, rewardMessage }: WaterIQQuizProps) => {
         </div>
         <button
           type="button"
-          className="wsBtnPrimary wsBtnPrimary--pill water-iq-next"
+          className="ws-button water-iq-next"
           aria-label="Go to the next question"
           onClick={handleNext}
           disabled={selectedIndex == null}

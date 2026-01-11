@@ -37,7 +37,7 @@ const Home = () => {
 
   const handleManualClick = () => {
     setActiveAction("manual");
-    window.setTimeout(() => navigate("/legacy#manual-entry"), transitionDelayMs);
+    window.setTimeout(() => navigate("/manual-entry"), transitionDelayMs);
   };
 
   return (

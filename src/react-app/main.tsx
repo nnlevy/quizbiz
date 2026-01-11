@@ -23,6 +23,7 @@ import { RouterProvider, useLocation } from "./routes/router";
 
 const Home = lazy(() => import("./routes/Home"));
 const Analyze = lazy(() => import("./routes/Analyze"));
+const ManualEntry = lazy(() => import("./routes/ManualEntry"));
 const Research = lazy(() => import("./routes/Research"));
 const About = lazy(() => import("./routes/About"));
 const EjectWater = lazy(() => import("./routes/EjectWater"));
@@ -126,6 +127,13 @@ const RouterView = () => {
       return (
         <AppShell>
           <Analyze />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/manual-entry")) {
+      return (
+        <AppShell>
+          <ManualEntry />
         </AppShell>
       );
     }
