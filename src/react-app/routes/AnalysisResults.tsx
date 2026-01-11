@@ -3,20 +3,16 @@ import { useEffect, useMemo, useState } from "react";
 import CostBreakdownChart from "../components/CostBreakdownChart";
 import UsageLineChart from "../components/UsageLineChart";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-import { RouterLink, useLocation, useNavigate } from "./router";
-import {
-  addSavingsPlanItem,
-  getAnalysisHistory,
-  getStoredUser,
-  saveAnalysisRecord,
-} from "../utils/dashboard";
+import { RouterLink, useLocation } from "./router";
+import { addSavingsPlanItem, getAnalysisHistory, saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
 import { isAnalysisResult } from "../utils/analysisTransform";
+import { useCreditsModal } from "../context/CreditsModalContext";
+import { useSession } from "../context/SessionContext";
 
 const AnalysisResults = () => {
   useDocumentTitle("WaterShortcut | Analysis results");
   const location = useLocation();
-  const navigate = useNavigate();
   const [notice, setNotice] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
 
@@ -57,7 +53,8 @@ const AnalysisResults = () => {
       .filter((point) => point.usage > point.average * 1.25)
       .map((point) => point.index);
   }, [record]);
-  const user = getStoredUser();
+  const { user } = useSession();
+  const { openModal } = useCreditsModal();
 
   const handleSavePlan = () => {
     if (!record) return;
@@ -107,14 +104,13 @@ const AnalysisResults = () => {
             Create a free account to sync bill history, alerts, and savings goals across devices.
           </p>
           <div className="ws-tool-grid">
-            <button className="ws-button" type="button" onClick={() => navigate("/sign-up")}
-            >
+            <button className="ws-button" type="button" onClick={() => openModal()}>
               Create an account
             </button>
             <button
               className="ws-button-secondary"
               type="button"
-              onClick={() => navigate("/sign-in")}
+              onClick={() => openModal()}
             >
               Sign in
             </button>

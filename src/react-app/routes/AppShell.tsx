@@ -4,6 +4,7 @@ import AdSenseSlot from "../components/AdSenseSlot";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { useCredits } from "../context/CreditsContext";
+import { useCreditsModal } from "../context/CreditsModalContext";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
@@ -19,6 +20,7 @@ const AppShell = ({ children }: AppShellProps) => {
   const [adsRemoved, setAdsRemoved] = useState(false);
   const location = useLocation();
   const { credits, pulse } = useCredits();
+  const { openModal } = useCreditsModal();
   const { scrollUnlocked } = useScrollUnlock();
 
   useEffect(() => {
@@ -64,15 +66,17 @@ const AppShell = ({ children }: AppShellProps) => {
             <span className="ws-logo__text">WaterShortcut</span>
           </RouterLink>
           {showDeferred && (
-            <RouterLink
+            <button
               className={`ws-header__credits ${pulse ? "is-animating" : ""}`}
+              type="button"
               role="status"
               aria-live="polite"
               aria-label={`Credits available: ${credits}. View credits options.`}
-              to="/credits"
+              aria-haspopup="dialog"
+              onClick={() => openModal()}
             >
               Credits {credits}
-            </RouterLink>
+            </button>
           )}
         </div>
         <button

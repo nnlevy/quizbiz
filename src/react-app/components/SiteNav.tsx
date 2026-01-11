@@ -399,6 +399,7 @@ const SiteNav = ({
               type="button"
               className={`credit-meter__button ${pulse ? "is-animating" : ""}`}
               aria-label={`Credits available: ${credits}. Add more credits.`}
+              aria-haspopup="dialog"
               onClick={() => {
                 if (onCreditsClick) {
                   onCreditsClick();

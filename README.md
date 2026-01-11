@@ -58,7 +58,24 @@ Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrang
 - `OPENAI_ORG_ID` (optional)
 - `Google_Document_AI_Processor_Prediction_Endpoint`
 - `Google-Service-Account-FINAL` (service account JSON used by `getOAuthToken`)
+- `OAUTH_API_KEY` (Google OAuth API key for server-side Google auth)
+- `OAUTH_Client_ID` (Google OAuth Client ID used to verify ID tokens)
+- `OUATH_Client_Secret` (Google OAuth client secret used for token exchange)
+- `OAUTH_DOMAIN` (optional cookie domain to share sessions across domains)
 - optional `domains-db` D1 binding if needed later
+
+### Auth + credits persistence
+The Worker expects these bindings in `wrangler.json` (or equivalent Wrangler config):
+- `UsersAcrossAllDomains` — D1 database for `users`, `auth_sessions`, and `oauth_states`.
+- `UserSessionsAcrossDomains` — KV namespace for OAuth state + session data.
+
+Run migrations to provision auth tables and credits columns:
+```bash
+wrangler d1 migrations apply UsersAcrossAllDomains
+```
+Migrations live in `migrations/` and include:
+- `0002_create_auth_tables.sql` (users, auth_sessions, oauth_states)
+- `0003_update_users_for_auth.sql` (credits + password hash fields)
 
 ## Deployment smoke check
 Use the automated smoke check to verify the Worker can fetch a Google OAuth token, call the Document AI endpoint, and reach OpenAI. See `docs/deployment-checklist.md` for the full checklist.

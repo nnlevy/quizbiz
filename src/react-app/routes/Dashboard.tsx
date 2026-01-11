@@ -2,21 +2,23 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { RouterLink } from "./router";
+import { useCredits } from "../context/CreditsContext";
+import { useCreditsModal } from "../context/CreditsModalContext";
+import { useSession } from "../context/SessionContext";
+import { useCreditsCheckout } from "../hooks/useCreditsCheckout";
+import { CREDIT_TOPUP_AMOUNT, CREDIT_TOPUP_PRICE } from "../utils/credits";
 import {
   addSavingsPlanItem,
-  clearUser,
   getAnalysisHistory,
   getBadges,
   getGoals,
   getSavingsPlan,
-  getStoredUser,
   saveGoals,
   type Goal,
 } from "../utils/dashboard";
 
 const Dashboard = () => {
   useDocumentTitle("WaterShortcut | Dashboard");
-  const [user, setUser] = useState(getStoredUser());
   const [goals, setGoals] = useState<Goal[]>(getGoals());
   const [goalTitle, setGoalTitle] = useState("");
   const [goalTarget, setGoalTarget] = useState("10% over 6 months");
@@ -32,14 +34,25 @@ const Dashboard = () => {
     utilityPrograms: Array<{ name: string; detail: string }>;
   } | null>(null);
 
+  const { credits } = useCredits();
+  const { openModal } = useCreditsModal();
+  const { user, refreshSession } = useSession();
+  const [notice, setNotice] = useState<string | null>(null);
+  const { startCheckout } = useCreditsCheckout({ onNotice: setNotice });
+
   const history = useMemo(() => getAnalysisHistory(), []);
   const [plan, setPlan] = useState(getSavingsPlan());
   const badges = useMemo(() => getBadges(), []);
   const latestAlerts = history[0]?.alerts ?? [];
 
-  const handleSignOut = () => {
-    clearUser();
-    setUser(null);
+  const handleSignOut = async () => {
+    try {
+      await fetch("/auth/signout", { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      refreshSession().catch(() => undefined);
+    }
   };
 
   const handleAddGoal = (event: FormEvent<HTMLFormElement>) => {
@@ -120,28 +133,50 @@ const Dashboard = () => {
 
       {!user && (
         <div className="ws-info-card">
-          <h2>Sign in to sync your dashboard</h2>
+          <h2>See everything you&apos;ll unlock with an account</h2>
           <p className="ws-subtitle">
-            Create an account to keep your goals and bill history saved across devices.
+            Your dashboard becomes a living history of bill insights, goals, and alerts once you
+            sign in.
           </p>
-          <div className="ws-tool-grid">
-            <RouterLink className="ws-button" to="/sign-up">
-              Create account
-            </RouterLink>
-            <RouterLink className="ws-button-secondary" to="/sign-in">
-              Sign in
-            </RouterLink>
-          </div>
+          <ul className="ws-alert-list">
+            <li>Analysis history timeline with every bill you scan.</li>
+            <li>Personalized conservation tips tailored to your utility.</li>
+            <li>Credits tracked across devices, plus ad-free browsing.</li>
+          </ul>
+          <button className="ws-button" type="button" onClick={() => openModal()}>
+            Create Account / Sign in
+          </button>
         </div>
       )}
 
       {user && (
         <div className="ws-info-card">
           <h2>Account snapshot</h2>
-          <p className="ws-subtitle">Signed in as {user.email} via {user.provider}.</p>
-          <button className="ws-button-secondary" type="button" onClick={handleSignOut}>
-            Sign out
-          </button>
+          <p className="ws-subtitle">
+            Signed in as {user.name} ({user.email}) via {user.provider}. Credits remaining:{" "}
+            {credits}.
+          </p>
+          <div className="ws-tool-grid">
+            <button className="ws-button-secondary" type="button" onClick={handleSignOut}>
+              Sign out
+            </button>
+            <button className="ws-button" type="button" onClick={() => openModal()}>
+              Manage credits
+            </button>
+          </div>
+          {credits === 0 && (
+            <div className="ws-info-card" aria-label="Top up credits">
+              <h3>Out of credits?</h3>
+              <p className="ws-subtitle">
+                Top up {CREDIT_TOPUP_AMOUNT} credits for ${CREDIT_TOPUP_PRICE} to keep analyzing
+                bills.
+              </p>
+              <button className="ws-button" type="button" onClick={startCheckout}>
+                Purchase credits
+              </button>
+              {notice ? <p className="ws-subtitle">{notice}</p> : null}
+            </div>
+          )}
         </div>
       )}
 

@@ -1,32 +1,25 @@
-import { FormEvent, useState } from "react";
+import { useEffect } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-import { RouterLink, useNavigate } from "./router";
-import GoogleOAuthButton from "../components/GoogleOAuthButton";
-import { storeUser, type UserProfile } from "../utils/dashboard";
+import { RouterLink } from "./router";
+import { useCreditsModal } from "../context/CreditsModalContext";
 
 const SignIn = () => {
   useDocumentTitle("WaterShortcut | Sign in");
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { openModal } = useCreditsModal();
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const profile: UserProfile = {
-      id: `${Date.now()}`,
-      name: email.split("@")[0] || "Water saver",
-      email: email.trim(),
-      provider: "email",
-    };
-    storeUser(profile);
-    navigate("/dashboard");
+  const handleGoogle = () => {
+    const returnTo =
+      typeof window === "undefined"
+        ? "/dashboard"
+        : `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const params = new URLSearchParams({ return_to: returnTo });
+    window.location.assign(`/auth/google?${params.toString()}`);
   };
 
-  const handleGoogle = (profile: UserProfile) => {
-    storeUser(profile);
-    navigate("/dashboard");
-  };
+  useEffect(() => {
+    openModal();
+  }, [openModal]);
 
   return (
     <section className="ws-page" aria-labelledby="sign-in-title">
@@ -36,34 +29,20 @@ const SignIn = () => {
         <p>Access your dashboard, alerts, and saved analysis history.</p>
       </div>
 
-      <form className="ws-form ws-info-card" onSubmit={handleSubmit}>
-        <label className="ws-field">
-          Email
-          <input
-            className="ws-input"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@email.com"
-            required
-          />
-        </label>
-        <label className="ws-field">
-          Password
-          <input
-            className="ws-input"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Your password"
-            required
-          />
-        </label>
-        <button className="ws-button" type="submit">
-          Sign in
-        </button>
-        <GoogleOAuthButton label="Continue with Google" onSuccess={handleGoogle} />
-      </form>
+      <div className="ws-info-card">
+        <h2>Use the account modal</h2>
+        <p className="ws-subtitle">
+          Sign in with Google or create an email account from the same modal experience.
+        </p>
+        <div className="ws-tool-grid">
+          <button className="ws-button" type="button" onClick={handleGoogle}>
+            Continue with Google
+          </button>
+          <button className="ws-button-secondary" type="button" onClick={() => openModal()}>
+            Use email sign-in
+          </button>
+        </div>
+      </div>
 
       <p className="ws-subtitle">
         New here? <RouterLink to="/sign-up">Create an account</RouterLink>

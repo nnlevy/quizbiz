@@ -15,6 +15,19 @@
     "ADSENSE_CLIENT": "ca-pub-1860356577073395",
     "GA_MEASUREMENT_ID": "G-98170RDCDD"
   },
+  "d1_databases": [
+    {
+      "binding": "UsersAcrossAllDomains",
+      "database_name": "users-across-all-domains",
+      "database_id": "REPLACE_WITH_DATABASE_ID"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "UserSessionsAcrossDomains",
+      "id": "REPLACE_WITH_NAMESPACE_ID"
+    }
+  ],
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"
