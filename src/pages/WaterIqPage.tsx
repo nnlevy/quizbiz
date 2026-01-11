@@ -10,6 +10,7 @@ import { useCreditsCheckout } from "../react-app/hooks/useCreditsCheckout";
 
 const COMPLETION_KEY = "ws_water_iq_completed";
 const VISIT_KEY = "ws_water_iq_visited";
+const SCORE_REWARD_KEY = "ws_water_iq_score_reward_claimed";
 
 const WaterIqInvalid = () => (
   <section className="section water-iq">
@@ -301,12 +302,33 @@ const WaterIqPage = () => {
     (payload: { score: number; total: number }) => {
       const perfectScore = payload.total > 0 && payload.score === payload.total;
       const highScore = payload.total > 0 && payload.score >= 8;
-      if (perfectScore) {
+      let rewardAlreadyClaimed = false;
+      if (perfectScore || highScore) {
+        try {
+          rewardAlreadyClaimed = window.localStorage.getItem(SCORE_REWARD_KEY) === "true";
+        } catch {
+          rewardAlreadyClaimed = hasCompletedQuiz;
+        }
+      }
+
+      if ((perfectScore || highScore) && rewardAlreadyClaimed) {
+        setRewardMessage("Great score! Your WaterShortcut credit reward is already claimed.");
+      } else if (perfectScore) {
         refund(2);
         setRewardMessage("Perfect score! You just earned +2 WaterShortcut credits.");
+        try {
+          window.localStorage.setItem(SCORE_REWARD_KEY, "true");
+        } catch {
+          // Ignore storage failures (privacy mode, etc.).
+        }
       } else if (highScore) {
         refund(1);
         setRewardMessage("Nice work! You earned +1 WaterShortcut credit for a top score.");
+        try {
+          window.localStorage.setItem(SCORE_REWARD_KEY, "true");
+        } catch {
+          // Ignore storage failures (privacy mode, etc.).
+        }
       } else {
         setRewardMessage(null);
       }
@@ -318,7 +340,7 @@ const WaterIqPage = () => {
         // Ignore storage failures (privacy mode, etc.).
       }
     },
-    [refund],
+    [hasCompletedQuiz, refund],
   );
 
   useEffect(() => {
