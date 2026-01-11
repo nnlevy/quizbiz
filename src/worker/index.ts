@@ -2806,7 +2806,11 @@ const parseManualNumber = (value: unknown): number | null => {
     return value;
   }
   if (typeof value === "string") {
-    const parsed = Number(value.trim());
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      return null;
+    }
+    const parsed = Number(trimmed);
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
