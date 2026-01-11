@@ -1,6 +1,7 @@
 import { StrictMode, Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import "./googleOAuthConfig";
 import App from "./App.tsx";
 import LeakPatrol from "./LeakPatrol";
 import HiddenLeaksPage from "../pages/HiddenLeaksPage";
