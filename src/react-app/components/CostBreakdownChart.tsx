@@ -38,7 +38,7 @@ const CostBreakdownChart = ({ tiers }: CostBreakdownChartProps) => {
         scales: {
           y: {
             ticks: {
-              callback: (value) => `$${value}`,
+              callback: (value: number | string) => `$${value}`,
             },
           },
         },

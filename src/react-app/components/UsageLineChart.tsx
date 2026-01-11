@@ -64,7 +64,7 @@ const UsageLineChart = ({ data, title, highlightIndexes = [] }: UsageLineChartPr
         scales: {
           y: {
             ticks: {
-              callback: (value) => `${value} gal`,
+              callback: (value: number | string) => `${value} gal`,
             },
           },
         },
