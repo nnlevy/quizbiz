@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { scryptSync } from "node:crypto";
 import { stylesCss, appJs } from "./assets";
 import { BUILD_DATE as COPY_BUILD_DATE, copy } from "../copy";
 import { buildFallbackLocationPayload, lookupLiveLocationPayload } from "./locationFallback";
@@ -843,10 +842,10 @@ const ensureSession = async (c: Context) => {
   }
   if (sessionId && !session) {
     const db = c.env.UsersAcrossAllDomains;
-    const authRow = await db
+    const authRow = (await db
       .prepare("SELECT user_id, expires_at FROM auth_sessions WHERE session_id = ?1")
       .bind(sessionId)
-      .first<{ user_id: string; expires_at: string }>();
+      .first()) as { user_id: string; expires_at: string } | null;
     if (authRow && authRow.expires_at > now) {
       session = { userId: authRow.user_id, credits: DEFAULT_CREDITS, createdAt: now };
     }
@@ -875,10 +874,26 @@ const base64Encode = (bytes: Uint8Array): string => {
   return btoa(binary);
 };
 
-const hashPassword = (password: string) => {
+const hashPassword = async (password: string) => {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hash = scryptSync(password, salt, 64, { N: 2 ** 15, r: 8, p: 1 });
-  return `scrypt$32768$8$1$${base64Encode(salt)}$${base64Encode(new Uint8Array(hash))}`;
+  const keyMaterial = await subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const derivedBits = await subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt,
+      iterations: 120_000,
+    },
+    keyMaterial,
+    256,
+  );
+  return `pbkdf2$120000$${base64Encode(salt)}$${base64Encode(new Uint8Array(derivedBits))}`;
 };
 
 const app = new Hono<{ Bindings: WorkerEnv; Variables: { cspNonce: string } }>();
@@ -1145,7 +1160,7 @@ app.post("/auth/email-signup", async (c) => {
   const now = new Date().toISOString();
   const userId = crypto.randomUUID();
   const credits = session?.credits ?? DEFAULT_CREDITS;
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
 
   await db
     .prepare(
