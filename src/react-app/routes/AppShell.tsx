@@ -6,6 +6,7 @@ import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { useCredits } from "../context/CreditsContext";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { RouterLink, useLocation } from "./router";
+import { ADS_FREE_FLAG } from "../utils/credits";
 
 import "./AppShell.css";
 
@@ -15,6 +16,7 @@ type AppShellProps = {
 
 const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [adsRemoved, setAdsRemoved] = useState(false);
   const location = useLocation();
   const { credits, pulse } = useCredits();
   const { scrollUnlocked } = useScrollUnlock();
@@ -23,7 +25,27 @@ const AppShell = ({ children }: AppShellProps) => {
     setMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const readAdsSetting = () => {
+      try {
+        setAdsRemoved(window.localStorage.getItem(ADS_FREE_FLAG) === "true");
+      } catch {
+        setAdsRemoved(false);
+      }
+    };
+    readAdsSetting();
+    const handleAdsUpdate = () => readAdsSetting();
+    window.addEventListener("ws-ads-updated", handleAdsUpdate);
+    window.addEventListener("storage", handleAdsUpdate);
+    return () => {
+      window.removeEventListener("ws-ads-updated", handleAdsUpdate);
+      window.removeEventListener("storage", handleAdsUpdate);
+    };
+  }, []);
+
   const showDeferred = scrollUnlocked;
+  const showAds = showDeferred && !adsRemoved;
 
   return (
     <div className="ws-shell">
@@ -33,13 +55,15 @@ const AppShell = ({ children }: AppShellProps) => {
             WaterShortcut
           </RouterLink>
           {showDeferred && (
-            <div
+            <RouterLink
               className={`ws-header__credits ${pulse ? "is-animating" : ""}`}
               role="status"
               aria-live="polite"
+              aria-label={`Credits available: ${credits}. View credits options.`}
+              to="/credits"
             >
               Credits {credits}
-            </div>
+            </RouterLink>
           )}
         </div>
         <button
@@ -102,13 +126,13 @@ const AppShell = ({ children }: AppShellProps) => {
         {children}
       </main>
 
-      {showDeferred && (
+      {showAds && (
         <section className="ws-ads" aria-label="Sponsored">
           <AdSenseSlot slotId={DEFAULT_ADSENSE_SLOTS.footer} format="auto" />
         </section>
       )}
 
-      <SiteFooter hideAds />
+      <SiteFooter hideAds={adsRemoved} />
     </div>
   );
 };

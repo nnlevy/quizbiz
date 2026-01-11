@@ -724,6 +724,10 @@ function App({ focusUpload = false }: AppProps) {
     await startCheckout();
   }, [startCheckout]);
 
+  const handleCreditsLink = useCallback(() => {
+    window.location.assign("/credits");
+  }, []);
+
   const spendCredit = (successPrefix?: string) => {
     const nextCredits = deduct(1);
     if (nextCredits === null) {
@@ -1834,7 +1838,7 @@ function App({ focusUpload = false }: AppProps) {
 
   return (
     <div className="app">
-      <SiteNav credits={credits} pulse={pulse} onCreditsClick={handleCreditsClick} />
+      <SiteNav credits={credits} pulse={pulse} onCreditsClick={handleCreditsLink} />
       <canvas id="canvas" ref={canvasRef} aria-hidden />
 
       {showCreditCelebration && (

@@ -43,7 +43,7 @@ const Home = () => {
   return (
     <section className="ws-page" aria-labelledby="home-title">
       <div className="ws-hero">
-        <p className="eyebrow">Mobile-first WaterShortcut</p>
+        <p className="eyebrow">Save Money &amp; Conserve Water</p>
         <h1 id="home-title">Understand your water bill in minutes.</h1>
         <p>
           Upload a PDF, try a demo bill, or enter numbers by hand. We translate the bill into clear
