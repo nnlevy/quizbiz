@@ -3310,3 +3310,97 @@ blockquote {
     background: #ffffff;
   }
 }
+
+.viral-iq-wrap {
+  margin: 24px auto 0;
+  max-width: 980px;
+}
+
+.viral-iq-card {
+  background: #f8fafc;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.viral-iq-card__header h3 {
+  margin: 6px 0 0;
+}
+
+.viral-iq-context {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgba(15, 23, 42, 0.7);
+}
+
+.viral-iq-card__body {
+  display: grid;
+  gap: 12px;
+}
+
+.viral-iq-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.viral-iq-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(15, 23, 42, 0.65);
+}
+
+.viral-iq-score {
+  font-size: 36px;
+  font-weight: 800;
+}
+
+.viral-iq-badge {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.viral-iq-insight {
+  font-size: 16px;
+  color: rgba(15, 23, 42, 0.8);
+  min-height: 44px;
+}
+
+.viral-iq-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.viral-iq-footnote {
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.6);
+  margin: 0;
+}
+
+.bill-share-prompt {
+  margin-top: 20px;
+}
+
+@media (max-width: 720px) {
+  .viral-iq-card {
+    padding: 18px;
+  }
+  .viral-iq-score {
+    font-size: 30px;
+  }
+  .viral-iq-card__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .viral-iq-card__actions .secondary-button,
+  .viral-iq-card__actions .ghost-button {
+    width: 100%;
+    text-align: center;
+  }
+}

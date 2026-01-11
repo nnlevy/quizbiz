@@ -17,6 +17,18 @@ import {
 } from "../lib/waterIq";
 import type { WaterIqAnswers, WaterIqVariant } from "../lib/waterIq";
 import {
+  assignWaterIqBadge,
+  buildBadgeSvg,
+  buildInsightCacheKey,
+  buildViralPayload,
+  computeWaterIqScore,
+  decodeViralPayload,
+  encodeViralPayload,
+  getBadgeCopy,
+  normalizeViralInputs,
+} from "../lib/viralWaterIq";
+import type { ViralWaterIqInputs } from "../lib/viralWaterIq";
+import {
   getCityAverage,
   getFollowupsDue,
   getSocialProofFor,
@@ -36,6 +48,12 @@ const COST_PER_GALLON_MAX = 0.009;
 const REBATE_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
 
 const rebateCache = new Map<string, { expiresAt: number; payload: RebateResponse }>();
+const viralInsightCache = new Map<string, string>();
+const viralEventCounts = {
+  scoreGenerated: 0,
+  shareViewed: 0,
+  ctaClicked: 0,
+};
 
 const subtle = (() => {
   if (typeof crypto.subtle !== "undefined") {
@@ -198,6 +216,10 @@ const CONSENT_REQUIRED_COUNTRIES = new Set([
   "NO",
   "GB",
 ]);
+
+function storeViralEvent(type: keyof typeof viralEventCounts) {
+  viralEventCounts[type] += 1;
+}
 
 const CONSENT_STORAGE_KEY = "ws-consent-v1";
 
@@ -761,6 +783,56 @@ app.get("/water-iq/r/:token", (c) => {
       consentRequired,
       showPrivacyControls,
       cspNonce,
+    }),
+  );
+});
+
+app.get("/share/og/:token", (c) => {
+  const token = c.req.param("token");
+  const decoded = decodeViralPayload(token);
+  if (!decoded) {
+    return c.text("Invalid share payload", 404);
+  }
+  const badge = getBadgeCopy(decoded.bd);
+  const svg = buildViralOgSvg({
+    score: decoded.sc,
+    badgeLabel: badge.label,
+    insight: decoded.in,
+  });
+  return c.body(svg, 200, {
+    "Content-Type": "image/svg+xml; charset=utf-8",
+    "Cache-Control": "public, max-age=3600",
+  });
+});
+
+app.get("/share/:token/cta", (c) => {
+  const token = c.req.param("token");
+  const decoded = decodeViralPayload(token);
+  if (decoded) {
+    storeViralEvent("ctaClicked");
+  }
+  return c.redirect("/analyze-water-bill", 302);
+});
+
+app.get("/share/:token", (c) => {
+  const token = c.req.param("token");
+  const decoded = decodeViralPayload(token);
+  if (!decoded) {
+    return c.html(
+      `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><title>Invalid share link</title></head><body><main style="font-family:system-ui;padding:32px;"><h1>Invalid share link</h1><p>This link looks broken.</p><a href="/analyze-water-bill">Try WaterShortcut</a></main></body></html>`,
+      404,
+    );
+  }
+
+  const badge = getBadgeCopy(decoded.bd);
+  const badgeSvg = buildBadgeSvg(decoded.bd, { score: decoded.sc, includeXmlHeader: false });
+  storeViralEvent("shareViewed");
+  return c.html(
+    renderViralSharePage(token, {
+      score: decoded.sc,
+      badgeLabel: badge.label,
+      insight: decoded.in,
+      badgeSvg,
     }),
   );
 });
@@ -1545,6 +1617,7 @@ function renderWaterIqResult(input: {
 
   const badgeLabel = badge.replace(/_/g, " ");
   const challengeLink = `/water-iq?ref=${encodeURIComponent(token)}`;
+  const sharePageLink = `/water-iq/r/${encodeURIComponent(token)}`;
   return `
     <section class="section water-iq">
       <div class="water-iq-card water-iq-card--result" data-water-iq-result data-token="${escapeHtml(token)}" data-persona="${escapeHtml(
@@ -1632,6 +1705,7 @@ function renderWaterIqResult(input: {
             <a class="wsBtnPrimary wsBtnPrimary--pill" data-water-iq-share-x target="_blank" rel="noreferrer">Share on X</a>
             <a class="wsBtnGhost" data-water-iq-share-linkedin target="_blank" rel="noreferrer">Share on LinkedIn</a>
             <button class="wsBtnGhost" type="button" data-water-iq-share-copy>Copy share link</button>
+            <a class="wsBtnGhost" href="${sharePageLink}">Compare with friends</a>
           </div>
           <div class="wsMuted" data-water-iq-share-status></div>
         </div>
@@ -1706,6 +1780,82 @@ function renderWaterIqResult(input: {
       </div>
     </section>
   `;
+}
+
+function buildViralOgSvg(payload: {
+  score: number;
+  badgeLabel: string;
+  insight: string;
+}): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+  <rect width="1200" height="630" fill="#f8fbff" />
+  <rect x="40" y="40" width="1120" height="550" rx="32" fill="#ffffff" stroke="#0f172a" stroke-width="8" />
+  <text x="100" y="150" font-size="56" font-family="system-ui, -apple-system, sans-serif" font-weight="800" fill="#0f172a">Water IQ ${payload.score}/100</text>
+  <text x="100" y="230" font-size="32" font-family="system-ui, -apple-system, sans-serif" font-weight="600" fill="#0f172a">${escapeHtml(
+    payload.badgeLabel,
+  )}</text>
+  <text x="100" y="320" font-size="30" font-family="system-ui, -apple-system, sans-serif" fill="#0f172a">${escapeHtml(
+    payload.insight,
+  )}</text>
+  <text x="100" y="540" font-size="26" font-family="system-ui, -apple-system, sans-serif" fill="#0f172a" opacity="0.7">Try this for your home · watershortcut.com</text>
+</svg>`;
+}
+
+function renderViralSharePage(token: string, payload: {
+  score: number;
+  badgeLabel: string;
+  insight: string;
+  badgeSvg: string;
+}) {
+  const canonicalUrl = `${DOMAIN}/share/${token}`;
+  const ogImageUrl = `${DOMAIN}/share/og/${token}`;
+  const title = `Water IQ ${payload.score}/100 · ${payload.badgeLabel}`;
+  const description = payload.insight;
+  return `<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${escapeHtml(title)}</title>
+      <meta name="description" content="${escapeHtml(description)}" />
+      <link rel="canonical" href="${canonicalUrl}" />
+      <meta property="og:title" content="${escapeHtml(title)}" />
+      <meta property="og:description" content="${escapeHtml(description)}" />
+      <meta property="og:url" content="${canonicalUrl}" />
+      <meta property="og:type" content="website" />
+      <meta property="og:image" content="${ogImageUrl}" />
+      <meta property="og:image:alt" content="${escapeHtml(payload.badgeLabel)} badge" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="${escapeHtml(title)}" />
+      <meta name="twitter:description" content="${escapeHtml(description)}" />
+      <meta name="twitter:image" content="${ogImageUrl}" />
+      <meta name="twitter:image:alt" content="${escapeHtml(payload.badgeLabel)} badge" />
+      <style>
+        :root { color-scheme: light; font-family: system-ui, -apple-system, sans-serif; }
+        body { margin: 0; padding: 32px 18px; background: #f1f5f9; color: #0f172a; }
+        .share-shell { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 24px; padding: 28px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12); }
+        .badge { display: flex; justify-content: center; }
+        .badge svg { width: 100%; height: auto; max-width: 420px; }
+        h1 { font-size: 32px; margin: 20px 0 8px; }
+        .score { font-weight: 800; font-size: 48px; margin: 4px 0; }
+        .insight { font-size: 18px; line-height: 1.5; margin: 18px 0 26px; color: #334155; }
+        .cta { display: inline-flex; align-items: center; justify-content: center; padding: 14px 20px; border-radius: 999px; background: #0f172a; color: #fff; text-decoration: none; font-weight: 700; }
+        .cta:hover { opacity: 0.92; }
+        .footer { margin-top: 20px; font-size: 13px; color: #64748b; }
+      </style>
+    </head>
+    <body>
+      <main class="share-shell">
+        <div class="badge">${payload.badgeSvg}</div>
+        <h1>${escapeHtml(payload.badgeLabel)}</h1>
+        <div class="score">${payload.score}/100</div>
+        <p class="insight">${escapeHtml(payload.insight)}</p>
+        <a class="cta" href="/share/${token}/cta">See how this compares to your home</a>
+        <p class="footer">Water IQ results are estimates based on shared inputs.</p>
+      </main>
+    </body>
+  </html>`;
 }
 
 function renderCalculatorsHub(): string {
@@ -2350,6 +2500,47 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
 
 app.get("/api/location", handleLocationQuery);
 app.post("/api/location", handleLocationQuery);
+
+app.post("/api/viral/insight", async (c) => {
+  const body = (await c.req.json()) as Partial<ViralWaterIqInputs>;
+  const inputs: ViralWaterIqInputs = {
+    showerMinutes: Number(body.showerMinutes ?? 10),
+    sinkMinutes: Number(body.sinkMinutes ?? 10),
+    irrigationMinutes: Number(body.irrigationMinutes ?? 7),
+    hasBillUpload: Boolean(body.hasBillUpload),
+    hasLeakInteraction: Boolean(body.hasLeakInteraction),
+  };
+  const normalized = normalizeViralInputs(inputs);
+  const score = computeWaterIqScore(normalized);
+  const badge = assignWaterIqBadge(normalized, score);
+  const cacheKey = buildInsightCacheKey(normalized, score, badge.id);
+  let insight = viralInsightCache.get(cacheKey);
+
+  if (!insight) {
+    insight = await generateViralInsight(c.env as WorkerEnv, {
+      showerMinutes: normalized.showerMinutes,
+      sinkMinutes: normalized.sinkMinutes,
+      irrigationMinutes: normalized.irrigationMinutes,
+      hasBillUpload: normalized.hasBillUpload,
+      hasLeakInteraction: normalized.hasLeakInteraction,
+      score,
+      badgeLabel: badge.label,
+    });
+    viralInsightCache.set(cacheKey, insight);
+  }
+
+  const payload = buildViralPayload(normalized, score, badge.id, insight);
+  const token = encodeViralPayload(payload);
+  storeViralEvent("scoreGenerated");
+  return c.json({
+    ok: true,
+    score,
+    badge,
+    insight,
+    token,
+    shareUrl: `/share/${token}`,
+  });
+});
 
 app.post("/api/water-iq/submit", async (c) => {
   const body = await c.req.json().catch(() => null);
@@ -3302,6 +3493,99 @@ async function analyzeRebatesWithOpenAI(
   }
 
   return data;
+}
+
+function clampInsightWords(insight: string, maxWords = 20): string {
+  const words = insight.split(/\s+/).filter(Boolean);
+  const clipped = words.slice(0, maxWords).join(" ");
+  const trimmed = clipped.replace(/[.!?]*$/, "");
+  return `${trimmed}.`;
+}
+
+function buildViralInsightPrompt(input: {
+  showerMinutes: number;
+  sinkMinutes: number;
+  irrigationMinutes: number;
+  hasBillUpload: boolean;
+  hasLeakInteraction: boolean;
+  score: number;
+  badgeLabel: string;
+}) {
+  return [
+    "Write one sentence (max 20 words) describing a cautious, factual water-use insight.",
+    "Rules: no shaming, no moralizing, no instructions, no emojis.",
+    "Use cautious language like “estimated”, “often”, or “can”.",
+    "Return plain text only.",
+    `Inputs: shower=${input.showerMinutes} min/day, sink=${input.sinkMinutes} min/day, irrigation=${input.irrigationMinutes} min/week,`,
+    `bill_upload=${input.hasBillUpload ? "yes" : "no"}, leak_signal=${input.hasLeakInteraction ? "yes" : "no"}, score=${input.score}, badge=${input.badgeLabel}.`,
+  ].join(" ");
+}
+
+async function generateViralInsight(
+  env: WorkerEnv,
+  input: {
+    showerMinutes: number;
+    sinkMinutes: number;
+    irrigationMinutes: number;
+    hasBillUpload: boolean;
+    hasLeakInteraction: boolean;
+    score: number;
+    badgeLabel: string;
+  },
+): Promise<string> {
+  if (!env.OPEN_API_KEY_NEW) {
+    const fallback = input.hasLeakInteraction
+      ? "Even small leaks can add up; households with similar checks often avoid surprise spikes."
+      : input.hasBillUpload
+        ? "Bills with similar patterns often reflect seasonal shifts rather than daily habits."
+        : "Homes with comparable routines can see noticeable savings from small, steady tweaks.";
+    return clampInsightWords(fallback);
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
+    };
+    if (env.OPENAI_ORG_ID) {
+      headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0,
+        max_tokens: 80,
+        messages: [
+          {
+            role: "user",
+            content: buildViralInsightPrompt(input),
+          },
+        ],
+      }),
+    });
+
+    const data = (await response.json()) as ChatCompletionResponse;
+    if (!response.ok) {
+      console.error("OpenAI insight request failed:", JSON.stringify(data, null, 2));
+      throw new Error("Failed to generate insight");
+    }
+
+    const content = data.choices?.[0]?.message?.content?.trim() ?? "";
+    return clampInsightWords(
+      content || "Similar households often see measurable savings when small changes stick.",
+    );
+  } catch (error) {
+    console.warn("Insight generation failed, using fallback:", error);
+    const fallback = input.hasLeakInteraction
+      ? "Even small leaks can add up; households with similar checks often avoid surprise spikes."
+      : input.hasBillUpload
+        ? "Bills with similar patterns often reflect seasonal shifts rather than daily habits."
+        : "Homes with comparable routines can see noticeable savings from small, steady tweaks.";
+    return clampInsightWords(fallback);
+  }
 }
 
 function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {

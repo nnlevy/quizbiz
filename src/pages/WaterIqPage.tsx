@@ -39,6 +39,7 @@ const WaterIqResult = ({ token }: { token: string }) => {
 
   const badgeLabel = decoded.badge.replace(/_/g, " ");
   const challengeLink = `/water-iq?ref=${token}`;
+  const sharePageUrl = `/water-iq/r/${token}`;
   const shareUrl =
     typeof window !== "undefined" ? window.location.href : `/water-iq/r/${token}`;
   const scoreAngle = Math.min(Math.max(decoded.score, 0), 10) * 36;
@@ -191,6 +192,9 @@ const WaterIqResult = ({ token }: { token: string }) => {
             <button type="button" className="wsBtnGhost" onClick={handleCopyShare}>
               Copy share link
             </button>
+            <a className="wsBtnGhost" href={sharePageUrl}>
+              Compare with friends
+            </a>
           </div>
           {shareStatus && <div className="wsMuted">{shareStatus}</div>}
         </div>

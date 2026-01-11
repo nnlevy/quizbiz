@@ -20,6 +20,7 @@ import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import Stepper from "./components/Stepper";
 import TrustCapsule from "./components/TrustCapsule";
+import ViralWaterIqCard from "./components/ViralWaterIqCard";
 import {
   calculateAnnualGallons,
   calculateAnnualGallonsFromWeekly,
@@ -371,6 +372,9 @@ function App({ focusUpload = false }: AppProps) {
   const [sinkUsage, setSinkUsage] = useState(10);
   const [wateringMinutes, setWateringMinutes] = useState(7);
   const [qrExpanded, setQrExpanded] = useState(initialIsMobile);
+  const [hasLeakInteraction, setHasLeakInteraction] = useState(false);
+  const [hasBillUpload, setHasBillUpload] = useState(false);
+  const [hasLocationInteraction, setHasLocationInteraction] = useState(false);
 
   const [locationInput, setLocationInput] = useState("");
   const [locationStatus, setLocationStatus] = useState(
@@ -493,6 +497,12 @@ function App({ focusUpload = false }: AppProps) {
   }, [isMobile]);
 
   useEffect(() => {
+    if (analysisResult) {
+      setHasBillUpload(true);
+    }
+  }, [analysisResult]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -613,11 +623,15 @@ function App({ focusUpload = false }: AppProps) {
       [],
     );
 
-  const toggleTip = (id: string) =>
+  const toggleTip = (id: string) => {
+    if (id === "leaks") {
+      setHasLeakInteraction(true);
+    }
     setOpenTips((prev) => ({
       ...prev,
       [id]: !prev[id],
     }));
+  };
 
   const toggleNews = (id: string) =>
     setOpenNews((prev) => ({
@@ -1394,6 +1408,36 @@ function App({ focusUpload = false }: AppProps) {
     };
   }, [showerLength, sinkUsage, wateringMinutes]);
 
+  const hasSliderInteraction =
+    Math.abs(showerLength - 10) >= 2 ||
+    Math.abs(sinkUsage - 10) >= 2 ||
+    Math.abs(wateringMinutes - 7) >= 2;
+
+  const hasMeaningfulInteraction =
+    hasSliderInteraction ||
+    hasLocationInteraction ||
+    hasBillUpload ||
+    hasLeakInteraction;
+
+  const viralInputs = useMemo(
+    () => ({
+      showerMinutes: showerLength,
+      sinkMinutes: sinkUsage,
+      irrigationMinutes: wateringMinutes,
+      hasBillUpload,
+      hasLeakInteraction,
+    }),
+    [hasBillUpload, hasLeakInteraction, showerLength, sinkUsage, wateringMinutes],
+  );
+
+  const billShareContext = useMemo(() => {
+    if (!analysisResult) return "";
+    const topMove = analysisResult.topMoves[0]?.title;
+    return topMove
+      ? `Your top move is ${topMove}. Share it so friends can compare their next step.`
+      : "Share your results so friends can compare their next step.";
+  }, [analysisResult]);
+
   const buildCtaContextSummary = (topic: UpgradeModalTopic) => {
     const showerNote = `${applianceSavings.shower.minutes} min showers`;
     const sinkNote = `${applianceSavings.sink.minutes} min sink use`;
@@ -1637,6 +1681,7 @@ function App({ focusUpload = false }: AppProps) {
       setUtilityResults(normalizedPayloads);
       setLocationHtml(jsonResponse.html || "");
       setLocationStatus("Results ready — scroll down or jump to the cards.");
+      setHasLocationInteraction(true);
       logEvent("location_results_ready");
     } catch (error) {
       console.error("Location lookup failed:", error);
@@ -2658,6 +2703,9 @@ function App({ focusUpload = false }: AppProps) {
               </div>
             </div>
           </section>
+          <div className="viral-iq-wrap">
+            <ViralWaterIqCard inputs={viralInputs} isActive={hasMeaningfulInteraction} />
+          </div>
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -2885,6 +2933,19 @@ function App({ focusUpload = false }: AppProps) {
                 <p className="muted">{analysisResult.confidenceNote}</p>
               )}
               <ShareExportBar result={analysisResult} />
+              <div className="bill-share-prompt">
+                <ViralWaterIqCard
+                  inputs={{ ...viralInputs, hasBillUpload: true }}
+                  isActive={Boolean(analysisResult)}
+                  headline="Share your bill snapshot"
+                  subhead="Invite friends to compare how their homes stack up."
+                  contextNote={billShareContext}
+                  shareCtaLabel="Share bill result"
+                  viewLabel="Compare with friends"
+                  footnote="Private by default. Your link is anonymous and only includes the score and insight."
+                  analyticsContext="bill_results"
+                />
+              </div>
             </div>
           )}
           {!analysisResult && !analysisHtml && (
