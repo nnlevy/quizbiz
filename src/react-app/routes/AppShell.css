@@ -440,6 +440,15 @@
 .ws-ads {
   margin-top: 2rem;
   padding: 0 1.5rem 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.ws-ads .adsbygoogle {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .ws-footer-link {
@@ -464,12 +473,15 @@
   margin: 0 auto 1.2rem;
   max-width: 720px;
   min-height: 250px;
+  display: flex;
+  justify-content: center;
 }
 
 .footer-ad .ad-slot {
   display: block;
   min-height: 250px;
   width: 100%;
+  margin: 0 auto;
 }
 
 .site-footer a {
