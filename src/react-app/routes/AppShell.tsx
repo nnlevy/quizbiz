@@ -56,8 +56,8 @@ const AppShell = ({ children }: AppShellProps) => {
           <RouterLink className="ws-logo" to="/">
             <img
               className="ws-logo__image"
-              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_png,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813.png"
-              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_png,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_png,q_auto,w_160/f9eb544bed7ab31e0ebda502440cd813.png 2x"
+              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/w_80/v1735510676/watershortcut-favicon.png"
+              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/w_80/v1735510676/watershortcut-favicon.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/w_160/v1735510676/watershortcut-favicon.png 2x"
               sizes="40px"
               alt="WaterShortcut logo"
               loading="eager"
