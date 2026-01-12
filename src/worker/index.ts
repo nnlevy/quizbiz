@@ -82,6 +82,8 @@ type WorkerEnv = {
   "Google-Service-Account-FINAL": string;
   UsersAcrossAllDomains: D1Database;
   UserSessionsAcrossDomains: KVNamespace;
+  User_Sessions_Across_Domains?: KVNamespace;
+  USERSESSIONSACROSSDOMAINS_ID?: KVNamespace;
   "domains-db"?: D1Database;
   STRIPE_API_KEY?: string;
   STRIPE_PUBLISHABLE_KEY?: string;
@@ -95,6 +97,17 @@ type WorkerEnv = {
   OAUTH_Client_ID: string;
   OAUTH_DOMAIN?: string;
   OUATH_Client_Secret: string;
+};
+
+const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
+  const kv =
+    env.UserSessionsAcrossDomains ||
+    env.User_Sessions_Across_Domains ||
+    env.USERSESSIONSACROSSDOMAINS_ID;
+  if (!kv) {
+    throw new Error("Missing KV binding for user sessions.");
+  }
+  return kv;
 };
 
 type ChatCompletionResponse = {
@@ -683,7 +696,7 @@ const base64UrlToJson = <T,>(value: string): T => {
 const getCachedJwks = async (env: WorkerEnv, forceRefresh = false): Promise<GoogleJwks> => {
   const cacheKey = "oauth:google:jwks";
   if (!forceRefresh) {
-    const cached = await env.UserSessionsAcrossDomains.get(cacheKey, "json");
+    const cached = await getUserSessionsKv(env).get(cacheKey, "json");
     if (cached && typeof cached === "object" && "keys" in cached) {
       return cached as GoogleJwks;
     }
@@ -694,7 +707,7 @@ const getCachedJwks = async (env: WorkerEnv, forceRefresh = false): Promise<Goog
     throw new Error("Unable to load Google JWKS.");
   }
   const jwks = (await response.json()) as GoogleJwks;
-  await env.UserSessionsAcrossDomains.put(cacheKey, JSON.stringify(jwks), {
+  await getUserSessionsKv(env).put(cacheKey, JSON.stringify(jwks), {
     expirationTtl: JWKS_TTL_SECONDS,
   });
   return jwks;
@@ -834,7 +847,7 @@ const readSessionRecord = async (
   env: WorkerEnv,
   sessionId: string,
 ): Promise<SessionRecord | null> => {
-  const stored = await env.UserSessionsAcrossDomains.get(`session:${sessionId}`, "json");
+  const stored = await getUserSessionsKv(env).get(`session:${sessionId}`, "json");
   if (!stored || typeof stored !== "object") {
     return null;
   }
@@ -846,7 +859,7 @@ const persistSessionRecord = async (
   sessionId: string,
   record: SessionRecord,
 ) => {
-  await env.UserSessionsAcrossDomains.put(`session:${sessionId}`, JSON.stringify(record), {
+  await getUserSessionsKv(env).put(`session:${sessionId}`, JSON.stringify(record), {
     expirationTtl: SESSION_TTL_SECONDS,
   });
 };
@@ -1010,7 +1023,7 @@ app.get("/auth/google", async (c) => {
   const createdAt = new Date().toISOString();
   const origin = new URL(c.req.url).origin;
   const returnTo = sanitizeReturnTo(c.req.query("return_to"), origin);
-  await c.env.UserSessionsAcrossDomains.put(
+  await getUserSessionsKv(c.env).put(
     `oauth:state:${state}`,
     JSON.stringify({ createdAt, returnTo, sessionId }),
     { expirationTtl: OAUTH_STATE_TTL_SECONDS },
@@ -1036,11 +1049,11 @@ app.get("/auth/google/callback", async (c) => {
   }
 
   const stateKey = `oauth:state:${state}`;
-  const storedState = await c.env.UserSessionsAcrossDomains.get(stateKey, "json");
+  const storedState = await getUserSessionsKv(c.env).get(stateKey, "json");
   if (!storedState || typeof storedState !== "object") {
     return c.redirect(buildAuthErrorRedirect(c, "/", "invalid_oauth_state"), 302);
   }
-  await c.env.UserSessionsAcrossDomains.delete(stateKey);
+  await getUserSessionsKv(c.env).delete(stateKey);
   const statePayload = storedState as { returnTo?: string; sessionId?: string };
   const origin = new URL(c.req.url).origin;
   const returnTo = sanitizeReturnTo(statePayload.returnTo, origin, "/");
@@ -1149,7 +1162,7 @@ app.get("/auth/google/callback", async (c) => {
   };
   await persistSessionRecord(c.env, authSessionId, nextSession);
   if (existingSessionId && existingSessionId !== authSessionId) {
-    await c.env.UserSessionsAcrossDomains.delete(`session:${existingSessionId}`);
+    await getUserSessionsKv(c.env).delete(`session:${existingSessionId}`);
   }
 
   c.header("Set-Cookie", buildSessionCookie(authSessionId, c.env, SESSION_TTL_SECONDS));
@@ -1215,7 +1228,7 @@ app.post("/auth/email-signup", async (c) => {
   };
   await persistSessionRecord(c.env, authSessionId, nextSession);
   if (existingSessionId && existingSessionId !== authSessionId) {
-    await c.env.UserSessionsAcrossDomains.delete(`session:${existingSessionId}`);
+    await getUserSessionsKv(c.env).delete(`session:${existingSessionId}`);
   }
 
   c.header("Set-Cookie", buildSessionCookie(authSessionId, c.env, SESSION_TTL_SECONDS));
@@ -1230,7 +1243,7 @@ app.post("/auth/email-signup", async (c) => {
 app.post("/auth/signout", async (c) => {
   const sessionId = getSessionIdFromRequest(c);
   if (sessionId) {
-    await c.env.UserSessionsAcrossDomains.delete(`session:${sessionId}`);
+    await getUserSessionsKv(c.env).delete(`session:${sessionId}`);
   }
   c.header("Set-Cookie", buildLogoutCookie(c.env));
   return c.json({ ok: true });
