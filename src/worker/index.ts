@@ -227,6 +227,12 @@ type InlineScript = {
 const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = COPY_BUILD_DATE;
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
+const FAVICON_PNG_32 =
+  "https://res.cloudinary.com/dlxzgqi9g/image/upload/w_32/v1735510676/watershortcut-favicon.png";
+const FAVICON_PNG_16 =
+  "https://res.cloudinary.com/dlxzgqi9g/image/upload/w_16/v1735510676/watershortcut-favicon.png";
+const FAVICON_PNG_180 =
+  "https://res.cloudinary.com/dlxzgqi9g/image/upload/w_180/v1735510676/watershortcut-favicon.png";
 const WATER_IQ_INLINE_BOOTSTRAP = `window.addEventListener("DOMContentLoaded", () => {
   const workerScript = document.querySelector('script[data-ws-app]');
   const alreadyLoaded = workerScript && workerScript.dataset.loaded === "true";
@@ -1697,6 +1703,9 @@ function layout(options: {
       <meta http-equiv="Content-Security-Policy" content="${buildContentSecurityPolicy(cspNonce)}" />
       <title>${escapeHtml(title)}</title>
       <meta name="description" content="${escapeHtml(description)}" />
+      <link rel="icon" type="image/png" sizes="32x32" href="${FAVICON_PNG_32}" />
+      <link rel="icon" type="image/png" sizes="16x16" href="${FAVICON_PNG_16}" />
+      <link rel="apple-touch-icon" sizes="180x180" href="${FAVICON_PNG_180}" />
       <link rel="canonical" href="${canonicalUrl}" />
       <meta name="google-adsense-account" content="${adsenseClient}" />
       <meta property="og:title" content="${escapeHtml(title)}" />
