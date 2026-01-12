@@ -451,6 +451,11 @@
   margin: 0 auto;
 }
 
+.ws-home ins.adsbygoogle[style*="position: fixed"],
+.ws-home .ws-margin-ad {
+  display: none !important;
+}
+
 .ws-footer-link {
   text-decoration: none;
   font-weight: 600;
