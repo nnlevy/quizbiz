@@ -18,13 +18,14 @@
   "d1_databases": [
     {
       "binding": "UsersAcrossAllDomains",
-      "database_name": "usersacrossdomains"
+      "database_name": "usersacrossdomains",
+      "database_id": "${USERSACROSSDOMAINS_ID}"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "UserSessionsAcrossDomains",
-      "id": "UserSessionsAcrossDomains"
+      "id": "${USERSESSIONSACROSSDOMAINS_ID}"
     }
   ],
   "assets": {
