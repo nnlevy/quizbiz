@@ -1164,6 +1164,9 @@ export function clientScript(defaultAdsenseClient: string) {
 
   const queueAutoAds = () => {
     const adsQueue = ensureAdsQueue();
+    if (isHomePage()) {
+      return adsQueue;
+    }
     if (!autoAdsQueued && hasAdsConsent()) {
       adsQueue.push({ google_ad_client: ADSENSE_CLIENT, enable_page_level_ads: true });
       autoAdsQueued = true;
