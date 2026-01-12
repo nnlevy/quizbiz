@@ -924,7 +924,6 @@ export function clientScript(defaultAdsenseClient: string) {
 
   const isMarginAdCandidate = (slot: HTMLElement) => {
     if (!slot.classList.contains('adsbygoogle')) return false;
-    if (slot.closest('#root')) return false;
     const style = window.getComputedStyle(slot);
     if (style.position !== 'fixed') return false;
     if (style.display === 'none' || style.visibility === 'hidden') return false;
