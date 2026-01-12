@@ -29,6 +29,19 @@ type MarginAdState = {
 };
 
 const marginAdStates = new WeakMap<HTMLElement, MarginAdState>();
+const MARGIN_AD_HOME_PATH = "/";
+
+const isHomePage = () => window.location.pathname === MARGIN_AD_HOME_PATH;
+
+const isMarginAdOverlappingContent = (slot: HTMLElement) => {
+  const main = document.querySelector<HTMLElement>(".ws-main");
+  if (!main) return false;
+  const slotRect = slot.getBoundingClientRect();
+  const mainRect = main.getBoundingClientRect();
+  const horizontalOverlap = slotRect.right > mainRect.left && slotRect.left < mainRect.right;
+  const verticalOverlap = slotRect.bottom > mainRect.top && slotRect.top < mainRect.bottom;
+  return horizontalOverlap && verticalOverlap;
+};
 
 const normalizeCalcDimension = (value: string): string | null => {
   const match = value.match(/calc\(([-\d.]+)px\s*-\s*([-\d.]+)px\)/i);
@@ -196,6 +209,10 @@ const ensureScriptPresent = () => {
 
 const ensureAutoAds = () => {
   if (autoAdsQueued) return;
+  if (isHomePage()) {
+    debugLog("Skipped auto ads init: homepage");
+    return;
+  }
   if (!hasEligibleSlots()) {
     debugLog("Skipped auto ads init: no eligible slots found");
     return;
@@ -255,6 +272,10 @@ const updateMarginAds = () => {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("ins.adsbygoogle"));
   candidates.forEach((slot) => {
     if (!isMarginAdCandidate(slot)) return;
+    if (isHomePage() || isMarginAdOverlappingContent(slot)) {
+      hideMarginAd(slot);
+      return;
+    }
     const state = marginAdStates.get(slot);
     if (!state || !slot.classList.contains(MARGIN_AD_VISIBLE_CLASS)) {
       showMarginAd(slot);
