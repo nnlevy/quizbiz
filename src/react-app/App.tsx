@@ -31,6 +31,8 @@ import { detectIphone } from "./utils/device";
 import { buildSearchKeywords, buildSearchQuery, buildSearchUrl } from "./utils/searchLinks";
 import { logEvent } from "./analytics";
 import { useCredits } from "./context/CreditsContext";
+import { useCreditsModal } from "./context/CreditsModalContext";
+import { useSession } from "./context/SessionContext";
 import { useCreditsCheckout } from "./hooks/useCreditsCheckout";
 import UtilityResultCard, { type UtilityPayload } from "./components/UtilityResultCard";
 import { copy } from "../copy";
@@ -365,6 +367,8 @@ type AppProps = {
 function App({ focusUpload = false }: AppProps) {
   const { credits, deduct, setCredits: setGlobalCredits, pulse, setPulse } =
     useCredits();
+  const { openModal } = useCreditsModal();
+  const { refreshSession } = useSession();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const slidesWrapperRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -700,26 +704,47 @@ function App({ focusUpload = false }: AppProps) {
     const pendingTopUp = window.localStorage.getItem(CREDIT_TOPUP_FLAG);
 
     if (sessionId && pendingTopUp && redirectStatus === "succeeded") {
-      const updatedCredits = creditsRef.current + CREDIT_TOPUP_AMOUNT;
-      creditsRef.current = updatedCredits;
-      setGlobalCredits(updatedCredits);
-      setCreditNotice(`Purchase confirmed. ${CREDIT_TOPUP_AMOUNT} credits added.`);
-      setCreditCelebrationMessage(
-        `Thanks for topping up—${CREDIT_TOPUP_AMOUNT} credits added. You now have ${updatedCredits}.`,
-      );
-      setShowCreditCelebration(true);
-      triggerCreditPulse();
-      logEvent("credit_purchase_completed", { credits_total: updatedCredits });
-      window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+      const finalizeTopUp = async () => {
+        let updatedCredits = creditsRef.current + CREDIT_TOPUP_AMOUNT;
+        try {
+          const response = await fetch("/api/credits/topup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount: CREDIT_TOPUP_AMOUNT }),
+          });
+          if (response.ok) {
+            const payload = (await response.json()) as { credits?: number };
+            if (typeof payload.credits === "number") {
+              updatedCredits = payload.credits;
+            }
+          }
+        } catch (error) {
+          console.warn("Unable to sync top up credits", error);
+        }
 
-      params.delete("session_id");
-      params.delete("redirect_status");
-      const trimmedSearch = params.toString();
-      const updatedUrl =
-        window.location.pathname +
-        (trimmedSearch ? `?${trimmedSearch}` : "") +
-        window.location.hash;
-      window.history.replaceState({}, document.title, updatedUrl);
+        creditsRef.current = updatedCredits;
+        setGlobalCredits(updatedCredits);
+        setCreditNotice(`Purchase confirmed. ${CREDIT_TOPUP_AMOUNT} credits added.`);
+        setCreditCelebrationMessage(
+          `Thanks for topping up—${CREDIT_TOPUP_AMOUNT} credits added. You now have ${updatedCredits}.`,
+        );
+        setShowCreditCelebration(true);
+        triggerCreditPulse();
+        logEvent("credit_purchase_completed", { credits_total: updatedCredits });
+        window.localStorage.removeItem(CREDIT_TOPUP_FLAG);
+        refreshSession().catch(() => undefined);
+
+        params.delete("session_id");
+        params.delete("redirect_status");
+        const trimmedSearch = params.toString();
+        const updatedUrl =
+          window.location.pathname +
+          (trimmedSearch ? `?${trimmedSearch}` : "") +
+          window.location.hash;
+        window.history.replaceState({}, document.title, updatedUrl);
+      };
+
+      void finalizeTopUp();
       return;
     }
 
@@ -752,8 +777,8 @@ function App({ focusUpload = false }: AppProps) {
   }, [startCheckout]);
 
   const handleCreditsLink = useCallback(() => {
-    window.location.assign("/credits");
-  }, []);
+    openModal();
+  }, [openModal]);
 
   const spendCredit = (successPrefix?: string) => {
     const nextCredits = deduct(1);

@@ -1,7 +1,6 @@
 import { StrictMode, Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import "./googleOAuthConfig";
 import App from "./App.tsx";
 import LeakPatrol from "./LeakPatrol";
 import HiddenLeaksPage from "../pages/HiddenLeaksPage";
@@ -16,6 +15,8 @@ import WaterSavingTipsPage from "../pages/WaterSavingTipsPage";
 import WaterIqPage from "../pages/WaterIqPage";
 import { ensureAnalyticsLoaded, initializeAnalytics, logPageView } from "./analytics";
 import { CreditsProvider } from "./context/CreditsContext";
+import { SessionProvider } from "./context/SessionContext";
+import { CreditsModalProvider } from "./context/CreditsModalContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
 import { useScrollUnlock } from "./hooks/useScrollUnlock";
@@ -263,11 +264,15 @@ const RouterView = () => {
 const RootRouter = () => (
   <StrictMode>
     <CreditsProvider>
-      <RouterProvider>
-        <SeoHiddenNav />
-        <RouteEffects />
-        <RouterView />
-      </RouterProvider>
+      <SessionProvider>
+        <CreditsModalProvider>
+          <RouterProvider>
+            <SeoHiddenNav />
+            <RouteEffects />
+            <RouterView />
+          </RouterProvider>
+        </CreditsModalProvider>
+      </SessionProvider>
     </CreditsProvider>
   </StrictMode>
 );

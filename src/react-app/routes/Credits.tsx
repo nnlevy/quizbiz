@@ -1,58 +1,34 @@
-import { useState } from "react";
+import { useEffect } from "react";
 
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-import { useCredits } from "../context/CreditsContext";
-import { useCreditsCheckout } from "../hooks/useCreditsCheckout";
-import { CREDIT_TOPUP_AMOUNT, CREDIT_TOPUP_PRICE } from "../utils/credits";
-import { RouterLink } from "./router";
+import { useCreditsModal } from "../context/CreditsModalContext";
 
 const Credits = () => {
   useDocumentTitle("WaterShortcut | Credits");
-  const { credits } = useCredits();
-  const [notice, setNotice] = useState<string | null>(null);
-  const { startCheckout } = useCreditsCheckout({ onNotice: setNotice });
+  const { openModal } = useCreditsModal();
+
+  useEffect(() => {
+    openModal();
+  }, [openModal]);
 
   return (
     <section className="ws-page" aria-labelledby="credits-title">
       <div className="ws-hero">
         <p className="eyebrow">Credits center</p>
-        <h1 id="credits-title">Credits power your WaterShortcut experience.</h1>
-        <p>
-          Use credits to unlock bill analysis, create an account, and keep the experience ad-free.
-        </p>
-        <div className="ws-subtitle">Credits available: {credits}</div>
-        <div className="ws-subtitle">Cost per analysis: 1 credit</div>
+        <h1 id="credits-title">Credits now live in the modal experience.</h1>
+        <p>Open the Credits modal to review balances, benefits, and account options.</p>
       </div>
 
-      <div className="ws-cta-card" aria-label="Buy more credits">
+      <div className="ws-cta-card" aria-label="Open credits modal">
         <div>
-          <h2>Top up credits</h2>
+          <h2>Review credits & sign up</h2>
           <p className="ws-subtitle">
-            Buy {CREDIT_TOPUP_AMOUNT} credits for ${CREDIT_TOPUP_PRICE} to keep your insights
-            flowing.
+            Manage your credits and account perks without leaving your current page.
           </p>
         </div>
-        <button className="ws-button" type="button" onClick={startCheckout}>
-          Buy {CREDIT_TOPUP_AMOUNT} credits
+        <button className="ws-button" type="button" onClick={() => openModal()}>
+          Open credits modal
         </button>
-      </div>
-
-      <div className="ws-cta-card" aria-label="Manage credits">
-        <div>
-          <h2>How credits work</h2>
-          <p className="ws-subtitle">
-            Each bill analysis uses 1 credit. Buy more credits any time to keep results flowing.
-          </p>
-        </div>
-        <div className="ws-tool-grid" style={{ marginTop: "0.75rem" }}>
-          <RouterLink className="ws-button-secondary" to="/dashboard">
-            View my dashboard
-          </RouterLink>
-          <RouterLink className="ws-button-secondary" to="/analyze">
-            Start a new analysis
-          </RouterLink>
-        </div>
-        {notice ? <p className="ws-subtitle">{notice}</p> : null}
       </div>
     </section>
   );

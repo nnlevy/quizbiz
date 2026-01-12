@@ -62,6 +62,7 @@ const GOOGLE_JWKS_ENDPOINT = "https://www.googleapis.com/oauth2/v3/certs";
 const OAUTH_STATE_TTL_SECONDS = 60 * 10;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const JWKS_TTL_SECONDS = 60 * 60;
+const DEFAULT_CREDITS = 5;
 
 const subtle = (() => {
   if (typeof crypto.subtle !== "undefined") {
@@ -117,6 +118,12 @@ type GoogleIdTokenPayload = {
 
 type GoogleJwks = {
   keys: Array<JsonWebKey & { kid?: string }>;
+};
+
+type SessionRecord = {
+  userId?: string | null;
+  credits?: number;
+  createdAt: string;
 };
 
 type AnalysisMove = {
@@ -221,7 +228,9 @@ const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = COPY_BUILD_DATE;
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
 const WATER_IQ_INLINE_BOOTSTRAP = `window.addEventListener("DOMContentLoaded", () => {
-  if (!window.__WS_REINIT_WATER_IQ__) {
+  const workerScript = document.querySelector('script[data-ws-app]');
+  const alreadyLoaded = workerScript && workerScript.dataset.loaded === "true";
+  if (!alreadyLoaded && !window.__WS_REINIT_WATER_IQ__) {
     ${appJs}
   }
 });`;
@@ -755,6 +764,158 @@ const buildSessionCookie = (
   return cookieParts.join("; ");
 };
 
+const buildLogoutCookie = (env: WorkerEnv): string => {
+  const cookieParts = [
+    "ws_session=",
+    "Path=/",
+    "Max-Age=0",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+  ];
+  if (env.OAUTH_DOMAIN) {
+    cookieParts.push(`Domain=${env.OAUTH_DOMAIN}`);
+  }
+  return cookieParts.join("; ");
+};
+
+const sanitizeReturnTo = (
+  value: string | undefined | null,
+  origin: string,
+  fallback = "/",
+): string => {
+  if (!value) return fallback;
+  if (value.startsWith("//")) {
+    return fallback;
+  }
+  if (value.startsWith("/")) {
+    return value;
+  }
+  try {
+    const parsed = new URL(value);
+    if (parsed.origin !== origin) {
+      return fallback;
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const buildAuthErrorRedirect = (c: Context, returnTo: string, error: string): string => {
+  const origin = new URL(c.req.url).origin;
+  const url = new URL(returnTo, origin);
+  url.searchParams.set("auth_error", error);
+  return url.toString();
+};
+
+const parseCookies = (cookieHeader?: string | null): Record<string, string> => {
+  if (!cookieHeader) return {};
+  return cookieHeader.split(";").reduce<Record<string, string>>((acc, part) => {
+    const [rawKey, ...valueParts] = part.trim().split("=");
+    if (!rawKey) return acc;
+    acc[rawKey] = decodeURIComponent(valueParts.join("="));
+    return acc;
+  }, {});
+};
+
+const getSessionIdFromRequest = (c: Context): string | null => {
+  const cookies = parseCookies(c.req.header("cookie"));
+  return cookies.ws_session ?? null;
+};
+
+const readSessionRecord = async (
+  env: WorkerEnv,
+  sessionId: string,
+): Promise<SessionRecord | null> => {
+  const stored = await env.UserSessionsAcrossDomains.get(`session:${sessionId}`, "json");
+  if (!stored || typeof stored !== "object") {
+    return null;
+  }
+  return stored as SessionRecord;
+};
+
+const persistSessionRecord = async (
+  env: WorkerEnv,
+  sessionId: string,
+  record: SessionRecord,
+) => {
+  await env.UserSessionsAcrossDomains.put(`session:${sessionId}`, JSON.stringify(record), {
+    expirationTtl: SESSION_TTL_SECONDS,
+  });
+};
+
+const ensureSession = async (c: Context) => {
+  const now = new Date().toISOString();
+  let sessionId = getSessionIdFromRequest(c);
+  let session: SessionRecord | null = null;
+  if (sessionId) {
+    session = await readSessionRecord(c.env, sessionId);
+  }
+  if (sessionId && !session) {
+    const db = c.env.UsersAcrossAllDomains;
+    const authRow = (await db
+      .prepare("SELECT user_id, expires_at FROM auth_sessions WHERE session_id = ?1")
+      .bind(sessionId)
+      .first()) as { user_id: string; expires_at: string } | null;
+    if (authRow && authRow.expires_at > now) {
+      const userRow = (await db
+        .prepare("SELECT credits FROM users WHERE id = ?1")
+        .bind(authRow.user_id)
+        .first()) as { credits: number } | null;
+      session = {
+        userId: authRow.user_id,
+        credits: userRow?.credits ?? DEFAULT_CREDITS,
+        createdAt: now,
+      };
+    }
+  }
+
+  let needsCookie = false;
+  if (!sessionId || !session) {
+    sessionId = crypto.randomUUID();
+    session = { userId: null, credits: DEFAULT_CREDITS, createdAt: now };
+    needsCookie = true;
+  }
+
+  if (session.credits == null) {
+    session.credits = DEFAULT_CREDITS;
+  }
+
+  await persistSessionRecord(c.env, sessionId, session);
+  return { sessionId, session, needsCookie };
+};
+
+const base64Encode = (bytes: Uint8Array): string => {
+  let binary = "";
+  bytes.forEach((value) => {
+    binary += String.fromCharCode(value);
+  });
+  return btoa(binary);
+};
+
+const hashPassword = async (password: string) => {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const derivedBits = await subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt,
+      iterations: 120_000,
+    },
+    keyMaterial,
+    256,
+  );
+  return `pbkdf2$120000$${base64Encode(salt)}$${base64Encode(new Uint8Array(derivedBits))}`;
+};
+
 const app = new Hono<{ Bindings: WorkerEnv; Variables: { cspNonce: string } }>();
 
 app.use("*", async (c, next) => {
@@ -835,11 +996,17 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.get("/auth/google", async (c) => {
+  const { sessionId, needsCookie } = await ensureSession(c);
+  if (needsCookie) {
+    c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
+  }
   const state = crypto.randomUUID();
   const createdAt = new Date().toISOString();
+  const origin = new URL(c.req.url).origin;
+  const returnTo = sanitizeReturnTo(c.req.query("return_to"), origin);
   await c.env.UserSessionsAcrossDomains.put(
     `oauth:state:${state}`,
-    JSON.stringify({ createdAt }),
+    JSON.stringify({ createdAt, returnTo, sessionId }),
     { expirationTtl: OAUTH_STATE_TTL_SECONDS },
   );
 
@@ -859,15 +1026,18 @@ app.get("/auth/google/callback", async (c) => {
   const code = c.req.query("code");
   const state = c.req.query("state");
   if (!code || !state) {
-    return c.text("Missing OAuth callback parameters.", 400);
+    return c.redirect(buildAuthErrorRedirect(c, "/", "missing_oauth_params"), 302);
   }
 
   const stateKey = `oauth:state:${state}`;
-  const storedState = await c.env.UserSessionsAcrossDomains.get(stateKey);
-  if (!storedState) {
-    return c.text("Invalid or expired OAuth state.", 400);
+  const storedState = await c.env.UserSessionsAcrossDomains.get(stateKey, "json");
+  if (!storedState || typeof storedState !== "object") {
+    return c.redirect(buildAuthErrorRedirect(c, "/", "invalid_oauth_state"), 302);
   }
   await c.env.UserSessionsAcrossDomains.delete(stateKey);
+  const statePayload = storedState as { returnTo?: string; sessionId?: string };
+  const origin = new URL(c.req.url).origin;
+  const returnTo = sanitizeReturnTo(statePayload.returnTo, origin, "/");
 
   const redirectUri = "https://www.watershortcut.com/auth/google/callback";
   const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
@@ -883,52 +1053,79 @@ app.get("/auth/google/callback", async (c) => {
   });
 
   if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    return c.text(`OAuth token exchange failed: ${errorText}`, 400);
+    return c.redirect(buildAuthErrorRedirect(c, returnTo, "token_exchange_failed"), 302);
   }
 
   const tokenPayload = (await tokenResponse.json()) as { id_token?: string };
   if (!tokenPayload.id_token) {
-    return c.text("Missing ID token from Google.", 400);
+    return c.redirect(buildAuthErrorRedirect(c, returnTo, "missing_id_token"), 302);
   }
 
   let idTokenPayload: GoogleIdTokenPayload;
   try {
     idTokenPayload = await verifyGoogleIdToken(tokenPayload.id_token, c.env);
   } catch (error) {
-    return c.text(
-      `Invalid ID token: ${error instanceof Error ? error.message : "unknown error"}`,
-      400,
-    );
+    return c.redirect(buildAuthErrorRedirect(c, returnTo, "invalid_id_token"), 302);
   }
 
   const subject = idTokenPayload.sub;
   const email = idTokenPayload.email;
   if (!subject || !email) {
-    return c.text("Google account is missing required identity claims.", 400);
+    return c.redirect(buildAuthErrorRedirect(c, returnTo, "missing_google_profile"), 302);
   }
 
   const name = idTokenPayload.name ?? "";
   const avatarUrl = idTokenPayload.picture ?? "";
   const now = new Date().toISOString();
   const db = c.env.UsersAcrossAllDomains;
-  const newUserId = crypto.randomUUID();
-  const userResult = await db
-    .prepare(
-      `INSERT INTO users (id, provider, provider_user_id, email, name, avatar_url, created_at, last_login)
-       VALUES (?1, 'google', ?2, ?3, ?4, ?5, ?6, ?7)
-       ON CONFLICT(provider_user_id) DO UPDATE SET
-         email=excluded.email,
-         name=excluded.name,
-         avatar_url=excluded.avatar_url,
-         last_login=excluded.last_login
-       RETURNING id`,
-    )
-    .bind(newUserId, subject, email, name, avatarUrl, now, now)
-    .first<{ id: string }>();
+  const sessionIdFromCookie = getSessionIdFromRequest(c);
+  const existingSessionId = sessionIdFromCookie || statePayload.sessionId;
+  const sessionRecord = existingSessionId
+    ? await readSessionRecord(c.env, existingSessionId)
+    : null;
+  const sessionCredits = sessionRecord?.credits ?? DEFAULT_CREDITS;
 
-  const userId = userResult?.id ?? newUserId;
-  const sessionId = crypto.randomUUID();
+  const existingByProvider = await db
+    .prepare("SELECT id, credits FROM users WHERE provider_user_id = ?1")
+    .bind(subject)
+    .first<{ id: string; credits: number }>();
+  const existingByEmail = await db
+    .prepare("SELECT id, credits FROM users WHERE email = ?1")
+    .bind(email)
+    .first<{ id: string; credits: number }>();
+
+  const mergeCredits = (existing?: number | null) =>
+    Math.max(existing ?? DEFAULT_CREDITS, sessionCredits ?? DEFAULT_CREDITS);
+
+  let userId = existingByProvider?.id ?? existingByEmail?.id ?? crypto.randomUUID();
+  let resolvedCredits = mergeCredits(existingByProvider?.credits ?? existingByEmail?.credits ?? null);
+
+  if (existingByProvider || existingByEmail) {
+    await db
+      .prepare(
+        `UPDATE users
+         SET provider = 'google',
+             provider_user_id = ?1,
+             email = ?2,
+             name = ?3,
+             avatar_url = ?4,
+             last_login = ?5,
+             credits = ?6
+         WHERE id = ?7`,
+      )
+      .bind(subject, email, name, avatarUrl, now, resolvedCredits, userId)
+      .run();
+  } else {
+    await db
+      .prepare(
+        `INSERT INTO users (id, provider, provider_user_id, email, name, avatar_url, created_at, last_login, credits)
+         VALUES (?1, 'google', ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+      )
+      .bind(userId, subject, email, name, avatarUrl, now, now, resolvedCredits)
+      .run();
+  }
+
+  const authSessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
 
   await db
@@ -936,17 +1133,133 @@ app.get("/auth/google/callback", async (c) => {
       `INSERT INTO auth_sessions (session_id, user_id, created_at, expires_at)
        VALUES (?1, ?2, ?3, ?4)`,
     )
-    .bind(sessionId, userId, now, expiresAt)
+    .bind(authSessionId, userId, now, expiresAt)
     .run();
 
-  await c.env.UserSessionsAcrossDomains.put(
-    `session:${sessionId}`,
-    JSON.stringify({ userId, createdAt: now }),
-    { expirationTtl: SESSION_TTL_SECONDS },
-  );
+  const nextSession: SessionRecord = {
+    userId,
+    credits: resolvedCredits,
+    createdAt: now,
+  };
+  await persistSessionRecord(c.env, authSessionId, nextSession);
+  if (existingSessionId && existingSessionId !== authSessionId) {
+    await c.env.UserSessionsAcrossDomains.delete(`session:${existingSessionId}`);
+  }
 
-  c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
-  return c.redirect("/", 302);
+  c.header("Set-Cookie", buildSessionCookie(authSessionId, c.env, SESSION_TTL_SECONDS));
+  return c.redirect(returnTo, 302);
+});
+
+app.post("/auth/email-signup", async (c) => {
+  const { sessionId: existingSessionId, session } = await ensureSession(c);
+  let payload: { name?: string; email?: string; password?: string } | null = null;
+  try {
+    payload = (await c.req.json()) as { name?: string; email?: string; password?: string };
+  } catch {
+    payload = null;
+  }
+
+  const name = payload?.name?.trim() || "Water saver";
+  const email = payload?.email?.trim().toLowerCase() || "";
+  const password = payload?.password || "";
+
+  if (!email || !email.includes("@")) {
+    return c.json({ ok: false, error: "Enter a valid email address." }, 400);
+  }
+  if (!password || password.length < 8) {
+    return c.json({ ok: false, error: "Password must be at least 8 characters." }, 400);
+  }
+
+  const db = c.env.UsersAcrossAllDomains;
+  const existingUser = await db
+    .prepare("SELECT id FROM users WHERE email = ?1")
+    .bind(email)
+    .first<{ id: string }>();
+  if (existingUser) {
+    return c.json({ ok: false, error: "That email already has an account." }, 409);
+  }
+
+  const now = new Date().toISOString();
+  const userId = crypto.randomUUID();
+  const credits = session?.credits ?? DEFAULT_CREDITS;
+  const passwordHash = await hashPassword(password);
+
+  await db
+    .prepare(
+      `INSERT INTO users (id, provider, provider_user_id, email, name, created_at, last_login, credits, password_hash)
+       VALUES (?1, 'email', ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+    )
+    .bind(userId, `email:${email}`, email, name, now, now, credits, passwordHash)
+    .run();
+
+  const authSessionId = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
+  await db
+    .prepare(
+      `INSERT INTO auth_sessions (session_id, user_id, created_at, expires_at)
+       VALUES (?1, ?2, ?3, ?4)`,
+    )
+    .bind(authSessionId, userId, now, expiresAt)
+    .run();
+
+  const nextSession: SessionRecord = {
+    userId,
+    credits,
+    createdAt: now,
+  };
+  await persistSessionRecord(c.env, authSessionId, nextSession);
+  if (existingSessionId && existingSessionId !== authSessionId) {
+    await c.env.UserSessionsAcrossDomains.delete(`session:${existingSessionId}`);
+  }
+
+  c.header("Set-Cookie", buildSessionCookie(authSessionId, c.env, SESSION_TTL_SECONDS));
+  console.log("Email signup created for", email);
+  return c.json({
+    ok: true,
+    user: { id: userId, name, email, provider: "email", credits },
+    credits,
+  });
+});
+
+app.post("/auth/signout", async (c) => {
+  const sessionId = getSessionIdFromRequest(c);
+  if (sessionId) {
+    await c.env.UserSessionsAcrossDomains.delete(`session:${sessionId}`);
+  }
+  c.header("Set-Cookie", buildLogoutCookie(c.env));
+  return c.json({ ok: true });
+});
+
+app.get("/me", async (c) => {
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  let credits = session.credits ?? DEFAULT_CREDITS;
+  let user: { id: string; name: string; email: string; provider: "email" | "google"; credits: number } | null =
+    null;
+
+  if (session.userId) {
+    const db = c.env.UsersAcrossAllDomains;
+    const userRow = await db
+      .prepare(
+        "SELECT id, name, email, provider, credits FROM users WHERE id = ?1",
+      )
+      .bind(session.userId)
+      .first<{ id: string; name: string; email: string; provider: "email" | "google"; credits: number }>();
+    if (userRow) {
+      credits = typeof userRow.credits === "number" ? userRow.credits : credits;
+      user = { ...userRow, credits };
+    }
+  }
+
+  const updatedSession: SessionRecord = {
+    userId: session.userId,
+    credits,
+    createdAt: session.createdAt,
+  };
+  await persistSessionRecord(c.env, sessionId, updatedSession);
+  if (needsCookie) {
+    c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
+  }
+  return c.json({ user, credits });
 });
 
 app.get("/assets/styles.css", (c) =>
@@ -1464,7 +1777,7 @@ function layout(options: {
           });
         });
       </script>
-      <script defer src="/assets/app.js"></script>
+      <script defer src="/assets/app.js" data-ws-app data-loaded="false"></script>
       ${inlineScriptTags}
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
@@ -3184,6 +3497,55 @@ app.post("/api/credits/checkout", async (c) => {
 
   const session = (await stripeResponse.json()) as { id?: string; url?: string };
   return c.json({ id: session.id, url: session.url ?? null });
+});
+
+app.post("/api/credits/topup", async (c) => {
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  let payload: { amount?: number } | null = null;
+  try {
+    payload = (await c.req.json()) as { amount?: number };
+  } catch {
+    payload = null;
+  }
+  const amount = Number(payload?.amount ?? 0);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return c.json({ ok: false, error: "Invalid credit amount." }, 400);
+  }
+
+  const nextCredits = (session.credits ?? DEFAULT_CREDITS) + amount;
+  const updatedSession: SessionRecord = {
+    userId: session.userId,
+    credits: nextCredits,
+    createdAt: session.createdAt,
+  };
+  await persistSessionRecord(c.env, sessionId, updatedSession);
+
+  if (session.userId) {
+    await c.env.UsersAcrossAllDomains
+      .prepare("UPDATE users SET credits = ?1 WHERE id = ?2")
+      .bind(nextCredits, session.userId)
+      .run();
+  }
+
+  if (needsCookie) {
+    c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
+  }
+
+  return c.json({ ok: true, credits: nextCredits });
+});
+
+app.post("/api/analytics/anonymous", async (c) => {
+  let payload: { event?: string; details?: Record<string, unknown> } | null = null;
+  try {
+    payload = (await c.req.json()) as { event?: string; details?: Record<string, unknown> };
+  } catch {
+    payload = null;
+  }
+  if (!payload?.event) {
+    return c.json({ ok: false, error: "Missing event name." }, 400);
+  }
+  console.log("anonymous_event", { event: payload.event, details: payload.details ?? {} });
+  return c.json({ ok: true });
 });
 
 // The worker runtime supplies the context; using any keeps the shared handler flexible.

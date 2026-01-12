@@ -47,7 +47,8 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
       <div className="footer-links">
         <a href="/about">About</a>
         <a href="/site-map">Site Map</a>
-        <a href="/terms">Terms</a>
+        <a href="/terms/tos">Terms</a>
+        <a href="/terms/privacy">Privacy</a>
         {showPrivacyControls ? (
           <button
             type="button"
@@ -65,7 +66,7 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
       <div className="footer-trust">
         <p>
           Uploads are deleted after analysis. We do not sell personal data. Our systems are SOC2
-          compliant. <a href="/privacy">Read the privacy policy</a>.
+          compliant. <a href="/terms/privacy">Read the privacy policy</a>.
         </p>
         <div className="footer-badges" aria-label="Security badges">
           <span className="footer-badge">SOC2</span>

@@ -4,6 +4,7 @@ import AdSenseSlot from "../components/AdSenseSlot";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { useCredits } from "../context/CreditsContext";
+import { useCreditsModal } from "../context/CreditsModalContext";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
@@ -19,6 +20,7 @@ const AppShell = ({ children }: AppShellProps) => {
   const [adsRemoved, setAdsRemoved] = useState(false);
   const location = useLocation();
   const { credits, pulse } = useCredits();
+  const { openModal } = useCreditsModal();
   const { scrollUnlocked } = useScrollUnlock();
 
   useEffect(() => {
@@ -54,8 +56,8 @@ const AppShell = ({ children }: AppShellProps) => {
           <RouterLink className="ws-logo" to="/">
             <img
               className="ws-logo__image"
-              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813"
-              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_160/f9eb544bed7ab31e0ebda502440cd813 2x"
+              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_png,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813.png"
+              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_png,q_auto,w_80/f9eb544bed7ab31e0ebda502440cd813.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_png,q_auto,w_160/f9eb544bed7ab31e0ebda502440cd813.png 2x"
               sizes="40px"
               alt="WaterShortcut logo"
               loading="eager"
@@ -64,15 +66,17 @@ const AppShell = ({ children }: AppShellProps) => {
             <span className="ws-logo__text">WaterShortcut</span>
           </RouterLink>
           {showDeferred && (
-            <RouterLink
+            <button
               className={`ws-header__credits ${pulse ? "is-animating" : ""}`}
+              type="button"
               role="status"
               aria-live="polite"
               aria-label={`Credits available: ${credits}. View credits options.`}
-              to="/credits"
+              aria-haspopup="dialog"
+              onClick={() => openModal()}
             >
               Credits {credits}
-            </RouterLink>
+            </button>
           )}
         </div>
         <button
