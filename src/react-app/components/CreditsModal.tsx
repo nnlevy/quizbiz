@@ -48,6 +48,8 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
         return "Google sign-in could not be verified.";
       case "missing_google_profile":
         return "Google sign-in did not include your profile details.";
+      case "missing_oauth_client":
+        return "Google sign-in is not configured yet. Please try again later.";
       default:
         return "Google sign-in did not complete. Please try again.";
     }

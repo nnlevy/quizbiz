@@ -95,6 +95,7 @@ type WorkerEnv = {
   WS_ADMIN_EXPORT_KEY?: string;
   OAUTH_API_KEY?: string;
   OAUTH_Client_ID: string;
+  OAUTH_Client_Secret?: string;
   OAUTH_DOMAIN?: string;
   OUATH_Client_Secret: string;
 };
@@ -1015,6 +1016,9 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.get("/auth/google", async (c) => {
+  if (!c.env.OAUTH_Client_ID) {
+    return c.redirect(buildAuthErrorRedirect(c, "/", "missing_oauth_client"), 302);
+  }
   const { sessionId, needsCookie } = await ensureSession(c);
   if (needsCookie) {
     c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
@@ -1057,6 +1061,10 @@ app.get("/auth/google/callback", async (c) => {
   const statePayload = storedState as { returnTo?: string; sessionId?: string };
   const origin = new URL(c.req.url).origin;
   const returnTo = sanitizeReturnTo(statePayload.returnTo, origin, "/");
+  const clientSecret = c.env.OAUTH_Client_Secret ?? c.env.OUATH_Client_Secret;
+  if (!c.env.OAUTH_Client_ID || !clientSecret) {
+    return c.redirect(buildAuthErrorRedirect(c, returnTo, "missing_oauth_client"), 302);
+  }
 
   const redirectUri = "https://www.watershortcut.com/auth/google/callback";
   const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
@@ -1065,7 +1073,7 @@ app.get("/auth/google/callback", async (c) => {
     body: new URLSearchParams({
       code,
       client_id: c.env.OAUTH_Client_ID,
-      client_secret: c.env.OUATH_Client_Secret,
+      client_secret: clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }),
