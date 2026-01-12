@@ -28,6 +28,15 @@ const AppShell = ({ children }: AppShellProps) => {
   }, [location.pathname]);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const isHome = location.pathname === "/";
+    document.body.classList.toggle("ws-home", isHome);
+    return () => {
+      document.body.classList.remove("ws-home");
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const readAdsSetting = () => {
       try {
@@ -48,9 +57,10 @@ const AppShell = ({ children }: AppShellProps) => {
 
   const showDeferred = scrollUnlocked;
   const showAds = showDeferred && !adsRemoved;
+  const isHome = location.pathname === "/";
 
   return (
-    <div className="ws-shell">
+    <div className={`ws-shell${isHome ? " ws-shell--home" : ""}`}>
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
