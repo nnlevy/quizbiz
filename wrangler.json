@@ -18,7 +18,7 @@
   "d1_databases": [
     {
       "binding": "UsersAcrossAllDomains",
-      "database_name": "usersacrossdomains",
+      "database_name": "users_across_domains",
       "database_id": "${USERSACROSSDOMAINS_ID}"
     }
   ],
