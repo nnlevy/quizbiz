@@ -1520,6 +1520,13 @@ blockquote {
   margin: 0 auto;
 }
 
+ins.adsbygoogle[style*="position: fixed"] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
 .ws-margin-ad {
   opacity: 0;
   transform: translateY(12px);

@@ -10,7 +10,7 @@ main{flex:1;} .hero{max-width:1100px;margin:0 auto;padding:40px 18px 18px;displa
 .blog-page main{display:flex;justify-content:center;} .blog-shell{max-width:800px;width:100%;margin:0 auto;padding:28px 18px;} .blog-article{background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 12px 36px rgba(15,23,42,0.08);display:grid;gap:18px;padding:22px;} .blog-header h1{margin:0;font-size:32px;color:#0f172a;} .blog-header .lead{margin:8px 0 0;color:#1f2937;font-size:17px;line-height:1.6;} .blog-section{display:grid;gap:10px;} .blog-section h2{margin:0;font-size:22px;color:#0f172a;} .blog-section p,.blog-section li{color:#1f2937;line-height:1.6;} .blog-section ol{padding-left:20px;display:grid;gap:8px;} .blog-footer{margin-top:6px;} .eyebrow{letter-spacing:0.08em;text-transform:uppercase;font-weight:800;color:#075985;margin:0;} .lead{font-weight:600;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;} .bullet-list{padding-left:18px;display:grid;gap:8px;color:#1f2937;} .faq{border:1px solid #e2e8f0;border-radius:12px;background:white;} .faq-item{border-top:1px solid #e2e8f0;} .faq-item:first-of-type{border-top:none;} .faq button{width:100%;text-align:left;padding:14px;border:none;background:none;font-weight:700;display:flex;justify-content:space-between;align-items:center;} .faq .answer{padding:0 14px 14px;color:#334155;display:none;} .faq .answer.open{display:block;}
 .layout-slab{background:white;border-radius:18px;border:1px solid #e2e8f0;box-shadow:0 10px 40px rgba(15,23,42,0.06);padding:18px;} .meta-line{font-size:14px;color:#475569;}
-.footer{margin-top:30px;background:#0f172a;color:white;} .footer .footer-inner{max-width:1100px;margin:0 auto;padding:24px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;} .footer a{color:#bae6fd;} .footer-links{display:flex;gap:12px;flex-wrap:wrap;} .footnote{font-size:13px;color:#cbd5e1;} .ad-slot-placeholder{min-height:250px;border:1px dashed #cbd5e1;border-radius:12px;background:linear-gradient(135deg,#f0f9ff,#e2e8f0);display:flex;align-items:center;justify-content:center;color:#475569;font-weight:600;} .ad-slot{display:block;min-height:250px;width:100%;margin:12px auto;text-align:center;} .ad-fallback{min-height:250px;display:flex;align-items:center;justify-content:center;text-align:center;color:#475569;font-weight:600;} .ad-sticky{position:sticky;bottom:0;z-index:5;background:#f7fbff;padding:0 18px 18px;border-top:1px solid #e2e8f0;} .ws-margin-ad{opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .4s ease;pointer-events:none;} .ws-margin-ad.ws-margin-ad--visible{opacity:1;transform:translateY(0);pointer-events:auto;} .ws-margin-ad.ws-margin-ad--hidden{opacity:0;transform:translateY(8px);pointer-events:none;} .consent-banner{position:fixed;bottom:18px;left:18px;right:18px;z-index:20;background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 10px 40px rgba(15,23,42,0.2);padding:16px;display:grid;gap:12px;} .consent-banner a{color:#0ea5e9;} .consent-options{display:grid;gap:6px;font-size:14px;color:#475569;} .consent-actions{display:flex;gap:10px;flex-wrap:wrap;} .consent-actions .btn{flex:1 1 160px;} .ads-diagnostics-panel{border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:white;display:grid;gap:10px;} .ads-diagnostics-row{display:flex;justify-content:space-between;gap:12px;font-weight:600;color:#0f172a;} .ads-diagnostics-floating{position:fixed;top:18px;right:18px;max-width:320px;z-index:30;}
+.footer{margin-top:30px;background:#0f172a;color:white;} .footer .footer-inner{max-width:1100px;margin:0 auto;padding:24px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;} .footer a{color:#bae6fd;} .footer-links{display:flex;gap:12px;flex-wrap:wrap;} .footnote{font-size:13px;color:#cbd5e1;} .ad-slot-placeholder{min-height:250px;border:1px dashed #cbd5e1;border-radius:12px;background:linear-gradient(135deg,#f0f9ff,#e2e8f0);display:flex;align-items:center;justify-content:center;color:#475569;font-weight:600;} .ad-slot{display:block;min-height:250px;width:100%;margin:12px auto;text-align:center;} .ad-fallback{min-height:250px;display:flex;align-items:center;justify-content:center;text-align:center;color:#475569;font-weight:600;} .ad-sticky{position:sticky;bottom:0;z-index:5;background:#f7fbff;padding:0 18px 18px;border-top:1px solid #e2e8f0;} ins.adsbygoogle[style*="position: fixed"]{opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .4s ease;pointer-events:none;} .ws-margin-ad{opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .4s ease;pointer-events:none;} .ws-margin-ad.ws-margin-ad--visible{opacity:1;transform:translateY(0);pointer-events:auto;} .ws-margin-ad.ws-margin-ad--hidden{opacity:0;transform:translateY(8px);pointer-events:none;} .consent-banner{position:fixed;bottom:18px;left:18px;right:18px;z-index:20;background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 10px 40px rgba(15,23,42,0.2);padding:16px;display:grid;gap:12px;} .consent-banner a{color:#0ea5e9;} .consent-options{display:grid;gap:6px;font-size:14px;color:#475569;} .consent-actions{display:flex;gap:10px;flex-wrap:wrap;} .consent-actions .btn{flex:1 1 160px;} .ads-diagnostics-panel{border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:white;display:grid;gap:10px;} .ads-diagnostics-row{display:flex;justify-content:space-between;gap:12px;font-weight:600;color:#0f172a;} .ads-diagnostics-floating{position:fixed;top:18px;right:18px;max-width:320px;z-index:30;}
 .table{width:100%;border-collapse:collapse;} .table td,.table th{border:1px solid #e2e8f0;padding:10px;} .table th{background:#f0f9ff;text-align:left;}
 label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,select,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #e2e8f0;background:white;color:#0f172a;} input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #0ea5e9;} .form-row{display:grid;gap:8px;margin-bottom:12px;} .form-inline{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;} .muted{color:#475569;font-size:14px;} .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#e0f2ff;border-radius:10px;color:#075985;font-weight:700;font-size:13px;}
 .wizard{display:grid;gap:12px;} .wizard-steps{display:flex;gap:8px;flex-wrap:wrap;} .step-pill{padding:8px 10px;border-radius:999px;border:1px solid #e2e8f0;font-weight:700;color:#475569;background:white;} .step-pill.active{background:#0ea5e9;color:white;border-color:#0ea5e9;} .wizard-step{display:none;gap:10px;} .wizard-step.active{display:grid;} .wizard-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
@@ -906,6 +906,7 @@ export function clientScript(defaultAdsenseClient: string) {
   const MARGIN_AD_HIDDEN_CLASS = 'ws-margin-ad--hidden';
   const MARGIN_AD_VISIBILITY_MS = 10000;
   const marginAdStates = new WeakMap<HTMLElement, { shownAt: number; baselineScrollY: number }>();
+  const MARGIN_AD_HOME_PATH = '/';
 
   const isReactManagedAds = () => {
     const globalWindow = window as typeof window & { __WS_ADSENSE_MANAGED__?: string };
@@ -922,6 +923,19 @@ export function clientScript(defaultAdsenseClient: string) {
     return `${adjusted}px`;
   };
 
+  const isHomePage = () => window.location.pathname === MARGIN_AD_HOME_PATH;
+
+  const isMarginAdOverlappingContent = (slot: HTMLElement) => {
+    const main =
+      document.querySelector<HTMLElement>('.ws-main') || document.querySelector<HTMLElement>('main');
+    if (!main) return false;
+    const slotRect = slot.getBoundingClientRect();
+    const mainRect = main.getBoundingClientRect();
+    const horizontalOverlap = slotRect.right > mainRect.left && slotRect.left < mainRect.right;
+    const verticalOverlap = slotRect.bottom > mainRect.top && slotRect.top < mainRect.bottom;
+    return horizontalOverlap && verticalOverlap;
+  };
+
   const isMarginAdCandidate = (slot: HTMLElement) => {
     if (!slot.classList.contains('adsbygoogle')) return false;
     const style = window.getComputedStyle(slot);
@@ -930,13 +944,22 @@ export function clientScript(defaultAdsenseClient: string) {
     return style.left !== 'auto' || style.right !== 'auto';
   };
 
+  const ensureMarginAdBase = (slot: HTMLElement) => {
+    slot.classList.add(MARGIN_AD_CLASS);
+    if (!slot.classList.contains(MARGIN_AD_VISIBLE_CLASS)) {
+      slot.classList.add(MARGIN_AD_HIDDEN_CLASS);
+    }
+  };
+
   const showMarginAd = (slot: HTMLElement) => {
-    slot.classList.add(MARGIN_AD_CLASS, MARGIN_AD_VISIBLE_CLASS);
+    ensureMarginAdBase(slot);
+    slot.classList.add(MARGIN_AD_VISIBLE_CLASS);
     slot.classList.remove(MARGIN_AD_HIDDEN_CLASS);
     marginAdStates.set(slot, { shownAt: Date.now(), baselineScrollY: window.scrollY });
   };
 
   const hideMarginAd = (slot: HTMLElement) => {
+    ensureMarginAdBase(slot);
     slot.classList.add(MARGIN_AD_HIDDEN_CLASS);
     slot.classList.remove(MARGIN_AD_VISIBLE_CLASS);
   };
@@ -945,6 +968,12 @@ export function clientScript(defaultAdsenseClient: string) {
     const candidates = Array.from(document.querySelectorAll<HTMLElement>('ins.adsbygoogle'));
     candidates.forEach((slot) => {
       if (!isMarginAdCandidate(slot)) return;
+      ensureMarginAdBase(slot);
+      if (isHomePage() || isMarginAdOverlappingContent(slot)) {
+        hideMarginAd(slot);
+        marginAdStates.delete(slot);
+        return;
+      }
       const state = marginAdStates.get(slot);
       if (!state || !slot.classList.contains(MARGIN_AD_VISIBLE_CLASS)) {
         showMarginAd(slot);

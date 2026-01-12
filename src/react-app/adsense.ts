@@ -17,6 +17,7 @@ let autoAdsQueued = false;
 let dimensionPatchApplied = false;
 let marginAdsObserver: MutationObserver | null = null;
 let marginAdsRaf = 0;
+let marginAdsRouteListenerAttached = false;
 
 const MARGIN_AD_CLASS = "ws-margin-ad";
 const MARGIN_AD_VISIBLE_CLASS = "ws-margin-ad--visible";
@@ -257,13 +258,22 @@ const isMarginAdCandidate = (slot: HTMLElement) => {
   return style.left !== "auto" || style.right !== "auto";
 };
 
+const ensureMarginAdBase = (slot: HTMLElement) => {
+  slot.classList.add(MARGIN_AD_CLASS);
+  if (!slot.classList.contains(MARGIN_AD_VISIBLE_CLASS)) {
+    slot.classList.add(MARGIN_AD_HIDDEN_CLASS);
+  }
+};
+
 const showMarginAd = (slot: HTMLElement) => {
-  slot.classList.add(MARGIN_AD_CLASS, MARGIN_AD_VISIBLE_CLASS);
+  ensureMarginAdBase(slot);
+  slot.classList.add(MARGIN_AD_VISIBLE_CLASS);
   slot.classList.remove(MARGIN_AD_HIDDEN_CLASS);
   marginAdStates.set(slot, { shownAt: Date.now(), baselineScrollY: window.scrollY });
 };
 
 const hideMarginAd = (slot: HTMLElement) => {
+  ensureMarginAdBase(slot);
   slot.classList.add(MARGIN_AD_HIDDEN_CLASS);
   slot.classList.remove(MARGIN_AD_VISIBLE_CLASS);
 };
@@ -272,8 +282,10 @@ const updateMarginAds = () => {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("ins.adsbygoogle"));
   candidates.forEach((slot) => {
     if (!isMarginAdCandidate(slot)) return;
+    ensureMarginAdBase(slot);
     if (isHomePage() || isMarginAdOverlappingContent(slot)) {
       hideMarginAd(slot);
+      marginAdStates.delete(slot);
       return;
     }
     const state = marginAdStates.get(slot);
@@ -303,6 +315,10 @@ const observeMarginAds = () => {
   marginAdsObserver.observe(document.body, { childList: true, subtree: true });
   window.addEventListener("scroll", scheduleMarginAdsUpdate, { passive: true });
   window.addEventListener("resize", scheduleMarginAdsUpdate);
+  if (!marginAdsRouteListenerAttached) {
+    subscribeToRouteChanges(scheduleMarginAdsUpdate);
+    marginAdsRouteListenerAttached = true;
+  }
   scheduleMarginAdsUpdate();
 };
 
