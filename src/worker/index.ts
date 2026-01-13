@@ -900,7 +900,17 @@ const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: bo
   c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
 };
 
-const requireCredits = async (c: Context, cost: number) => {
+type RequireCreditsFailure = { ok: false; response: Response };
+type RequireCreditsSuccess = {
+  ok: true;
+  sessionId: string;
+  session: SessionRecord;
+  needsCookie: boolean;
+  credits: number;
+};
+type RequireCreditsResult = RequireCreditsFailure | RequireCreditsSuccess;
+
+const requireCredits = async (c: Context, cost: number): Promise<RequireCreditsResult> => {
   const { sessionId, session, needsCookie } = await ensureSession(c);
   const credits = session.credits ?? DEFAULT_CREDITS;
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
