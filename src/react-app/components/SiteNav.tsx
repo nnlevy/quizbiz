@@ -24,7 +24,7 @@ const secondaryLinks = [
   { href: "/water-iq", label: "Water IQ Challenge" },
   { href: "/rebates", label: "Rebates" },
   { href: "/guides", label: "Guides" },
-  { href: "/site-map", label: "Site map" },
+  { href: "/sitemap", label: "Site map" },
 ];
 
 const waterEjectLinks = [

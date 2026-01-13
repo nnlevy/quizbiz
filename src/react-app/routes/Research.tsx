@@ -71,7 +71,7 @@ const Research = () => {
             <li>Search for “{selected} leak adjustment policy” and record requirements.</li>
           </ul>
           <div className="ws-tool-grid">
-            <RouterLink className="ws-footer-link" to="/analyze">
+            <RouterLink className="ws-footer-link" to="/analyze-water-bill">
               Back to analysis →
             </RouterLink>
             <RouterLink className="ws-footer-link" to="/">

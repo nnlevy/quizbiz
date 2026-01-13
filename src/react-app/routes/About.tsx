@@ -29,7 +29,7 @@ const About = () => {
       </div>
 
       <div className="ws-tool-grid">
-        <RouterLink className="ws-footer-link" to="/analyze">
+        <RouterLink className="ws-footer-link" to="/analyze-water-bill">
           Start analysis →
         </RouterLink>
         <RouterLink className="ws-footer-link" to="/research">

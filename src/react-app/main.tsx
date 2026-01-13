@@ -40,6 +40,7 @@ if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
     __WS_CONSENT_REQUIRED__?: boolean;
     __WS_ADSENSE_MANAGED__?: string;
+    __WS_OAUTH_ENABLED__?: boolean;
   };
   if (globalWindow.__WS_CONSENT_REQUIRED__ == null) {
     globalWindow.__WS_CONSENT_REQUIRED__ = false;
@@ -47,13 +48,16 @@ if (typeof window !== "undefined") {
   if (!globalWindow.__WS_ADSENSE_MANAGED__) {
     globalWindow.__WS_ADSENSE_MANAGED__ = "react";
   }
+  if (globalWindow.__WS_OAUTH_ENABLED__ == null) {
+    globalWindow.__WS_OAUTH_ENABLED__ = false;
+  }
 }
 
 const SeoHiddenNav = () => (
   <nav className="sr-only" aria-hidden="true">
     <a href="/">Home</a>
-    <a href="/analyze">Analyze my bill</a>
-    <a href="/bill-lookup">Look up my water bill</a>
+    <a href="/analyze-water-bill">Analyze my bill</a>
+    <a href="/find-water-provider">Look up my water bill</a>
     <a href="/research">Research</a>
     <a href="/game">Leak Patrol</a>
     <a href="/eject-water">Eject Water</a>
@@ -138,7 +142,7 @@ const RouterView = () => {
         </AppShell>
       );
     }
-    if (pathname.startsWith("/analyze")) {
+    if (pathname.startsWith("/analyze-water-bill") || pathname.startsWith("/analyze")) {
       return (
         <AppShell>
           <Analyze />
@@ -152,7 +156,7 @@ const RouterView = () => {
         </AppShell>
       );
     }
-    if (pathname.startsWith("/bill-lookup")) {
+    if (pathname.startsWith("/find-water-provider") || pathname.startsWith("/bill-lookup")) {
       return (
         <AppShell>
           <BillLookup />
@@ -220,7 +224,7 @@ const RouterView = () => {
     if (pathname.startsWith("/landing")) {
       return <LandingPage />;
     }
-    if (pathname.startsWith("/site-map")) {
+    if (pathname.startsWith("/sitemap") || pathname.startsWith("/site-map")) {
       return <SiteMapPage />;
     }
     if (pathname.startsWith("/learn/read-water-bill")) {

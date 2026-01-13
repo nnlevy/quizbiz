@@ -7,8 +7,10 @@ import { useCreditsModal } from "../context/CreditsModalContext";
 const SignIn = () => {
   useDocumentTitle("WaterShortcut | Sign in");
   const { openModal } = useCreditsModal();
+  const oauthEnabled = typeof window !== "undefined" && window.__WS_OAUTH_ENABLED__ !== false;
 
   const handleGoogle = () => {
+    if (!oauthEnabled) return;
     const returnTo =
       typeof window === "undefined"
         ? "/dashboard"
@@ -35,13 +37,18 @@ const SignIn = () => {
           Sign in with Google or create an email account from the same modal experience.
         </p>
         <div className="ws-tool-grid">
-          <button className="ws-button" type="button" onClick={handleGoogle}>
+          <button className="ws-button" type="button" onClick={handleGoogle} disabled={!oauthEnabled}>
             Continue with Google
           </button>
           <button className="ws-button-secondary" type="button" onClick={() => openModal()}>
             Use email sign-in
           </button>
         </div>
+        {!oauthEnabled && (
+          <p className="ws-subtitle" role="status">
+            Google sign-in is currently unavailable. Use email to continue.
+          </p>
+        )}
       </div>
 
       <p className="ws-subtitle">

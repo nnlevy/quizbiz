@@ -119,10 +119,13 @@ const AppShell = ({ children }: AppShellProps) => {
           </button>
           <ul>
             <li>
-              <RouterLink to="/analyze">Analyze Bill</RouterLink>
+              <RouterLink to="/analyze-water-bill">Analyze Bill</RouterLink>
             </li>
             <li>
               <RouterLink to="/manual-entry">Manual Entry</RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/find-water-provider">Find Provider</RouterLink>
             </li>
             <li>
               <RouterLink to="/dashboard">Dashboard</RouterLink>
@@ -131,16 +134,55 @@ const AppShell = ({ children }: AppShellProps) => {
               <RouterLink to="/research">Research Plan</RouterLink>
             </li>
             <li>
-              <span className="ws-nav-section">Experiences</span>
+              <span className="ws-nav-section">Tools</span>
               <ul className="ws-subnav">
                 <li>
-                  <RouterLink to="/game">Leak Patrol Game</RouterLink>
+                  <RouterLink to="/calculators" reloadDocument>
+                    Calculators
+                  </RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/savings-plan" reloadDocument>
+                    Savings Plan
+                  </RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/leak-check" reloadDocument>
+                    Leak Check
+                  </RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/rebates" reloadDocument>
+                    Rebates
+                  </RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/guides" reloadDocument>
+                    Guides
+                  </RouterLink>
                 </li>
                 <li>
                   <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
                 </li>
+              </ul>
+            </li>
+            <li>
+              <span className="ws-nav-section">Learn</span>
+              <ul className="ws-subnav">
                 <li>
-                  <RouterLink to="/learn/read-water-bill">Read Your Bill</RouterLink>
+                  <RouterLink to="/learn/read-water-bill" reloadDocument>
+                    Read Your Bill
+                  </RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/learn/leak-detection" reloadDocument>
+                    Leak Detection
+                  </RouterLink>
+                </li>
+                <li>
+                  <RouterLink to="/learn/water-saving-tips" reloadDocument>
+                    Water-Saving Tips
+                  </RouterLink>
                 </li>
               </ul>
             </li>

@@ -118,9 +118,16 @@ const isModifiedEvent = (event: MouseEvent<HTMLAnchorElement>) =>
 
 type RouterLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   to: string;
+  reloadDocument?: boolean;
 };
 
-export const RouterLink = ({ to, onClick, children, ...rest }: RouterLinkProps) => {
+export const RouterLink = ({
+  to,
+  onClick,
+  children,
+  reloadDocument = false,
+  ...rest
+}: RouterLinkProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -130,6 +137,7 @@ export const RouterLink = ({ to, onClick, children, ...rest }: RouterLinkProps) 
       event.defaultPrevented ||
       event.button !== 0 ||
       isModifiedEvent(event) ||
+      reloadDocument ||
       rest.target === "_blank" ||
       to.startsWith("http") ||
       to.startsWith("mailto:")

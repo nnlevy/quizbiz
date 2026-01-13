@@ -63,7 +63,10 @@ const Home = () => {
 
   const handleDemoClick = () => {
     setActiveAction("demo");
-    window.setTimeout(() => navigate("/analyze", { state: { mode: "demo" } }), transitionDelayMs);
+    window.setTimeout(
+      () => navigate("/analyze-water-bill", { state: { mode: "demo" } }),
+      transitionDelayMs,
+    );
   };
 
   const handleManualClick = () => {
@@ -86,7 +89,7 @@ const Home = () => {
         <div>
           <h2>Analyze my water bill</h2>
           <p className="ws-subtitle">Pick the mode that fits your time right now.</p>
-          <RouterLink className="ws-footer-link" to="/bill-lookup">
+          <RouterLink className="ws-footer-link" to="/find-water-provider">
             Click here to look up your water bill
           </RouterLink>
         </div>
@@ -156,7 +159,18 @@ const Home = () => {
           <RouterLink to="/water-iq">Take the Water IQ Challenge</RouterLink>
           <RouterLink to="/game">Play Leak Patrol</RouterLink>
           <RouterLink to="/research">Build a research plan</RouterLink>
-          <RouterLink to="/learn/read-water-bill">Learn how to read your bill</RouterLink>
+          <RouterLink to="/learn/read-water-bill" reloadDocument>
+            Learn how to read your bill
+          </RouterLink>
+          <RouterLink to="/calculators" reloadDocument>
+            Try the calculators
+          </RouterLink>
+          <RouterLink to="/leak-check" reloadDocument>
+            Run the leak check
+          </RouterLink>
+          <RouterLink to="/rebates" reloadDocument>
+            Find rebates
+          </RouterLink>
         </div>
       </div>
     </section>
