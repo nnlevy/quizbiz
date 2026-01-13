@@ -60,7 +60,7 @@ const HiddenLeaksPage = () => (
         wasted water.
       </p>
       <div className="cta-block">
-        <a className="primary-button" href="/upload">Upload a bill for a hidden leak review</a>
+        <a className="primary-button" href="/analyze-water-bill">Upload a bill for a hidden leak review</a>
         <p className="hero-copy">We combine meter math with your observations to estimate leak size and recommend the next call.</p>
       </div>
     </section>

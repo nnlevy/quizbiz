@@ -877,12 +877,21 @@ function App({ focusUpload = false }: AppProps) {
     });
   };
 
+  const syncCredits = (nextCredits: number | undefined) => {
+    if (typeof nextCredits !== "number") return;
+    setGlobalCredits(nextCredits);
+    creditsRef.current = nextCredits;
+  };
+
   const parseErrorResponse = async (response: Response, fallback: string) => {
     try {
       const responseClone = response.clone();
       const contentType = response.headers.get("content-type") ?? "";
       if (contentType.includes("application/json")) {
         const payload = await responseClone.json();
+        if (typeof payload?.credits === "number") {
+          syncCredits(payload.credits);
+        }
         const message =
           (typeof payload?.error === "string" && payload.error.trim()) ||
           (typeof payload?.message === "string" && payload.message.trim());
@@ -1703,7 +1712,9 @@ function App({ focusUpload = false }: AppProps) {
       const jsonResponse = (await response.json()) as {
         payload?: UtilityPayload | UtilityPayload[];
         html?: string;
+        credits?: number;
       };
+      syncCredits(jsonResponse.credits);
       const normalizedPayloads = Array.isArray(jsonResponse.payload)
         ? jsonResponse.payload
         : jsonResponse.payload
@@ -1715,7 +1726,6 @@ function App({ focusUpload = false }: AppProps) {
         setLocationError(notFoundMessage);
         return;
       }
-      spendCredit("Location intel retrieved.");
       setUtilityResults(normalizedPayloads);
       setLocationHtml(jsonResponse.html || "");
       setLocationStatus("Results ready — scroll down or jump to the cards.");
@@ -1763,7 +1773,9 @@ function App({ focusUpload = false }: AppProps) {
       const result = (await response.json()) as {
         analysis?: AnalysisResult | null;
         html?: string;
+        credits?: number;
       };
+      syncCredits(result.credits);
       setResponseMessage("Success!");
       if (result.analysis && isAnalysisResult(result.analysis)) {
         setAnalysisResult(result.analysis);
@@ -1830,10 +1842,6 @@ function App({ focusUpload = false }: AppProps) {
       setResponseMessage(copy.analyze.errors.wrongType);
       return;
     }
-    if (creditsRef.current <= 0) {
-      setResponseMessage("Add credits to unlock full bill analysis.");
-      return;
-    }
     logEvent("cta_click", { type: "analyze" });
     logEvent("upload_start", {
       file_size: file.size,
@@ -1874,8 +1882,9 @@ function App({ focusUpload = false }: AppProps) {
       const result = (await response.json()) as {
         analysis?: AnalysisResult | null;
         html?: string;
+        credits?: number;
       };
-      spendCredit("Bill analysis completed.");
+      syncCredits(result.credits);
       setResponseMessage("Success!");
       if (result.analysis && isAnalysisResult(result.analysis)) {
         setAnalysisResult(result.analysis);

@@ -2,7 +2,6 @@ import { StrictMode, Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-import LeakPatrol from "./LeakPatrol";
 import HiddenLeaksPage from "../pages/HiddenLeaksPage";
 import LeakDetectionPage from "../pages/LeakDetectionPage";
 import LandingPage from "../pages/LandingPage";
@@ -59,7 +58,6 @@ const SeoHiddenNav = () => (
     <a href="/analyze-water-bill">Analyze my bill</a>
     <a href="/find-water-provider">Look up my water bill</a>
     <a href="/research">Research</a>
-    <a href="/game">Leak Patrol</a>
     <a href="/eject-water">Eject Water</a>
     <a href="/about">About</a>
     {/* Legacy SPA link kept for SEO discovery without exposing in primary navigation. */}
@@ -211,9 +209,6 @@ const RouterView = () => {
           <EjectWater />
         </AppShell>
       );
-    }
-    if (pathname.startsWith("/game") || pathname.startsWith("/leak-patrol")) {
-      return <LeakPatrol />;
     }
     if (pathname.startsWith("/legacy")) {
       return <LegacyApp />;
