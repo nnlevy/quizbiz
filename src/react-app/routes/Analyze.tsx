@@ -274,7 +274,7 @@ const Analyze = () => {
             <h2>More tools</h2>
             <p>Keep exploring while your insights are fresh.</p>
             <div className="ws-tool-grid">
-              <RouterLink to="/game">Play Leak Patrol</RouterLink>
+              <RouterLink to="/water-iq">Take the Water IQ Challenge</RouterLink>
               <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
               <RouterLink to="/research">Build a research plan</RouterLink>
               <RouterLink to="/eject-water">Open Eject Water</RouterLink>

@@ -5,6 +5,7 @@ import { RouterLink, useNavigate } from "./router";
 import { saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
 import { isAnalysisResult, toAnalysisRecord } from "../utils/analysisTransform";
+import { useCredits } from "../context/CreditsContext";
 
 type ManualFormState = {
   period: string;
@@ -21,6 +22,7 @@ const UNIT_OPTIONS = ["Gallons", "CCF", "HCF"];
 const ManualEntry = () => {
   useDocumentTitle("WaterShortcut | Manual entry");
   const navigate = useNavigate();
+  const { setCredits } = useCredits();
   const [formState, setFormState] = useState<ManualFormState>({
     period: "",
     usage: "",
@@ -62,11 +64,22 @@ const ManualEntry = () => {
       });
 
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string; credits?: number }
+          | null;
+        if (typeof payload?.credits === "number") {
+          setCredits(payload.credits);
+        }
         throw new Error(payload?.error || "We couldn’t analyze the manual entry yet.");
       }
 
-      const payload = (await response.json()) as { analysis?: AnalysisResult | null };
+      const payload = (await response.json()) as {
+        analysis?: AnalysisResult | null;
+        credits?: number;
+      };
+      if (typeof payload.credits === "number") {
+        setCredits(payload.credits);
+      }
       if (!payload.analysis || !isAnalysisResult(payload.analysis)) {
         throw new Error("The AI response was incomplete. Please try again.");
       }

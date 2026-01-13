@@ -9,7 +9,6 @@ export const copy = {
     switcherLabel: "Mode",
     homeLabel: "Home Water Savings",
     ejectLabel: "Eject Water (iPhone)",
-    gameLabel: "Play Leak Patrol Game",
   },
   footer: {
     estimates: "Estimates, not guarantees.",

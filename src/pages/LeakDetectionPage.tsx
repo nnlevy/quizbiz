@@ -95,7 +95,7 @@ const LeakDetectionPage = () => (
         you will have baseline records ready for a dispute or a repair ticket.
       </p>
       <div className="cta-block">
-        <a className="primary-button" href="/upload">Upload your bill to check for leak signals</a>
+        <a className="primary-button" href="/analyze-water-bill">Upload your bill to check for leak signals</a>
         <p className="hero-copy">Our AI flags overnight flow patterns and tier jumps so you can act before the next billing cycle.</p>
       </div>
     </section>
