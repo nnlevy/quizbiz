@@ -9,7 +9,7 @@ This document inventories the WaterShortcut app surfaces, components, and data f
 
 ### Runtime layers
 - **Cloudflare Worker (Hono)** serves HTML routes, API endpoints, CSP/security headers, and static assets (`/assets/styles.css`, `/assets/app.js`).
-- **React SPA (Vite)** powers interactive pages, the main “Analyze bill” workflow, and the Leak Patrol game.
+- **React SPA (Vite)** powers interactive pages and the main “Analyze bill” workflow for authenticated/SPA experiences.
 - **SEO prerender** (build-time) clones HTML for public routes with metadata from a single SEO config.
 
 ### Key source-of-truth files
@@ -25,17 +25,17 @@ This document inventories the WaterShortcut app surfaces, components, and data f
 
 ### React SPA routes
 Rendered by `src/react-app/main.tsx` and the `App` component.
-- `/` and `/upload` → **React App** (bill analysis, calculators, location finder, savings plan UX).
-- `/game` or `/leak-patrol` → **Leak Patrol** game.
-- `/learn/*` pages → **React content pages**.
+- `/` → **React App** (bill analysis, calculators, location finder, savings plan UX).
+- `/analysis-results/*`, `/manual-entry`, `/credits`, `/dashboard`, `/sign-in`, `/sign-up` → **React App**.
+- `/learn/*` pages → **React content pages** (redirected to Worker guides in production).
 - `/privacy`, `/terms`, `/site-map` → **React pages**.
 
 ### Worker HTML routes (SSR + static, with vanilla JS)
 Rendered by `src/worker/index.ts` via `siteRoutes` and HTML renderer helpers.
-- Marketing + utility tools: `/`, `/analyze-water-bill`, `/savings-plan`, `/calculators/*`, `/leak-check`, `/rebates`, `/guides/*`.
+- Marketing + utility tools: `/`, `/analyze-water-bill`, `/find-water-provider`, `/savings-plan`, `/calculators/*`, `/leak-check`, `/rebates`, `/guides/*`, `/water-iq`.
 - Water Eject blog pages: `/blog-how-to-eject.html`, `/blog-is-it-safe.html`.
 - Trust modals and legal pages: `/privacy`, `/terms`, `/affiliate`, `/disclaimer`.
-- Diagnostics: `/__ads`.
+- Diagnostics: `/__ads` (admin-key gated).
 
 > ⚠️ Note: some routes exist in both the Worker-rendered set and the React SPA. The Worker output is optimized for crawlability and non‑JS rendering; the SPA takes over when React is loaded.
 
@@ -48,7 +48,6 @@ Rendered by `src/worker/index.ts` via `siteRoutes` and HTML renderer helpers.
 - **Consent + privacy:** `ConsentBanner`, `PrivacyControls`.
 - **Results + sharing:** `ResultsCard`, `ShareExportBar`, `UtilityResultCard`.
 - **UI helpers:** `Stepper`, `TrustCapsule`, `InlineHelpAccordion`.
-- **Game:** `LeakPatrol` + `LeakPatrol.css`.
 
 ### React utilities
 - **Analytics/consent gating:** `src/react-app/analytics.ts`, `src/react-app/consent.ts`.
@@ -71,14 +70,13 @@ All of these produce HTML fragments used by the Worker to render static pages:
 | --- | --- | --- | --- |
 | Core navigation, layout, static content | React + Worker HTML | ✅ Implemented | No external services required. |
 | Bill upload + AI analysis | Worker `/api/analyze-bill` | ⚠️ Requires external services | Needs Google Document AI endpoint + service account secret + OpenAI key. |
-| Manual bill entry (no upload) | React App | ✅ Implemented | Local-only; no API requirement. |
+| Manual bill entry (no upload) | Worker `/api/analyze-manual` + React | ✅ Implemented | Uses OpenAI to build insights from manual inputs. |
 | Results display + share/export | React `ResultsCard` + `ShareExportBar` | ✅ Implemented | Share uses URL fragment encoding. |
-| Location/provider assistant | Worker `/api/location` + React fetch | ⚠️ Requires network | Uses D1 lookup if configured; falls back to OpenAI; otherwise static fallback data. |
-| Rebate finder | Worker `/api/rebates` | ⚠️ Requires OpenAI | Requires OpenAI key; cached in memory. |
+| Location/provider assistant | Worker `/api/location` + React fetch | ⚠️ Requires network | Uses D1 lookup if configured; otherwise static fallback data. |
+| Rebate finder | Worker `/api/rebates` | ⚠️ Requires OpenAI | Requires OpenAI key; cached in KV. |
 | Credit purchase checkout | Worker `/api/credits/checkout` | ⚠️ Requires Stripe | Requires `STRIPE_API_KEY`. |
 | Water Eject shortcut UI | React App | ✅ Implemented | Uses hardcoded iCloud shortcut link + QR generator. |
 | QR generation for Water Eject | React App | ⚠️ Requires external network | Uses `api.qrserver.com` image URL. |
-| Leak Patrol game | React App | ✅ Implemented | Client‑only. |
 | Ads | Worker HTML + React slots | ⚠️ Requires AdSense + consent | Requires AdSense client/slot IDs, CSP, user consent. |
 | Analytics | React analytics helpers | ⚠️ Requires GA + consent | Requires GA measurement ID, user consent. |
 | SEO prerender output | Build step | ✅ Implemented | Requires `npm run build` / `npm run prerender`. |
@@ -99,14 +97,13 @@ All of these produce HTML fragments used by the Worker to render static pages:
 2. Client hits `/api/location`.
 3. Worker attempts:
    - D1 lookup (if `domains-db` bound).
-   - OpenAI assistant response (if OpenAI key set).
    - Fallback hardcoded lookup or generic search link.
 
 ### C) Rebates assistant
 1. User provides ZIP and upgrade preferences.
 2. Client posts to `/api/rebates`.
 3. Worker prompts OpenAI to return structured rebate results.
-4. Results cached in memory for 12 hours.
+4. Results cached in KV for 12 hours.
 
 ### D) Credits + Stripe checkout
 1. User clicks “Add credits.”
@@ -163,7 +160,7 @@ Set these in Cloudflare (or local secrets) for full functionality:
 ---
 
 ## 8) Known limitations / risks
-- **External service dependence**: bill analysis, rebates, and location lookups degrade without OpenAI + Google credentials.
+- **External service dependence**: bill analysis and rebates degrade without OpenAI + Google credentials. Location lookup is limited without the D1 directory binding.
 - **Ads/analytics**: always gated by consent; expect no ads if consent is denied.
 - **QR code**: relies on an external image service; replace if you need full offline capability.
 
@@ -174,9 +171,7 @@ Set these in Cloudflare (or local secrets) for full functionality:
 - **Fallback utility data:** `src/worker/locationFallback.ts`
 - **React app:** `src/react-app/App.tsx`
 - **React pages:** `src/pages/*`
-- **Leak Patrol game:** `src/react-app/LeakPatrol.tsx`
 - **Copy + policies:** `src/copy.ts`
 - **SEO config:** `src/seo/seoConfig.js`
 - **Ads + analytics config:** `src/config/adsense.ts`, `src/config/analytics.ts`
 - **Consent/ads/analytics helpers:** `src/react-app/consent.ts`, `src/react-app/adsense.ts`, `src/react-app/analytics.ts`
-

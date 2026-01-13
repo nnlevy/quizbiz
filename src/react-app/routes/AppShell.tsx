@@ -170,17 +170,17 @@ const AppShell = ({ children }: AppShellProps) => {
               <span className="ws-nav-section">Learn</span>
               <ul className="ws-subnav">
                 <li>
-                  <RouterLink to="/learn/read-water-bill" reloadDocument>
+                  <RouterLink to="/guides/water-bill" reloadDocument>
                     Read Your Bill
                   </RouterLink>
                 </li>
                 <li>
-                  <RouterLink to="/learn/leak-detection" reloadDocument>
+                  <RouterLink to="/guides/find-fix-leaks" reloadDocument>
                     Leak Detection
                   </RouterLink>
                 </li>
                 <li>
-                  <RouterLink to="/learn/water-saving-tips" reloadDocument>
+                  <RouterLink to="/guides" reloadDocument>
                     Water-Saving Tips
                   </RouterLink>
                 </li>

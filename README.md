@@ -33,13 +33,32 @@ npm run preview
 
 ### Public route map (prerendered)
 - `/`
-- `/upload`
-- `/learn/read-water-bill`
-- `/learn/leak-detection`
-- `/learn/water-saving-tips`
-- `/learn/water-bill-spikes`
-- `/learn/hidden-leaks`
-- `/game`
+- `/analyze-water-bill`
+- `/find-water-provider`
+- `/savings-plan`
+- `/water-iq`
+- `/calculators`
+- `/calculators/shower`
+- `/calculators/faucet`
+- `/calculators/toilet`
+- `/calculators/laundry`
+- `/calculators/outdoor`
+- `/leak-check`
+- `/rebates`
+- `/guides`
+- `/guides/showerheads`
+- `/guides/find-fix-leaks`
+- `/guides/toilets`
+- `/guides/water-bill`
+- `/guides/outdoor-watering`
+- `/blog-how-to-eject.html`
+- `/blog-is-it-safe.html`
+- `/about`
+- `/contact`
+- `/privacy`
+- `/terms`
+- `/affiliate`
+- `/disclaimer`
 
 ## SEO validation checklist
 - Run `npm run seo:check` after a build to verify every prerendered route has `<title>`, description, canonical, OG/Twitter tags, and exactly one H1.

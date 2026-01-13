@@ -5,10 +5,12 @@ import { RouterLink, useNavigate } from "./router";
 import { saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
 import { isAnalysisResult, toAnalysisRecord } from "../utils/analysisTransform";
+import { useCredits } from "../context/CreditsContext";
 
 const Home = () => {
   useDocumentTitle("WaterShortcut | Analyze your water bill");
   const navigate = useNavigate();
+  const { setCredits } = useCredits();
   const [fileName, setFileName] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<"upload" | "demo" | "manual" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -35,10 +37,21 @@ const Home = () => {
         body: formData,
       });
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string; credits?: number }
+          | null;
+        if (typeof payload?.credits === "number") {
+          setCredits(payload.credits);
+        }
         throw new Error(payload?.error || "We couldn’t analyze that file yet.");
       }
-      const payload = (await response.json()) as { analysis?: AnalysisResult | null };
+      const payload = (await response.json()) as {
+        analysis?: AnalysisResult | null;
+        credits?: number;
+      };
+      if (typeof payload.credits === "number") {
+        setCredits(payload.credits);
+      }
       if (!payload.analysis || !isAnalysisResult(payload.analysis)) {
         throw new Error("The AI response was incomplete. Please try again.");
       }
@@ -153,13 +166,15 @@ const Home = () => {
       <div id="more-tools" className="ws-info-card" aria-label="Explore more tools">
         <h2>More tools to explore</h2>
         <p className="ws-subtitle">
-          Want to browse before uploading? Try a quick quiz, play a game, or build a research plan.
+          Want to browse before uploading? Try a quick quiz or build a research plan.
         </p>
         <div className="ws-tool-grid">
           <RouterLink to="/water-iq">Take the Water IQ Challenge</RouterLink>
-          <RouterLink to="/game">Play Leak Patrol</RouterLink>
+          <RouterLink to="/guides" reloadDocument>
+            Explore water-saving guides
+          </RouterLink>
           <RouterLink to="/research">Build a research plan</RouterLink>
-          <RouterLink to="/learn/read-water-bill" reloadDocument>
+          <RouterLink to="/guides/water-bill" reloadDocument>
             Learn how to read your bill
           </RouterLink>
           <RouterLink to="/calculators" reloadDocument>

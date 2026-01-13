@@ -142,7 +142,7 @@ const ReadWaterBillPage = () => (
         get language you can use when contacting your utility.
       </p>
       <div className="cta-block">
-        <a className="primary-button" href="/upload">
+        <a className="primary-button" href="/analyze-water-bill">
           Upload your water bill
         </a>
         <p className="hero-copy">Free analysis with privacy controls and compliance-ready consent options.</p>

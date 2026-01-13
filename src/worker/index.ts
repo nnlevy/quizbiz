@@ -46,8 +46,9 @@ const SINK_FLOW_RATE = 1.5;
 const COST_PER_GALLON_MIN = 0.0058;
 const COST_PER_GALLON_MAX = 0.009;
 const REBATE_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
-
-const rebateCache = new Map<string, { expiresAt: number; payload: RebateResponse }>();
+const REBATE_CACHE_TTL_SECONDS = Math.floor(REBATE_CACHE_TTL_MS / 1000);
+const ANALYSIS_CREDIT_COST = 1;
+const LOCATION_CREDIT_COST = 1;
 const viralInsightCache = new Map<string, string>();
 const viralEventCounts = {
   scoreGenerated: 0,
@@ -640,19 +641,7 @@ const siteRoutes: SiteRoute[] = [
     body: renderTrustPage("privacy"),
   },
   {
-    path: "/terms/privacy",
-    title: "Privacy | WaterShortcut",
-    description: "How we handle analytics, uploads, and data.",
-    body: renderTrustPage("privacy"),
-  },
-  {
     path: "/terms",
-    title: "Terms | WaterShortcut",
-    description: "Use at your own risk. Estimates only.",
-    body: renderTrustPage("terms"),
-  },
-  {
-    path: "/terms/tos",
     title: "Terms | WaterShortcut",
     description: "Use at your own risk. Estimates only.",
     body: renderTrustPage("terms"),
@@ -904,6 +893,54 @@ const ensureSession = async (c: Context) => {
 
   await persistSessionRecord(c.env, sessionId, session);
   return { sessionId, session, needsCookie };
+};
+
+const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: boolean) => {
+  if (!needsCookie) return;
+  c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
+};
+
+const requireCredits = async (c: Context, cost: number) => {
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  const credits = session.credits ?? DEFAULT_CREDITS;
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  if (credits < cost) {
+    return {
+      ok: false,
+      response: c.json(
+        {
+          error: "Not enough credits to complete this request.",
+          credits,
+        },
+        402,
+      ),
+    };
+  }
+  return { ok: true, sessionId, session, needsCookie, credits };
+};
+
+const debitCredits = async (
+  c: Context,
+  sessionId: string,
+  session: SessionRecord,
+  cost: number,
+  needsCookie: boolean,
+) => {
+  const nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
+  const updatedSession: SessionRecord = {
+    userId: session.userId,
+    credits: nextCredits,
+    createdAt: session.createdAt,
+  };
+  await persistSessionRecord(c.env, sessionId, updatedSession);
+  if (session.userId) {
+    await c.env.UsersAcrossAllDomains
+      .prepare("UPDATE users SET credits = ?1 WHERE id = ?2")
+      .bind(nextCredits, session.userId)
+      .run();
+  }
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  return nextCredits;
 };
 
 const base64Encode = (bytes: Uint8Array): string => {
@@ -1310,6 +1347,11 @@ app.get("/ads.txt", (c) =>
 app.get("/water-iq/", (c) => c.redirect("/water-iq", 301));
 
 app.get("/__ads", (c) => {
+  const required = c.env.WS_ADMIN_EXPORT_KEY ?? "";
+  const key = new URL(c.req.url).searchParams.get("key") ?? "";
+  if (!required || key !== required) {
+    return c.text("Not found", 404);
+  }
   const adsenseSlots = buildAdsenseSlots(c.env);
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
@@ -1319,7 +1361,7 @@ app.get("/__ads", (c) => {
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
   const cspNonce = c.get("cspNonce") as string;
-  return c.html(
+  const response = c.html(
     layout({
       title: "AdSense diagnostics | WaterShortcut",
       description: "Internal ad diagnostics for verifying AdSense script loading and slot wiring.",
@@ -1336,6 +1378,8 @@ app.get("/__ads", (c) => {
       cspNonce,
     }),
   );
+  response.headers.set("X-Robots-Tag", "noindex");
+  return response;
 });
 
 app.get("/water-iq/og/:token", (c) => {
@@ -1489,6 +1533,16 @@ app.get("/share/:token", (c) => {
 app.get("/analyze", (c) => c.redirect("/analyze-water-bill", 301));
 app.get("/bill-lookup", (c) => c.redirect("/find-water-provider", 301));
 app.get("/site-map", (c) => c.redirect("/sitemap", 301));
+app.get("/upload", (c) => c.redirect("/analyze-water-bill", 301));
+app.get("/terms/privacy", (c) => c.redirect("/privacy", 301));
+app.get("/terms/tos", (c) => c.redirect("/terms", 301));
+app.get("/game", (c) => c.redirect("/water-iq", 301));
+app.get("/leak-patrol", (c) => c.redirect("/water-iq", 301));
+app.get("/learn/read-water-bill", (c) => c.redirect("/guides/water-bill", 301));
+app.get("/learn/leak-detection", (c) => c.redirect("/guides/find-fix-leaks", 301));
+app.get("/learn/water-saving-tips", (c) => c.redirect("/guides", 301));
+app.get("/learn/water-bill-spikes", (c) => c.redirect("/guides/water-bill", 301));
+app.get("/learn/hidden-leaks", (c) => c.redirect("/guides/find-fix-leaks", 301));
 
 siteRoutes.forEach((route) => {
   app.get(route.path, (c) => {
@@ -1605,7 +1659,6 @@ function layout(options: {
   const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const useEjectNav = isWaterEjectRoute(canonicalPath);
-  const isGameRoute = canonicalPath.startsWith("/game") || canonicalPath.startsWith("/leak-patrol");
   const isWaterIqRoute = canonicalPath.startsWith("/water-iq");
   const resolvedTwitterCard = twitterCard ?? "summary";
   const resolvedOgImage =
@@ -1670,14 +1723,11 @@ function layout(options: {
       <div class="mode-bar__content">
         <span class="mode-bar__label">${escapeHtml(copy.nav.switcherLabel)}</span>
         <div class="mode-bar__actions">
-          <a class="${!useEjectNav && !isGameRoute && !isWaterIqRoute ? "active" : ""}" href="/analyze-water-bill">${escapeHtml(
+          <a class="${!useEjectNav && !isWaterIqRoute ? "active" : ""}" href="/analyze-water-bill">${escapeHtml(
             copy.nav.homeLabel,
           )}</a>
           <a class="${useEjectNav ? "active" : ""}" href="/blog-how-to-eject.html">${escapeHtml(
             copy.nav.ejectLabel,
-          )}</a>
-          <a class="${isGameRoute ? "active" : ""}" href="/game">${escapeHtml(
-            copy.nav.gameLabel,
           )}</a>
           <a class="${isWaterIqRoute ? "active" : ""}" href="/water-iq">Water IQ</a>
         </div>
@@ -3124,6 +3174,10 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
       return c.json({ error: message }, 400);
     }
 
+    const creditCheck = await requireCredits(c, LOCATION_CREDIT_COST);
+    if (!creditCheck.ok) {
+      return creditCheck.response;
+    }
     const htmlResult = await resolveLocationHtml(locationInput.trim(), c.env);
 
     if (!htmlResult.success) {
@@ -3135,6 +3189,13 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
       );
     }
 
+    const updatedCredits = await debitCredits(
+      c,
+      creditCheck.sessionId,
+      creditCheck.session,
+      LOCATION_CREDIT_COST,
+      creditCheck.needsCookie,
+    );
     const acceptsJson =
       c.req.query("format") === "json" ||
       (c.req.header("accept") || "")
@@ -3144,6 +3205,7 @@ const handleLocationQuery = async (c: Context<{ Bindings: WorkerEnv }>) => {
     const responseBody = {
       html: htmlResult.html,
       payload: htmlResult.payload,
+      credits: updatedCredits,
     };
 
     if (acceptsJson) {
@@ -3340,6 +3402,12 @@ app.get("/api/water-iq/followup/due", (c) => {
 });
 
 app.get("/api/water-iq/audit", (c) => {
+  const url = new URL(c.req.url);
+  const key = url.searchParams.get("key") ?? "";
+  const required = c.env.WS_ADMIN_EXPORT_KEY ?? "";
+  if (!required || key !== required) {
+    return c.json({ ok: false, error: "Unauthorized" }, 401);
+  }
   const audit = runWaterIqAudit();
   return c.json({ ok: true, audit });
 });
@@ -3599,6 +3667,10 @@ const handleAnalyzeBill = async (c: any) => {
   let fileBytes: Uint8Array | null = null;
   try {
     validateUploadEnv(c.env);
+    const creditCheck = await requireCredits(c, ANALYSIS_CREDIT_COST);
+    if (!creditCheck.ok) {
+      return creditCheck.response;
+    }
     const contentType = c.req.header("content-type") || "";
     if (!contentType.includes("multipart/form-data")) {
       return c.json(
@@ -3662,6 +3734,13 @@ const handleAnalyzeBill = async (c: any) => {
       includeWaterContext: true,
     });
     const analysis = parseAnalysisPayload(openAiData);
+    const updatedCredits = await debitCredits(
+      c,
+      creditCheck.sessionId,
+      creditCheck.session,
+      ANALYSIS_CREDIT_COST,
+      creditCheck.needsCookie,
+    );
     const acceptsJson = (c.req.header("accept") || "")
       .toLowerCase()
       .includes("application/json");
@@ -3670,6 +3749,7 @@ const handleAnalyzeBill = async (c: any) => {
       return c.json({
         analysis,
         html: renderAnalysisResponse(openAiData),
+        credits: updatedCredits,
       });
     }
 
@@ -3721,6 +3801,10 @@ const parseManualNumber = (value: unknown): number | null => {
 const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
   try {
     validateLocationEnv(c.env);
+    const creditCheck = await requireCredits(c, ANALYSIS_CREDIT_COST);
+    if (!creditCheck.ok) {
+      return creditCheck.response;
+    }
     let payload: ManualEntryPayload;
     try {
       payload = (await c.req.json()) as ManualEntryPayload;
@@ -3757,10 +3841,18 @@ const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
       includeWaterContext: true,
     });
     const analysis = parseAnalysisPayload(openAiData);
+    const updatedCredits = await debitCredits(
+      c,
+      creditCheck.sessionId,
+      creditCheck.session,
+      ANALYSIS_CREDIT_COST,
+      creditCheck.needsCookie,
+    );
 
     return c.json({
       analysis,
       html: renderAnalysisResponse(openAiData),
+      credits: updatedCredits,
     });
   } catch (error) {
     console.error("Manual analysis failed:", error);
@@ -3771,6 +3863,24 @@ const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
       500,
     );
   }
+};
+
+const getRebateCacheKey = (cacheKey: string) => `rebates:${cacheKey}`;
+
+const readRebateCache = async (env: WorkerEnv, cacheKey: string): Promise<RebateResponse | null> => {
+  const kv = getUserSessionsKv(env);
+  const cached = await kv.get(getRebateCacheKey(cacheKey), "json");
+  if (cached && typeof cached === "object" && "results" in cached) {
+    return cached as RebateResponse;
+  }
+  return null;
+};
+
+const writeRebateCache = async (env: WorkerEnv, cacheKey: string, payload: RebateResponse) => {
+  const kv = getUserSessionsKv(env);
+  await kv.put(getRebateCacheKey(cacheKey), JSON.stringify(payload), {
+    expirationTtl: REBATE_CACHE_TTL_SECONDS,
+  });
 };
 
 const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
@@ -3805,9 +3915,9 @@ const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
     utility: payload.utility?.trim() || "",
     upgrades: upgrades.slice().sort(),
   });
-  const cached = rebateCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return c.json(cached.payload);
+  const cached = await readRebateCache(c.env, cacheKey);
+  if (cached) {
+    return c.json(cached);
   }
 
   const prompt = buildRebatePrompt({
@@ -3825,10 +3935,7 @@ const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
       lastChecked,
       results: parsed,
     };
-    rebateCache.set(cacheKey, {
-      expiresAt: Date.now() + REBATE_CACHE_TTL_MS,
-      payload: responsePayload,
-    });
+    await writeRebateCache(c.env, cacheKey, responsePayload);
     return c.json(responsePayload);
   } catch (error) {
     console.error("Rebate lookup failed:", error);

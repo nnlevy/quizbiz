@@ -35,7 +35,7 @@ const SiteMapPage = () => (
           <a href="/guides">Guides</a>
         </li>
         <li>
-          <a href="/upload">Upload a bill</a>
+          <a href="/analyze-water-bill">Upload a bill</a>
         </li>
       </ul>
     </section>
