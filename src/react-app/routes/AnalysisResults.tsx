@@ -255,7 +255,7 @@ const AnalysisResults = () => {
             </p>
           </div>
         </div>
-        <RouterLink className="ws-footer-link" to="/learn/read-water-bill">
+        <RouterLink className="ws-footer-link" to="/learn/read-water-bill" reloadDocument>
           Read the full guide →
         </RouterLink>
       </details>

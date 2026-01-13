@@ -12,6 +12,9 @@ const SiteMapPage = () => (
           <a href="/analyze-water-bill">Analyze your water bill</a>
         </li>
         <li>
+          <a href="/find-water-provider">Find your water provider</a>
+        </li>
+        <li>
           <a href="/savings-plan">Savings plan</a>
         </li>
         <li>

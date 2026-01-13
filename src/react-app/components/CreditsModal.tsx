@@ -33,6 +33,7 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const oauthEnabled = typeof window !== "undefined" && window.__WS_OAUTH_ENABLED__ !== false;
 
   const resolveAuthError = (code: string) => {
     switch (code) {
@@ -115,6 +116,10 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
   };
 
   const handleGoogle = () => {
+    if (!oauthEnabled) {
+      setError("Google sign-in is currently unavailable. Please use email.");
+      return;
+    }
     logEvent("credits_modal_google_clicked");
     sendAnonymousEvent("credits_modal_google_clicked", { return_to: returnTo });
     const params = new URLSearchParams({ return_to: returnTo });
@@ -236,9 +241,15 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                   className="ws-button"
                   onClick={handleGoogle}
                   aria-label="Continue with Google"
+                  disabled={!oauthEnabled}
                 >
                   Continue with Google
                 </button>
+                {!oauthEnabled && (
+                  <p className="ws-subtitle" role="status">
+                    Google sign-in is unavailable right now. Use email to continue.
+                  </p>
+                )}
                 <p className="credits-modal__divider">
                   <span>or create with email</span>
                 </p>

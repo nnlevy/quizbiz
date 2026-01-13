@@ -1314,6 +1314,7 @@ app.get("/__ads", (c) => {
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
+  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1329,6 +1330,7 @@ app.get("/__ads", (c) => {
       adsenseClient,
       gaMeasurementId,
       stripePublishableKey,
+      oauthEnabled,
       consentRequired,
       showPrivacyControls,
       cspNonce,
@@ -1372,6 +1374,7 @@ app.get("/water-iq/r/:token", (c) => {
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
+  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1390,6 +1393,7 @@ app.get("/water-iq/r/:token", (c) => {
         adsenseClient,
         gaMeasurementId,
         stripePublishableKey,
+        oauthEnabled,
         consentRequired,
         showPrivacyControls,
         cspNonce,
@@ -1424,6 +1428,7 @@ app.get("/water-iq/r/:token", (c) => {
       adsenseClient,
       gaMeasurementId,
       stripePublishableKey,
+      oauthEnabled,
       consentRequired,
       showPrivacyControls,
       cspNonce,
@@ -1481,12 +1486,17 @@ app.get("/share/:token", (c) => {
   );
 });
 
+app.get("/analyze", (c) => c.redirect("/analyze-water-bill", 301));
+app.get("/bill-lookup", (c) => c.redirect("/find-water-provider", 301));
+app.get("/site-map", (c) => c.redirect("/sitemap", 301));
+
 siteRoutes.forEach((route) => {
   app.get(route.path, (c) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
     const adsenseClient = resolveAdsenseClient(c.env);
     const gaMeasurementId = resolveGaMeasurementId(c.env);
     const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
+    const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
     const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
     const consentRequired = isConsentRequired(country);
     const showPrivacyControls = consentRequired;
@@ -1508,6 +1518,7 @@ siteRoutes.forEach((route) => {
         adsenseClient,
         gaMeasurementId,
         stripePublishableKey,
+        oauthEnabled,
         consentRequired,
         showPrivacyControls,
         cspNonce,
@@ -1565,6 +1576,7 @@ function layout(options: {
   adsenseClient: string;
   gaMeasurementId: string;
   stripePublishableKey: string;
+  oauthEnabled: boolean;
   consentRequired: boolean;
   showPrivacyControls: boolean;
   cspNonce: string;
@@ -1582,6 +1594,7 @@ function layout(options: {
     adsenseClient,
     gaMeasurementId,
     stripePublishableKey,
+    oauthEnabled,
     consentRequired,
     showPrivacyControls,
     cspNonce,
@@ -1747,6 +1760,7 @@ function layout(options: {
         window.__WS_SHOW_PRIVACY_CONTROLS__ = ${showPrivacyControls ? "true" : "false"};
         window.__WS_GA_MEASUREMENT_ID__ = "${gaMeasurementId}";
         window.__WS_STRIPE_PUBLISHABLE_KEY__ = "${escapeHtml(stripePublishableKey)}";
+        window.__WS_OAUTH_ENABLED__ = ${oauthEnabled ? "true" : "false"};
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         window.gtag = window.gtag || gtag;
@@ -1929,7 +1943,8 @@ function isWaterEjectRoute(pathname: string): boolean {
   return (
     pathname.startsWith("/blog-how-to-eject") ||
     pathname.startsWith("/blog-is-it-safe") ||
-    pathname.startsWith("/water-eject")
+    pathname.startsWith("/water-eject") ||
+    pathname.startsWith("/eject-water")
   );
 }
 

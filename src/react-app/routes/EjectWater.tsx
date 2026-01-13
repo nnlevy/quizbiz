@@ -25,7 +25,7 @@ const EjectWater = () => {
         >
           Open iOS Shortcut
         </a>
-        <RouterLink className="ws-footer-link" to="/analyze">
+        <RouterLink className="ws-footer-link" to="/analyze-water-bill">
           Back to savings mode →
         </RouterLink>
       </div>
