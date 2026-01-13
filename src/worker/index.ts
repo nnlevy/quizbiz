@@ -937,6 +937,7 @@ const debitCredits = async (
   needsCookie: boolean,
 ) => {
   let nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
+  const nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
   const updatedSession: SessionRecord = {
     userId: session.userId,
     credits: nextCredits,
@@ -959,6 +960,9 @@ const debitCredits = async (
         credits: nextCredits,
       });
     }
+      .prepare("UPDATE users SET credits = ?1 WHERE id = ?2")
+      .bind(nextCredits, session.userId)
+      .run();
   }
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
   return nextCredits;
