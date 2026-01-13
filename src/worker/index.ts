@@ -948,10 +948,10 @@ const debitCredits = async (
       .prepare("UPDATE users SET credits = MAX(credits - ?1, 0) WHERE id = ?2")
       .bind(cost, session.userId)
       .run();
-    const userRow = await c.env.UsersAcrossAllDomains
+    const userRow = (await c.env.UsersAcrossAllDomains
       .prepare("SELECT credits FROM users WHERE id = ?1")
       .bind(session.userId)
-      .first<{ credits: number }>();
+      .first()) as { credits: number } | null;
     if (userRow && typeof userRow.credits === "number") {
       nextCredits = userRow.credits;
       await persistSessionRecord(c.env, sessionId, {
