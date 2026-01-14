@@ -57,14 +57,16 @@ const PAGE_EXPERIENCE_RULES: PageExperienceRule[] = [
   },
 ];
 
+const DEFAULT_PAGE_EXPERIENCE_RULE: PageExperienceRule = {
+  id: "default",
+  flow: "marketing",
+  match: () => true,
+};
+
 export const getPageExperience = (pathname: string): PageExperience => {
   const normalizedPath = normalizePathname(pathname);
   const matchedRule =
-    PAGE_EXPERIENCE_RULES.find((rule) => rule.match(normalizedPath)) ??
-    ({
-      id: "default",
-      flow: "marketing",
-    } satisfies PageExperienceRule);
+    PAGE_EXPERIENCE_RULES.find((rule) => rule.match(normalizedPath)) ?? DEFAULT_PAGE_EXPERIENCE_RULE;
 
   return {
     id: matchedRule.id,
