@@ -19,13 +19,13 @@ After deploy:
 1. Open **URL inspection** in Search Console.
 2. Test live URLs for:
    - `/`
-   - `/upload`
-   - `/learn/read-water-bill`
-   - `/learn/leak-detection`
-   - `/learn/water-saving-tips`
-   - `/learn/water-bill-spikes`
-   - `/learn/hidden-leaks`
-   - `/game`
+   - `/analyze-water-bill`
+   - `/find-water-provider`
+   - `/savings-plan`
+   - `/calculators`
+   - `/rebates`
+   - `/guides`
+   - `/water-iq`
 3. If the URL is not indexed, click **Request indexing**.
 
 ## Pre-submission checklist

@@ -56,7 +56,7 @@ const WaterBillSpikesPage = () => (
         valve, which plumber to call, and how to contact the utility after hours.
       </p>
       <div className="cta-block">
-        <a className="primary-button" href="/upload">Upload two bills for a spike investigation</a>
+        <a className="primary-button" href="/analyze-water-bill">Upload two bills for a spike investigation</a>
         <p className="hero-copy">WaterShortcut highlights line items that changed most, then recommends fixes and talking points for your utility.</p>
       </div>
     </section>

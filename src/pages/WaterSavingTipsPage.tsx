@@ -81,7 +81,7 @@ const WaterSavingTipsPage = () => (
         your bill uploads so you can measure the savings trend.
       </p>
       <div className="cta-block">
-        <a className="primary-button" href="/upload">Upload a bill for a personalized savings plan</a>
+        <a className="primary-button" href="/analyze-water-bill">Upload a bill for a personalized savings plan</a>
         <p className="hero-copy">Our AI highlights the top three actions that drop you into cheaper tiers and lower wastewater fees.</p>
       </div>
     </section>
