@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import AdSenseSlot from "../components/AdSenseSlot";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
+import { isAdTypeEnabled } from "../ads/adPolicy";
 import { useCredits } from "../context/CreditsContext";
 import { useCreditsModal } from "../context/CreditsModalContext";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
@@ -56,8 +57,9 @@ const AppShell = ({ children }: AppShellProps) => {
   }, []);
 
   const showDeferred = scrollUnlocked;
-  const showAds = showDeferred && !adsRemoved;
   const isHome = location.pathname === "/";
+  const pageAllowsAds = isAdTypeEnabled(location.pathname, "footer");
+  const showAds = showDeferred && !adsRemoved && pageAllowsAds;
 
   return (
     <div className={`ws-shell${isHome ? " ws-shell--home" : ""}`}>
@@ -203,7 +205,7 @@ const AppShell = ({ children }: AppShellProps) => {
         </section>
       )}
 
-      <SiteFooter hideAds={adsRemoved || showAds} />
+      <SiteFooter hideAds={adsRemoved || showAds || !pageAllowsAds} />
     </div>
   );
 };

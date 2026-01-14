@@ -1,5 +1,6 @@
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
 import { hasAdsConsent } from "./consent";
+import { hasAnyAdsEnabled } from "./ads/adPolicy";
 
 const ADSENSE_CLIENT =
   (typeof window !== "undefined" &&
@@ -337,6 +338,10 @@ export const initializeAllAdSlots = () => {
 export const ensureAdSenseLoaded = () => {
   if (!hasAdsConsent()) {
     debugLog("AdSense blocked until consent is granted");
+    return;
+  }
+  if (!hasAnyAdsEnabled(window.location.pathname)) {
+    debugLog("AdSense blocked by page-level ad policy");
     return;
   }
   patchAdDimensionSetters();
