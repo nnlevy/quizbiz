@@ -936,6 +936,7 @@ const debitCredits = async (
   cost: number,
   needsCookie: boolean,
 ) => {
+  let nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
   const nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
   const updatedSession: SessionRecord = {
     userId: session.userId,
@@ -945,6 +946,20 @@ const debitCredits = async (
   await persistSessionRecord(c.env, sessionId, updatedSession);
   if (session.userId) {
     await c.env.UsersAcrossAllDomains
+      .prepare("UPDATE users SET credits = MAX(credits - ?1, 0) WHERE id = ?2")
+      .bind(cost, session.userId)
+      .run();
+    const userRow = (await c.env.UsersAcrossAllDomains
+      .prepare("SELECT credits FROM users WHERE id = ?1")
+      .bind(session.userId)
+      .first()) as { credits: number } | null;
+    if (userRow && typeof userRow.credits === "number") {
+      nextCredits = userRow.credits;
+      await persistSessionRecord(c.env, sessionId, {
+        ...updatedSession,
+        credits: nextCredits,
+      });
+    }
       .prepare("UPDATE users SET credits = ?1 WHERE id = ?2")
       .bind(nextCredits, session.userId)
       .run();
