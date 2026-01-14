@@ -900,6 +900,17 @@ const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: bo
   c.header("Set-Cookie", buildSessionCookie(sessionId, c.env, SESSION_TTL_SECONDS));
 };
 
+const fetchUserCredits = async (
+  db: D1Database,
+  userId: string,
+): Promise<number | null> => {
+  const userRow = (await db
+    .prepare("SELECT credits FROM users WHERE id = ?1")
+    .bind(userId)
+    .first()) as { credits?: unknown } | null;
+  return typeof userRow?.credits === "number" ? userRow.credits : null;
+};
+
 type RequireCreditsFailure = { ok: false; response: Response };
 type RequireCreditsSuccess = {
   ok: true;
@@ -912,8 +923,50 @@ type RequireCreditsResult = RequireCreditsFailure | RequireCreditsSuccess;
 
 const requireCredits = async (c: Context, cost: number): Promise<RequireCreditsResult> => {
   const { sessionId, session, needsCookie } = await ensureSession(c);
-  const credits = session.credits ?? DEFAULT_CREDITS;
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  if (session.userId) {
+    const db = c.env.UsersAcrossAllDomains;
+    const reservation = await db
+      .prepare(
+        "UPDATE users SET credits = credits - ?1 WHERE id = ?2 AND credits >= ?1",
+      )
+      .bind(cost, session.userId)
+      .run();
+    if (!reservation.meta?.changes) {
+      const currentCredits = await fetchUserCredits(db, session.userId);
+      if (currentCredits !== null) {
+        await persistSessionRecord(c.env, sessionId, {
+          ...session,
+          credits: currentCredits,
+        });
+      }
+      return {
+        ok: false,
+        response: c.json(
+          {
+            error: "Not enough credits to complete this request.",
+            credits: currentCredits ?? 0,
+          },
+          402,
+        ),
+      };
+    }
+
+    const remainingCredits =
+      (await fetchUserCredits(db, session.userId)) ??
+      Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
+    const updatedSession = { ...session, credits: remainingCredits };
+    await persistSessionRecord(c.env, sessionId, updatedSession);
+    return {
+      ok: true,
+      sessionId,
+      session: updatedSession,
+      needsCookie,
+      credits: remainingCredits,
+    };
+  }
+
+  const credits = session.credits ?? DEFAULT_CREDITS;
   if (credits < cost) {
     return {
       ok: false,
@@ -936,35 +989,24 @@ const debitCredits = async (
   cost: number,
   needsCookie: boolean,
 ) => {
-  let nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
-  const nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
+  let nextCredits = session.credits ?? DEFAULT_CREDITS;
+  if (session.userId) {
+    const currentCredits = await fetchUserCredits(
+      c.env.UsersAcrossAllDomains,
+      session.userId,
+    );
+    if (currentCredits !== null) {
+      nextCredits = currentCredits;
+    }
+  } else {
+    nextCredits = Math.max((session.credits ?? DEFAULT_CREDITS) - cost, 0);
+  }
   const updatedSession: SessionRecord = {
     userId: session.userId,
     credits: nextCredits,
     createdAt: session.createdAt,
   };
   await persistSessionRecord(c.env, sessionId, updatedSession);
-  if (session.userId) {
-    await c.env.UsersAcrossAllDomains
-      .prepare("UPDATE users SET credits = MAX(credits - ?1, 0) WHERE id = ?2")
-      .bind(cost, session.userId)
-      .run();
-    const userRow = (await c.env.UsersAcrossAllDomains
-      .prepare("SELECT credits FROM users WHERE id = ?1")
-      .bind(session.userId)
-      .first()) as { credits?: unknown } | null;
-      .first()) as { credits: number } | null;
-    if (userRow && typeof userRow.credits === "number") {
-      nextCredits = userRow.credits;
-      await persistSessionRecord(c.env, sessionId, {
-        ...updatedSession,
-        credits: nextCredits,
-      });
-    }
-      .prepare("UPDATE users SET credits = ?1 WHERE id = ?2")
-      .bind(nextCredits, session.userId)
-      .run();
-  }
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
   return nextCredits;
 };
