@@ -83,6 +83,7 @@ type WorkerEnv = {
   "Google-Service-Account-FINAL": string;
   UsersAcrossAllDomains: D1Database;
   UserSessionsAcrossDomains: KVNamespace;
+  USER_SESSIONS_ACROSS_DOMAINS?: KVNamespace;
   User_Sessions_Across_Domains?: KVNamespace;
   USERSESSIONSACROSSDOMAINS_ID?: KVNamespace;
   "domains-db"?: D1Database;
@@ -104,6 +105,7 @@ type WorkerEnv = {
 const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
   const kv =
     env.UserSessionsAcrossDomains ||
+    env.USER_SESSIONS_ACROSS_DOMAINS ||
     env.User_Sessions_Across_Domains ||
     env.USERSESSIONSACROSSDOMAINS_ID;
   if (!kv) {

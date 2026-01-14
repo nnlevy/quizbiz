@@ -19,15 +19,15 @@
   },
   "d1_databases": [
     {
-      "binding": "domains-db",
-      "database_name": "domains-db",
+      "binding": "UsersAcrossAllDomains",
+      "database_name": "UsersAcrossAllDomains",
       "database_id": "${DOMAINS_DB_ID}"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "USER_SESSIONS_ACROSS_DOMAINS",
-      "id": "${USER_SESSIONS_ACROSS_DOMAINS_ID}"
+      "id": "User_Sessions_Across_Domains"
     }
   ],
   "assets": {
