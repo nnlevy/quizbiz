@@ -232,6 +232,7 @@ type SiteRoute = {
   pageCssClass?: string;
   breadcrumbs?: Array<{ name: string; path: string }>;
   extraJsonLd?: Array<Record<string, unknown>>;
+  adsEnabled?: boolean;
 };
 
 type InlineScript = {
@@ -447,6 +448,7 @@ const siteRoutes: SiteRoute[] = [
       "Upload a water bill for a clear breakdown and a savings plan. Or use fast calculators for showers, toilets, leaks, laundry, and outdoor watering.",
     body: renderHome(),
     pageCssClass: "home",
+    adsEnabled: false,
   },
   {
     path: "/analyze-water-bill",
@@ -1648,6 +1650,7 @@ siteRoutes.forEach((route) => {
         consentRequired,
         showPrivacyControls,
         cspNonce,
+        adsEnabled: route.adsEnabled,
       }),
     );
   });
@@ -1706,6 +1709,7 @@ function layout(options: {
   consentRequired: boolean;
   showPrivacyControls: boolean;
   cspNonce: string;
+  adsEnabled?: boolean;
 }): string {
   const {
     title,
@@ -1724,10 +1728,14 @@ function layout(options: {
     consentRequired,
     showPrivacyControls,
     cspNonce,
+    adsEnabled: adsEnabledProp,
   } = options;
+  const adsEnabled = adsEnabledProp ?? true;
   const adsenseSlots = options.adsenseSlots || defaultAdsenseSlots;
   const inlineScripts = options.inlineScripts || [];
-  const processedBodyHtml = injectAdSlots(bodyHtml, adsenseSlots, adsenseClient);
+  const processedBodyHtml = adsEnabled
+    ? injectAdSlots(bodyHtml, adsenseSlots, adsenseClient)
+    : bodyHtml.replaceAll(INLINE_AD_MARKER, "");
   const canonicalUrl = canonicalPath.startsWith("http") ? canonicalPath : `${DOMAIN}${canonicalPath}`;
   const crumbList = breadcrumbs || (canonicalPath !== "/" ? buildBreadcrumbs(canonicalPath) : []);
   const useEjectNav = isWaterEjectRoute(canonicalPath);
@@ -1946,7 +1954,7 @@ function layout(options: {
       <script defer src="/assets/app.js" data-ws-app data-loaded="false"></script>
       ${inlineScriptTags}
     </head>
-    <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}">
+    <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}" data-ads-disabled="${adsEnabled ? "false" : "true"}">
       <div class="app-shell">
         <header class="site-header">
           <div class="nav-bar">
@@ -1984,13 +1992,17 @@ function layout(options: {
         </header>
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
         <main>${processedBodyHtml}</main>
-        <div class="section">
+        ${
+          adsEnabled
+            ? `<div class="section">
           ${renderAdSlot(adsenseSlots.footer ?? adsenseSlots.inline, {
             slotName: "footer",
             format: "autorelaxed",
             clientId: adsenseClient,
           })}
-        </div>
+        </div>`
+            : ""
+        }
         <footer class="footer">
           <div class="footer-inner">
             <div>
@@ -2003,7 +2015,9 @@ function layout(options: {
             </div>
           </div>
         </footer>
-        <div class="ad-sticky">
+        ${
+          adsEnabled
+            ? `<div class="ad-sticky">
           ${renderAdSlot(adsenseSlots.sticky, {
             slotName: "sticky",
             format: "fluid",
@@ -2011,7 +2025,9 @@ function layout(options: {
             layoutKey: DEFAULT_ADSENSE_STICKY_LAYOUT_KEY,
             clientId: adsenseClient,
           })}
-        </div>
+        </div>`
+            : ""
+        }
       </div>
       ${renderModals()}
       ${consentBanner}

@@ -907,6 +907,8 @@ export function clientScript(defaultAdsenseClient: string) {
   const MARGIN_AD_VISIBILITY_MS = 10000;
   const marginAdStates = new WeakMap<HTMLElement, { shownAt: number; baselineScrollY: number }>();
   const MARGIN_AD_HOME_PATH = '/';
+  let adsInitScheduled = false;
+  let adsInitialized = false;
 
   const isReactManagedAds = () => {
     const globalWindow = window as typeof window & { __WS_ADSENSE_MANAGED__?: string };
@@ -924,6 +926,7 @@ export function clientScript(defaultAdsenseClient: string) {
   };
 
   const isHomePage = () => window.location.pathname === MARGIN_AD_HOME_PATH;
+  const isAdsDisabled = () => document.body?.dataset.adsDisabled === 'true' || isHomePage();
 
   const isMarginAdOverlappingContent = (slot: HTMLElement) => {
     const main =
@@ -1274,6 +1277,9 @@ export function clientScript(defaultAdsenseClient: string) {
   };
 
   function initAds() {
+    if (isAdsDisabled()) {
+      return;
+    }
     if (isReactManagedAds()) {
       return;
     }
@@ -1318,6 +1324,43 @@ export function clientScript(defaultAdsenseClient: string) {
       }
     });
   }
+
+  const scheduleAdsInit = () => {
+    if (adsInitScheduled || isAdsDisabled()) return;
+    adsInitScheduled = true;
+
+    const startAds = () => {
+      if (adsInitialized || isAdsDisabled()) return;
+      adsInitialized = true;
+      initAds();
+      cleanup();
+    };
+
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        startAds();
+      }
+    };
+
+    const handleInteraction = () => {
+      startAds();
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('pointerdown', handleInteraction, { once: true });
+    window.addEventListener('keydown', handleInteraction, { once: true });
+    window.addEventListener('touchstart', handleInteraction, { once: true, passive: true });
+    if (window.scrollY > 0) {
+      startAds();
+    }
+  };
 
   patchAdDimensionSetters();
 
@@ -2326,7 +2369,7 @@ export function clientScript(defaultAdsenseClient: string) {
       trackPageView();
     };
     window.addEventListener('ws-consent-updated', handleConsentUpdate);
-    initAds();
+    scheduleAdsInit();
     if (isAdsDebugMode()) {
       updateDiagnosticsPanel();
       window.setInterval(updateDiagnosticsPanel, 2000);
