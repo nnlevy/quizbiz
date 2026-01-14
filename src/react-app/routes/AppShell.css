@@ -456,6 +456,13 @@
   display: none !important;
 }
 
+body[data-ads-disabled="true"] .ws-ads,
+body[data-ads-disabled="true"] .footer-ad,
+body[data-ads-disabled="true"] ins.adsbygoogle,
+body[data-ads-disabled="true"] .ws-margin-ad {
+  display: none !important;
+}
+
 .ws-footer-link {
   text-decoration: none;
   font-weight: 600;

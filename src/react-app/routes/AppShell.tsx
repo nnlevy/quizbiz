@@ -1,10 +1,12 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
+import { isAdTypeEnabled } from "../ads/adPolicy";
 import { useCredits } from "../context/CreditsContext";
 import { useCreditsModal } from "../context/CreditsModalContext";
+import { getPageExperience } from "../experience/pageExperience";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
@@ -27,14 +29,35 @@ const AppShell = ({ children }: AppShellProps) => {
     setMenuOpen(false);
   }, [location.pathname]);
 
+  const pageExperience = useMemo(
+    () => getPageExperience(location.pathname),
+    [location.pathname],
+  );
+  const adsEnabled = useMemo(
+    () => Object.values(pageExperience.ads).some(Boolean),
+    [pageExperience.ads],
+  );
+
   useEffect(() => {
     if (typeof document === "undefined") return;
     const isHome = location.pathname === "/";
     document.body.classList.toggle("ws-home", isHome);
+    document.body.dataset.adsDisabled = adsEnabled ? "false" : "true";
+    document.body.dataset.page = pageExperience.id;
+    document.body.dataset.flow = pageExperience.flow;
+    if (pageExperience.bodyClass) {
+      document.body.classList.add(pageExperience.bodyClass);
+    }
     return () => {
       document.body.classList.remove("ws-home");
+      if (pageExperience.bodyClass) {
+        document.body.classList.remove(pageExperience.bodyClass);
+      }
+      delete document.body.dataset.adsDisabled;
+      delete document.body.dataset.page;
+      delete document.body.dataset.flow;
     };
-  }, [location.pathname]);
+  }, [location.pathname, adsEnabled, pageExperience]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -56,8 +79,9 @@ const AppShell = ({ children }: AppShellProps) => {
   }, []);
 
   const showDeferred = scrollUnlocked;
-  const showAds = showDeferred && !adsRemoved;
   const isHome = location.pathname === "/";
+  const pageAllowsAds = isAdTypeEnabled(location.pathname, "footer");
+  const showAds = showDeferred && !adsRemoved && pageAllowsAds;
 
   return (
     <div className={`ws-shell${isHome ? " ws-shell--home" : ""}`}>
@@ -199,11 +223,11 @@ const AppShell = ({ children }: AppShellProps) => {
 
       {showAds && (
         <section className="ws-ads" aria-label="Sponsored">
-          <AdSenseSlot slotId={DEFAULT_ADSENSE_SLOTS.footer} format="auto" />
+          <AdSenseSlot slotId={DEFAULT_ADSENSE_SLOTS.footer} format="auto" adType="footer" />
         </section>
       )}
 
-      <SiteFooter hideAds={adsRemoved || showAds} />
+      <SiteFooter hideAds={adsRemoved || showAds || !pageAllowsAds} />
     </div>
   );
 };

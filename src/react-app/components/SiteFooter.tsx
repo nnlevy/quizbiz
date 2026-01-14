@@ -41,6 +41,7 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
             slotId={DEFAULT_ADSENSE_SLOTS.footer}
             format="autorelaxed"
             className="ad-slot"
+            adType="footer"
           />
         </div>
       )}
