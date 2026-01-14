@@ -1,7 +1,6 @@
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
 import { hasAdsConsent } from "./consent";
 import { isAdTypeEnabled, hasAnyAdsEnabled, type AdType } from "./ads/adPolicy";
-import { hasAnyAdsEnabled } from "./ads/adPolicy";
 
 const ADSENSE_CLIENT =
   (typeof window !== "undefined" &&
