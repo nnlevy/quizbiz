@@ -24,6 +24,12 @@
       "database_id": "${DOMAINS_DB_ID}"
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "USER_SESSIONS_ACROSS_DOMAINS",
+      "id": "${USER_SESSIONS_ACROSS_DOMAINS_ID}"
+    }
+  ],
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"
