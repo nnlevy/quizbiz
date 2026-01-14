@@ -1,5 +1,6 @@
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
 import { hasAdsConsent } from "./consent";
+import { isAdTypeEnabled, hasAnyAdsEnabled, type AdType } from "./ads/adPolicy";
 import { hasAnyAdsEnabled } from "./ads/adPolicy";
 
 const ADSENSE_CLIENT =
@@ -34,6 +35,10 @@ const marginAdStates = new WeakMap<HTMLElement, MarginAdState>();
 const MARGIN_AD_HOME_PATH = "/";
 
 const isHomePage = () => window.location.pathname === MARGIN_AD_HOME_PATH;
+const getSlotAdType = (slot: HTMLElement): AdType =>
+  (slot.dataset.adType as AdType | undefined) ?? "inline";
+const isSlotAllowedOnPage = (slot: HTMLElement, pathname: string): boolean =>
+  isAdTypeEnabled(pathname, getSlotAdType(slot));
 
 const isMarginAdOverlappingContent = (slot: HTMLElement) => {
   const main = document.querySelector<HTMLElement>(".ws-main");
@@ -184,8 +189,8 @@ const isSlotEligible = (slot: HTMLElement) => {
 };
 
 const hasEligibleSlots = () =>
-  Array.from(document.querySelectorAll<HTMLElement>(".adsbygoogle[data-ad-slot]")).some((slot) =>
-    isSlotEligible(slot),
+  Array.from(document.querySelectorAll<HTMLElement>(".adsbygoogle[data-ad-slot]")).some(
+    (slot) => isSlotEligible(slot) && isSlotAllowedOnPage(slot, window.location.pathname),
   );
 
 const logAdStatus = (label: string) => {
@@ -283,6 +288,11 @@ const updateMarginAds = () => {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("ins.adsbygoogle"));
   candidates.forEach((slot) => {
     if (!isMarginAdCandidate(slot)) return;
+    if (!isAdTypeEnabled(window.location.pathname, "sticky")) {
+      hideMarginAd(slot);
+      marginAdStates.delete(slot);
+      return;
+    }
     ensureMarginAdBase(slot);
     if (isHomePage() || isMarginAdOverlappingContent(slot)) {
       hideMarginAd(slot);
@@ -331,7 +341,10 @@ export const initializeAllAdSlots = () => {
   }
   document
     .querySelectorAll<HTMLElement>(".adsbygoogle[data-ad-slot]")
-    .forEach((slot) => initializeSlot(slot));
+    .forEach((slot) => {
+      if (!isSlotAllowedOnPage(slot, window.location.pathname)) return;
+      initializeSlot(slot);
+    });
   logAdStatus("AdSense slot status");
 };
 

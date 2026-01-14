@@ -1,3 +1,5 @@
+import { normalizePathname } from "../utils/pathname";
+
 export type AdType = "footer" | "inline" | "sticky";
 
 export type AdVisibility = Record<AdType, boolean>;
@@ -27,6 +29,10 @@ const AD_PAGE_RULES: AdPageRule[] = [
 ];
 
 export const getAdVisibilityForPath = (pathname: string): AdVisibility => {
+  const normalizedPath = normalizePathname(pathname);
+  let visibility = { ...DEFAULT_AD_VISIBILITY };
+  AD_PAGE_RULES.forEach((rule) => {
+    if (rule.match(normalizedPath)) {
   let visibility = { ...DEFAULT_AD_VISIBILITY };
   AD_PAGE_RULES.forEach((rule) => {
     if (rule.match(pathname)) {
