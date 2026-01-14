@@ -33,9 +33,6 @@ export const getAdVisibilityForPath = (pathname: string): AdVisibility => {
   let visibility = { ...DEFAULT_AD_VISIBILITY };
   AD_PAGE_RULES.forEach((rule) => {
     if (rule.match(normalizedPath)) {
-  let visibility = { ...DEFAULT_AD_VISIBILITY };
-  AD_PAGE_RULES.forEach((rule) => {
-    if (rule.match(pathname)) {
       visibility = { ...visibility, ...rule.visibility };
     }
   });
