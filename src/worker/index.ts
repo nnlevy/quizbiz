@@ -952,6 +952,7 @@ const debitCredits = async (
     const userRow = (await c.env.UsersAcrossAllDomains
       .prepare("SELECT credits FROM users WHERE id = ?1")
       .bind(session.userId)
+      .first()) as { credits?: unknown } | null;
       .first()) as { credits: number } | null;
     if (userRow && typeof userRow.credits === "number") {
       nextCredits = userRow.credits;
