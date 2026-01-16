@@ -29,7 +29,11 @@ const resolveRequiredEnv = (key, alternateKey) => {
 const applyBindingIds = (config) => {
   if (Array.isArray(config.d1_databases)) {
     config.d1_databases = config.d1_databases.map((entry) => {
-      if (typeof entry?.database_id === "string" && entry.database_id.includes("${DOMAINS_DB_ID}")) {
+      if (
+        typeof entry?.database_id === "string" &&
+        (entry.database_id.includes("${DOMAINS_DB_ID}") ||
+          entry.database_id.includes("${DOMAINS_DB_ID_NEW}"))
+      ) {
         return {
           ...entry,
           database_id: resolveRequiredEnv("DOMAINS_DB_ID", "DOMAINS_DB_ID_NEW"),
@@ -47,7 +51,11 @@ const applyBindingIds = (config) => {
 
   if (Array.isArray(config.kv_namespaces)) {
     config.kv_namespaces = config.kv_namespaces.map((entry) => {
-      if (typeof entry?.id === "string" && entry.id.includes("${USER_SESSIONS_ACROSS_DOMAINS_ID}")) {
+      if (
+        typeof entry?.id === "string" &&
+        (entry.id.includes("${USER_SESSIONS_ACROSS_DOMAINS_ID}") ||
+          entry.id.includes("${USER_SESSIONS_ACROSS_DOMAINS_ID_NEW}"))
+      ) {
         return {
           ...entry,
           id: resolveRequiredEnv("USER_SESSIONS_ACROSS_DOMAINS_ID", "USER_SESSIONS_ACROSS_DOMAINS_ID_NEW"),

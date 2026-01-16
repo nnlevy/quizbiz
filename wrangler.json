@@ -21,13 +21,13 @@
     {
       "binding": "UsersAcrossAllDomains",
       "database_name": "domains-db",
-      "database_id": "${DOMAINS_DB_ID}"
+      "database_id": "${DOMAINS_DB_ID_NEW}"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "USER_SESSIONS_ACROSS_DOMAINS",
-      "id": "${USER_SESSIONS_ACROSS_DOMAINS_ID}"
+      "id": "${USER_SESSIONS_ACROSS_DOMAINS_ID_NEW}"
     }
   ],
   "assets": {
