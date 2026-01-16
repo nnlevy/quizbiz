@@ -1524,7 +1524,12 @@ ins.adsbygoogle[style*="position: fixed"] {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 0.4s ease, transform 0.4s ease;
-  pointer-events: none;
+  pointer-events: auto;
+  max-width: 100vw;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .ws-margin-ad {
