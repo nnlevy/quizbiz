@@ -7,18 +7,17 @@ const HEX32_REGEX = /^[0-9a-f]{32}$/i;
 
 const isValidCloudflareId = (value) => UUID_REGEX.test(value) || HEX32_REGEX.test(value);
 
-const resolveRequiredEnv = (key, alternateKey) => {
-  const value = process.env[key] ?? (alternateKey ? process.env[alternateKey] : undefined);
+const resolveRequiredEnv = (key) => {
+  const value = process.env[key];
   if (!value) {
-    const suffix = alternateKey ? ` (or ${alternateKey})` : "";
     throw new Error(
-      `[wrangler] Missing required environment variable ${key}${suffix}. ` +
+      `[wrangler] Missing required environment variable ${key}. ` +
         "Set it to the Cloudflare resource ID (UUID), not the display name.",
     );
   }
   if (!isValidCloudflareId(value)) {
     throw new Error(
-      `[wrangler] ${key}${alternateKey ? `/${alternateKey}` : ""} must be a Cloudflare resource ID (UUID). ` +
+      `[wrangler] ${key} must be a Cloudflare resource ID (UUID). ` +
         `Received "${value}".`,
     );
   }
@@ -31,7 +30,7 @@ const applyBindingIds = (config) => {
       if (typeof entry?.database_id === "string" && entry.database_id.includes("${DOMAINS_DB_ID}")) {
         return {
           ...entry,
-          database_id: resolveRequiredEnv("DOMAINS_DB_ID", "DOMAINS_DB_ID_NEW"),
+          database_id: resolveRequiredEnv("DOMAINS_DB_ID"),
         };
       }
       if (typeof entry?.database_id === "string" && !isValidCloudflareId(entry.database_id)) {
@@ -49,7 +48,7 @@ const applyBindingIds = (config) => {
       if (typeof entry?.id === "string" && entry.id.includes("${USER_SESSIONS_ACROSS_DOMAINS_ID}")) {
         return {
           ...entry,
-          id: resolveRequiredEnv("USER_SESSIONS_ACROSS_DOMAINS_ID", "USER_SESSIONS_ACROSS_DOMAINS_ID_NEW"),
+          id: resolveRequiredEnv("USER_SESSIONS_ACROSS_DOMAINS_ID"),
         };
       }
       if (typeof entry?.id === "string" && !isValidCloudflareId(entry.id)) {
