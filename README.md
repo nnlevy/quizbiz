@@ -88,7 +88,7 @@ The Worker expects these bindings in `wrangler.json` (or equivalent Wrangler con
 - `UsersAcrossAllDomains` — D1 database for `users`, `auth_sessions`, and `oauth_states` (use the D1 database ID).
 - `USER_SESSIONS_ACROSS_DOMAINS` — KV namespace for OAuth state + session data (use the KV namespace ID from the dashboard or `wrangler kv:namespace list`).
 
-During builds we replace `${DOMAINS_DB_ID}` and `${USER_SESSIONS_ACROSS_DOMAINS_ID}` placeholders with the Cloudflare resource IDs. Set the `_NEW` variables (or the original names) to the UUID values shown in the Cloudflare dashboard (not the display names).
+During builds we replace `${DOMAINS_DB_ID}` and `${USER_SESSIONS_ACROSS_DOMAINS_ID}` placeholders with the Cloudflare resource IDs. Set the `_NEW` variables (or the original names) as build-time environment variables to the UUID values shown in the Cloudflare dashboard (not the display names).
 
 Run migrations to provision auth tables and credits columns:
 ```bash

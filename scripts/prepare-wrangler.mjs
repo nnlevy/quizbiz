@@ -10,9 +10,11 @@ const isValidCloudflareId = (value) => UUID_REGEX.test(value) || HEX32_REGEX.tes
 const resolveRequiredEnv = (key, alternateKey) => {
   const value = process.env[alternateKey] ?? process.env[key];
   if (!value) {
+    const label = alternateKey ? `${alternateKey} (or ${key})` : key;
     throw new Error(
-      `[wrangler] Missing required environment variable ${alternateKey ?? key}. ` +
-        "Set it to the Cloudflare resource ID (UUID), not the display name.",
+      `[wrangler] Missing required environment variable ${label}. ` +
+        "Set it as a build-time environment variable in Cloudflare (not just a runtime binding), " +
+        "using the Cloudflare resource ID (UUID), not the display name.",
     );
   }
   if (!isValidCloudflareId(value)) {
