@@ -21,7 +21,7 @@
     {
       "binding": "UsersAcrossAllDomains",
       "database_name": "domains-db",
-      "database_id": "${DOMAINS_DB_ID_NEW}"
+      "database_id": "b41e909b-ad01-4fd5-84ca-d8d014706942"
     }
   ],
   "kv_namespaces": [
