@@ -55,9 +55,11 @@ If ads or analytics are blocked, confirm CSP allows:
 1. **Consent mode & gating were missing**, which can suppress ads in EEA/UK and make ad requests appear “dead.”
 2. **No built-in diagnostics route**, making it hard to confirm script load or slot sizing.
 3. **Hardcoded IDs scattered in multiple files**, making mismatches easy and limiting environment overrides.
+4. **Margin ad handlers were treating all fixed AdSense units the same**, which suppressed vignette overlays and prevented their close buttons from being clickable on `#google_vignette` routes.
 
 ## Fix summary
 - Added consent mode v2 + banner with stored preferences.
 - Added `/__ads` diagnostics route and `?ads_debug=1` mode.
 - Centralized AdSense client/slots in a shared config with optional Worker env overrides.
 - Tightened CSP + security headers to allow ads/analytics safely.
+- Exempted vignette routes from margin-ad hiding logic and restored pointer events on fixed overlays so the close button works.

@@ -19,6 +19,7 @@ let dimensionPatchApplied = false;
 let marginAdsObserver: MutationObserver | null = null;
 let marginAdsRaf = 0;
 let marginAdsRouteListenerAttached = false;
+let marginAdsHashListenerAttached = false;
 
 const MARGIN_AD_CLASS = "ws-margin-ad";
 const MARGIN_AD_VISIBLE_CLASS = "ws-margin-ad--visible";
@@ -34,6 +35,7 @@ const marginAdStates = new WeakMap<HTMLElement, MarginAdState>();
 const MARGIN_AD_HOME_PATH = "/";
 
 const isHomePage = () => window.location.pathname === MARGIN_AD_HOME_PATH;
+const isVignetteExperience = () => window.location.hash.includes("google_vignette");
 const getSlotAdType = (slot: HTMLElement): AdType =>
   (slot.dataset.adType as AdType | undefined) ?? "inline";
 const isSlotAllowedOnPage = (slot: HTMLElement, pathname: string): boolean =>
@@ -270,6 +272,11 @@ const ensureMarginAdBase = (slot: HTMLElement) => {
   }
 };
 
+const clearMarginAdState = (slot: HTMLElement) => {
+  slot.classList.remove(MARGIN_AD_CLASS, MARGIN_AD_VISIBLE_CLASS, MARGIN_AD_HIDDEN_CLASS);
+  marginAdStates.delete(slot);
+};
+
 const showMarginAd = (slot: HTMLElement) => {
   ensureMarginAdBase(slot);
   slot.classList.add(MARGIN_AD_VISIBLE_CLASS);
@@ -285,6 +292,13 @@ const hideMarginAd = (slot: HTMLElement) => {
 
 const updateMarginAds = () => {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("ins.adsbygoogle"));
+  if (isVignetteExperience()) {
+    candidates.forEach((slot) => {
+      if (!slot.classList.contains(MARGIN_AD_CLASS)) return;
+      clearMarginAdState(slot);
+    });
+    return;
+  }
   candidates.forEach((slot) => {
     if (!isMarginAdCandidate(slot)) return;
     if (!isAdTypeEnabled(window.location.pathname, "sticky")) {
@@ -328,6 +342,10 @@ const observeMarginAds = () => {
   if (!marginAdsRouteListenerAttached) {
     subscribeToRouteChanges(scheduleMarginAdsUpdate);
     marginAdsRouteListenerAttached = true;
+  }
+  if (!marginAdsHashListenerAttached) {
+    window.addEventListener("hashchange", scheduleMarginAdsUpdate);
+    marginAdsHashListenerAttached = true;
   }
   scheduleMarginAdsUpdate();
 };
