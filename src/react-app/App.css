@@ -1554,6 +1554,10 @@ ins.adsbygoogle[style*="position: fixed"] {
   box-sizing: border-box;
 }
 
+.adsbygoogle[data-ws-ad-suppressed="true"] {
+  display: none !important;
+}
+
 .ws-margin-ad {
   opacity: 0;
   transform: translateY(12px);

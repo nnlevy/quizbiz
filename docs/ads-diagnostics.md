@@ -31,6 +31,8 @@ The diagnostics panel reports:
   - Hidden on viewports narrower than the minimum width threshold.
   - Hidden if the ad overlaps `.ws-main` content.
   - Only a single margin ad can be visible at a time.
+  - Sticky-disabled routes suppress all fixed ad units to avoid overlap regressions.
+- **Suppression fallback:** Any fixed AdSense unit that overlaps content receives `data-ws-ad-suppressed="true"` and is force-hidden via `src/react-app/App.css`. This is the last-resort safety net for overlapping layouts.
 - **Visual layout:** If you adjust the main content width, re-check margin ad overlap detection and update the minimum width threshold if needed.
 
 ## ads.txt verification
