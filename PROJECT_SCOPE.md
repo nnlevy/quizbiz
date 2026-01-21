@@ -7,6 +7,9 @@
 - Preserved legacy upload and location flows by routing POST `/` and `/api/upload` to `/api/analyze-bill` with Document AI + OpenAI processing.
 - Shipped Worker endpoints for location lookup, rebates lookup, usage defaults, and Stripe checkout (`/api/credits/checkout`) alongside diagnostic routes (`/__ads`, `ads.txt`, `robots.txt`, `sitemap.xml`, `security.txt`, `humans.txt`).
 - Integrated GA4 + AdSense with consent-aware script loading and reserved layout slots to minimize CLS.
+- Fixed manual entry across SPA + legacy analyzer flows, with validation, API submission, and clear result/error rendering.
+- Implemented shareable analysis cards, social share actions, and a referral credit system (token issuance + claim flow).
+- Added response compression (Brotli/Gzip when supported), image auto-compression via Cloudinary, and build minification defaults for the SPA.
 
 ## Outstanding / Follow Up Items
 - Validate Document AI, OpenAI, and Stripe bindings in the target Cloudflare environment to confirm bill analysis and credit checkout work end-to-end.

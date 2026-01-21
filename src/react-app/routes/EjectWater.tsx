@@ -1,8 +1,13 @@
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 
 const EjectWater = () => {
-  useDocumentTitle("WaterShortcut | Eject Water");
+  usePageMeta({
+    title: "Eject water shortcut | WaterShortcut",
+    description:
+      "Use the Water Eject shortcut to clear water from your iPhone speaker. WaterShortcut helps you save water too.",
+    canonicalPath: "/eject-water",
+  });
 
   return (
     <section className="ws-page" aria-labelledby="eject-title">

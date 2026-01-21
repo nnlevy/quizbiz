@@ -64,6 +64,10 @@ const OAUTH_STATE_TTL_SECONDS = 60 * 10;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const JWKS_TTL_SECONDS = 60 * 60;
 const DEFAULT_CREDITS = 5;
+const REFERRAL_REWARD_CREDITS = 2;
+const REFERRAL_SIGNUP_CREDITS = 1;
+const REFERRAL_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
+const REFERRAL_MAX_CLAIMS = 20;
 
 const subtle = (() => {
   if (typeof crypto.subtle !== "undefined") {
@@ -141,6 +145,12 @@ type SessionRecord = {
   userId?: string | null;
   credits?: number;
   createdAt: string;
+};
+
+type ReferralRecord = {
+  referrerSessionId: string;
+  createdAt: string;
+  claims: number;
 };
 
 type AnalysisMove = {
@@ -246,11 +256,11 @@ const DOMAIN = `https://${seoSite.canonicalHost}`;
 const BUILD_DATE = COPY_BUILD_DATE;
 const INLINE_AD_MARKER = "<!--INLINE_AD_SLOT-->";
 const FAVICON_PNG_32 =
-  "https://res.cloudinary.com/dlxzgqi9g/image/upload/w_32/v1735510676/watershortcut-favicon.png";
+  "https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_32/v1735510676/watershortcut-favicon.png";
 const FAVICON_PNG_16 =
-  "https://res.cloudinary.com/dlxzgqi9g/image/upload/w_16/v1735510676/watershortcut-favicon.png";
+  "https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_16/v1735510676/watershortcut-favicon.png";
 const FAVICON_PNG_180 =
-  "https://res.cloudinary.com/dlxzgqi9g/image/upload/w_180/v1735510676/watershortcut-favicon.png";
+  "https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_180/v1735510676/watershortcut-favicon.png";
 const WATER_IQ_INLINE_BOOTSTRAP = `window.addEventListener("DOMContentLoaded", () => {
   const workerScript = document.querySelector('script[data-ws-app]');
   const alreadyLoaded = workerScript && workerScript.dataset.loaded === "true";
@@ -269,6 +279,20 @@ const defaultAdsenseSlots: Required<AdsenseSlots> = {
   inline: DEFAULT_ADSENSE_SLOTS.inline,
   footer: DEFAULT_ADSENSE_SLOTS.footer,
   sticky: DEFAULT_ADSENSE_SLOTS.sticky,
+};
+
+const SERVICE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "AI water bill analysis",
+  description:
+    "AI water bill analysis with upload, demo, and manual entry options to help households save water.",
+  provider: {
+    "@type": "Organization",
+    name: "WaterShortcut",
+    url: DOMAIN,
+  },
+  areaServed: "US",
 };
 
 const buildContentSecurityPolicy = (nonce: string) =>
@@ -458,6 +482,7 @@ const siteRoutes: SiteRoute[] = [
     description:
       "Upload a water bill PDF to get a plain-English breakdown, usage clues, and prioritized savings moves.",
     body: renderBillAnalyzer(),
+    extraJsonLd: [SERVICE_JSON_LD],
   },
   {
     path: "/find-water-provider",
@@ -858,6 +883,60 @@ const persistSessionRecord = async (
   });
 };
 
+const referralKey = (token: string) => `referral:${token}`;
+const referralClaimKey = (token: string, sessionId: string) => `referral:claim:${token}:${sessionId}`;
+
+const readReferralRecord = async (env: WorkerEnv, token: string): Promise<ReferralRecord | null> => {
+  const stored = await getUserSessionsKv(env).get(referralKey(token), "json");
+  if (!stored || typeof stored !== "object") return null;
+  return stored as ReferralRecord;
+};
+
+const writeReferralRecord = async (env: WorkerEnv, token: string, record: ReferralRecord) => {
+  await getUserSessionsKv(env).put(referralKey(token), JSON.stringify(record), {
+    expirationTtl: REFERRAL_TOKEN_TTL_SECONDS,
+  });
+};
+
+const grantCredits = async (
+  env: WorkerEnv,
+  sessionId: string,
+  session: SessionRecord,
+  amount: number,
+): Promise<number> => {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return session.credits ?? DEFAULT_CREDITS;
+  }
+  let nextCredits = (session.credits ?? DEFAULT_CREDITS) + amount;
+  if (session.userId) {
+    const db = env.UsersAcrossAllDomains;
+    await db
+      .prepare("UPDATE users SET credits = credits + ?1 WHERE id = ?2")
+      .bind(amount, session.userId)
+      .run();
+    const currentCredits = await fetchUserCredits(db, session.userId);
+    if (currentCredits !== null) {
+      nextCredits = currentCredits;
+    }
+  }
+  await persistSessionRecord(env, sessionId, {
+    userId: session.userId,
+    credits: nextCredits,
+    createdAt: session.createdAt,
+  });
+  return nextCredits;
+};
+
+const grantCreditsBySessionId = async (
+  env: WorkerEnv,
+  sessionId: string,
+  amount: number,
+): Promise<number | null> => {
+  const session = await readSessionRecord(env, sessionId);
+  if (!session) return null;
+  return grantCredits(env, sessionId, session, amount);
+};
+
 const ensureSession = async (c: Context) => {
   const now = new Date().toISOString();
   let sessionId = getSessionIdFromRequest(c);
@@ -1079,6 +1158,32 @@ app.use("*", async (c, next) => {
   }
 
   await next();
+});
+
+app.use("*", async (c, next) => {
+  await next();
+  const res = c.res;
+  if (!res.body) return;
+  if (res.headers.get("Content-Encoding")) return;
+  const acceptEncoding = c.req.header("accept-encoding") || "";
+  const encoding = acceptEncoding.includes("br")
+    ? "br"
+    : acceptEncoding.includes("gzip")
+      ? "gzip"
+      : null;
+  if (!encoding) return;
+  const contentType = res.headers.get("Content-Type") || "";
+  if (!/(text|json|javascript|xml|svg)/i.test(contentType)) return;
+  const stream = new CompressionStream(encoding);
+  const compressedBody = res.body.pipeThrough(stream);
+  const headers = new Headers(res.headers);
+  headers.set("Content-Encoding", encoding);
+  headers.delete("Content-Length");
+  c.res = new Response(compressedBody, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
 });
 
 app.use("*", async (c, next) => {
@@ -1883,6 +1988,11 @@ function layout(options: {
       <meta name="twitter:title" content="${escapeHtml(title)}" />
       <meta name="twitter:description" content="${escapeHtml(description)}" />
       ${resolvedOgImage ? `<meta name="twitter:image" content="${escapeHtml(resolvedOgImage)}" />` : ""}
+      <style>
+        :root { color-scheme: light; }
+        body { margin: 0; font-family: "Inter", system-ui, -apple-system, sans-serif; background: #f7fbff; }
+        .site-header { position: sticky; top: 0; z-index: 10; }
+      </style>
       <link rel="preload" href="/assets/styles.css" as="style" />
       <link rel="stylesheet" href="/assets/styles.css" />
       <script nonce="${cspNonce}" type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
@@ -2260,14 +2370,14 @@ function renderBillAnalyzer(): string {
       <p class="muted">Manual entry is less precise, but gets you a plan without uploads.</p>
       <form id="manual-form" aria-label="Manual bill entry">
         <div class="form-inline">
-          <div class="form-row"><label>Billing period (optional)</label><input name="period" type="text" placeholder="e.g., Aug 1–31" /></div>
-          <div class="form-row"><label>Total usage</label><input name="usage" type="number" step="0.1" placeholder="e.g., 8" /></div>
-          <div class="form-row"><label>Unit</label><select name="unit"><option>Gallons</option><option>CCF</option><option>HCF</option></select></div>
-          <div class="form-row"><label>Total cost</label><input name="cost" type="number" step="0.01" placeholder="e.g., 86" /></div>
-          <div class="form-row"><label>Water rate (optional)</label><input name="rate" type="number" step="0.01" placeholder="Use $6 per 1,000 gallons if unsure" /></div>
-          <div class="form-row"><label>Household size (optional)</label><input name="household" type="number" min="1" max="10" /></div>
+          <div class="form-row"><label for="manual-period">Billing period</label><input id="manual-period" name="period" type="text" placeholder="e.g., Aug 1–31" /></div>
+          <div class="form-row"><label for="manual-usage">Total usage</label><input id="manual-usage" name="usage" type="number" step="0.1" placeholder="e.g., 8" required /></div>
+          <div class="form-row"><label for="manual-unit">Unit</label><select id="manual-unit" name="unit"><option>Gallons</option><option>CCF</option><option>HCF</option></select></div>
+          <div class="form-row"><label for="manual-cost">Total cost</label><input id="manual-cost" name="cost" type="number" step="0.01" placeholder="e.g., 86" required /></div>
+          <div class="form-row"><label for="manual-rate">Water rate (optional)</label><input id="manual-rate" name="rate" type="number" step="0.01" placeholder="Use $6 per 1,000 gallons if unsure" /></div>
+          <div class="form-row"><label for="manual-household">Household size (optional)</label><input id="manual-household" name="household" type="number" min="1" max="10" /></div>
         </div>
-        <div class="form-row"><label>Notes (optional)</label><textarea name="notes" rows="3"></textarea></div>
+        <div class="form-row"><label for="manual-notes">Notes (optional)</label><textarea id="manual-notes" name="notes" rows="3"></textarea></div>
         <div class="wizard-actions"><button class="btn primary" type="submit">Build my plan</button></div>
       </form>
       <div class="manual-output" data-manual-output></div>
@@ -2418,7 +2528,7 @@ function renderWaterIqResult(input: {
     .join("");
 
   const badgeLabel = badge.replace(/_/g, " ");
-  const challengeLink = `/water-iq?ref=${encodeURIComponent(token)}`;
+  const challengeLink = `/water-iq?challenge=${encodeURIComponent(token)}`;
   const sharePageLink = `/water-iq/r/${encodeURIComponent(token)}`;
   return `
     <section class="section water-iq">
@@ -3955,6 +4065,70 @@ const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
   }
 };
 
+const handleReferralToken = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  const token = crypto.randomUUID();
+  await writeReferralRecord(c.env, token, {
+    referrerSessionId: sessionId,
+    createdAt: new Date().toISOString(),
+    claims: 0,
+  });
+  return c.json({ token });
+};
+
+const handleReferralClaim = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: { token?: string } = {};
+  try {
+    payload = (await c.req.json()) as { token?: string };
+  } catch (error) {
+    console.error("Referral claim payload error:", error);
+    return c.json({ error: "Invalid referral claim payload." }, 400);
+  }
+
+  const token = typeof payload.token === "string" ? payload.token.trim() : "";
+  if (!token) {
+    return c.json({ error: "Missing referral token." }, 400);
+  }
+
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+
+  const record = await readReferralRecord(c.env, token);
+  if (!record) {
+    return c.json({ error: "Referral token not found." }, 404);
+  }
+  if (record.referrerSessionId === sessionId) {
+    return c.json({ error: "Referral token cannot be claimed by the same session." }, 400);
+  }
+  if (record.claims >= REFERRAL_MAX_CLAIMS) {
+    return c.json({ error: "Referral token has reached its limit." }, 429);
+  }
+
+  const claimKey = referralClaimKey(token, sessionId);
+  const kv = getUserSessionsKv(c.env);
+  const alreadyClaimed = await kv.get(claimKey);
+  if (alreadyClaimed) {
+    return c.json({
+      claimed: true,
+      credits: session.credits ?? DEFAULT_CREDITS,
+      message: "Referral already applied.",
+    });
+  }
+
+  await kv.put(claimKey, "true", { expirationTtl: REFERRAL_TOKEN_TTL_SECONDS });
+  await writeReferralRecord(c.env, token, { ...record, claims: record.claims + 1 });
+
+  await grantCreditsBySessionId(c.env, record.referrerSessionId, REFERRAL_REWARD_CREDITS);
+  const updatedCredits = await grantCredits(c.env, sessionId, session, REFERRAL_SIGNUP_CREDITS);
+
+  return c.json({
+    claimed: true,
+    credits: updatedCredits,
+    message: `Referral applied. +${REFERRAL_SIGNUP_CREDITS} credit added to your account.`,
+  });
+};
+
 const getRebateCacheKey = (cacheKey: string) => `rebates:${cacheKey}`;
 
 const readRebateCache = async (env: WorkerEnv, cacheKey: string): Promise<RebateResponse | null> => {
@@ -4081,6 +4255,8 @@ app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);
 app.post("/", handleAnalyzeBill);
 app.post("/api/analyze-manual", handleManualAnalyze);
+app.post("/api/referral/token", handleReferralToken);
+app.post("/api/referral/claim", handleReferralClaim);
 app.post("/api/rebates", handleRebateSearch);
 app.post("/api/local-trends", handleLocalTrends);
 

@@ -70,9 +70,25 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
           compliant. <a href="/privacy">Read the privacy policy</a>.
         </p>
         <div className="footer-badges" aria-label="Security badges">
-          <span className="footer-badge">SOC2</span>
-          <span className="footer-badge">TLS 1.3</span>
-          <span className="footer-badge">GDPR Ready</span>
+          <a
+            className="footer-badge"
+            href="https://www.aicpa.org/resources/landing/system-and-organization-controls-soc-suite-of-services"
+            target="_blank"
+            rel="noreferrer"
+          >
+            SOC 2
+          </a>
+          <a
+            className="footer-badge"
+            href="https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            TLS 1.3
+          </a>
+          <a className="footer-badge" href="/privacy">
+            GDPR Ready
+          </a>
         </div>
       </div>
       <p>

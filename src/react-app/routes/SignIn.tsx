@@ -1,11 +1,16 @@
 import { useEffect } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 import { useCreditsModal } from "../context/CreditsModalContext";
 
 const SignIn = () => {
-  useDocumentTitle("WaterShortcut | Sign in");
+  usePageMeta({
+    title: "Sign in | WaterShortcut",
+    description:
+      "Sign in to your WaterShortcut account to review AI water bill analysis results and save water.",
+    canonicalPath: "/sign-in",
+  });
   const { openModal } = useCreditsModal();
   const oauthEnabled = typeof window !== "undefined" && window.__WS_OAUTH_ENABLED__ !== false;
 

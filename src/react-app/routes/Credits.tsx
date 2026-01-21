@@ -1,10 +1,15 @@
 import { useEffect } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { useCreditsModal } from "../context/CreditsModalContext";
 
 const Credits = () => {
-  useDocumentTitle("WaterShortcut | Credits");
+  usePageMeta({
+    title: "WaterShortcut credits | Save water",
+    description:
+      "Manage WaterShortcut credits for AI water bill analysis and water-saving tools.",
+    canonicalPath: "/credits",
+  });
   const { openModal } = useCreditsModal();
 
   useEffect(() => {

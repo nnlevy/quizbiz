@@ -1,12 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 import { useCreditsModal } from "../context/CreditsModalContext";
+import { useCredits } from "../context/CreditsContext";
+import { claimReferralCredit } from "../utils/referral";
 
 const SignUp = () => {
-  useDocumentTitle("WaterShortcut | Sign up");
+  usePageMeta({
+    title: "Create your WaterShortcut account | Save water",
+    description:
+      "Create a WaterShortcut account to save water, track AI water bill analysis results, and earn referral credits.",
+    canonicalPath: "/sign-up",
+  });
   const { openModal } = useCreditsModal();
+  const { setCredits } = useCredits();
+  const [referralMessage, setReferralMessage] = useState<string | null>(null);
 
   const handleGoogle = () => {
     const returnTo =
@@ -21,6 +30,19 @@ const SignUp = () => {
     openModal();
   }, [openModal]);
 
+  useEffect(() => {
+    claimReferralCredit()
+      .then((result) => {
+        if (result?.credits != null) {
+          setCredits(result.credits);
+        }
+        if (result?.message) {
+          setReferralMessage(result.message);
+        }
+      })
+      .catch(() => null);
+  }, [setCredits]);
+
   return (
     <section className="ws-page" aria-labelledby="sign-up-title">
       <div className="ws-hero">
@@ -34,6 +56,11 @@ const SignUp = () => {
         <p className="ws-subtitle">
           We&apos;ve moved sign-up into a quick modal so you can stay on the page you were browsing.
         </p>
+        {referralMessage && (
+          <p className="ws-subtitle" role="status">
+            {referralMessage}
+          </p>
+        )}
         <div className="ws-tool-grid">
           <button className="ws-button" type="button" onClick={handleGoogle}>
             Continue with Google

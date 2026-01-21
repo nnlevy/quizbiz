@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink, useNavigate } from "./router";
 import { saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
@@ -20,7 +20,12 @@ const LOCATIONS = [
 ];
 
 const BillLookup = () => {
-  useDocumentTitle("WaterShortcut | Look up my water bill");
+  usePageMeta({
+    title: "Find your water provider | AI water bill analysis",
+    description:
+      "Find your water provider and portal fast, then upload a bill for AI water bill analysis to save water.",
+    canonicalPath: "/find-water-provider",
+  });
   const navigate = useNavigate();
   const { setCredits } = useCredits();
   const [query, setQuery] = useState("");
@@ -182,7 +187,7 @@ const BillLookup = () => {
         )}
         <div className="ws-tool-grid">
           <RouterLink className="ws-footer-link" to="/manual-entry">
-            Enter numbers manually →
+            Manual entry →
           </RouterLink>
           <RouterLink className="ws-footer-link" to="/">
             Return home →

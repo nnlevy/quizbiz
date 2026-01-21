@@ -1,6 +1,6 @@
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink, useNavigate } from "./router";
 import { saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
@@ -20,7 +20,12 @@ type ManualFormState = {
 const UNIT_OPTIONS = ["Gallons", "CCF", "HCF"];
 
 const ManualEntry = () => {
-  useDocumentTitle("WaterShortcut | Manual entry");
+  usePageMeta({
+    title: "Manual water bill entry | AI water bill analysis",
+    description:
+      "Enter water bill numbers manually to get AI water bill analysis, savings tips, and ways to save water.",
+    canonicalPath: "/manual-entry",
+  });
   const navigate = useNavigate();
   const { setCredits } = useCredits();
   const [formState, setFormState] = useState<ManualFormState>({
@@ -36,16 +41,55 @@ const ManualEntry = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUsageHelp, setShowUsageHelp] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof ManualFormState, string>>>({});
+
+  const fieldIds = useMemo(
+    () => ({
+      period: "manual-entry-period",
+      usage: "manual-entry-usage",
+      unit: "manual-entry-unit",
+      cost: "manual-entry-cost",
+      rate: "manual-entry-rate",
+      household: "manual-entry-household",
+      notes: "manual-entry-notes",
+    }),
+    [],
+  );
 
   const handleChange =
     (field: keyof ManualFormState) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
       setFormState((prev) => ({ ...prev, [field]: event.target.value }));
     };
+
+  const validate = () => {
+    const nextErrors: Partial<Record<keyof ManualFormState, string>> = {};
+    const usage = Number(formState.usage);
+    const cost = Number(formState.cost);
+    if (!formState.usage || !Number.isFinite(usage) || usage <= 0) {
+      nextErrors.usage = "Enter a total usage amount above 0.";
+    }
+    if (!formState.cost || !Number.isFinite(cost) || cost <= 0) {
+      nextErrors.cost = "Enter a total cost above $0.";
+    }
+    const household = Number(formState.household);
+    if (formState.household && (!Number.isFinite(household) || household < 1)) {
+      nextErrors.household = "Household size should be 1 or more.";
+    }
+    return nextErrors;
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setStatus(null);
+      setError("Please fix the highlighted fields to continue.");
+      return;
+    }
     setStatus("Sending your details to the AI...");
     setIsSubmitting(true);
     try {
@@ -107,11 +151,12 @@ const ManualEntry = () => {
         </p>
       </div>
 
-      <form className="ws-info-card ws-form" onSubmit={handleSubmit}>
+      <form className="ws-info-card ws-form" onSubmit={handleSubmit} noValidate>
         <div className="ws-form-grid">
-          <label className="ws-field">
-            Billing period (optional)
+          <label className="ws-field" htmlFor={fieldIds.period}>
+            Billing period
             <input
+              id={fieldIds.period}
               className="ws-input"
               type="text"
               value={formState.period}
@@ -119,19 +164,21 @@ const ManualEntry = () => {
               placeholder="e.g., Aug 1–31"
             />
           </label>
-          <label className="ws-field">
-            <span className="ws-field-label">
+          <label className="ws-field" htmlFor={fieldIds.usage}>
+            <span className="ws-field-label" id="usage-help-label">
               Total usage
               <button
                 type="button"
                 className="ws-tooltip-button"
                 aria-expanded={showUsageHelp}
+                aria-controls="usage-help-panel"
                 onClick={() => setShowUsageHelp((prev) => !prev)}
               >
                 i
               </button>
             </span>
             <input
+              id={fieldIds.usage}
               className="ws-input"
               type="number"
               min="0"
@@ -140,9 +187,16 @@ const ManualEntry = () => {
               onChange={handleChange("usage")}
               placeholder="e.g., 8"
               required
+              aria-invalid={Boolean(fieldErrors.usage)}
+              aria-describedby={fieldErrors.usage ? "usage-error" : undefined}
             />
+            {fieldErrors.usage && (
+              <p className="ws-field-error" id="usage-error" role="alert">
+                {fieldErrors.usage}
+              </p>
+            )}
             {showUsageHelp && (
-              <div className="ws-tooltip-panel">
+              <div className="ws-tooltip-panel" id="usage-help-panel" role="note">
                 <p>
                   <strong>Where to find this:</strong> Total usage is often labeled “consumption”
                   or “usage” in CCF or gallons. It’s usually found in the meter reading section.
@@ -156,9 +210,14 @@ const ManualEntry = () => {
               </div>
             )}
           </label>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor={fieldIds.unit}>
             Unit
-            <select className="ws-input" value={formState.unit} onChange={handleChange("unit")}>
+            <select
+              id={fieldIds.unit}
+              className="ws-input"
+              value={formState.unit}
+              onChange={handleChange("unit")}
+            >
               {UNIT_OPTIONS.map((unit) => (
                 <option key={unit} value={unit}>
                   {unit}
@@ -166,9 +225,10 @@ const ManualEntry = () => {
               ))}
             </select>
           </label>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor={fieldIds.cost}>
             Total cost
             <input
+              id={fieldIds.cost}
               className="ws-input"
               type="number"
               min="0"
@@ -177,11 +237,19 @@ const ManualEntry = () => {
               onChange={handleChange("cost")}
               placeholder="e.g., 86"
               required
+              aria-invalid={Boolean(fieldErrors.cost)}
+              aria-describedby={fieldErrors.cost ? "cost-error" : undefined}
             />
+            {fieldErrors.cost && (
+              <p className="ws-field-error" id="cost-error" role="alert">
+                {fieldErrors.cost}
+              </p>
+            )}
           </label>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor={fieldIds.rate}>
             Water rate (optional)
             <input
+              id={fieldIds.rate}
               className="ws-input"
               type="number"
               min="0"
@@ -191,9 +259,10 @@ const ManualEntry = () => {
               placeholder="e.g., 6.00"
             />
           </label>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor={fieldIds.household}>
             Household size (optional)
             <input
+              id={fieldIds.household}
               className="ws-input"
               type="number"
               min="1"
@@ -202,12 +271,20 @@ const ManualEntry = () => {
               value={formState.household}
               onChange={handleChange("household")}
               placeholder="e.g., 3"
+              aria-invalid={Boolean(fieldErrors.household)}
+              aria-describedby={fieldErrors.household ? "household-error" : undefined}
             />
+            {fieldErrors.household && (
+              <p className="ws-field-error" id="household-error" role="alert">
+                {fieldErrors.household}
+              </p>
+            )}
           </label>
         </div>
-        <label className="ws-field">
+        <label className="ws-field" htmlFor={fieldIds.notes}>
           Notes (optional)
           <textarea
+            id={fieldIds.notes}
             className="ws-input ws-textarea"
             rows={3}
             value={formState.notes}
@@ -227,6 +304,14 @@ const ManualEntry = () => {
           )}
         </div>
       </form>
+
+      <div className="ws-info-card" aria-label="Data handling summary">
+        <h2>How we handle your manual entry</h2>
+        <p className="ws-subtitle">
+          We use your inputs to generate AI water bill analysis and delete them after the analysis
+          completes. <RouterLink to="/privacy">Read the privacy policy</RouterLink>.
+        </p>
+      </div>
 
       <div className="ws-progress" aria-live="polite">
         <h2>Next steps</h2>

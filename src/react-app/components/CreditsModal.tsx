@@ -254,9 +254,10 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                   <span>or create with email</span>
                 </p>
                 <form className="credits-modal__form" onSubmit={handleSubmit}>
-                  <label className="ws-field">
+                  <label className="ws-field" htmlFor="credits-name">
                     Name
                     <input
+                      id="credits-name"
                       className="ws-input"
                       type="text"
                       value={name}
@@ -265,9 +266,10 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                       required
                     />
                   </label>
-                  <label className="ws-field">
+                  <label className="ws-field" htmlFor="credits-email">
                     Email
                     <input
+                      id="credits-email"
                       className="ws-input"
                       type="email"
                       value={email}
@@ -276,9 +278,10 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                       required
                     />
                   </label>
-                  <label className="ws-field">
+                  <label className="ws-field" htmlFor="credits-password">
                     Password
                     <input
+                      id="credits-password"
                       className="ws-input"
                       type="password"
                       value={password}

@@ -19,6 +19,7 @@ import { CreditsModalProvider } from "./context/CreditsModalContext";
 import { ensureAdSenseLoaded, initializeAllAdSlots } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
 import { useScrollUnlock } from "./hooks/useScrollUnlock";
+import { captureReferralFromUrl } from "./utils/referral";
 import AppShell from "./routes/AppShell";
 import { RouterProvider, useLocation } from "./routes/router";
 
@@ -56,6 +57,7 @@ const SeoHiddenNav = () => (
   <nav className="sr-only" aria-hidden="true">
     <a href="/">Home</a>
     <a href="/analyze-water-bill">Analyze my bill</a>
+    <a href="/manual-entry">Manual entry</a>
     <a href="/find-water-provider">Look up my water bill</a>
     <a href="/research">Research</a>
     <a href="/eject-water">Eject Water</a>
@@ -98,6 +100,10 @@ const RouteEffects = () => {
       initializeAllAdSlots();
     }
   }, [location.pathname, scrollUnlocked]);
+
+  useEffect(() => {
+    captureReferralFromUrl();
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const unsubscribeConsent = subscribeToConsentChanges((consent) => {

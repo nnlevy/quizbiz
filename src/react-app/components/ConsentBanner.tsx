@@ -62,14 +62,26 @@ const ConsentBanner = () => {
         </p>
       </div>
       <div className="cookie-options">
-        <label>
-          <input type="checkbox" checked disabled /> Functional (required)
+        <label htmlFor="consent-functional">
+          <input id="consent-functional" type="checkbox" checked disabled /> Functional (required)
         </label>
-        <label>
-          <input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /> Analytics
+        <label htmlFor="consent-analytics">
+          <input
+            id="consent-analytics"
+            type="checkbox"
+            checked={analytics}
+            onChange={(event) => setAnalytics(event.target.checked)}
+          />{" "}
+          Analytics
         </label>
-        <label>
-          <input type="checkbox" checked={ads} onChange={(event) => setAds(event.target.checked)} /> Ads
+        <label htmlFor="consent-ads">
+          <input
+            id="consent-ads"
+            type="checkbox"
+            checked={ads}
+            onChange={(event) => setAds(event.target.checked)}
+          />{" "}
+          Ads
         </label>
       </div>
       <div className="cookie-actions">

@@ -12,6 +12,7 @@ import {
 
 type LocationState = {
   pathname: string;
+  search: string;
   hash: string;
   state: unknown;
 };
@@ -30,13 +31,14 @@ const RouterContext = createContext<RouterContextValue | undefined>(undefined);
 
 const readLocation = (): LocationState => ({
   pathname: window.location.pathname,
+  search: window.location.search,
   hash: window.location.hash,
   state: (window.history.state as { __ws_state?: unknown } | null)?.__ws_state ?? null,
 });
 
 export const RouterProvider = ({ children }: PropsWithChildren) => {
   const [location, setLocation] = useState<LocationState>(() =>
-    typeof window === "undefined" ? { pathname: "/", hash: "", state: null } : readLocation(),
+    typeof window === "undefined" ? { pathname: "/", search: "", hash: "", state: null } : readLocation(),
   );
 
   useEffect(() => {
