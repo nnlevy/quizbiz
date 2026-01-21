@@ -40,6 +40,8 @@ import {
   storeSubmit,
 } from "../lib/waterIqStore";
 import { runWaterIqAudit } from "../lib/waterIqAudit";
+import { appendVary } from "../shared/httpHeaders";
+import { REFERRAL_TOKEN_TTL_SECONDS } from "../shared/referral";
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -66,7 +68,6 @@ const JWKS_TTL_SECONDS = 60 * 60;
 const DEFAULT_CREDITS = 5;
 const REFERRAL_REWARD_CREDITS = 2;
 const REFERRAL_SIGNUP_CREDITS = 1;
-const REFERRAL_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
 const REFERRAL_MAX_CLAIMS = 20;
 
 const subtle = (() => {
@@ -1130,6 +1131,43 @@ const hashPassword = async (password: string) => {
 
 const app = new Hono<{ Bindings: WorkerEnv; Variables: { cspNonce: string } }>();
 
+type SupportedContentEncoding = "br" | "gzip";
+
+const acceptsEncoding = (header: string, encoding: SupportedContentEncoding): boolean =>
+  new RegExp(`\\b${encoding}\\b`, "i").test(header);
+
+const createCompressionStream = (
+  encoding: SupportedContentEncoding,
+  acceptEncodingHeader: string,
+): { stream: CompressionStream; actualEncoding: SupportedContentEncoding } | null => {
+  const tryCreate = (candidate: SupportedContentEncoding) => {
+    try {
+      // Runtime supports brotli even when lib.dom CompressionFormat omits "br".
+      return new CompressionStream(candidate as unknown as CompressionFormat);
+    } catch {
+      return null;
+    }
+  };
+
+  if (encoding === "br") {
+    const brotliStream = tryCreate("br");
+    if (brotliStream) {
+      return { stream: brotliStream, actualEncoding: "br" };
+    }
+    if (!acceptsEncoding(acceptEncodingHeader, "gzip")) {
+      return null;
+    }
+    const gzipStream = tryCreate("gzip");
+    return gzipStream ? { stream: gzipStream, actualEncoding: "gzip" } : null;
+  }
+
+  if (!acceptsEncoding(acceptEncodingHeader, "gzip")) {
+    return null;
+  }
+  const gzipStream = tryCreate("gzip");
+  return gzipStream ? { stream: gzipStream, actualEncoding: "gzip" } : null;
+};
+
 app.use("*", async (c, next) => {
   const proto = c.req.header("x-forwarded-proto");
   const host = c.req.header("host") || "";
@@ -1166,18 +1204,20 @@ app.use("*", async (c, next) => {
   if (!res.body) return;
   if (res.headers.get("Content-Encoding")) return;
   const acceptEncoding = c.req.header("accept-encoding") || "";
-  const encoding = acceptEncoding.includes("br")
+  const preferredEncoding = acceptsEncoding(acceptEncoding, "br")
     ? "br"
-    : acceptEncoding.includes("gzip")
+    : acceptsEncoding(acceptEncoding, "gzip")
       ? "gzip"
       : null;
-  if (!encoding) return;
+  if (!preferredEncoding) return;
   const contentType = res.headers.get("Content-Type") || "";
   if (!/(text|json|javascript|xml|svg)/i.test(contentType)) return;
-  const stream = new CompressionStream(encoding);
-  const compressedBody = res.body.pipeThrough(stream);
+  const compression = createCompressionStream(preferredEncoding, acceptEncoding);
+  if (!compression) return;
+  const compressedBody = res.body.pipeThrough(compression.stream);
   const headers = new Headers(res.headers);
-  headers.set("Content-Encoding", encoding);
+  headers.set("Content-Encoding", compression.actualEncoding);
+  appendVary(headers, "Accept-Encoding");
   headers.delete("Content-Length");
   c.res = new Response(compressedBody, {
     status: res.status,
@@ -4066,7 +4106,7 @@ const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
 };
 
 const handleReferralToken = async (c: Context<{ Bindings: WorkerEnv }>) => {
-  const { sessionId, session, needsCookie } = await ensureSession(c);
+  const { sessionId, needsCookie } = await ensureSession(c);
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
   const token = crypto.randomUUID();
   await writeReferralRecord(c.env, token, {

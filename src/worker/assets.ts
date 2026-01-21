@@ -1,5 +1,6 @@
 import { ADSENSE_CLIENT as DEFAULT_ADSENSE_CLIENT } from "../config/adsense";
 import { COPY as WATER_IQ_COPY, FLOW as WATER_IQ_FLOW, QUESTIONS as WATER_IQ_QUESTIONS } from "../lib/waterIq";
+import { formatStoredReferralToken, isReferralTokenExpired, parseStoredReferralToken } from "../shared/referral";
 
 export const stylesCss = `:root{color-scheme:light;font-family:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;background:#f7fbff;}
 *{box-sizing:border-box;}body{margin:0;color:#0f172a;background:#f7fbff;}a{color:#0d6efd;text-decoration:none;}a:hover{text-decoration:underline;}header,main,footer{width:100%;}img{max-width:100%;display:block;}button,input,select,textarea{font-family:inherit;}button{cursor:pointer;}body.prefers-reduced-motion *{transition:none!important;animation:none!important;}
@@ -696,10 +697,31 @@ export function clientScript(defaultAdsenseClient: string) {
     return `${base}${separator}ref=${encodeURIComponent(token)}`;
   };
 
+  const REFERRAL_TOKEN_KEY = 'ws_referral_token';
+
+  const readStoredReferralToken = (): string | null => {
+    try {
+      const stored = localStorage.getItem(REFERRAL_TOKEN_KEY);
+      if (!stored) return null;
+      const parsed = parseStoredReferralToken(stored);
+      if (!parsed) {
+        localStorage.removeItem(REFERRAL_TOKEN_KEY);
+        return null;
+      }
+      if (parsed.issuedAt <= 0 || isReferralTokenExpired(parsed.issuedAt)) {
+        localStorage.removeItem(REFERRAL_TOKEN_KEY);
+        return null;
+      }
+      return parsed.token;
+    } catch {
+      return null;
+    }
+  };
+
   const fetchReferralToken = async (): Promise<string | null> => {
     try {
-      const stored = localStorage.getItem('ws_referral_token');
-      if (stored) return stored;
+      const cached = readStoredReferralToken();
+      if (cached) return cached;
     } catch {
       // ignore
     }
@@ -712,7 +734,7 @@ export function clientScript(defaultAdsenseClient: string) {
       const data = (await res.json()) as { token?: string };
       if (data?.token) {
         try {
-          localStorage.setItem('ws_referral_token', data.token);
+          localStorage.setItem(REFERRAL_TOKEN_KEY, formatStoredReferralToken(data.token));
         } catch {
           // ignore
         }
