@@ -13,6 +13,7 @@ const mockFetch = (token: string) =>
 describe("referral token cache", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-02-01T00:00:00.000Z"));
   });
@@ -54,5 +55,7 @@ describe("referral token cache", () => {
     expect(token).toBe("fresh-token");
     const stored = localStorage.getItem("ws_referral_token");
     expect(stored).toContain("fresh-token");
+    const sessionStored = sessionStorage.getItem("ws_referral_token");
+    expect(sessionStored).toContain("fresh-token");
   });
 });

@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 
+import { buildReferralHref } from "../utils/referralLinks";
+
 type LocationState = {
   pathname: string;
   search: string;
@@ -85,11 +87,12 @@ export const RouterProvider = ({ children }: PropsWithChildren) => {
 
   const navigate = useCallback((to: string, options?: NavigateOptions) => {
     if (typeof window === "undefined") return;
+    const resolvedHref = buildReferralHref(to);
     const nextState = { __ws_state: options?.state ?? null };
     if (options?.replace) {
-      window.history.replaceState(nextState, "", to);
+      window.history.replaceState(nextState, "", resolvedHref);
     } else {
-      window.history.pushState(nextState, "", to);
+      window.history.pushState(nextState, "", resolvedHref);
     }
     setLocation(readLocation());
   }, []);
@@ -132,6 +135,7 @@ export const RouterLink = ({
 }: RouterLinkProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const resolvedHref = buildReferralHref(to);
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onClick) onClick(event);
@@ -147,13 +151,13 @@ export const RouterLink = ({
       return;
     }
     event.preventDefault();
-    navigate(to);
+    navigate(resolvedHref);
   };
 
   const isActive = location.pathname === to;
 
   return (
-    <a href={to} onClick={handleClick} aria-current={isActive ? "page" : undefined} {...rest}>
+    <a href={resolvedHref} onClick={handleClick} aria-current={isActive ? "page" : undefined} {...rest}>
       {children}
     </a>
   );

@@ -15,6 +15,7 @@
     "publish": true
   },
   "dependencies": {
+    "chart.js": "4.4.9",
     "hono": "4.8.2",
     "react": "19.0.0",
     "react-dom": "19.0.0"
@@ -26,7 +27,10 @@
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
     "@vitejs/plugin-react": "5.0.0",
+    "axe-core": "4.9.1",
+    "critters": "0.0.24",
     "eslint": "9.27.0",
+    "eslint-plugin-jsx-a11y": "6.9.0",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.20",
     "globals": "16.2.0",
@@ -36,7 +40,7 @@
     "wrangler": "4.21.x"
   },
   "scripts": {
-    "build": "tsc -b && vite build && npm run prerender && node scripts/prepare-wrangler.mjs",
+    "build": "tsc -b && vite build && npm run prerender && node scripts/critical-css.mjs && node scripts/prepare-wrangler.mjs",
     "cf-typegen": "wrangler types",
     "check": "tsc && vite build && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",

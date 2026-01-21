@@ -15,30 +15,18 @@ type ReferralClaimResponse = {
   error?: string;
 };
 
-const clearStoredReferralToken = () => {
+const safeStorageRead = (storage: Storage | null, key: string): StoredReferralToken | null => {
+  if (!storage) return null;
   try {
-    window.localStorage.removeItem(REFERRAL_TOKEN_KEY);
-  } catch {
-    // ignore storage errors
-  }
-};
-
-const clearStoredReferrerToken = () => {
-  try {
-    window.localStorage.removeItem(REFERRER_TOKEN_KEY);
-  } catch {
-    // ignore storage errors
-  }
-};
-
-const readStoredReferralToken = (): StoredReferralToken | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = window.localStorage.getItem(REFERRAL_TOKEN_KEY);
+    const stored = storage.getItem(key);
     if (!stored) return null;
     const parsed = parseStoredReferralToken(stored);
     if (!parsed) {
-      clearStoredReferralToken();
+      storage.removeItem(key);
+      return null;
+    }
+    if (parsed.issuedAt <= 0 || isReferralTokenExpired(parsed.issuedAt)) {
+      storage.removeItem(key);
       return null;
     }
     return parsed;
@@ -47,14 +35,54 @@ const readStoredReferralToken = (): StoredReferralToken | null => {
   }
 };
 
+const safeStorageWrite = (storage: Storage | null, key: string, token: string) => {
+  if (!storage) return;
+  try {
+    storage.setItem(key, formatStoredReferralToken(token));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const clearStoredReferralToken = () => {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(REFERRAL_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+  try {
+    window.localStorage.removeItem(REFERRAL_TOKEN_KEY);
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const clearStoredReferrerToken = () => {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(REFERRER_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+  try {
+    window.localStorage.removeItem(REFERRER_TOKEN_KEY);
+  } catch {
+    // ignore storage errors
+  }
+};
+
 const getCachedReferralToken = (nowMs = Date.now()): string | null => {
-  const stored = readStoredReferralToken();
-  if (!stored) return null;
-  if (stored.issuedAt <= 0 || isReferralTokenExpired(stored.issuedAt, nowMs)) {
+  if (typeof window === "undefined") return null;
+  const sessionStored = safeStorageRead(window.sessionStorage, REFERRAL_TOKEN_KEY);
+  if (sessionStored?.token) return sessionStored.token;
+  const localStored = safeStorageRead(window.localStorage, REFERRAL_TOKEN_KEY);
+  if (!localStored) return null;
+  if (localStored.issuedAt <= 0 || isReferralTokenExpired(localStored.issuedAt, nowMs)) {
     clearStoredReferralToken();
     return null;
   }
-  return stored.token;
+  return localStored.token;
 };
 
 const fetchFreshReferralToken = async (): Promise<string | null> => {
@@ -66,7 +94,8 @@ const fetchFreshReferralToken = async (): Promise<string | null> => {
   const payload = (await response.json()) as { token?: string | null };
   if (payload?.token) {
     try {
-      window.localStorage.setItem(REFERRAL_TOKEN_KEY, formatStoredReferralToken(payload.token));
+      safeStorageWrite(window.sessionStorage, REFERRAL_TOKEN_KEY, payload.token);
+      safeStorageWrite(window.localStorage, REFERRAL_TOKEN_KEY, payload.token);
     } catch {
       // ignore storage errors
     }
@@ -79,12 +108,22 @@ export const appendReferralToUrl = (url: string, token: string | null) => {
   if (!token) return url;
   try {
     const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : undefined);
+    if (parsed.searchParams.has("ref")) return parsed.toString();
     parsed.searchParams.set("ref", token);
     return parsed.toString();
   } catch {
     const separator = url.includes("?") ? "&" : "?";
+    if (url.includes("ref=")) return url;
     return `${url}${separator}ref=${encodeURIComponent(token)}`;
   }
+};
+
+export const getActiveReferralToken = () => {
+  if (typeof window === "undefined") return null;
+  const sessionToken = safeStorageRead(window.sessionStorage, REFERRER_TOKEN_KEY);
+  if (sessionToken?.token) return sessionToken.token;
+  const localToken = safeStorageRead(window.localStorage, REFERRER_TOKEN_KEY);
+  return localToken?.token ?? null;
 };
 
 export const fetchReferralToken = async (options?: { forceRefresh?: boolean }): Promise<string | null> => {
@@ -102,7 +141,8 @@ export const captureReferralFromUrl = () => {
   const ref = params.get("ref");
   if (!ref) return null;
   try {
-    window.localStorage.setItem(REFERRER_TOKEN_KEY, ref);
+    safeStorageWrite(window.sessionStorage, REFERRER_TOKEN_KEY, ref);
+    safeStorageWrite(window.localStorage, REFERRER_TOKEN_KEY, ref);
   } catch {
     // ignore storage errors
   }
@@ -113,7 +153,7 @@ export const claimReferralCredit = async (): Promise<ReferralClaimResponse | nul
   if (typeof window === "undefined") return null;
   let refToken: string | null = null;
   try {
-    refToken = window.localStorage.getItem(REFERRER_TOKEN_KEY);
+    refToken = getActiveReferralToken();
     const claimed = window.localStorage.getItem(REFERRAL_CLAIM_KEY) === "true";
     if (!refToken || claimed) return null;
   } catch {

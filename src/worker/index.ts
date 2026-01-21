@@ -2034,7 +2034,10 @@ function layout(options: {
         .site-header { position: sticky; top: 0; z-index: 10; }
       </style>
       <link rel="preload" href="/assets/styles.css" as="style" />
-      <link rel="stylesheet" href="/assets/styles.css" />
+      <link rel="stylesheet" href="/assets/styles.css" media="print" data-ws-preload="style" />
+      <noscript><link rel="stylesheet" href="/assets/styles.css" /></noscript>
+      <script src="/critical-css-loader.js" defer></script>
+      <script src="/referral-linker.js" defer></script>
       <script nonce="${cspNonce}" type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
       <script nonce="${cspNonce}">
         window.__WS_ADSENSE_CLIENT__ = "${adsenseClient}";
@@ -2107,6 +2110,7 @@ function layout(options: {
       ${inlineScriptTags}
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}" data-ads-disabled="${adsEnabled ? "false" : "true"}">
+      <a class="skip-link" href="#main-content">Skip to content</a>
       <div class="app-shell">
         <header class="site-header">
           <div class="nav-bar">
@@ -2143,7 +2147,7 @@ function layout(options: {
           ${modeBar}
         </header>
         ${crumbList.length ? renderBreadcrumbs(crumbList) : ""}
-        <main>${processedBodyHtml}</main>
+        <main id="main-content">${processedBodyHtml}</main>
         ${
           adsEnabled
             ? `<div class="section">

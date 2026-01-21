@@ -20,6 +20,7 @@ import { ensureAdSenseLoaded, initializeAllAdSlots } from "./adsense";
 import { getEffectiveConsent, subscribeToConsentChanges } from "./consent";
 import { useScrollUnlock } from "./hooks/useScrollUnlock";
 import { captureReferralFromUrl } from "./utils/referral";
+import { decorateReferralLinks, startReferralLinkObserver } from "./utils/referralLinks";
 import AppShell from "./routes/AppShell";
 import { RouterProvider, useLocation } from "./routes/router";
 
@@ -102,7 +103,10 @@ const RouteEffects = () => {
   }, [location.pathname, scrollUnlocked]);
 
   useEffect(() => {
-    captureReferralFromUrl();
+    const captured = captureReferralFromUrl();
+    if (captured) {
+      decorateReferralLinks();
+    }
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -123,6 +127,10 @@ const RouteEffects = () => {
       unsubscribeConsent();
     };
   }, [location.pathname, scrollUnlocked]);
+
+  useEffect(() => {
+    return startReferralLinkObserver();
+  }, []);
 
   return null;
 };
