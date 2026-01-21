@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 
 const LOCATIONS = [
@@ -16,7 +16,12 @@ const LOCATIONS = [
 ];
 
 const Research = () => {
-  useDocumentTitle("WaterShortcut | Research");
+  usePageMeta({
+    title: "Water research plan | Save water",
+    description:
+      "Build a research plan with AI water bill analysis insights to save water and reduce costs.",
+    canonicalPath: "/research",
+  });
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
 

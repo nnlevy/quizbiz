@@ -4,10 +4,18 @@ import "../react-app/App.css";
 import { decodeToken, hookFactById, moveMeta, personaFor } from "../lib/waterIq";
 import WaterIQQuiz from "../react-app/components/WaterIQQuiz";
 import { useCredits } from "../react-app/context/CreditsContext";
+import { appendReferralToUrl, fetchReferralToken } from "../react-app/utils/referral";
 
 const COMPLETION_KEY = "ws_water_iq_completed";
 const VISIT_KEY = "ws_water_iq_visited";
 const SCORE_REWARD_KEY = "ws_water_iq_score_reward_claimed";
+const LEADERBOARD_KEY = "ws_water_iq_leaderboard";
+
+type LeaderboardEntry = {
+  score: number;
+  total: number;
+  date: string;
+};
 
 const WaterIqInvalid = () => (
   <section className="section water-iq">
@@ -26,6 +34,7 @@ const WaterIqResult = ({ token }: { token: string }) => {
   const { refund } = useCredits();
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [draftText, setDraftText] = useState("");
+  const [referralToken, setReferralToken] = useState<string | null>(null);
 
   const payload = useMemo(() => {
     if (!decoded) return null;
@@ -38,10 +47,12 @@ const WaterIqResult = ({ token }: { token: string }) => {
   if (!decoded || !payload) return <WaterIqInvalid />;
 
   const badgeLabel = decoded.badge.replace(/_/g, " ");
-  const challengeLink = `/water-iq?ref=${token}`;
-  const sharePageUrl = `/water-iq/r/${token}`;
+  const challengeLink = appendReferralToUrl(`/water-iq?challenge=${token}`, referralToken);
+  const sharePageUrl = appendReferralToUrl(`/water-iq/r/${token}`, referralToken);
   const shareUrl =
-    typeof window !== "undefined" ? window.location.href : `/water-iq/r/${token}`;
+    typeof window !== "undefined"
+      ? appendReferralToUrl(window.location.href, referralToken)
+      : `/water-iq/r/${token}`;
   const scoreAngle = Math.min(Math.max(decoded.score, 0), 10) * 36;
   const shareText = `I scored ${decoded.score}/10 on WaterShortcut’s Water IQ (${badgeLabel}). ${payload.hook.short}`;
 
@@ -93,6 +104,12 @@ const WaterIqResult = ({ token }: { token: string }) => {
   const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
     shareUrl,
   )}`;
+
+  useEffect(() => {
+    fetchReferralToken()
+      .then((tokenValue) => setReferralToken(tokenValue))
+      .catch(() => setReferralToken(null));
+  }, []);
 
   return (
     <section className="section water-iq">
@@ -277,6 +294,7 @@ const WaterIqPage = () => {
   const { refund } = useCredits();
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/water-iq";
   const tokenMatch = pathname.match(/^\/water-iq\/r\/([^/]+)$/);
 
@@ -335,6 +353,23 @@ const WaterIqPage = () => {
       } catch {
         // Ignore storage failures (privacy mode, etc.).
       }
+
+      try {
+        const stored = window.localStorage.getItem(LEADERBOARD_KEY);
+        const parsed = stored ? (JSON.parse(stored) as LeaderboardEntry[]) : [];
+        const nextEntry: LeaderboardEntry = {
+          score: payload.score,
+          total: payload.total,
+          date: new Date().toISOString(),
+        };
+        const nextBoard = [...parsed, nextEntry]
+          .sort((a, b) => b.score / b.total - a.score / a.total)
+          .slice(0, 5);
+        window.localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(nextBoard));
+        setLeaderboard(nextBoard);
+      } catch {
+        // Ignore storage errors.
+      }
     },
     [hasCompletedQuiz, refund],
   );
@@ -344,6 +379,17 @@ const WaterIqPage = () => {
       setHasCompletedQuiz(true);
     }
   }, [tokenMatch]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LEADERBOARD_KEY);
+      if (stored) {
+        setLeaderboard(JSON.parse(stored) as LeaderboardEntry[]);
+      }
+    } catch {
+      setLeaderboard([]);
+    }
+  }, []);
 
   return (
     <div className="app">
@@ -355,7 +401,33 @@ const WaterIqPage = () => {
         {tokenMatch ? (
           <WaterIqResult token={tokenMatch[1]} />
         ) : (
-          <WaterIQQuiz onComplete={handleQuizComplete} rewardMessage={rewardMessage} />
+          <>
+            <WaterIQQuiz onComplete={handleQuizComplete} rewardMessage={rewardMessage} />
+            <section className="section water-iq-leaderboard" aria-label="Water IQ leaderboard">
+              <div className="water-iq-card">
+                <h2 className="wsH2">Water IQ leaderboard</h2>
+                <p className="wsMuted">
+                  Top scores stored on this device. Challenge friends to beat the leaderboard.
+                </p>
+                {leaderboard.length ? (
+                  <ol className="water-iq-leaderboard__list">
+                    {leaderboard.map((entry, index) => (
+                      <li key={`${entry.date}-${index}`}>
+                        <strong>
+                          {entry.score}/{entry.total}
+                        </strong>
+                        <span className="wsMuted">
+                          {new Date(entry.date).toLocaleDateString()}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="wsMuted">Take the quiz to start the leaderboard.</p>
+                )}
+              </div>
+            </section>
+          </>
         )}
       </main>
     </div>

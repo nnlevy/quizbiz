@@ -1,8 +1,13 @@
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 
 const About = () => {
-  useDocumentTitle("WaterShortcut | About");
+  usePageMeta({
+    title: "About WaterShortcut | Save water with AI",
+    description:
+      "Learn how WaterShortcut uses AI water bill analysis to help households save water and money.",
+    canonicalPath: "/about",
+  });
 
   return (
     <section className="ws-page" aria-labelledby="about-title">

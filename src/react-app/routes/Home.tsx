@@ -1,14 +1,35 @@
 import { ChangeEvent, useRef, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink, useNavigate } from "./router";
 import { saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
 import { isAnalysisResult, toAnalysisRecord } from "../utils/analysisTransform";
 import { useCredits } from "../context/CreditsContext";
+import InfoCard from "../components/InfoCard";
 
 const Home = () => {
-  useDocumentTitle("WaterShortcut | Analyze your water bill");
+  usePageMeta({
+    title: "AI water bill analysis to save water | WaterShortcut",
+    description:
+      "Use AI water bill analysis to save water and money. Upload a bill, try a demo bill, or use manual entry.",
+    canonicalPath: "/",
+    structuredData: [
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: "AI water bill analysis",
+        areaServed: "US",
+        description:
+          "AI water bill analysis with upload, demo, and manual entry options to help households save water.",
+        provider: {
+          "@type": "Organization",
+          name: "WaterShortcut",
+          url: "https://www.watershortcut.com",
+        },
+      },
+    ],
+  });
   const navigate = useNavigate();
   const { setCredits } = useCredits();
   const [fileName, setFileName] = useState<string | null>(null);
@@ -93,17 +114,17 @@ const Home = () => {
         <p className="eyebrow">Save Money &amp; Conserve Water</p>
         <h1 id="home-title">Understand your water bill in minutes.</h1>
         <p>
-          Upload a PDF, try a demo bill, or enter numbers by hand. We translate the bill into clear
+          Upload a bill, try a demo bill, or use manual entry. We translate the bill into clear
           savings steps.
         </p>
       </div>
 
-      <div className="ws-cta-card" aria-label="Analyze a water bill">
+      <InfoCard variant="cta" aria-label="Analyze a water bill">
         <div>
           <h2>Analyze my water bill</h2>
           <p className="ws-subtitle">Pick the mode that fits your time right now.</p>
           <RouterLink className="ws-footer-link" to="/find-water-provider">
-            Click here to look up your water bill
+            Look up my water bill portal
           </RouterLink>
         </div>
         <div className="ws-mode-grid" role="group" aria-label="Choose a starting mode">
@@ -114,7 +135,7 @@ const Home = () => {
             aria-busy={activeAction === "upload"}
             disabled={isUploading}
           >
-            <span className="ws-button__label">Upload a PDF</span>
+            <span className="ws-button__label">Upload a bill</span>
             <span className="ws-button__spinner" aria-hidden />
           </button>
           <button
@@ -123,7 +144,7 @@ const Home = () => {
             onClick={handleDemoClick}
             aria-busy={activeAction === "demo"}
           >
-            <span className="ws-button__label">Try a demo bill</span>
+            <span className="ws-button__label">Demo bill</span>
             <span className="ws-button__spinner" aria-hidden />
           </button>
           <button
@@ -132,7 +153,7 @@ const Home = () => {
             onClick={handleManualClick}
             aria-busy={activeAction === "manual"}
           >
-            <span className="ws-button__label">Enter numbers manually</span>
+            <span className="ws-button__label">Manual entry</span>
             <span className="ws-button__spinner" aria-hidden />
           </button>
           <input
@@ -152,31 +173,35 @@ const Home = () => {
             {errorMessage}
           </p>
         )}
-      </div>
+        <p className="ws-subtitle">
+          Uploads and manual entries are deleted after analysis.{" "}
+          <RouterLink to="/privacy">Learn how we handle data</RouterLink>.
+        </p>
+      </InfoCard>
 
-      <div className="ws-info-card" aria-label="Privacy reassurance">
+      <InfoCard aria-label="Privacy reassurance">
         <h2>Private by design</h2>
         <ul className="ws-pill-list">
           <li>No login required.</li>
           <li>Uploads are deleted after analysis.</li>
           <li>We don’t sell personal data.</li>
         </ul>
-      </div>
+        <RouterLink className="ws-footer-link" to="/privacy">
+          Read the privacy policy →
+        </RouterLink>
+      </InfoCard>
 
-      <div id="more-tools" className="ws-info-card" aria-label="Explore more tools">
+      <InfoCard as="nav" id="more-tools" aria-label="Explore more tools">
         <h2>More tools to explore</h2>
         <p className="ws-subtitle">
           Want to browse before uploading? Try a quick quiz or build a research plan.
         </p>
-        <div className="ws-tool-grid">
+        <div className="ws-tool-grid" role="list">
           <RouterLink to="/water-iq">Take the Water IQ Challenge</RouterLink>
           <RouterLink to="/guides" reloadDocument>
             Explore water-saving guides
           </RouterLink>
           <RouterLink to="/research">Build a research plan</RouterLink>
-          <RouterLink to="/guides/water-bill" reloadDocument>
-            Learn how to read your bill
-          </RouterLink>
           <RouterLink to="/calculators" reloadDocument>
             Try the calculators
           </RouterLink>
@@ -187,7 +212,7 @@ const Home = () => {
             Find rebates
           </RouterLink>
         </div>
-      </div>
+      </InfoCard>
     </section>
   );
 };

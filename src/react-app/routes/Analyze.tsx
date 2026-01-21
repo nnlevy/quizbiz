@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink, useLocation, useNavigate } from "./router";
 import UsageLineChart from "../components/UsageLineChart";
 import { addSavingsPlanItem, getAnalysisHistory } from "../utils/dashboard";
@@ -11,7 +11,12 @@ type AnalyzeState = {
 };
 
 const Analyze = () => {
-  useDocumentTitle("WaterShortcut | Analysis");
+  usePageMeta({
+    title: "AI water bill analysis in progress | WaterShortcut",
+    description:
+      "Watch AI water bill analysis progress and see insights that help you save water and money.",
+    canonicalPath: "/analyze-water-bill",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state || {}) as AnalyzeState;
@@ -56,10 +61,10 @@ const Analyze = () => {
           : "Ready when you are.";
 
   const heroSupport = complete
-    ? isDemo
+      ? isDemo
       ? "See how things change with a real bill upload."
       : isManual
-        ? "Upload a PDF later to refine the insights."
+        ? "Upload a bill later to refine the insights."
         : "Keep the momentum going with extra tools below."
     : hasMode
       ? "We translate usage tiers, spikes, and leak signals into clear actions."
@@ -116,13 +121,13 @@ const Analyze = () => {
       {!hasMode ? (
         <div className="ws-progress" role="status" aria-live="polite">
           <h2>Start your analysis</h2>
-          <p>Upload a PDF, try the demo bill, or enter numbers manually to generate insights.</p>
+          <p>Upload a bill, try the demo bill, or use manual entry to generate insights.</p>
           <div className="ws-tool-grid">
             <button className="ws-button" type="button" onClick={() => navigate("/")}>
               Go to upload options
             </button>
             <button className="ws-button-secondary" type="button" onClick={() => navigate("/manual-entry")}>
-              Enter numbers manually
+              Manual entry
             </button>
           </div>
         </div>

@@ -21,14 +21,26 @@ const PrivacyControls = () => {
   return (
     <div className="privacy-controls">
       <h3>Privacy controls</h3>
-      <label>
-        <input type="checkbox" checked disabled /> Functional (required)
+      <label htmlFor="privacy-functional">
+        <input id="privacy-functional" type="checkbox" checked disabled /> Functional (required)
       </label>
-      <label>
-        <input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /> Analytics
+      <label htmlFor="privacy-analytics">
+        <input
+          id="privacy-analytics"
+          type="checkbox"
+          checked={analytics}
+          onChange={(event) => setAnalytics(event.target.checked)}
+        />{" "}
+        Analytics
       </label>
-      <label>
-        <input type="checkbox" checked={ads} onChange={(event) => setAds(event.target.checked)} /> Ads
+      <label htmlFor="privacy-ads">
+        <input
+          id="privacy-ads"
+          type="checkbox"
+          checked={ads}
+          onChange={(event) => setAds(event.target.checked)}
+        />{" "}
+        Ads
       </label>
       <button type="button" className="secondary-button" onClick={handleSave}>
         Save choices

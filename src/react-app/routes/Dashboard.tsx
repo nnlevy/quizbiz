@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 import { useCredits } from "../context/CreditsContext";
 import { useCreditsModal } from "../context/CreditsModalContext";
@@ -18,7 +18,12 @@ import {
 } from "../utils/dashboard";
 
 const Dashboard = () => {
-  useDocumentTitle("WaterShortcut | Dashboard");
+  usePageMeta({
+    title: "WaterShortcut dashboard | Save water",
+    description:
+      "Track your AI water bill analysis history, savings plan, and progress toward saving water.",
+    canonicalPath: "/dashboard",
+  });
   const [goals, setGoals] = useState<Goal[]>(getGoals());
   const [goalTitle, setGoalTitle] = useState("");
   const [goalTarget, setGoalTarget] = useState("10% over 6 months");
@@ -191,9 +196,10 @@ const Dashboard = () => {
                 Share your location to get a localized trend summary and conservation focus areas.
               </p>
               <div className="ws-form-grid">
-                <label className="ws-field">
+                <label className="ws-field" htmlFor="trend-city">
                   City (optional)
                   <input
+                    id="trend-city"
                     className="ws-input"
                     type="text"
                     value={trendCity}
@@ -201,9 +207,10 @@ const Dashboard = () => {
                     placeholder="e.g., Austin"
                   />
                 </label>
-                <label className="ws-field">
+                <label className="ws-field" htmlFor="trend-state">
                   State (optional)
                   <input
+                    id="trend-state"
                     className="ws-input"
                     type="text"
                     value={trendState}
@@ -211,9 +218,10 @@ const Dashboard = () => {
                     placeholder="e.g., TX"
                   />
                 </label>
-                <label className="ws-field">
+                <label className="ws-field" htmlFor="trend-zip">
                   ZIP code
                   <input
+                    id="trend-zip"
                     className="ws-input"
                     type="text"
                     value={trendZip}
@@ -343,9 +351,10 @@ const Dashboard = () => {
       <div className="ws-info-card" aria-label="Goals">
         <h2>Water-saving goals</h2>
         <form className="ws-form" onSubmit={handleAddGoal}>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor="goal-name">
             Goal name
             <input
+              id="goal-name"
               className="ws-input"
               type="text"
               value={goalTitle}
@@ -353,18 +362,20 @@ const Dashboard = () => {
               placeholder="Reduce usage by 10%"
             />
           </label>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor="goal-target">
             Target
             <input
+              id="goal-target"
               className="ws-input"
               type="text"
               value={goalTarget}
               onChange={(event) => setGoalTarget(event.target.value)}
             />
           </label>
-          <label className="ws-field">
+          <label className="ws-field" htmlFor="goal-progress">
             Current progress: {goalProgress}%
             <input
+              id="goal-progress"
               className="ws-input"
               type="range"
               min={0}
@@ -382,9 +393,10 @@ const Dashboard = () => {
             <div key={goal.id} className="ws-goal-card">
               <h3>{goal.title}</h3>
               <p className="ws-subtitle">Target: {goal.target}</p>
-              <label className="ws-field">
+              <label className="ws-field" htmlFor={`goal-progress-${goal.id}`}>
                 Progress: {goal.progress}%
                 <input
+                  id={`goal-progress-${goal.id}`}
                   className="ws-input"
                   type="range"
                   min={0}

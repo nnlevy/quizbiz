@@ -20,9 +20,9 @@ export const copy = {
     title: "Cut your water bill with AI-powered insights",
     subtitle:
       "Turn a confusing bill into a clear checklist. Upload a PDF (or enter numbers manually) to spot leaks, avoid tier jumps, and lower costs—without guesswork.",
-    primaryCta: "Analyze my bill",
-    secondaryCta: "Try a demo",
-    tertiaryCta: "Prefer not to upload? Enter numbers manually",
+    primaryCta: "Upload a bill",
+    secondaryCta: "Demo bill",
+    tertiaryCta: "Manual entry",
     trustRow: [
       "No login",
       "Redact personal details if you want",
@@ -40,8 +40,8 @@ export const copy = {
     uploadConstraints: "PDF only • Max 10MB • Most bills work best when text is selectable",
     uploadIdle: "Choose PDF",
     uploadActive: "Analyze my bill",
-    uploadAltDemo: "Try a demo",
-    uploadAltManual: "Enter numbers manually",
+    uploadAltDemo: "Demo bill",
+    uploadAltManual: "Manual entry",
     progressSteps: ["Uploading…", "Reading your bill…", "Building your plan…"],
     progressNote: "This usually takes under a minute.",
     errors: {

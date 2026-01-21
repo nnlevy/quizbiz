@@ -25,6 +25,8 @@ const MARGIN_AD_CLASS = "ws-margin-ad";
 const MARGIN_AD_VISIBLE_CLASS = "ws-margin-ad--visible";
 const MARGIN_AD_HIDDEN_CLASS = "ws-margin-ad--hidden";
 const MARGIN_AD_VISIBILITY_MS = 10_000;
+const VIGNETTE_BANNER_ID = "ws-vignette-banner";
+const VIGNETTE_DISMISS_DELAY_MS = 1400;
 
 type MarginAdState = {
   shownAt: number;
@@ -197,6 +199,40 @@ const hasEligibleSlots = () =>
 const logAdStatus = (label: string) => {
   if (!isDebugEnabled()) return;
   debugLog(label, collectAdStatus());
+};
+
+const clearVignetteHash = () => {
+  if (!isVignetteExperience()) return false;
+  const url = `${window.location.pathname}${window.location.search}`;
+  history.replaceState(history.state, "", url);
+  return true;
+};
+
+const showVignetteBanner = () => {
+  if (document.getElementById(VIGNETTE_BANNER_ID)) return;
+  const banner = document.createElement("div");
+  banner.className = "ws-vignette-banner";
+  banner.id = VIGNETTE_BANNER_ID;
+  banner.innerHTML = `
+    <div class="ws-vignette-banner__content">
+      <strong>Interstitial ad blocked.</strong>
+      <span>Continue to WaterShortcut.</span>
+    </div>
+    <button type="button" class="ws-vignette-banner__button">Continue</button>
+  `;
+  const button = banner.querySelector<HTMLButtonElement>("button");
+  button?.addEventListener("click", () => banner.remove());
+  setTimeout(() => {
+    if (!document.body.contains(banner)) return;
+    banner.classList.add("is-visible");
+  }, VIGNETTE_DISMISS_DELAY_MS);
+  document.body.appendChild(banner);
+};
+
+const handleVignetteExperience = () => {
+  if (!isVignetteExperience()) return;
+  clearVignetteHash();
+  showVignetteBanner();
 };
 
 const ensureScriptPresent = () => {
@@ -376,6 +412,7 @@ export const ensureAdSenseLoaded = () => {
   }
   patchAdDimensionSetters();
   observeMarginAds();
+  handleVignetteExperience();
   (window as typeof window & { __WS_ADSENSE_MANAGED__?: string }).__WS_ADSENSE_MANAGED__ = "react";
   if (!scriptLoadPromise) {
     const script = ensureScriptPresent();
@@ -412,9 +449,11 @@ export const subscribeToRouteChanges = (listener: () => void) => {
   patchHistory();
   window.addEventListener("popstate", listener);
   window.addEventListener(ROUTE_CHANGE_EVENT, listener as EventListener);
+  window.addEventListener("hashchange", handleVignetteExperience);
   return () => {
     window.removeEventListener("popstate", listener);
     window.removeEventListener(ROUTE_CHANGE_EVENT, listener as EventListener);
+    window.removeEventListener("hashchange", handleVignetteExperience);
   };
 };
 

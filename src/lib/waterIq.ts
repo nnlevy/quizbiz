@@ -724,7 +724,7 @@ function recommendMoves(input: {
 }
 
 export function shareChallengeUrl(origin: string, token: string): string {
-  return `${origin}/water-iq?ref=${token}`;
+  return `${origin}/water-iq?challenge=${token}`;
 }
 
 export function shareResultUrl(origin: string, token: string): string {

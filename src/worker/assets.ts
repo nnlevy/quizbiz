@@ -23,9 +23,19 @@ label{display:block;font-weight:700;margin-bottom:6px;color:#0f172a;} input,sele
 .upload-stepper{display:grid;gap:6px;margin-top:10px;} .upload-stepper .step{padding:8px 10px;border-radius:10px;border:1px solid #e2e8f0;font-weight:700;color:#475569;} .upload-stepper .step.active{background:#0ea5e9;color:white;border-color:#0ea5e9;}
 .results-grid{display:grid;gap:16px;} .result-card{padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:white;display:grid;gap:10px;} .result-card h3{margin:0;} .result-meta{display:flex;gap:12px;font-size:13px;color:#475569;font-weight:700;flex-wrap:wrap;}
 .share-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.share-card{border:1px solid #e2e8f0;border-radius:16px;padding:14px;background:#f8fafc;display:grid;gap:12px;margin-top:16px;}
+.share-card__title{font-size:16px;font-weight:800;margin:0;color:#0f172a;}
+.share-card__copy{font-size:14px;color:#334155;margin:0;}
+.share-card__media img{width:100%;border-radius:12px;border:1px solid #e2e8f0;}
+.share-card__actions{display:flex;gap:8px;flex-wrap:wrap;}
 .help-accordion summary{font-weight:700;cursor:pointer;margin-bottom:6px;}
 .water-iq{display:flex;justify-content:center;} .water-iq-card{max-width:860px;width:100%;border:1px solid rgba(0,0,0,.12);border-radius:18px;padding:20px;background:#fff;} .water-iq-card--result{box-shadow:0 20px 50px rgba(15,23,42,.12);} .water-iq-result-header{display:flex;align-items:center;justify-content:space-between;gap:12px;} .water-iq-title{margin:0;font-size:22px;font-weight:750;color:#0f172a;} .water-iq-ellipsis{font-size:22px;letter-spacing:2px;color:#cbd5e1;} .water-iq-divider{height:1px;background:#e2e8f0;margin:12px 0 16px;} .water-iq-result-meta{display:flex;gap:18px;align-items:center;flex-wrap:wrap;} .water-iq-score-circle{width:120px;height:120px;border-radius:50%;background:conic-gradient(rgba(79,155,255,.9) 0 var(--score-angle,0deg),rgba(79,155,255,.15) var(--score-angle,0deg) 360deg);display:flex;align-items:center;justify-content:center;position:relative;} .water-iq-score-circle::after{content:"";position:absolute;inset:10px;background:#f8fafc;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(148,163,184,.4);} .water-iq-score-value{position:relative;z-index:1;font-size:32px;font-weight:800;color:#0f172a;display:flex;align-items:baseline;gap:4px;} .water-iq-score-value span{font-size:16px;color:#64748b;font-weight:700;} .water-iq-result-copy{display:grid;gap:10px;min-width:200px;} .water-iq-badge-pill{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#5db5f3,#3f7acb);color:white;border-radius:999px;padding:10px 18px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;box-shadow:0 8px 20px rgba(59,130,246,.25);} .water-iq-badge-icon{background:white;color:#3f7acb;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;} .water-iq-fact{font-size:20px;line-height:1.35;font-weight:650;color:#0f172a;max-width:360px;} .water-iq-share,.water-iq-draft{padding:14px;border-radius:16px;border:1px solid rgba(59,130,246,.18);background:rgba(255,255,255,.9);display:grid;gap:10px;} .water-iq-share__actions{display:flex;flex-wrap:wrap;gap:10px;} .water-iq-draft__header{display:flex;align-items:center;justify-content:space-between;gap:10px;} .water-iq-draft__text{width:100%;min-height:120px;border-radius:12px;border:1px solid rgba(15,35,95,.2);padding:12px;font-family:inherit;font-size:14px;resize:vertical;} .water-iq-draft__actions{display:flex;justify-content:flex-end;} .wsH1{font-size:28px;line-height:1.15;margin:0 0 10px;} .wsH2{font-size:18px;margin:6px 0 6px;} .wsP{margin:8px 0 10px;line-height:1.45;} .wsQ{margin:10px 0 8px;font-size:18px;line-height:1.35;} .wsMuted{color:rgba(0,0,0,.62);font-size:13px;} .wsRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;} .wsBtnPrimary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;} .wsBtnPrimary--pill{border-radius:999px;padding:12px 20px;background:linear-gradient(135deg,#4f9fe3,#2f6db9);box-shadow:0 12px 22px rgba(37,99,235,.2);} .wsBtnPrimary:disabled{opacity:.45;cursor:not-allowed;} .wsBtnGhost{background:transparent;color:#111;border:1px solid rgba(0,0,0,.16);border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block;} .wsCallout{margin:10px 0 6px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);} .wsDisclosure{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.02);} .wsTopBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;} .wsProgressWrap{flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;} .wsProgress{height:100%;background:#111;border-radius:999px;} .wsChoices{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsChoice{padding:12px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.14);background:#fff;text-align:left;cursor:pointer;} .wsChoice.isSelected{border-color:#111;box-shadow:0 0 0 2px rgba(0,0,0,.06) inset;} .wsChoice:disabled{opacity:.5;cursor:not-allowed;} .wsExplain{margin:10px 0 12px;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.03);} .wsGood,.wsBad{font-weight:750;margin-bottom:8px;} .wsSources{margin-top:10px;} .wsSources ul{margin:6px 0 0;padding-left:18px;} .wsLink{text-decoration:underline;} .wsNav{display:flex;justify-content:space-between;gap:10px;margin-top:8px;} .wsNumWrap{display:flex;flex-direction:column;gap:10px;margin:12px 0;} .wsNum{padding:12px;border:1px solid rgba(0,0,0,.14);border-radius:12px;font-size:16px;} .wsFoot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;color:rgba(0,0,0,.55);font-size:12px;} .wsGrid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:10px;margin-top:10px;} .wsStat{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#fff;} .wsStatTitle{font-weight:800;} .wsStatValue{font-size:20px;font-weight:900;margin-top:4px;} .wsResultMoves{display:grid;gap:10px;margin-top:10px;} .wsResultMove{padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);text-decoration:none;color:#111;background:#fff;display:block;} .wsResultMove strong{display:block;} .wsResultMove span{display:block;margin-top:4px;color:rgba(0,0,0,.65);font-size:13px;} .water-iq-dashboard{margin-top:18px;padding:16px;border-radius:16px;border:1px solid rgba(59,130,246,.25);background:rgba(59,130,246,.08);display:grid;gap:12px;} .water-iq-dashboard__actions{display:flex;flex-wrap:wrap;gap:10px;} .water-iq-badge-grid{display:grid;gap:10px;} .water-iq-badge-card{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.9);box-shadow:0 10px 24px rgba(59,130,246,.12);} .water-iq-badge-card strong{display:block;} .water-iq-badge-card .wsMuted{display:block;font-size:12px;} .water-iq-badge-card.is-earned{border-color:rgba(59,130,246,.45);box-shadow:0 16px 28px rgba(59,130,246,.2);} .water-iq-badge-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(59,130,246,.12);font-size:18px;} .nav-link:hover,.nav-link:focus-visible,.btn:hover,.btn:focus-visible,.wsBtnPrimary:hover,.wsBtnPrimary:focus-visible,.wsBtnGhost:hover,.wsBtnGhost:focus-visible,.card:hover,.card:focus-visible,.wsResultMove:hover,.wsResultMove:focus-visible,.water-iq-badge-card:hover{animation:ws-wiggle .35s ease-in-out;} .wsBtnPrimary:hover,.wsBtnPrimary:focus-visible,.btn.primary:hover,.btn.primary:focus-visible{box-shadow:0 12px 28px rgba(59,130,246,.25);} .wsBtnGhost:hover,.wsBtnGhost:focus-visible{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.08);} .card:hover,.card:focus-visible,.wsResultMove:hover,.wsResultMove:focus-visible,.water-iq-badge-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(59,130,246,.16);} @keyframes ws-wiggle{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-2px) rotate(-0.35deg);}}
 @media (max-width:640px){.water-iq-card{padding:16px;border-radius:16px;} .water-iq-result-meta{flex-direction:column;align-items:flex-start;} .water-iq-score-circle{width:110px;height:110px;} .water-iq-fact{font-size:18px;} .wsRow{flex-direction:column;align-items:stretch;} .wsBtnPrimary,.wsBtnGhost{width:100%;text-align:center;} .wsBtnPrimary--pill{width:100%;} .wsNav{flex-direction:column;align-items:stretch;} .water-iq-badge-pill{width:100%;justify-content:center;text-align:center;}}
+.ws-vignette-banner{position:fixed;bottom:18px;left:18px;right:18px;z-index:40;background:#0f172a;color:white;border-radius:16px;padding:14px 16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;box-shadow:0 20px 40px rgba(15,23,42,.35);opacity:0;transform:translateY(12px);transition:opacity .2s ease,transform .2s ease;}
+.ws-vignette-banner.is-visible{opacity:1;transform:translateY(0);}
+.ws-vignette-banner__content{display:grid;gap:4px;}
+.ws-vignette-banner__button{border:none;background:#38bdf8;color:#0f172a;padding:10px 16px;border-radius:999px;font-weight:700;min-height:44px;cursor:pointer;}
+.ws-vignette-banner__button:focus-visible{outline:3px solid #fff;outline-offset:2px;}
 @media (min-width:720px){.water-iq-badge-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media (min-width:768px){.hero{grid-template-columns:2fr 1fr;align-items:center;} .hero h1{font-size:40px;} }
 @media print{.site-header,.footer,.ad-slot-placeholder,.actions,.wizard-actions,.nav-links{display:none!important;} body{background:white;} .layout-slab{box-shadow:none;border-color:#e2e8f0;} .hero{padding-top:0;}}
@@ -202,6 +212,7 @@ export function clientScript(defaultAdsenseClient: string) {
 
   const ensureAdSenseLoaded = () => {
     if (!hasAdsConsent()) return null;
+    handleVignetteExperience();
     const existing = document.querySelector<HTMLScriptElement>(ADSENSE_SCRIPT_SELECTOR);
     if (existing) return existing;
     const script = document.createElement('script');
@@ -209,6 +220,7 @@ export function clientScript(defaultAdsenseClient: string) {
     script.src = ADSENSE_SCRIPT_SRC;
     script.crossOrigin = 'anonymous';
     document.head.appendChild(script);
+    handleVignetteExperience();
     return script;
   };
 
@@ -655,6 +667,63 @@ export function clientScript(defaultAdsenseClient: string) {
     confidenceNote: 'Demo mode uses sample data — your real bill will be more precise.',
   };
 
+  const buildShareCardSvg = (title: string, summary: string) => {
+    const safeTitle = escapeHtml(title);
+    const safeSummary = escapeHtml(summary);
+    const trimmed = safeSummary.length > 180 ? `${safeSummary.slice(0, 177)}...` : safeSummary;
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+  <rect width="1200" height="630" fill="#f8fbff" />
+  <rect x="50" y="50" width="1100" height="530" rx="28" fill="#ffffff" stroke="#0f172a" stroke-width="4" />
+  <text x="110" y="170" font-size="48" font-family="system-ui, -apple-system, sans-serif" font-weight="800" fill="#0f172a">WaterShortcut plan</text>
+  <text x="110" y="240" font-size="28" font-family="system-ui, -apple-system, sans-serif" font-weight="600" fill="#0f172a">${safeTitle}</text>
+  <foreignObject x="110" y="280" width="980" height="200">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:system-ui,-apple-system,sans-serif;font-size:24px;color:#0f172a;line-height:1.4;">
+      ${trimmed}
+    </div>
+  </foreignObject>
+  <text x="110" y="540" font-size="22" font-family="system-ui, -apple-system, sans-serif" fill="#475569">AI water bill analysis · watershortcut.com</text>
+</svg>`;
+  };
+
+  const buildShareImageUrl = (title: string, summary: string) =>
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(buildShareCardSvg(title, summary))}`;
+
+  const buildShareUrl = (token?: string | null) => {
+    const base = `${window.location.origin}/analyze-water-bill`;
+    if (!token) return base;
+    const separator = base.includes('?') ? '&' : '?';
+    return `${base}${separator}ref=${encodeURIComponent(token)}`;
+  };
+
+  const fetchReferralToken = async (): Promise<string | null> => {
+    try {
+      const stored = localStorage.getItem('ws_referral_token');
+      if (stored) return stored;
+    } catch {
+      // ignore
+    }
+    try {
+      const res = await fetch('/api/referral/token', {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { token?: string };
+      if (data?.token) {
+        try {
+          localStorage.setItem('ws_referral_token', data.token);
+        } catch {
+          // ignore
+        }
+        return data.token;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
   const renderAnalysis = (result: AnalysisResult, target: HTMLElement) => {
     const cards = result.topMoves
       .map(
@@ -678,6 +747,10 @@ export function clientScript(defaultAdsenseClient: string) {
       `What you’re paying for: ${result.payingFor}`,
       `Next step: ${result.nextStep}`,
     ].join('\n');
+    const shareTitle = result.topMoves[0]?.title || 'Water savings plan';
+    const shareSummary = `${result.payingFor} Next step: ${result.nextStep}`;
+    const shareImageUrl = buildShareImageUrl(shareTitle, shareSummary);
+    const shareUrl = buildShareUrl(null);
     target.innerHTML = `
       <div class="results-grid">
         <h3>Your top 3 moves</h3>
@@ -687,6 +760,25 @@ export function clientScript(defaultAdsenseClient: string) {
         <h3>Your next best step</h3>
         <p>${result.nextStep}</p>
         ${result.confidenceNote ? `<p class="muted">${result.confidenceNote}</p>` : ''}
+        <div class="share-card">
+          <h4 class="share-card__title">Share your plan</h4>
+          <p class="share-card__copy">Share your summary card and invite friends to try WaterShortcut.</p>
+          <div class="share-card__media">
+            <img src="${shareImageUrl}" alt="WaterShortcut plan summary card" loading="lazy" />
+          </div>
+          <div class="share-card__actions">
+            <a class="btn secondary" data-share-facebook href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+              shareUrl,
+            )}" target="_blank" rel="noreferrer">Facebook</a>
+            <a class="btn secondary" data-share-x href="https://twitter.com/intent/tweet?text=${encodeURIComponent(
+              `My WaterShortcut plan: ${shareUrl}`,
+            )}" target="_blank" rel="noreferrer">X</a>
+            <a class="btn secondary" data-share-email href="mailto:?subject=${encodeURIComponent(
+              'My WaterShortcut plan',
+            )}&body=${encodeURIComponent(`Here’s my plan: ${shareUrl}`)}">Email</a>
+            <a class="btn secondary" href="${shareImageUrl}" download="watershortcut-plan.svg">Download card</a>
+          </div>
+        </div>
         <div class="share-bar">
           <button class="btn secondary" data-copy-summary>Copy summary</button>
           <button class="btn secondary" data-print-plan>Download PDF</button>
@@ -710,6 +802,28 @@ export function clientScript(defaultAdsenseClient: string) {
     if (printBtn) {
       printBtn.addEventListener('click', () => window.print());
     }
+
+    const updateShareLinks = (token?: string | null) => {
+      const updatedUrl = buildShareUrl(token);
+      const facebook = target.querySelector<HTMLAnchorElement>('[data-share-facebook]');
+      const twitter = target.querySelector<HTMLAnchorElement>('[data-share-x]');
+      const email = target.querySelector<HTMLAnchorElement>('[data-share-email]');
+      if (facebook) {
+        facebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(updatedUrl)}`;
+      }
+      if (twitter) {
+        twitter.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+          `My WaterShortcut plan: ${updatedUrl}`,
+        )}`;
+      }
+      if (email) {
+        email.href = `mailto:?subject=${encodeURIComponent(
+          'My WaterShortcut plan',
+        )}&body=${encodeURIComponent(`Here’s my plan: ${updatedUrl}`)}`;
+      }
+    };
+
+    void fetchReferralToken().then((token) => updateShareLinks(token));
   };
 
   function initBillUpload() {
@@ -811,48 +925,61 @@ export function clientScript(defaultAdsenseClient: string) {
     const manualForm = document.querySelector<HTMLFormElement>('#manual-form');
     const manualOutput = document.querySelector<HTMLElement>('[data-manual-output]');
     if (manualForm && manualOutput) {
-      manualForm.addEventListener('submit', (e) => {
+      manualForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(manualForm);
         const usage = Number(formData.get('usage') || 0);
         const cost = Number(formData.get('cost') || 0);
-        const household = Number(formData.get('household') || 0);
-        const result: AnalysisResult = {
-          topMoves: [
-            {
-              title: 'Check for leaks first',
-              why: 'Leaks are the fastest, cheapest win.',
-              effort: 'Low',
-              impact: usage ? `~${fmt(usage * 0.15)} units/month` : 'Fast impact',
-              steps: ['Run the leak check', 'Fix toilets first', 'Recheck your meter'],
-              ctaLabel: 'Start leak check',
-              ctaHref: '/leak-check',
-            },
-            {
-              title: 'Trim shower & faucet flow',
-              why: 'Daily habits add up quickly.',
-              effort: 'Low',
-              impact: household ? `${household} people × daily savings` : 'Daily savings',
-              steps: ['Install WaterSense fixtures', 'Shorten showers', 'Monitor for drips'],
-              ctaLabel: 'Open shower calculator',
-              ctaHref: '/calculators/shower',
-            },
-            {
-              title: 'Watch outdoor watering',
-              why: 'Outdoor use drives tier spikes.',
-              effort: 'Medium',
-              impact: cost ? `Protect ~$${fmt(cost * 0.1)}/mo` : 'Avoid tier jumps',
-              steps: ['Water 2 days/week', 'Fix spray heads', 'Adjust seasonally'],
-              ctaLabel: 'Outdoor tips',
-              ctaHref: '/calculators/outdoor',
-            },
-          ],
-          payingFor: 'Manual entry suggests usage + sewer charges dominate the total bill.',
-          nextStep: 'Confirm your unit rate on the next bill for a sharper estimate.',
-          confidenceNote: 'Manual entry is less precise than a full bill upload.',
+        if (!usage || usage <= 0 || !cost || cost <= 0) {
+          manualOutput.innerHTML =
+            '<div class="callout">Please add total usage and total cost to build a plan.</div>';
+          return;
+        }
+        manualOutput.innerHTML = '<div class="callout">Analyzing your manual entry…</div>';
+        const payload = {
+          period: String(formData.get('period') || ''),
+          usage,
+          unit: String(formData.get('unit') || ''),
+          cost,
+          rate: String(formData.get('rate') || ''),
+          household: String(formData.get('household') || ''),
+          notes: String(formData.get('notes') || ''),
         };
-        renderAnalysis(result, manualOutput);
-        safeStorageSet('ws-latest-plan', JSON.stringify(result));
+        try {
+          const response = await fetch('/api/analyze-manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const responseText = await response.text();
+          if (!response.ok) {
+            try {
+              const data = JSON.parse(responseText) as { error?: string };
+              manualOutput.innerHTML = `<div class="callout">${escapeHtml(
+                data?.error || 'We couldn’t analyze that manual entry yet.',
+              )}</div>`;
+              return;
+            } catch {
+              manualOutput.innerHTML =
+                '<div class="callout">We couldn’t analyze that manual entry yet.</div>';
+              return;
+            }
+          }
+          try {
+            const data = JSON.parse(responseText) as { analysis?: AnalysisResult };
+            if (data.analysis) {
+              renderAnalysis(data.analysis, manualOutput);
+              safeStorageSet('ws-latest-plan', JSON.stringify(data.analysis));
+              return;
+            }
+          } catch {
+            // fall through to raw HTML
+          }
+          manualOutput.innerHTML = responseText;
+        } catch {
+          manualOutput.innerHTML =
+            '<div class="callout">We hit a snag. Please try again or email hello@watershortcut.com.</div>';
+        }
       });
     }
 
@@ -928,6 +1055,8 @@ export function clientScript(defaultAdsenseClient: string) {
 
   const isHomePage = () => window.location.pathname === MARGIN_AD_HOME_PATH;
   const isVignetteExperience = () => window.location.hash.includes('google_vignette');
+  const VIGNETTE_BANNER_ID = 'ws-vignette-banner';
+  const VIGNETTE_DISMISS_DELAY_MS = 1400;
   const isAdsDisabled = () => document.body?.dataset.adsDisabled === 'true' || isHomePage();
 
   const isMarginAdOverlappingContent = (slot: HTMLElement) => {
@@ -1023,6 +1152,42 @@ export function clientScript(defaultAdsenseClient: string) {
       marginAdsHashListenerAttached = true;
     }
     scheduleMarginAdsUpdate();
+  };
+
+  const clearVignetteHash = () => {
+    if (!isVignetteExperience()) return false;
+    const url = `${window.location.pathname}${window.location.search}`;
+    history.replaceState(history.state, '', url);
+    return true;
+  };
+
+  const showVignetteBanner = () => {
+    if (document.getElementById(VIGNETTE_BANNER_ID)) return;
+    const banner = document.createElement('div');
+    banner.className = 'ws-vignette-banner';
+    banner.id = VIGNETTE_BANNER_ID;
+    banner.innerHTML = `
+      <div class="ws-vignette-banner__content">
+        <strong>Interstitial ad blocked.</strong>
+        <span>Continue to WaterShortcut.</span>
+      </div>
+      <button type="button" class="ws-vignette-banner__button">Continue</button>
+    `;
+    const button = banner.querySelector('button');
+    if (button) {
+      button.addEventListener('click', () => banner.remove());
+    }
+    setTimeout(() => {
+      if (!document.body.contains(banner)) return;
+      banner.classList.add('is-visible');
+    }, VIGNETTE_DISMISS_DELAY_MS);
+    document.body.appendChild(banner);
+  };
+
+  const handleVignetteExperience = () => {
+    if (!isVignetteExperience()) return;
+    clearVignetteHash();
+    showVignetteBanner();
   };
 
   const sanitizeSvgDimensions = (svg: SVGElement) => {
@@ -1304,6 +1469,7 @@ export function clientScript(defaultAdsenseClient: string) {
     patchAdDimensionSetters();
     initMarginAds();
     const adScript = ensureAdSenseLoaded();
+    window.addEventListener('hashchange', handleVignetteExperience);
     queueAutoAds();
     if (adScript) {
       if (adScript.dataset.adsenseLoaded === 'true') {
@@ -1698,7 +1864,7 @@ export function clientScript(defaultAdsenseClient: string) {
     const flow = typeof WATER_IQ_FLOW === 'undefined' ? questions.map((q) => q.id) : WATER_IQ_FLOW;
     const copy = (WATER_IQ_COPY || { A: {}, B: {} }) as typeof WATER_IQ_COPY;
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
+    const ref = params.get('challenge');
     const answers: Record<string, unknown> = {};
     const variant = waterIqAssignVariant(getOrCreateWaterIqSessionId());
     const arm = variant.arm as 'A' | 'B';
@@ -2072,7 +2238,7 @@ export function clientScript(defaultAdsenseClient: string) {
     const personaCode = panel.dataset.persona || 'CS';
     const delta = Number(panel.dataset.delta || 0);
     const origin = window.location.origin;
-    const challengeUrl = `${origin}/water-iq?ref=${token}`;
+    const challengeUrl = `${origin}/water-iq?challenge=${token}`;
     const shareUrl = `${origin}/water-iq/r/${token}`;
     const arm = waterIqAssignVariant(getOrCreateWaterIqSessionId()).arm as 'A' | 'B';
     const persona = waterIqPersonaFromCode(personaCode);

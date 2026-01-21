@@ -1,7 +1,7 @@
 const site = {
   brandName: "WaterShortcut",
   canonicalHost: "www.watershortcut.com",
-  defaultOgImage: "https://res.cloudinary.com/dlxzgqi9g/image/upload/v1735510676/watershortcut-favicon.png",
+  defaultOgImage: "https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto/v1735510676/watershortcut-favicon.png",
   twitterHandle: "@watershortcut",
   locale: "en_US",
 };
@@ -39,11 +39,23 @@ const pages = {
       "Upload a water bill PDF to get a plain-English breakdown, usage clues, and prioritized savings moves.",
     canonicalPath: "/analyze-water-bill",
   },
+  "/manual-entry": {
+    title: "Manual water bill entry | WaterShortcut",
+    description:
+      "Enter water bill numbers manually to get AI water bill analysis, savings tips, and ways to save water.",
+    canonicalPath: "/manual-entry",
+  },
   "/find-water-provider": {
     title: "Find your water provider | WaterShortcut",
     description:
       "Enter your city to find your water authority, bill portal, and contact details.",
     canonicalPath: "/find-water-provider",
+  },
+  "/research": {
+    title: "Water research plan | WaterShortcut",
+    description:
+      "Build a research plan with AI water bill analysis insights to save water and reduce costs.",
+    canonicalPath: "/research",
   },
   "/savings-plan": {
     title: "Build a water savings plan | WaterShortcut",
@@ -156,6 +168,27 @@ const pages = {
     description:
       "WaterShortcut turns confusing bills into simple next steps—fast.",
     canonicalPath: "/about",
+  },
+  "/sign-in": {
+    title: "Sign in | WaterShortcut",
+    description: "Sign in to access AI water bill analysis history and save water.",
+    canonicalPath: "/sign-in",
+  },
+  "/sign-up": {
+    title: "Create a WaterShortcut account",
+    description: "Create a WaterShortcut account to save water and track AI insights.",
+    canonicalPath: "/sign-up",
+  },
+  "/dashboard": {
+    title: "WaterShortcut dashboard",
+    description: "Track AI water bill analysis history and savings goals in your dashboard.",
+    canonicalPath: "/dashboard",
+    robots: "noindex,follow",
+  },
+  "/credits": {
+    title: "WaterShortcut credits",
+    description: "Manage credits for AI water bill analysis and water-saving tools.",
+    canonicalPath: "/credits",
   },
   "/contact": {
     title: "Contact WaterShortcut",

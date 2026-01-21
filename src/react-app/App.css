@@ -3224,6 +3224,29 @@ ins.adsbygoogle[style*="position: fixed"] {
   font-size: 1.2rem;
 }
 
+.water-iq-leaderboard {
+  margin-top: 1.5rem;
+}
+
+.water-iq-leaderboard__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.water-iq-leaderboard__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 35, 95, 0.12);
+}
+
 @media (min-width: 720px) {
   .water-iq-badge-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

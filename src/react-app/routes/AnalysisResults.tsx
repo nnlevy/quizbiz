@@ -2,19 +2,29 @@ import { useEffect, useMemo, useState } from "react";
 
 import CostBreakdownChart from "../components/CostBreakdownChart";
 import UsageLineChart from "../components/UsageLineChart";
-import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink, useLocation } from "./router";
 import { addSavingsPlanItem, getAnalysisHistory, saveAnalysisRecord } from "../utils/dashboard";
 import type { AnalysisResult } from "../types";
 import { isAnalysisResult } from "../utils/analysisTransform";
 import { useCreditsModal } from "../context/CreditsModalContext";
 import { useSession } from "../context/SessionContext";
+import { buildAnalysisShareSvg } from "../utils/shareCard";
+import { appendReferralToUrl, fetchReferralToken } from "../utils/referral";
+import { ActionButton, ActionLink } from "../components/ActionButton";
 
 const AnalysisResults = () => {
-  useDocumentTitle("WaterShortcut | Analysis results");
+  usePageMeta({
+    title: "AI water bill analysis results | WaterShortcut",
+    description:
+      "Review your AI water bill analysis results, savings opportunities, and next steps to save water.",
+    canonicalPath: "/analysis-results",
+  });
   const location = useLocation();
   const [notice, setNotice] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   const recordState = location.state as { record?: AnalysisResult; mode?: "upload" | "manual" } | null;
   const record = useMemo<AnalysisResult | null>(() => {
@@ -55,6 +65,31 @@ const AnalysisResults = () => {
   }, [record]);
   const { user } = useSession();
   const { openModal } = useCreditsModal();
+  const shareLinkBase =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/analyze-water-bill`
+      : "https://www.watershortcut.com/analyze-water-bill";
+  const shareUrl = appendReferralToUrl(shareLinkBase, shareToken);
+  const shareText = record
+    ? `My AI water bill analysis shows ${record.savingsSummary}`
+    : "I just ran an AI water bill analysis with WaterShortcut.";
+  const shareImage = useMemo(() => {
+    if (!record) return null;
+    const svg = buildAnalysisShareSvg({
+      usage: record.billingSummary.totalUsage,
+      cost: record.billingSummary.totalCost,
+      summary: record.savingsSummary,
+      linkLabel: "watershortcut.com",
+    });
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }, [record]);
+
+  useEffect(() => {
+    if (!record) return;
+    fetchReferralToken()
+      .then((token) => setShareToken(token))
+      .catch(() => setShareToken(null));
+  }, [record]);
 
   const handleSavePlan = () => {
     if (!record) return;
@@ -67,6 +102,28 @@ const AnalysisResults = () => {
     });
     setNotice("Saved to your dashboard savings plan.");
   };
+
+  const handleCopyShare = async () => {
+    try {
+      await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      setShareStatus("Share link copied.");
+    } catch {
+      setShareStatus("Copy failed. Please select the link manually.");
+    }
+  };
+
+  const shareTargets = useMemo(
+    () => ({
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+        `${shareText} ${shareUrl}`,
+      )}`,
+      email: `mailto:?subject=${encodeURIComponent("My AI water bill analysis")}&body=${encodeURIComponent(
+        `${shareText}\n\n${shareUrl}`,
+      )}`,
+    }),
+    [shareText, shareUrl],
+  );
 
   return (
     <section className="ws-page" aria-labelledby="analysis-results-title">
@@ -226,6 +283,63 @@ const AnalysisResults = () => {
               <p>{record.nextStep}</p>
             </div>
             {record.confidenceNote && <p className="ws-subtitle">{record.confidenceNote}</p>}
+          </div>
+        </div>
+      )}
+
+      {record && (
+        <div className="ws-info-card" aria-label="Share your results">
+          <h2>Share your results</h2>
+          <p className="ws-subtitle">
+            Celebrate your water-saving momentum with a shareable summary card. Every share helps
+            more households save water.
+          </p>
+          <div className="ws-share-grid">
+            <div className="ws-share-card">
+              <div className="ws-share-card__copy">
+                <h3>Water bill insights summary</h3>
+                <p>{record.savingsSummary}</p>
+                <p className="ws-subtitle">
+                  Total usage: {record.billingSummary.totalUsage.value.toLocaleString()}{" "}
+                  {record.billingSummary.totalUsage.unit} · Total cost: $
+                  {record.billingSummary.totalCost.toFixed(2)}
+                </p>
+                <p className="ws-subtitle">
+                  Your share link includes a referral token so you earn extra credits when friends
+                  sign up.
+                </p>
+                <div className="ws-share-actions" role="group" aria-label="Share actions">
+                  <ActionButton type="button" onClick={handleCopyShare}>
+                    Copy share link
+                  </ActionButton>
+                  <ActionLink variant="secondary" href={shareTargets.facebook} target="_blank" rel="noreferrer">
+                    Share on Facebook
+                  </ActionLink>
+                  <ActionLink variant="secondary" href={shareTargets.twitter} target="_blank" rel="noreferrer">
+                    Share on X
+                  </ActionLink>
+                  <ActionLink variant="secondary" href={shareTargets.email}>
+                    Share via email
+                  </ActionLink>
+                </div>
+                {shareStatus && <p className="ws-subtitle" role="status">{shareStatus}</p>}
+              </div>
+              <div className="ws-share-card__media">
+                {shareImage && (
+                  <img
+                    src={shareImage}
+                    alt="Water bill analysis summary card preview"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                {shareImage && (
+                  <a className="ws-footer-link" href={shareImage} download="watershortcut-summary.svg">
+                    Download summary card
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
+import ConsentBanner from "../components/ConsentBanner";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
 import { isAdTypeEnabled } from "../ads/adPolicy";
@@ -90,8 +91,8 @@ const AppShell = ({ children }: AppShellProps) => {
           <RouterLink className="ws-logo" to="/">
             <img
               className="ws-logo__image"
-              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/w_80/v1735510676/watershortcut-favicon.png"
-              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/w_80/v1735510676/watershortcut-favicon.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/w_160/v1735510676/watershortcut-favicon.png 2x"
+              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png"
+              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_160/v1735510676/watershortcut-favicon.png 2x"
               sizes="40px"
               alt="WaterShortcut logo"
               loading="eager"
@@ -133,7 +134,7 @@ const AppShell = ({ children }: AppShellProps) => {
         aria-label="Site navigation"
         aria-hidden={!menuOpen}
       >
-        <nav className="ws-drawer-nav">
+        <nav className="ws-drawer-nav" aria-label="Primary">
           <button
             className="ws-close-button"
             type="button"
@@ -143,19 +144,19 @@ const AppShell = ({ children }: AppShellProps) => {
           </button>
           <ul>
             <li>
-              <RouterLink to="/analyze-water-bill">Analyze Bill</RouterLink>
+              <RouterLink to="/analyze-water-bill">Upload a bill</RouterLink>
             </li>
             <li>
-              <RouterLink to="/manual-entry">Manual Entry</RouterLink>
+              <RouterLink to="/manual-entry">Manual entry</RouterLink>
             </li>
             <li>
-              <RouterLink to="/find-water-provider">Find Provider</RouterLink>
+              <RouterLink to="/find-water-provider">Find provider</RouterLink>
             </li>
             <li>
               <RouterLink to="/dashboard">Dashboard</RouterLink>
             </li>
             <li>
-              <RouterLink to="/research">Research Plan</RouterLink>
+              <RouterLink to="/research">Research plan</RouterLink>
             </li>
             <li>
               <span className="ws-nav-section">Tools</span>
@@ -228,6 +229,7 @@ const AppShell = ({ children }: AppShellProps) => {
       )}
 
       <SiteFooter hideAds={adsRemoved || showAds || !pageAllowsAds} />
+      <ConsentBanner />
     </div>
   );
 };
