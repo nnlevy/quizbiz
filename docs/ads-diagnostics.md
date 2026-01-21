@@ -25,6 +25,16 @@ The diagnostics panel reports:
 - Slot count + measured sizes
 - Timestamp of the last initialization
 
+## Ad placement control (guardrails)
+- **Page-level policy:** `src/react-app/ads/adPolicy.ts` defines which ad types are allowed per route. Disable `sticky` ads on form-heavy pages by adding a rule or extending the analysis rule set.
+- **Margin ads safety:** `src/react-app/adsense.ts` enforces guardrails so fixed/sticky ads only appear when there is safe space:
+  - Hidden on viewports narrower than the minimum width threshold.
+  - Hidden if the ad overlaps `.ws-main` content.
+  - Only a single margin ad can be visible at a time.
+  - Sticky-disabled routes suppress all fixed ad units to avoid overlap regressions.
+- **Suppression fallback:** Any fixed AdSense unit that overlaps content receives `data-ws-ad-suppressed="true"` and is force-hidden via `src/react-app/App.css`. This is the last-resort safety net for overlapping layouts.
+- **Visual layout:** If you adjust the main content width, re-check margin ad overlap detection and update the minimum width threshold if needed.
+
 ## ads.txt verification
 1. Visit `https://www.watershortcut.com/ads.txt`
 2. Ensure `200 OK`, `text/plain`, and line:
