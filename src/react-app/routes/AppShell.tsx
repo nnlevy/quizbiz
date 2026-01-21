@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
 import ConsentBanner from "../components/ConsentBanner";
@@ -9,8 +9,10 @@ import { useCredits } from "../context/CreditsContext";
 import { useCreditsModal } from "../context/CreditsModalContext";
 import { getPageExperience } from "../experience/pageExperience";
 import { useScrollUnlock } from "../hooks/useScrollUnlock";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
+import WsImage from "../components/WsImage";
 
 import "./AppShell.css";
 
@@ -21,6 +23,7 @@ type AppShellProps = {
 const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adsRemoved, setAdsRemoved] = useState(false);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const { credits, pulse } = useCredits();
   const { openModal } = useCreditsModal();
@@ -84,19 +87,29 @@ const AppShell = ({ children }: AppShellProps) => {
   const pageAllowsAds = isAdTypeEnabled(location.pathname, "footer");
   const showAds = showDeferred && !adsRemoved && pageAllowsAds;
 
+  useFocusTrap({
+    active: menuOpen,
+    containerRef: drawerRef,
+    onClose: () => setMenuOpen(false),
+  });
+
   return (
     <div className={`ws-shell${isHome ? " ws-shell--home" : ""}`}>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
-            <img
+            <WsImage
               className="ws-logo__image"
               src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png"
               srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_160/v1735510676/watershortcut-favicon.png 2x"
               sizes="40px"
               alt="WaterShortcut logo"
-              loading="eager"
-              decoding="async"
+              width={40}
+              height={40}
+              eager
             />
             <span className="ws-logo__text">WaterShortcut</span>
           </RouterLink>
@@ -133,6 +146,8 @@ const AppShell = ({ children }: AppShellProps) => {
         aria-modal="true"
         aria-label="Site navigation"
         aria-hidden={!menuOpen}
+        ref={drawerRef}
+        tabIndex={-1}
       >
         <nav className="ws-drawer-nav" aria-label="Primary">
           <button
@@ -218,7 +233,7 @@ const AppShell = ({ children }: AppShellProps) => {
         </nav>
       </div>
 
-      <main className="ws-main">
+      <main className="ws-main" id="main-content" tabIndex={-1}>
         {children}
       </main>
 

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { UsageHistoryPoint } from "../types";
+import { loadChartJs } from "../lib/chartLoader";
+import { useNearViewport } from "../hooks/useNearViewport";
 
 type UsageLineChartProps = {
   data: UsageHistoryPoint[];
@@ -10,14 +12,31 @@ type UsageLineChartProps = {
 
 const UsageLineChart = ({ data, title, highlightIndexes = [] }: UsageLineChartProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const highlightSet = useMemo(() => new Set(highlightIndexes), [highlightIndexes]);
+  const isNearViewport = useNearViewport(containerRef);
+  const [chartReady, setChartReady] = useState(false);
+  const [ChartConstructor, setChartConstructor] = useState<
+    (new (element: HTMLCanvasElement, config: Record<string, unknown>) => { destroy: () => void }) | null
+  >(null);
 
   useEffect(() => {
-    if (!canvasRef.current || typeof window === "undefined") return undefined;
-    const ChartConstructor = (window as typeof window & {
-      Chart?: new (...args: unknown[]) => { destroy: () => void };
-    }).Chart;
-    if (!ChartConstructor) return undefined;
+    if (!isNearViewport || ChartConstructor) return undefined;
+    let isCancelled = false;
+    loadChartJs()
+      .then((Chart) => {
+        if (!isCancelled) {
+          setChartConstructor(() => Chart);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      isCancelled = true;
+    };
+  }, [ChartConstructor, isNearViewport]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !ChartConstructor || typeof window === "undefined") return undefined;
     const chart = new ChartConstructor(canvasRef.current, {
       type: "line",
       data: {
@@ -70,14 +89,16 @@ const UsageLineChart = ({ data, title, highlightIndexes = [] }: UsageLineChartPr
         },
       },
     });
+    setChartReady(true);
 
     return () => {
       chart.destroy();
+      setChartReady(false);
     };
-  }, [data, highlightSet, title]);
+  }, [ChartConstructor, data, highlightSet, title]);
 
   return (
-    <div className="ws-chart">
+    <div className="ws-chart" ref={containerRef} data-chart-status={chartReady ? "ready" : "idle"}>
       <canvas ref={canvasRef} role="img" aria-label={title} />
     </div>
   );

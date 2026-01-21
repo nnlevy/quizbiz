@@ -12,6 +12,7 @@ import { useSession } from "../context/SessionContext";
 import { buildAnalysisShareSvg } from "../utils/shareCard";
 import { appendReferralToUrl, fetchReferralToken } from "../utils/referral";
 import { ActionButton, ActionLink } from "../components/ActionButton";
+import WsImage from "../components/WsImage";
 
 const AnalysisResults = () => {
   usePageMeta({
@@ -326,11 +327,11 @@ const AnalysisResults = () => {
               </div>
               <div className="ws-share-card__media">
                 {shareImage && (
-                  <img
+                  <WsImage
                     src={shareImage}
                     alt="Water bill analysis summary card preview"
-                    loading="lazy"
-                    decoding="async"
+                    width={520}
+                    height={292}
                   />
                 )}
                 {shareImage && (

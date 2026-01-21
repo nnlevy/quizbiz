@@ -53,7 +53,7 @@ const ConsentBanner = () => {
   if (!visible) return null;
 
   return (
-    <div className="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie preferences">
+    <div className="cookie-banner" role="region" aria-live="polite" aria-label="Cookie preferences">
       <div>
         <strong>Your privacy controls</strong>
         <p>

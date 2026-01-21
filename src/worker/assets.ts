@@ -3,7 +3,7 @@ import { COPY as WATER_IQ_COPY, FLOW as WATER_IQ_FLOW, QUESTIONS as WATER_IQ_QUE
 import { formatStoredReferralToken, isReferralTokenExpired, parseStoredReferralToken } from "../shared/referral";
 
 export const stylesCss = `:root{color-scheme:light;font-family:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;background:#f7fbff;}
-*{box-sizing:border-box;}body{margin:0;color:#0f172a;background:#f7fbff;}a{color:#0d6efd;text-decoration:none;}a:hover{text-decoration:underline;}header,main,footer{width:100%;}img{max-width:100%;display:block;}button,input,select,textarea{font-family:inherit;}button{cursor:pointer;}body.prefers-reduced-motion *{transition:none!important;animation:none!important;}
+*{box-sizing:border-box;}body{margin:0;color:#0f172a;background:#f7fbff;}.skip-link{position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;} .skip-link:focus{left:18px;top:18px;width:auto;height:auto;padding:10px 14px;background:#0ea5e9;color:#fff;border-radius:999px;z-index:50;}a{color:#0d6efd;text-decoration:none;}a:hover{text-decoration:underline;}header,main,footer{width:100%;}img{max-width:100%;display:block;}button,input,select,textarea{font-family:inherit;}button{cursor:pointer;}body.prefers-reduced-motion *{transition:none!important;animation:none!important;}
 .app-shell{min-height:100vh;display:flex;flex-direction:column;} .site-header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,0.92);backdrop-filter:blur(6px);border-bottom:1px solid #e2e8f0;} .nav-bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;} .brand a{font-weight:700;color:#0f172a;font-size:18px;display:flex;align-items:center;gap:10px;text-decoration:none;} .brand-mark{display:inline-block;padding:6px 10px;border-radius:12px;background:#e0f2ff;color:#075985;font-weight:700;} .brand-text{display:flex;flex-direction:column;gap:2px;line-height:1;} .brand-name{letter-spacing:.08em;text-transform:uppercase;} .brand-dotcom{font-size:.7em;letter-spacing:.04em;text-transform:lowercase;margin-left:2px;} .tagline{font-size:12px;color:#64748b;font-weight:600;letter-spacing:.02em;} .nav-links{display:flex;align-items:center;gap:12px;flex-wrap:wrap;} .nav-link{padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;transition:all .2s ease;background:none;border:none;} .nav-link:hover,.nav-link:focus-visible{background:#e0f2ff;outline:none;} .nav-dropdown{position:relative;display:inline-flex;align-items:center;} .dropdown-toggle{cursor:pointer;gap:6px;display:inline-flex;align-items:center;} .dropdown-caret{font-size:12px;line-height:1;} .dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;min-width:220px;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px;box-shadow:0 12px 30px rgba(15,23,42,0.12);opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .2s ease,transform .2s ease;z-index:20;} .nav-dropdown:hover .dropdown-panel,.nav-dropdown:focus-within .dropdown-panel{opacity:1;pointer-events:auto;transform:translateY(0);} .dropdown-link{display:block;padding:8px 10px;border-radius:10px;color:#0f172a;font-weight:600;} .dropdown-link:hover,.dropdown-link:focus-visible{background:#e0f2ff;outline:none;} .primary-cta{background:#0ea5e9;color:white;} .primary-cta:hover,.primary-cta:focus-visible{background:#0284c7;color:white;}
 .nav-badge{display:inline-flex;align-items:center;gap:6px;background:#ecfeff;border:1px solid #bae6fd;color:#0f172a;font-weight:700;}
 main{flex:1;} .hero{max-width:1100px;margin:0 auto;padding:40px 18px 18px;display:grid;gap:14px;} .hero h1{margin:0;font-size:32px;color:#0f172a;} .hero p{margin:0;color:#1f2937;font-size:17px;max-width:70ch;} .hero .actions{display:flex;gap:12px;flex-wrap:wrap;} .btn{padding:12px 14px;border-radius:12px;border:1px solid #0ea5e9;background:white;color:#0ea5e9;font-weight:700;transition:transform .2s ease,box-shadow .2s ease;} .btn:hover,.btn:focus-visible{transform:translateY(-1px);box-shadow:0 10px 30px rgba(14,165,233,0.18);outline:none;} .btn.primary{background:#0ea5e9;color:white;border-color:#0ea5e9;} .btn.secondary{border-color:#e2e8f0;color:#0f172a;} .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#e0f2ff;color:#075985;font-weight:700;font-size:13px;}
@@ -700,22 +700,26 @@ export function clientScript(defaultAdsenseClient: string) {
   const REFERRAL_TOKEN_KEY = 'ws_referral_token';
 
   const readStoredReferralToken = (): string | null => {
-    try {
-      const stored = localStorage.getItem(REFERRAL_TOKEN_KEY);
-      if (!stored) return null;
-      const parsed = parseStoredReferralToken(stored);
-      if (!parsed) {
-        localStorage.removeItem(REFERRAL_TOKEN_KEY);
-        return null;
+    const storages = [sessionStorage, localStorage];
+    for (const storage of storages) {
+      try {
+        const stored = storage.getItem(REFERRAL_TOKEN_KEY);
+        if (!stored) continue;
+        const parsed = parseStoredReferralToken(stored);
+        if (!parsed) {
+          storage.removeItem(REFERRAL_TOKEN_KEY);
+          continue;
+        }
+        if (parsed.issuedAt <= 0 || isReferralTokenExpired(parsed.issuedAt)) {
+          storage.removeItem(REFERRAL_TOKEN_KEY);
+          continue;
+        }
+        return parsed.token;
+      } catch {
+        continue;
       }
-      if (parsed.issuedAt <= 0 || isReferralTokenExpired(parsed.issuedAt)) {
-        localStorage.removeItem(REFERRAL_TOKEN_KEY);
-        return null;
-      }
-      return parsed.token;
-    } catch {
-      return null;
     }
+    return null;
   };
 
   const fetchReferralToken = async (): Promise<string | null> => {
@@ -734,6 +738,7 @@ export function clientScript(defaultAdsenseClient: string) {
       const data = (await res.json()) as { token?: string };
       if (data?.token) {
         try {
+          sessionStorage.setItem(REFERRAL_TOKEN_KEY, formatStoredReferralToken(data.token));
           localStorage.setItem(REFERRAL_TOKEN_KEY, formatStoredReferralToken(data.token));
         } catch {
           // ignore
@@ -786,7 +791,7 @@ export function clientScript(defaultAdsenseClient: string) {
           <h4 class="share-card__title">Share your plan</h4>
           <p class="share-card__copy">Share your summary card and invite friends to try WaterShortcut.</p>
           <div class="share-card__media">
-            <img src="${shareImageUrl}" alt="WaterShortcut plan summary card" loading="lazy" />
+            <img src="${shareImageUrl}" alt="WaterShortcut plan summary card" loading="lazy" decoding="async" width="1200" height="630" />
           </div>
           <div class="share-card__actions">
             <a class="btn secondary" data-share-facebook href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(

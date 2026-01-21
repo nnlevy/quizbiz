@@ -3,6 +3,7 @@ import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "rea
 import { logEvent } from "../analytics";
 import { useCredits } from "../context/CreditsContext";
 import { useSession } from "../context/SessionContext";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { CREDIT_TOPUP_AMOUNT } from "../utils/credits";
 
 const sendAnonymousEvent = async (event: string, details?: Record<string, unknown>) => {
@@ -71,25 +72,14 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
     if (!isOpen) return;
     logEvent("credits_modal_viewed");
     sendAnonymousEvent("credits_modal_viewed");
-    const timer = window.setTimeout(() => {
-      const focusable = modalRef.current?.querySelector<HTMLElement>(
-        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
-      );
-      focusable?.focus();
-    }, 50);
-    return () => window.clearTimeout(timer);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  useFocusTrap({
+    active: isOpen,
+    containerRef: modalRef,
+    onClose,
+    initialFocusSelector: ".credits-modal__close",
+  });
 
   useEffect(() => {
     if (!isOpen) return;

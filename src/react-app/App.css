@@ -5,7 +5,7 @@
   --muted-text: #4c5a75;
   --accent: #4f9bff;
   --accent-strong: #2d6bff;
-  --accent-secondary: #7a5cff;
+  --accent-secondary: #5b4bf2;
   --surface: rgba(255, 255, 255, 0.82);
   --surface-strong: rgba(255, 255, 255, 0.94);
   --shadow-soft: 0 24px 48px rgba(15, 35, 95, 0.12);
@@ -50,6 +50,28 @@ body {
 
 body {
   padding-top: env(safe-area-inset-top);
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 999;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  left: 18px;
+  top: 18px;
+  width: auto;
+  height: auto;
 }
 
 #root,

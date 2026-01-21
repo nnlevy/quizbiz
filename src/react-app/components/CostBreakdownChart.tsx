@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { AnalysisTier } from "../types";
+import { loadChartJs } from "../lib/chartLoader";
+import { useNearViewport } from "../hooks/useNearViewport";
 
 type CostBreakdownChartProps = {
   tiers: AnalysisTier[];
@@ -8,13 +10,30 @@ type CostBreakdownChartProps = {
 
 const CostBreakdownChart = ({ tiers }: CostBreakdownChartProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const isNearViewport = useNearViewport(containerRef);
+  const [chartReady, setChartReady] = useState(false);
+  const [ChartConstructor, setChartConstructor] = useState<
+    (new (element: HTMLCanvasElement, config: Record<string, unknown>) => { destroy: () => void }) | null
+  >(null);
 
   useEffect(() => {
-    if (!canvasRef.current || typeof window === "undefined") return undefined;
-    const ChartConstructor = (window as typeof window & {
-      Chart?: new (...args: unknown[]) => { destroy: () => void };
-    }).Chart;
-    if (!ChartConstructor) return undefined;
+    if (!isNearViewport || ChartConstructor) return undefined;
+    let isCancelled = false;
+    loadChartJs()
+      .then((Chart) => {
+        if (!isCancelled) {
+          setChartConstructor(() => Chart);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      isCancelled = true;
+    };
+  }, [ChartConstructor, isNearViewport]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !ChartConstructor || typeof window === "undefined") return undefined;
     const chart = new ChartConstructor(canvasRef.current, {
       type: "bar",
       data: {
@@ -44,14 +63,16 @@ const CostBreakdownChart = ({ tiers }: CostBreakdownChartProps) => {
         },
       },
     });
+    setChartReady(true);
 
     return () => {
       chart.destroy();
+      setChartReady(false);
     };
-  }, [tiers]);
+  }, [ChartConstructor, tiers]);
 
   return (
-    <div className="ws-chart">
+    <div className="ws-chart" ref={containerRef} data-chart-status={chartReady ? "ready" : "idle"}>
       <canvas ref={canvasRef} role="img" aria-label="Cost breakdown by tier" />
     </div>
   );
