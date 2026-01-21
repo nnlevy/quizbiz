@@ -1,3 +1,10 @@
+import {
+  formatStoredReferralToken,
+  isReferralTokenExpired,
+  parseStoredReferralToken,
+  type StoredReferralToken,
+} from "../../shared/referral";
+
 const REFERRAL_TOKEN_KEY = "ws_referral_token";
 const REFERRER_TOKEN_KEY = "ws_referrer_token";
 const REFERRAL_CLAIM_KEY = "ws_referral_claimed";
@@ -5,6 +12,67 @@ const REFERRAL_CLAIM_KEY = "ws_referral_claimed";
 type ReferralClaimResponse = {
   credits?: number;
   message?: string;
+  error?: string;
+};
+
+const clearStoredReferralToken = () => {
+  try {
+    window.localStorage.removeItem(REFERRAL_TOKEN_KEY);
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const clearStoredReferrerToken = () => {
+  try {
+    window.localStorage.removeItem(REFERRER_TOKEN_KEY);
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const readStoredReferralToken = (): StoredReferralToken | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(REFERRAL_TOKEN_KEY);
+    if (!stored) return null;
+    const parsed = parseStoredReferralToken(stored);
+    if (!parsed) {
+      clearStoredReferralToken();
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const getCachedReferralToken = (nowMs = Date.now()): string | null => {
+  const stored = readStoredReferralToken();
+  if (!stored) return null;
+  if (stored.issuedAt <= 0 || isReferralTokenExpired(stored.issuedAt, nowMs)) {
+    clearStoredReferralToken();
+    return null;
+  }
+  return stored.token;
+};
+
+const fetchFreshReferralToken = async (): Promise<string | null> => {
+  const response = await fetch("/api/referral/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+  });
+  if (!response.ok) return null;
+  const payload = (await response.json()) as { token?: string | null };
+  if (payload?.token) {
+    try {
+      window.localStorage.setItem(REFERRAL_TOKEN_KEY, formatStoredReferralToken(payload.token));
+    } catch {
+      // ignore storage errors
+    }
+    return payload.token;
+  }
+  return null;
 };
 
 export const appendReferralToUrl = (url: string, token: string | null) => {
@@ -19,30 +87,13 @@ export const appendReferralToUrl = (url: string, token: string | null) => {
   }
 };
 
-export const fetchReferralToken = async (): Promise<string | null> => {
+export const fetchReferralToken = async (options?: { forceRefresh?: boolean }): Promise<string | null> => {
   if (typeof window === "undefined") return null;
-  try {
-    const stored = window.localStorage.getItem(REFERRAL_TOKEN_KEY);
-    if (stored) return stored;
-  } catch {
-    // ignore storage errors
+  if (!options?.forceRefresh) {
+    const cached = getCachedReferralToken();
+    if (cached) return cached;
   }
-
-  const response = await fetch("/api/referral/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-  });
-  if (!response.ok) return null;
-  const payload = (await response.json()) as { token?: string | null };
-  if (payload?.token) {
-    try {
-      window.localStorage.setItem(REFERRAL_TOKEN_KEY, payload.token);
-    } catch {
-      // ignore storage errors
-    }
-    return payload.token;
-  }
-  return null;
+  return fetchFreshReferralToken();
 };
 
 export const captureReferralFromUrl = () => {
@@ -69,20 +120,44 @@ export const claimReferralCredit = async (): Promise<ReferralClaimResponse | nul
     return null;
   }
 
-  const response = await fetch("/api/referral/claim", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ token: refToken }),
-  });
-  if (!response.ok) return null;
-  const payload = (await response.json()) as ReferralClaimResponse & { claimed?: boolean };
-  if (payload?.claimed) {
-    try {
-      window.localStorage.setItem(REFERRAL_CLAIM_KEY, "true");
-    } catch {
-      // ignore storage errors
+  const claimWithToken = async (
+    token: string,
+    hasRetried: boolean,
+  ): Promise<ReferralClaimResponse | null> => {
+    const response = await fetch("/api/referral/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    const payload = (await response
+      .json()
+      .catch(() => null)) as (ReferralClaimResponse & { claimed?: boolean }) | null;
+    if (!response.ok) {
+      const errorMessage = payload?.error ?? "";
+      const isExpired =
+        response.status === 404 ||
+        response.status === 410 ||
+        /expired/i.test(errorMessage) ||
+        /not found/i.test(errorMessage);
+      if (!hasRetried && isExpired) {
+        clearStoredReferrerToken();
+        clearStoredReferralToken();
+        const freshToken = await fetchReferralToken({ forceRefresh: true });
+        if (freshToken) {
+          return claimWithToken(freshToken, true);
+        }
+      }
+      return null;
     }
-  }
-  return payload;
-};
+    if (payload?.claimed) {
+      try {
+        window.localStorage.setItem(REFERRAL_CLAIM_KEY, "true");
+      } catch {
+        // ignore storage errors
+      }
+    }
+    return payload;
+  };
 
+  return claimWithToken(refToken, false);
+};
