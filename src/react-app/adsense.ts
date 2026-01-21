@@ -25,6 +25,7 @@ const MARGIN_AD_CLASS = "ws-margin-ad";
 const MARGIN_AD_VISIBLE_CLASS = "ws-margin-ad--visible";
 const MARGIN_AD_HIDDEN_CLASS = "ws-margin-ad--hidden";
 const MARGIN_AD_VISIBILITY_MS = 10_000;
+const MIN_MARGIN_AD_VIEWPORT_WIDTH = 1200;
 const VIGNETTE_BANNER_ID = "ws-vignette-banner";
 const VIGNETTE_DISMISS_DELAY_MS = 1400;
 
@@ -301,6 +302,11 @@ const isMarginAdCandidate = (slot: HTMLElement) => {
   return style.left !== "auto" || style.right !== "auto";
 };
 
+const hideMarginAdAndClearState = (slot: HTMLElement) => {
+  hideMarginAd(slot);
+  marginAdStates.delete(slot);
+};
+
 const ensureMarginAdBase = (slot: HTMLElement) => {
   slot.classList.add(MARGIN_AD_CLASS);
   if (!slot.classList.contains(MARGIN_AD_VISIBLE_CLASS)) {
@@ -335,17 +341,29 @@ const updateMarginAds = () => {
     });
     return;
   }
-  candidates.forEach((slot) => {
-    if (!isMarginAdCandidate(slot)) return;
-    if (!isAdTypeEnabled(window.location.pathname, "sticky")) {
-      hideMarginAd(slot);
-      marginAdStates.delete(slot);
-      return;
-    }
+  const stickyEnabled = isAdTypeEnabled(window.location.pathname, "sticky");
+  const marginCandidates = candidates.filter((slot) => isMarginAdCandidate(slot));
+  if (!stickyEnabled || window.innerWidth < MIN_MARGIN_AD_VIEWPORT_WIDTH || isHomePage()) {
+    marginCandidates.forEach((slot) => hideMarginAdAndClearState(slot));
+    return;
+  }
+
+  const viableSlots = marginCandidates.filter((slot) => !isMarginAdOverlappingContent(slot));
+  if (viableSlots.length === 0) {
+    marginCandidates.forEach((slot) => hideMarginAdAndClearState(slot));
+    return;
+  }
+
+  const primarySlot = viableSlots.reduce((best, slot) => {
+    const bestRect = best.getBoundingClientRect();
+    const slotRect = slot.getBoundingClientRect();
+    return slotRect.width * slotRect.height > bestRect.width * bestRect.height ? slot : best;
+  }, viableSlots[0]);
+
+  viableSlots.forEach((slot) => {
     ensureMarginAdBase(slot);
-    if (isHomePage() || isMarginAdOverlappingContent(slot)) {
-      hideMarginAd(slot);
-      marginAdStates.delete(slot);
+    if (slot !== primarySlot) {
+      hideMarginAdAndClearState(slot);
       return;
     }
     const state = marginAdStates.get(slot);
@@ -359,6 +377,10 @@ const updateMarginAds = () => {
       hideMarginAd(slot);
     }
   });
+
+  marginCandidates
+    .filter((slot) => !viableSlots.includes(slot))
+    .forEach((slot) => hideMarginAdAndClearState(slot));
 };
 
 const scheduleMarginAdsUpdate = () => {

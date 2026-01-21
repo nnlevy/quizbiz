@@ -26,6 +26,17 @@ const AD_PAGE_RULES: AdPageRule[] = [
       sticky: false,
     },
   },
+  {
+    description: "Analysis flows avoid sticky ads near form inputs",
+    match: (pathname) =>
+      pathname.startsWith("/analysis-results") ||
+      pathname === "/analyze-water-bill" ||
+      pathname === "/manual-entry" ||
+      pathname === "/find-water-provider",
+    visibility: {
+      sticky: false,
+    },
+  },
 ];
 
 export const getAdVisibilityForPath = (pathname: string): AdVisibility => {
