@@ -252,7 +252,11 @@ const RouterView = () => {
       return <HiddenLeaksPage />;
     }
     if (pathname.startsWith("/privacy")) {
-      return <PrivacyPage />;
+      return (
+        <AppShell>
+          <PrivacyPage />
+        </AppShell>
+      );
     }
     if (pathname.startsWith("/terms")) {
       return <TermsPage />;
