@@ -59,7 +59,10 @@ const UsageLineChart = ({ data, title, highlightIndexes = [] }: UsageLineChartPr
           },
           {
             label: "Similar homes average",
-            data: data.map((point) => point.average),
+            data: data.map((point) => ({
+              x: point.label,
+              y: point.average,
+            })),
             borderColor: "#94a3b8",
             backgroundColor: "rgba(148, 163, 184, 0.2)",
             borderDash: [6, 6],
