@@ -1854,6 +1854,101 @@ ins.adsbygoogle[style*="position: fixed"] {
   gap: 24px;
 }
 
+.landing-water-iq {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 197, 255, 0.2);
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.landing-water-iq-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.landing-water-iq-quiz {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 197, 255, 0.2);
+  background: rgba(2, 6, 23, 0.6);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.landing-water-iq-quiz.is-transitioning {
+  opacity: 0.4;
+  transform: translateY(6px);
+}
+
+.landing-water-iq-progress {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(226, 232, 240, 0.75);
+}
+
+.landing-water-iq-question {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.landing-water-iq-options {
+  display: grid;
+  gap: 12px;
+}
+
+.landing-water-iq-option {
+  border-radius: 14px;
+  border: 1px solid rgba(148, 197, 255, 0.3);
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing-water-iq-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(125, 211, 252, 0.7);
+  box-shadow: 0 12px 24px rgba(30, 64, 175, 0.3);
+}
+
+.landing-water-iq-option.is-selected {
+  border-color: rgba(125, 211, 252, 0.9);
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.landing-water-iq-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.95rem;
+}
+
+.landing-water-iq-score {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 197, 255, 0.2);
+  background: rgba(2, 6, 23, 0.6);
+}
+
+.landing-water-iq-score svg {
+  width: 100%;
+  max-width: 360px;
+}
+
+.landing-water-iq-caption {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.75);
+}
+
 .landing-section-heading {
   display: grid;
   gap: 8px;
@@ -1973,6 +2068,11 @@ ins.adsbygoogle[style*="position: fixed"] {
 
   .landing-feature-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .landing-water-iq-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: center;
   }
 
   .landing-action-grid {
