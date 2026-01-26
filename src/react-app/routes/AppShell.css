@@ -301,6 +301,27 @@
   gap: 0.75rem;
 }
 
+.ws-privacy-controls {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid #d9e2ec;
+  background: #f8fafc;
+}
+
+.ws-privacy-controls h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ws-privacy-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .ws-pill-list {
   display: grid;
   gap: 0.5rem;

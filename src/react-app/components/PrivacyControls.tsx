@@ -19,7 +19,7 @@ const PrivacyControls = () => {
   if (!shouldShowPrivacyControls()) return null;
 
   return (
-    <div className="privacy-controls">
+    <div className="ws-privacy-controls">
       <h3>Privacy controls</h3>
       <label htmlFor="privacy-functional">
         <input id="privacy-functional" type="checkbox" checked disabled /> Functional (required)
@@ -42,7 +42,7 @@ const PrivacyControls = () => {
         />{" "}
         Ads
       </label>
-      <button type="button" className="secondary-button" onClick={handleSave}>
+      <button type="button" className="ws-button-secondary" onClick={handleSave}>
         Save choices
       </button>
     </div>
