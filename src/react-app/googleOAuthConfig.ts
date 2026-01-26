@@ -4,5 +4,8 @@ if (typeof window !== "undefined") {
   };
 
   // Optional Google OAuth configuration; set to your client ID for GIS sign-in.
-  globalWindow.__WS_GOOGLE_CLIENT_ID__ = "";
+  // In production, the Worker injects this value from OAUTH_Client_ID.
+  if (globalWindow.__WS_GOOGLE_CLIENT_ID__ == null) {
+    globalWindow.__WS_GOOGLE_CLIENT_ID__ = "";
+  }
 }
