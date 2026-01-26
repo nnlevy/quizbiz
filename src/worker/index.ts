@@ -1578,6 +1578,7 @@ app.get("/__ads", (c) => {
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
   const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
+  const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1594,6 +1595,7 @@ app.get("/__ads", (c) => {
       gaMeasurementId,
       stripePublishableKey,
       oauthEnabled,
+      oauthClientId,
       consentRequired,
       showPrivacyControls,
       cspNonce,
@@ -1640,6 +1642,7 @@ app.get("/water-iq/r/:token", (c) => {
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
   const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
+  const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1659,6 +1662,7 @@ app.get("/water-iq/r/:token", (c) => {
         gaMeasurementId,
         stripePublishableKey,
         oauthEnabled,
+        oauthClientId,
         consentRequired,
         showPrivacyControls,
         cspNonce,
@@ -1694,6 +1698,7 @@ app.get("/water-iq/r/:token", (c) => {
       gaMeasurementId,
       stripePublishableKey,
       oauthEnabled,
+      oauthClientId,
       consentRequired,
       showPrivacyControls,
       cspNonce,
@@ -1772,6 +1777,7 @@ siteRoutes.forEach((route) => {
     const gaMeasurementId = resolveGaMeasurementId(c.env);
     const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
     const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
+    const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
     const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
     const consentRequired = isConsentRequired(country);
     const showPrivacyControls = consentRequired;
@@ -1794,6 +1800,7 @@ siteRoutes.forEach((route) => {
         gaMeasurementId,
         stripePublishableKey,
         oauthEnabled,
+        oauthClientId,
         consentRequired,
         showPrivacyControls,
         cspNonce,
@@ -1853,6 +1860,7 @@ function layout(options: {
   gaMeasurementId: string;
   stripePublishableKey: string;
   oauthEnabled: boolean;
+  oauthClientId: string;
   consentRequired: boolean;
   showPrivacyControls: boolean;
   cspNonce: string;
@@ -1872,6 +1880,7 @@ function layout(options: {
     gaMeasurementId,
     stripePublishableKey,
     oauthEnabled,
+    oauthClientId,
     consentRequired,
     showPrivacyControls,
     cspNonce,
@@ -2046,6 +2055,7 @@ function layout(options: {
         window.__WS_GA_MEASUREMENT_ID__ = "${gaMeasurementId}";
         window.__WS_STRIPE_PUBLISHABLE_KEY__ = "${escapeHtml(stripePublishableKey)}";
         window.__WS_OAUTH_ENABLED__ = ${oauthEnabled ? "true" : "false"};
+        window.__WS_GOOGLE_CLIENT_ID__ = "${escapeHtml(oauthClientId)}";
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         window.gtag = window.gtag || gtag;

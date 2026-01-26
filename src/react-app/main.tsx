@@ -42,6 +42,7 @@ if (typeof window !== "undefined") {
     __WS_CONSENT_REQUIRED__?: boolean;
     __WS_ADSENSE_MANAGED__?: string;
     __WS_OAUTH_ENABLED__?: boolean;
+    __WS_GOOGLE_CLIENT_ID__?: string;
   };
   if (globalWindow.__WS_CONSENT_REQUIRED__ == null) {
     globalWindow.__WS_CONSENT_REQUIRED__ = false;
@@ -51,6 +52,9 @@ if (typeof window !== "undefined") {
   }
   if (globalWindow.__WS_OAUTH_ENABLED__ == null) {
     globalWindow.__WS_OAUTH_ENABLED__ = false;
+  }
+  if (globalWindow.__WS_GOOGLE_CLIENT_ID__ == null) {
+    globalWindow.__WS_GOOGLE_CLIENT_ID__ = "";
   }
 }
 

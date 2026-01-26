@@ -54,7 +54,7 @@ const GoogleOAuthButton = ({ onSuccess, label }: GoogleOAuthButtonProps) => {
     // Setup instructions:
     // 1. Create a Google Cloud OAuth Client ID for "Web application".
     // 2. Add your deployed origin (e.g., https://www.watershortcut.com) to Authorized JavaScript origins.
-    // 3. Set window.__WS_GOOGLE_CLIENT_ID__ in src/react-app/googleOAuthConfig.ts.
+    // 3. Set OAUTH_Client_ID so the Worker injects window.__WS_GOOGLE_CLIENT_ID__.
     if (!clientId) {
       setNotice("Google sign-in is not configured yet. Add your client ID to enable it.");
       return;
