@@ -36,6 +36,7 @@ const AnalysisResults = lazy(() => import("./routes/AnalysisResults"));
 const SignIn = lazy(() => import("./routes/SignIn"));
 const SignUp = lazy(() => import("./routes/SignUp"));
 const Dashboard = lazy(() => import("./routes/Dashboard"));
+const Calculators = lazy(() => import("./routes/Calculators"));
 
 if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
@@ -225,6 +226,13 @@ const RouterView = () => {
       return (
         <AppShell>
           <EjectWater />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/calculators")) {
+      return (
+        <AppShell>
+          <Calculators />
         </AppShell>
       );
     }
