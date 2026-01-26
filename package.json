@@ -45,12 +45,18 @@
     "deploy": "wrangler deploy",
     "dev": "vite",
     "lint": "eslint .",
+    "prebuild": "npm run verify:lockfile",
     "prerender": "node scripts/prerender.mjs",
     "seo:check": "node scripts/seo-check.mjs",
     "smoke:worker": "node scripts/worker-smoke-check.mjs",
     "test:e2e": "playwright test",
     "test:unit": "vitest run",
-    "preview": "npm run build && vite preview"
+    "preview": "npm run build && vite preview",
+    "verify:lockfile": "node scripts/verify-lockfile.mjs"
   },
-  "type": "module"
+  "type": "module",
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10.9.2"
+  }
 }

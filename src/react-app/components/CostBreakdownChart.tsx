@@ -14,7 +14,7 @@ const CostBreakdownChart = ({ tiers }: CostBreakdownChartProps) => {
   const isNearViewport = useNearViewport(containerRef);
   const [chartReady, setChartReady] = useState(false);
   const [ChartConstructor, setChartConstructor] = useState<
-    (new (element: HTMLCanvasElement, config: Record<string, unknown>) => { destroy: () => void }) | null
+    Awaited<ReturnType<typeof loadChartJs>> | null
   >(null);
 
   useEffect(() => {
