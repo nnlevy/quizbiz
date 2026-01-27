@@ -10,8 +10,8 @@ type LocationData = {
 };
 
 type WeatherData = {
-  currentTempF: number;
-  past24HrLowF: number;
+  currentTempF: number | null;
+  past24HrLowF: number | null;
   summary: string;
   freezeRisk: boolean;
 };
@@ -23,41 +23,6 @@ type TriagePlan = {
   warning: string;
 };
 
-const TRIAGE_SYSTEM_PROMPT = `You are WaterShortcut's emergency leak triage assistant.
-Return ONLY valid JSON matching this schema (no markdown, no prose):
-{
-  "immediate_action": string,
-  "secondary_action": string,
-  "context_note": string,
-  "warning": string
-}
-Rules:
-- Prioritize life safety, stop-the-bleed actions, and electrical hazards first.
-- Reference freeze risk when relevant.
-- Keep instructions short, imperative, and easy to read on mobile.
-- Assume the photo is of a residential leak area.
-- If unsure, give the safest next action.
-Inputs:
-- coordinates (lat/lng)
-- freezeRisk boolean
-- image (binary).`;
-
-const EMERGENCY_ANALYSIS_PSEUDOCODE = `async function handleEmergencyAnalysis(location, weather, photo) {
-  setStatus("analyzing");
-  const payload = {
-    coordinates: { lat: location.lat, lng: location.lng },
-    freezeRisk: weather.freezeRisk,
-    image: photo,
-  };
-  const response = await fetch("/api/leak-triage", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-  const triageJson = await response.json();
-  setActionPlan(triageJson);
-  setStatus("complete");
-}`;
-
 const defaultChecklist = [
   { id: "toilet-dye", label: "Toilet dye test (check flapper leaks)." },
   { id: "meter-movement", label: "Meter movement check with all fixtures off." },
@@ -66,25 +31,46 @@ const defaultChecklist = [
   { id: "showerhead", label: "Showerhead drip and cartridge check." },
 ];
 
-const mockFetchWeather = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 700));
-  const currentTempF = 29;
-  const past24HrLowF = 27;
-  const summary = "Cold snap in the last 24 hours.";
-  return {
-    currentTempF,
-    past24HrLowF,
-    summary,
-    freezeRisk: currentTempF <= 32 || past24HrLowF <= 32,
-  } satisfies WeatherData;
-};
-
-const mockAIResponse: TriagePlan = {
-  immediate_action:
-    "Locate the main shut-off valve. Based on the photo, it is likely under the kitchen sink. Turn the silver oval handle clockwise.",
-  secondary_action: "Open the lowest faucet in the home to drain pressure.",
-  context_note: "Weather indicates high likelihood of a frozen pipe burst near an exterior wall.",
-  warning: "Do not touch electrical outlets or extension cords near pooled water.",
+const fetchWeatherSnapshot = async (lat: number, lng: number): Promise<WeatherData> => {
+  const fallback: WeatherData = {
+    currentTempF: null,
+    past24HrLowF: null,
+    summary: "Weather snapshot unavailable. Continue with manual inspection.",
+    freezeRisk: false,
+  };
+  try {
+    const url = new URL("https://api.open-meteo.com/v1/forecast");
+    url.searchParams.set("latitude", String(lat));
+    url.searchParams.set("longitude", String(lng));
+    url.searchParams.set("current", "temperature_2m");
+    url.searchParams.set("daily", "temperature_2m_min");
+    url.searchParams.set("timezone", "auto");
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      return fallback;
+    }
+    const payload = (await response.json()) as {
+      current?: { temperature_2m?: number };
+      daily?: { temperature_2m_min?: number[] };
+    };
+    const currentTempC = payload.current?.temperature_2m;
+    const lowTempC = payload.daily?.temperature_2m_min?.[0];
+    const currentTempF =
+      typeof currentTempC === "number" ? currentTempC * 1.8 + 32 : null;
+    const past24HrLowF = typeof lowTempC === "number" ? lowTempC * 1.8 + 32 : null;
+    const freezeRisk =
+      (currentTempF !== null && currentTempF <= 32) ||
+      (past24HrLowF !== null && past24HrLowF <= 32);
+    return {
+      currentTempF,
+      past24HrLowF,
+      summary: "Weather snapshot loaded from Open-Meteo.",
+      freezeRisk,
+    };
+  } catch (error) {
+    console.error("Weather lookup failed:", error);
+    return fallback;
+  }
 };
 
 const LeakCheckHub = () => {
@@ -96,6 +82,7 @@ const LeakCheckHub = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [triagePlan, setTriagePlan] = useState<TriagePlan | null>(null);
+  const [triageError, setTriageError] = useState<string | null>(null);
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>({});
   const [showPostCrisis, setShowPostCrisis] = useState(false);
 
@@ -121,11 +108,15 @@ const LeakCheckHub = () => {
     if (!weather) {
       return "Awaiting weather snapshot";
     }
+    if (weather.currentTempF == null || weather.past24HrLowF == null) {
+      return "Freeze risk: Unknown";
+    }
     return weather.freezeRisk ? "Freeze risk: HIGH" : "Freeze risk: Low";
   }, [weather]);
 
   const handleRequestLocation = async () => {
     setIsLocating(true);
+    setTriageError(null);
     const onSuccess = async (position: GeolocationPosition) => {
       const coords = position.coords;
       setLocation({
@@ -134,7 +125,7 @@ const LeakCheckHub = () => {
         accuracy: coords.accuracy,
         label: "GPS location captured",
       });
-      const weatherPayload = await mockFetchWeather();
+      const weatherPayload = await fetchWeatherSnapshot(coords.latitude, coords.longitude);
       setWeather(weatherPayload);
       setIsLocating(false);
     };
@@ -145,8 +136,12 @@ const LeakCheckHub = () => {
         accuracy: 0,
         label: "Location unavailable (manual triage mode)",
       });
-      const weatherPayload = await mockFetchWeather();
-      setWeather(weatherPayload);
+      setWeather({
+        currentTempF: null,
+        past24HrLowF: null,
+        summary: "Weather snapshot unavailable. Continue with manual inspection.",
+        freezeRisk: false,
+      });
       setIsLocating(false);
     };
 
@@ -166,23 +161,43 @@ const LeakCheckHub = () => {
       return;
     }
     setPhotoFile(file);
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+    }
     const preview = URL.createObjectURL(file);
     setPhotoPreview(preview);
   };
 
   const handleEmergencyAnalysis = async () => {
-    if (!location || !weather || !photoFile) {
+    if (!location || !weather) {
+      setTriageError("Capture your location first to personalize the checklist.");
       return;
     }
+    setTriageError(null);
     setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    setTriagePlan({
-      ...mockAIResponse,
-      context_note: weather.freezeRisk
-        ? mockAIResponse.context_note
-        : "Weather does not indicate freezing; inspect fixtures and supply lines for pressurized leaks.",
-    });
-    setIsAnalyzing(false);
+    try {
+      const response = await fetch("/api/leak-triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          mode,
+          coordinates: { lat: location.lat, lng: location.lng, accuracy: location.accuracy },
+          freezeRisk: weather.freezeRisk,
+          photoProvided: Boolean(photoFile),
+          photoLabel: photoFile?.name ?? null,
+        }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "We couldn’t run the triage yet.");
+      }
+      const payload = (await response.json()) as TriagePlan;
+      setTriagePlan(payload);
+    } catch (error) {
+      setTriageError(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const toggleChecklist = (id: string) => {
@@ -304,7 +319,10 @@ const LeakCheckHub = () => {
                           <p>{freezeBadge}</p>
                           {weather && (
                             <p className="mt-1 text-xs text-slate-400">
-                              {weather.summary} ({weather.currentTempF}°F now, {weather.past24HrLowF}°F low)
+                              {weather.summary}
+                              {weather.currentTempF != null && weather.past24HrLowF != null
+                                ? ` (${weather.currentTempF.toFixed(0)}°F now, ${weather.past24HrLowF.toFixed(0)}°F low)`
+                                : ""}
                             </p>
                           )}
                         </div>
@@ -317,7 +335,7 @@ const LeakCheckHub = () => {
                           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200">Step 2</p>
                           <h4 className="text-xl font-semibold">Visual assessment</h4>
                           <p className="text-sm text-slate-300">
-                            Use your camera for a quick AI scan of the leak area.
+                            Add a photo if you can—it improves the guidance, but it&apos;s optional.
                           </p>
                         </div>
                         <label className="cursor-pointer rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg">
@@ -337,7 +355,7 @@ const LeakCheckHub = () => {
                         </div>
                       ) : (
                         <p className="mt-4 text-sm text-slate-400">
-                          No photo captured yet. Use your phone camera for best results.
+                          No photo captured yet. You can still run triage without one.
                         </p>
                       )}
                     </div>
@@ -348,21 +366,26 @@ const LeakCheckHub = () => {
                           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200">Step 3</p>
                           <h4 className="text-xl font-semibold">Smart synthesis AI call</h4>
                           <p className="text-sm text-slate-300">
-                            We combine coordinates, freeze risk, and the image to generate a response plan.
+                            We combine location, freeze risk, and any photo you provide to build the response plan.
                           </p>
                         </div>
                         <button
                           type="button"
                           onClick={handleEmergencyAnalysis}
-                          disabled={!location || !weather || !photoFile || isAnalyzing}
+                          disabled={!location || !weather || isAnalyzing}
                           className="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isAnalyzing ? "Analyzing..." : "Run AI triage"}
                         </button>
                       </div>
                       <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300">
-                        Payload includes GPS coordinates, freeze risk flag, and the image blob.
+                        Payload includes GPS coordinates, freeze risk flag, and any attached photo metadata.
                       </div>
+                      {triageError && (
+                        <p className="mt-3 text-sm text-red-200" role="alert">
+                          {triageError}
+                        </p>
+                      )}
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-black/40 p-5">

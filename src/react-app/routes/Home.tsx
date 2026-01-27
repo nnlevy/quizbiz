@@ -23,72 +23,78 @@ const CalculatorTeaser = () => {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-500">
             Powered by AI &amp; EPA Data
           </p>
-          <h2 className="text-3xl font-semibold text-slate-900">Do the Math. See the Savings.</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+            Do the Math. See the Savings.
+          </h2>
           <p className="text-base text-slate-600">
-            Use our free tools to estimate leak costs and optimize your usage before you even upload
-            a bill.
+            Get a quick estimate in seconds, then dig deeper when you&apos;re ready.
           </p>
-          <p className="text-lg font-semibold text-slate-900">Stop Flushing Money</p>
-          <ul className="space-y-3 text-sm text-slate-600">
-            <li className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-600">
-                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                  <path
-                    fill="currentColor"
-                    d="M12 2.5c2.9 2.7 4.5 5.6 4.5 8.3 0 2.6-2 4.7-4.5 4.7S7.5 13.4 7.5 10.8c0-2.7 1.6-5.6 4.5-8.3Z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M6 17h12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z"
-                  />
-                </svg>
-              </span>
-              <div>
-                <p className="font-semibold text-slate-800">Leak Detector</p>
-                <p className="text-slate-500">See how small drips turn into big bills.</p>
+          <div className="space-y-3 text-sm text-slate-600">
+            <p className="text-sm font-semibold text-slate-900">A quick peek at what you&apos;ll get:</p>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                    <path
+                      fill="currentColor"
+                      d="M12 2.5c2.9 2.7 4.5 5.6 4.5 8.3 0 2.6-2 4.7-4.5 4.7S7.5 13.4 7.5 10.8c0-2.7 1.6-5.6 4.5-8.3Z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M6 17h12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-800">Leak Detector</p>
+                  <p className="hidden text-xs text-slate-500 sm:block">Spot hidden drips fast.</p>
+                </div>
               </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                  <path
-                    fill="currentColor"
-                    d="M6 3h12a1 1 0 0 1 1 1v2H5V4a1 1 0 0 1 1-1Z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M4 8h16v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M9 11h6v2H9z"
-                  />
-                </svg>
-              </span>
-              <div>
-                <p className="font-semibold text-slate-800">Shower vs Bath</p>
-                <p className="text-slate-500">Compare your routine against the average soak.</p>
+              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                    <path
+                      fill="currentColor"
+                      d="M6 3h12a1 1 0 0 1 1 1v2H5V4a1 1 0 0 1 1-1Z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M4 8h16v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M9 11h6v2H9z"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-800">Shower vs Bath</p>
+                  <p className="hidden text-xs text-slate-500 sm:block">See where you stand.</p>
+                </div>
               </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-600">
-                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                  <path
-                    fill="currentColor"
-                    d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12H4V6Z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M7 9h10v2H7zm0 4h6v2H7z"
-                  />
-                </svg>
-              </span>
-              <div>
-                <p className="font-semibold text-slate-800">Bill Audit</p>
-                <p className="text-slate-500">Project savings with one quick check.</p>
+              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                    <path
+                      fill="currentColor"
+                      d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12H4V6Z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M7 9h10v2H7zm0 4h6v2H7z"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-800">Bill Audit</p>
+                  <p className="hidden text-xs text-slate-500 sm:block">Project your savings.</p>
+                </div>
               </div>
-            </li>
-          </ul>
+            </div>
+            <p className="text-sm text-slate-500">
+              Start with a quick check, then unlock the deeper breakdowns.
+            </p>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

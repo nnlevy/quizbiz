@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { useLocation } from "./router";
+import { RouterLink, useLocation } from "./router";
 import { useCredits } from "../context/CreditsContext";
 
 const GALLONS_PER_DRIP = 1 / 15140;
@@ -33,19 +33,6 @@ type AiInsight = {
   insight: string;
   reference: string;
   cta: string;
-};
-
-const fetchAiInsight = async () => {
-  return new Promise<AiInsight>((resolve) => {
-    setTimeout(() => {
-      resolve({
-        insight:
-          "Based on 30 drips/min, you're losing enough water to wash 40 loads of laundry a year.",
-        reference: "That's 15% higher than the national average for homes of your size.",
-        cta: "Fix this leak",
-      });
-    }, 900);
-  });
 };
 
 const Card = ({ title, children }: { title: string; children: ReactNode }) => (
@@ -106,10 +93,12 @@ const Calculators = () => {
   const showerCost = showerGallons * GALLON_COST;
   const bathCost = bathGallons * GALLON_COST;
 
-  const savingsEstimate = billAmount * 0.2;
+  const savingsRate = Math.min(0.35, Math.max(0.12, 0.12 + householdSize * 0.02));
+  const savingsEstimate = billAmount * savingsRate;
 
   const handleGenerateInsight = async () => {
     setAiError(null);
+    setAiInsight(null);
     if (credits <= 0) {
       setAiError("You are out of credits. Add more to unlock AI insights.");
       return;
@@ -121,9 +110,31 @@ const Calculators = () => {
       return;
     }
     setAiLoading(true);
-    const response = await fetchAiInsight();
-    setAiInsight(response);
-    setAiLoading(false);
+    try {
+      const response = await fetch("/api/calculator-insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          segmentId,
+          billAmount,
+          householdSize,
+          dripsPerMinute,
+          leakingFaucets,
+          showerDuration,
+          flowRate,
+        }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "We couldn’t generate an insight yet.");
+      }
+      const payload = (await response.json()) as AiInsight;
+      setAiInsight(payload);
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -321,14 +332,16 @@ const Calculators = () => {
                 <p className="text-lg font-semibold text-emerald-700">
                   ${savingsEstimate.toFixed(0)} saved per month
                 </p>
-                <p className="text-xs text-emerald-600">Estimated 20% usage reduction.</p>
+                <p className="text-xs text-emerald-600">
+                  Estimated {(savingsRate * 100).toFixed(0)}% usage reduction.
+                </p>
               </div>
-              <button
-                type="button"
-                className="min-h-[44px] rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+              <RouterLink
+                className="min-h-[44px] rounded-full bg-emerald-500 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                to="/dashboard"
               >
                 Start Savings Plan
-              </button>
+              </RouterLink>
             </div>
           </Card>
         </div>

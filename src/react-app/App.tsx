@@ -440,6 +440,8 @@ function App({ focusUpload = false }: AppProps) {
     household: "",
     notes: "",
   });
+  const [manualStatus, setManualStatus] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
 
   const [isMobileFlowOpen, setIsMobileFlowOpen] = React.useState(false);
   const [flowStep, setFlowStep] = React.useState(0);
@@ -1747,12 +1749,30 @@ function App({ focusUpload = false }: AppProps) {
 
   const handleManualChange = (field: keyof typeof manualForm) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setManualError(null);
+      setManualStatus(null);
       setManualForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
   const handleManualSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setResponseMessage("Sending your details to the AI...");
+    setManualError(null);
+    const usage = Number(manualForm.usage);
+    const cost = Number(manualForm.cost);
+    const household = Number(manualForm.household);
+    if (!manualForm.usage || !Number.isFinite(usage) || usage <= 0) {
+      setManualError("Enter a total usage amount above 0.");
+      return;
+    }
+    if (!manualForm.cost || !Number.isFinite(cost) || cost <= 0) {
+      setManualError("Enter a total cost above $0.");
+      return;
+    }
+    if (manualForm.household && (!Number.isFinite(household) || household < 1)) {
+      setManualError("Household size should be 1 or more.");
+      return;
+    }
+    setManualStatus("Sending your details to the AI...");
     setAnalysisResult(null);
     setAnalysisHtml("");
     try {
@@ -1766,7 +1786,8 @@ function App({ focusUpload = false }: AppProps) {
           response,
           "We couldn’t analyze the manual entry yet.",
         );
-        setResponseMessage(errorMessage);
+        setManualStatus(null);
+        setManualError(errorMessage);
         logEvent("analysis_error");
         return;
       }
@@ -1776,7 +1797,7 @@ function App({ focusUpload = false }: AppProps) {
         credits?: number;
       };
       syncCredits(result.credits);
-      setResponseMessage("Success!");
+      setManualStatus("Success!");
       if (result.analysis && isAnalysisResult(result.analysis)) {
         setAnalysisResult(result.analysis);
         window.localStorage.setItem("ws-latest-plan", JSON.stringify(result.analysis));
@@ -1788,7 +1809,8 @@ function App({ focusUpload = false }: AppProps) {
       topMovesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       console.error("Manual entry failed:", error);
-      setResponseMessage(copy.analyze.errors.aiFail);
+      setManualStatus(null);
+      setManualError(copy.analyze.errors.aiFail);
       logEvent("analysis_error");
     }
   };
@@ -2850,7 +2872,15 @@ function App({ focusUpload = false }: AppProps) {
                       </label>
                       <label>
                         Total usage
-                        <input type="number" value={manualForm.usage} onChange={handleManualChange("usage")} placeholder="e.g., 8" />
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.1}
+                          required
+                          value={manualForm.usage}
+                          onChange={handleManualChange("usage")}
+                          placeholder="e.g., 8"
+                        />
                       </label>
                       <label>
                         Unit
@@ -2862,12 +2892,22 @@ function App({ focusUpload = false }: AppProps) {
                       </label>
                       <label>
                         Total cost
-                        <input type="number" value={manualForm.cost} onChange={handleManualChange("cost")} placeholder="e.g., 86" />
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          required
+                          value={manualForm.cost}
+                          onChange={handleManualChange("cost")}
+                          placeholder="e.g., 86"
+                        />
                       </label>
                       <label>
                         Water rate (optional)
                         <input
                           type="number"
+                          min={0}
+                          step={0.01}
                           value={manualForm.rate}
                           onChange={handleManualChange("rate")}
                           placeholder="Use $6 per 1,000 gallons if unsure"
@@ -2879,6 +2919,7 @@ function App({ focusUpload = false }: AppProps) {
                           type="number"
                           min={1}
                           max={10}
+                          step={1}
                           value={manualForm.household}
                           onChange={handleManualChange("household")}
                         />
@@ -2891,6 +2932,12 @@ function App({ focusUpload = false }: AppProps) {
                     <button type="submit" className="secondary-button">
                       Build my plan
                     </button>
+                    {manualStatus && <p className="muted">{manualStatus}</p>}
+                    {manualError && (
+                      <p className="validation-error" role="alert">
+                        {manualError}
+                      </p>
+                    )}
                   </form>
                   <InlineHelpAccordion label="Not sure what to enter?">
                     <p>
