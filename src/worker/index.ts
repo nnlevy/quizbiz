@@ -4305,6 +4305,119 @@ const handleLocalTrends = async (c: Context<{ Bindings: WorkerEnv }>) => {
   }
 };
 
+const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: {
+    segmentId?: string;
+    billAmount?: number;
+    householdSize?: number;
+    dripsPerMinute?: number;
+    leakingFaucets?: number;
+    showerDuration?: number;
+    flowRate?: number;
+  } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Calculator insight payload error:", error);
+    return c.json({ error: "Invalid calculator request body." }, 400);
+  }
+
+  const toNumber = (value: unknown, fallback: number) => {
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const billAmount = Math.max(0, toNumber(payload.billAmount, 0));
+  const householdSize = Math.max(1, toNumber(payload.householdSize, 1));
+  const dripsPerMinute = Math.max(0, toNumber(payload.dripsPerMinute, 0));
+  const leakingFaucets = Math.max(1, toNumber(payload.leakingFaucets, 1));
+  const showerDuration = Math.max(1, toNumber(payload.showerDuration, 5));
+  const flowRate = Math.max(0.5, toNumber(payload.flowRate, 2));
+
+  const dripsPerDay = dripsPerMinute * 60 * 24 * leakingFaucets;
+  const gallonsPerDay = dripsPerDay * (1 / 15140);
+  const gallonsPerYear = gallonsPerDay * 365;
+  const leakCostPerYear = gallonsPerYear * 0.01;
+
+  const showerGallons = showerDuration * flowRate;
+  const bathGallons = 35;
+  const showerVsBath =
+    showerGallons > bathGallons
+      ? "A bath would use less water than your current shower length."
+      : "Your shower length is already more efficient than a typical bath.";
+
+  const savingsRate = Math.min(0.35, Math.max(0.12, 0.12 + householdSize * 0.02));
+  const monthlySavings = billAmount * savingsRate;
+
+  let insight = `With ${dripsPerMinute} drips/min across ${leakingFaucets} faucet${
+    leakingFaucets === 1 ? "" : "s"
+  }, you could be wasting about ${gallonsPerYear.toFixed(0)} gallons a year.`;
+  let reference = `${showerVsBath} Estimated savings potential: ~$${monthlySavings.toFixed(
+    0,
+  )}/mo for a ${householdSize}-person household.`;
+  let cta = "Start with the leak fixes";
+
+  if (gallonsPerYear < 500) {
+    insight = `Your shower routine uses about ${showerGallons.toFixed(
+      1,
+    )} gallons per session at ${flowRate.toFixed(1)} GPM.`;
+    reference = `A ${Math.max(2, showerDuration - 2)}-minute shower would save ~$${(
+      (showerGallons - Math.max(2, showerDuration - 2) * flowRate) * 0.01
+    ).toFixed(2)} per shower. Estimated monthly savings: $${monthlySavings.toFixed(0)}.`;
+    cta = "Try a shorter shower goal";
+  } else if (leakCostPerYear > 50) {
+    reference = `That leak could cost roughly $${leakCostPerYear.toFixed(
+      0,
+    )}/year at typical rates. ${showerVsBath}`;
+  }
+
+  return c.json({
+    insight,
+    reference,
+    cta,
+  });
+};
+
+const handleLeakTriage = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: {
+    mode?: string;
+    coordinates?: { lat?: number; lng?: number; accuracy?: number };
+    freezeRisk?: boolean;
+    photoProvided?: boolean;
+  } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Leak triage payload error:", error);
+    return c.json({ error: "Invalid leak triage request body." }, 400);
+  }
+
+  const freezeRisk = Boolean(payload.freezeRisk);
+  const photoProvided = Boolean(payload.photoProvided);
+  const mode = payload.mode === "emergency" ? "emergency" : "proactive";
+
+  const immediate_action =
+    mode === "emergency"
+      ? "Shut off the main water valve, then move valuables and towels away from standing water."
+      : "Inspect your main valve and nearby fixtures now so you can shut water fast if needed.";
+  const secondary_action = freezeRisk
+    ? "Check exposed exterior pipes for cracks and gently warm them with a towel or safe heater."
+    : "Locate the nearest shut-off for the leaking fixture and listen for running water.";
+  const context_note = photoProvided
+    ? "Photo received. Use the visual clue to identify the nearest shut-off and any electrical risks."
+    : "No photo attached. Use a flashlight to scan for pooling, ceiling stains, and cabinet leaks.";
+  const warning = freezeRisk
+    ? "Avoid open flames near pipes; use low heat and keep electrical cords away from water."
+    : "Keep electricity away from wet floors and call a plumber if the leak doesn’t slow.";
+
+  return c.json({
+    immediate_action,
+    secondary_action,
+    context_note,
+    warning,
+  });
+};
+
 app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);
 app.post("/", handleAnalyzeBill);
@@ -4313,6 +4426,8 @@ app.post("/api/referral/token", handleReferralToken);
 app.post("/api/referral/claim", handleReferralClaim);
 app.post("/api/rebates", handleRebateSearch);
 app.post("/api/local-trends", handleLocalTrends);
+app.post("/api/calculator-insight", handleCalculatorInsight);
+app.post("/api/leak-triage", handleLeakTriage);
 
 app.get("/api/usage-defaults", (c) =>
   c.json({
