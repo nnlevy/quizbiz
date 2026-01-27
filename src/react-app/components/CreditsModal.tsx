@@ -226,34 +226,45 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
               </div>
             ) : (
               <>
-                <button
-                  type="button"
-                  className="ws-button"
-                  onClick={handleGoogle}
-                  aria-label="Continue with Google"
-                  disabled={!oauthEnabled}
-                >
-                  Continue with Google
-                </button>
-                {!oauthEnabled && (
-                  <p className="ws-subtitle" role="status">
-                    Google sign-in is unavailable right now. Use email to continue.
-                  </p>
+                {oauthEnabled ? (
+                  <button
+                    type="button"
+                    className="ws-button"
+                    onClick={handleGoogle}
+                    aria-label="Continue with Google"
+                  >
+                    Continue with Google
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="ws-button"
+                      disabled
+                      aria-disabled="true"
+                      aria-label="Google sign-in coming soon"
+                    >
+                      Google sign-in coming soon
+                    </button>
+                    <p className="ws-subtitle" role="status">
+                      Google sign-in is on the way. Use email to continue for now.
+                    </p>
+                  </>
                 )}
                 <p className="credits-modal__divider">
                   <span>or create with email</span>
                 </p>
                 <form className="credits-modal__form" onSubmit={handleSubmit}>
                   <label className="ws-field" htmlFor="credits-name">
-                    Name
+                    Name (optional)
                     <input
                       id="credits-name"
                       className="ws-input"
                       type="text"
+                      autoComplete="name"
                       value={name}
                       onChange={(event) => setName(event.target.value)}
                       placeholder="e.g., Jordan"
-                      required
                     />
                   </label>
                   <label className="ws-field" htmlFor="credits-email">
@@ -262,6 +273,7 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                       id="credits-email"
                       className="ws-input"
                       type="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
                       placeholder="you@email.com"
@@ -274,6 +286,7 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                       id="credits-password"
                       className="ws-input"
                       type="password"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="Create a password"

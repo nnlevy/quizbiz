@@ -35,10 +35,16 @@ type AiInsight = {
   cta: string;
 };
 
-const Card = ({ title, children }: { title: string; children: ReactNode }) => (
-  <section className="flex h-full flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+const Card = ({ title, children, id }: { title: string; children: ReactNode; id?: string }) => (
+  <section
+    id={id}
+    aria-labelledby={id ? `${id}-title` : undefined}
+    className="flex h-full flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+  >
     <div className="flex items-center justify-between">
-      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+      <h3 id={id ? `${id}-title` : undefined} className="text-lg font-semibold text-slate-900">
+        {title}
+      </h3>
     </div>
     {children}
   </section>
@@ -194,7 +200,7 @@ const Calculators = () => {
         </header>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card title="Leak Cost Estimator">
+          <Card id="leak-estimator" title="Leak Cost Estimator">
             <div className="flex flex-col gap-4 text-sm text-slate-600">
               <label className="flex flex-col gap-2">
                 <span className="font-medium text-slate-700">Drips per minute</span>
@@ -242,7 +248,7 @@ const Calculators = () => {
             </div>
           </Card>
 
-          <Card title="Shower vs. Bath Comparator">
+          <Card id="shower-bath" title="Shower vs. Bath Comparator">
             <div className="flex flex-col gap-4 text-sm text-slate-600">
               <label className="flex flex-col gap-2">
                 <span className="font-medium text-slate-700">Shower duration</span>
@@ -305,7 +311,7 @@ const Calculators = () => {
             </div>
           </Card>
 
-          <Card title="Bill Savings Projector">
+          <Card id="bill-savings" title="Bill Savings Projector">
             <div className="flex flex-col gap-4 text-sm text-slate-600">
               <label className="flex flex-col gap-2">
                 <span className="font-medium text-slate-700">Current bill amount</span>
