@@ -167,6 +167,32 @@
   gap: 1rem;
 }
 
+.ws-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.ws-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #0f766e;
+  text-decoration: none;
+}
+
+.ws-hero-link:hover {
+  text-decoration: underline;
+}
+
+.ws-hero-link:focus-visible {
+  outline: 3px solid rgba(14, 116, 144, 0.35);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
 .ws-cta-card {
   background: #fff;
   padding: 1.5rem;
@@ -280,6 +306,92 @@
 .ws-mode-grid {
   display: grid;
   gap: 0.75rem;
+}
+
+.ws-tool-card-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ws-tool-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  border-radius: 1rem;
+  border: 1px solid #d9e2ec;
+  background: #fff;
+  padding: 0.75rem 0.9rem;
+  text-decoration: none;
+  color: #0f172a;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.ws-tool-card:hover,
+.ws-tool-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(14, 116, 144, 0.4);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+}
+
+.ws-tool-card:focus-visible {
+  outline: 3px solid rgba(14, 116, 144, 0.35);
+  outline-offset: 2px;
+}
+
+.ws-tool-card__icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f766e;
+  background: rgba(14, 116, 144, 0.12);
+}
+
+.ws-tool-card__svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.ws-tool-card--sky .ws-tool-card__icon {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0284c7;
+}
+
+.ws-tool-card--emerald .ws-tool-card__icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.ws-tool-card--slate .ws-tool-card__icon {
+  background: rgba(100, 116, 139, 0.15);
+  color: #334155;
+}
+
+.ws-tool-card__body {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.ws-tool-card__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.ws-tool-card__description {
+  font-size: 0.8rem;
+  color: #52606d;
+}
+
+.ws-tool-card__cta {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0f766e;
 }
 
 .ws-demo-cta {
@@ -478,6 +590,10 @@
 
   .ws-result-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ws-tool-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
