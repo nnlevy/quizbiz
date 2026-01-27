@@ -23,6 +23,24 @@ type TriagePlan = {
   warning: string;
 };
 
+const TRIAGE_SYSTEM_PROMPT = `You are a calm emergency water leak triage assistant.
+Collect the minimum information needed to guide immediate safety actions.
+Always prioritize:
+1) shutting off water if safe,
+2) electrical safety if water is near outlets,
+3) contacting a licensed professional for severe leaks.
+Provide clear, step-by-step instructions in short sentences.
+Avoid medical or legal claims.`;
+
+const EMERGENCY_ANALYSIS_PSEUDOCODE = `input: leak_description, photo(optional), location(optional), weather(optional)
+if leak_description indicates flooding or burst:
+  advise shutoff valve, power safety, call emergency plumber
+else:
+  advise shutoff, contain water, identify fixture
+if weather.freezeRisk:
+  add frozen pipe precautions
+return: immediate_action, secondary_action, context_note, warning`;
+
 const defaultChecklist = [
   { id: "toilet-dye", label: "Toilet dye test (check flapper leaks)." },
   { id: "meter-movement", label: "Meter movement check with all fixtures off." },
