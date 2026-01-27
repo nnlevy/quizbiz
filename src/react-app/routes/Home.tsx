@@ -12,11 +12,63 @@ const CalculatorTeaser = () => {
   const [billAmount, setBillAmount] = useState(100);
   const yearlySavings = useMemo(() => billAmount * 0.2 * 12, [billAmount]);
   const calculatorHref = `/calculators?bill_amount=${encodeURIComponent(String(billAmount))}`;
+  const toolCards = [
+    {
+      title: "Leak Detector",
+      description: "Spot hidden drips fast.",
+      href: "/calculators#leak-estimator",
+      tone: "sky",
+      icon: (
+        <>
+          <path
+            fill="currentColor"
+            d="M12 2.5c2.9 2.7 4.5 5.6 4.5 8.3 0 2.6-2 4.7-4.5 4.7S7.5 13.4 7.5 10.8c0-2.7 1.6-5.6 4.5-8.3Z"
+          />
+          <path fill="currentColor" d="M6 17h12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z" />
+        </>
+      ),
+    },
+    {
+      title: "Shower vs Bath",
+      description: "See where you stand.",
+      href: "/calculators#shower-bath",
+      tone: "emerald",
+      icon: (
+        <>
+          <path
+            fill="currentColor"
+            d="M6 3h12a1 1 0 0 1 1 1v2H5V4a1 1 0 0 1 1-1Z"
+          />
+          <path
+            fill="currentColor"
+            d="M4 8h16v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"
+          />
+          <path fill="currentColor" d="M9 11h6v2H9z" />
+        </>
+      ),
+    },
+    {
+      title: "Bill Audit",
+      description: "Project your savings.",
+      href: "/calculators#bill-savings",
+      tone: "slate",
+      icon: (
+        <>
+          <path
+            fill="currentColor"
+            d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12H4V6Z"
+          />
+          <path fill="currentColor" d="M7 9h10v2H7zm0 4h6v2H7z" />
+        </>
+      ),
+    },
+  ];
 
   return (
     <section
       className="mt-10 rounded-3xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-white px-6 py-10 shadow-sm sm:px-10"
       aria-label="Calculators teaser"
+      id="quick-check"
     >
       <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div className="space-y-5">
@@ -31,65 +83,29 @@ const CalculatorTeaser = () => {
           </p>
           <div className="space-y-3 text-sm text-slate-600">
             <p className="text-sm font-semibold text-slate-900">A quick peek at what you&apos;ll get:</p>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-600">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                    <path
-                      fill="currentColor"
-                      d="M12 2.5c2.9 2.7 4.5 5.6 4.5 8.3 0 2.6-2 4.7-4.5 4.7S7.5 13.4 7.5 10.8c0-2.7 1.6-5.6 4.5-8.3Z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M6 17h12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <p className="font-semibold text-slate-800">Leak Detector</p>
-                  <p className="hidden text-xs text-slate-500 sm:block">Spot hidden drips fast.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                    <path
-                      fill="currentColor"
-                      d="M6 3h12a1 1 0 0 1 1 1v2H5V4a1 1 0 0 1 1-1Z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M4 8h16v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M9 11h6v2H9z"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <p className="font-semibold text-slate-800">Shower vs Bath</p>
-                  <p className="hidden text-xs text-slate-500 sm:block">See where you stand.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-600">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                    <path
-                      fill="currentColor"
-                      d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12H4V6Z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M7 9h10v2H7zm0 4h6v2H7z"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <p className="font-semibold text-slate-800">Bill Audit</p>
-                  <p className="hidden text-xs text-slate-500 sm:block">Project your savings.</p>
-                </div>
-              </div>
+            <div className="ws-tool-card-grid" role="list">
+              {toolCards.map((tool) => (
+                <RouterLink
+                  key={tool.title}
+                  to={tool.href}
+                  className={`ws-tool-card ws-tool-card--${tool.tone}`}
+                  role="listitem"
+                  aria-label={`${tool.title}: ${tool.description}`}
+                >
+                  <span className="ws-tool-card__icon" aria-hidden>
+                    <svg viewBox="0 0 24 24" className="ws-tool-card__svg">
+                      {tool.icon}
+                    </svg>
+                  </span>
+                  <span className="ws-tool-card__body">
+                    <span className="ws-tool-card__title">{tool.title}</span>
+                    <span className="ws-tool-card__description">{tool.description}</span>
+                  </span>
+                  <span className="ws-tool-card__cta">
+                    Open <span aria-hidden>→</span>
+                  </span>
+                </RouterLink>
+              ))}
             </div>
             <p className="text-sm text-slate-500">
               Start with a quick check, then unlock the deeper breakdowns.
@@ -168,6 +184,13 @@ const Home = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const transitionDelayMs = 320;
 
+  const scrollToSection = (id: string) => {
+    const target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -221,6 +244,7 @@ const Home = () => {
 
   const handleUploadClick = () => {
     setActiveAction("upload");
+    scrollToSection("analysis-start");
     fileInputRef.current?.click();
   };
 
@@ -246,11 +270,23 @@ const Home = () => {
           Upload a bill, try a demo bill, or use manual entry. We translate the bill into clear
           savings steps.
         </p>
+        <div className="ws-hero-actions" role="group" aria-label="Start a water bill analysis">
+          <button type="button" className="ws-button" onClick={handleUploadClick}>
+            Analyze my water bill
+          </button>
+          <button type="button" className="ws-button-secondary" onClick={handleDemoClick}>
+            Try a demo bill
+          </button>
+          <button type="button" className="ws-button-secondary" onClick={handleManualClick}>
+            Manual entry
+          </button>
+        </div>
+        <RouterLink className="ws-hero-link" to="#quick-check">
+          Stop Flushing Money →
+        </RouterLink>
       </div>
 
-      <CalculatorTeaser />
-
-      <InfoCard variant="cta" aria-label="Analyze a water bill">
+      <InfoCard id="analysis-start" variant="cta" aria-label="Analyze a water bill">
         <div>
           <h2>Analyze my water bill</h2>
           <p className="ws-subtitle">Pick the mode that fits your time right now.</p>
@@ -309,6 +345,8 @@ const Home = () => {
           <RouterLink to="/privacy">Learn how we handle data</RouterLink>.
         </p>
       </InfoCard>
+
+      <CalculatorTeaser />
 
       <InfoCard aria-label="Privacy reassurance">
         <h2>Private by design</h2>
