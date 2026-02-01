@@ -89,6 +89,7 @@ The Worker expects these bindings in `wrangler.json` (or equivalent Wrangler con
 - `USER_SESSIONS_ACROSS_DOMAINS` — KV namespace for OAuth state + session data (use the KV namespace ID from the dashboard or `wrangler kv:namespace list`).
 
 During builds we replace `${DOMAINS_DB_ID}` and `${USER_SESSIONS_ACROSS_DOMAINS_ID}` placeholders with the Cloudflare resource IDs. Set the `_NEW` variables (or the original names) as build-time environment variables (Pages: Settings → Build & Deployments → Environment variables) to the UUID values shown in the Cloudflare dashboard (not the display names). If you only set them under the Worker runtime bindings, the build step will not see them.
+Avoid defining `DOMAINS_DB_ID` or `USER_SESSIONS_ACROSS_DOMAINS_ID` under `vars` in `wrangler.json`; those names are reserved for the D1/KV bindings and Wrangler requires binding names to be unique across vars and resources.
 
 Run migrations to provision auth tables and credits columns:
 ```bash
