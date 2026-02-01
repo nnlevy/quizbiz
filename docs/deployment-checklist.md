@@ -27,7 +27,8 @@ Environment variables), using the **resource UUIDs** (not display names):
 
 - `DOMAINS_DB_ID_NEW` (or legacy `DOMAINS_DB_ID`) — D1 database resource ID for `UsersAcrossAllDomains`.
 - `USER_SESSIONS_ACROSS_DOMAINS_ID_NEW` (or legacy `USER_SESSIONS_ACROSS_DOMAINS_ID`) — KV namespace
-  ID for `USER_SESSIONS_ACROSS_DOMAINS`.
+  ID for `USER_SESSIONS_ACROSS_DOMAINS`. The build script also accepts `USER_SESSIONS_ACROSS_DOMAINS`
+  as a deprecated fallback if you've already stored the UUID there.
 - `KV_GROWTH_ID` — KV namespace ID for `KV_GROWTH` (the build step will also accept lowercase
   `kv_growth_id`, but it is deprecated).
 

@@ -7,31 +7,34 @@ const HEX32_REGEX = /^[0-9a-f]{32}$/i;
 
 const isValidCloudflareId = (value) => UUID_REGEX.test(value) || HEX32_REGEX.test(value);
 
-const resolveBindingEnv = (key, alternateKey, fallbackKey) => {
+const resolveBindingEnv = (key, alternateKey, fallbackKeys = []) => {
   const value = process.env[alternateKey] ?? process.env[key];
-  if (!value && fallbackKey) {
-    const fallbackValue = process.env[fallbackKey];
-    if (fallbackValue) {
-      console.warn(
-        `[wrangler] ${fallbackKey} is deprecated. Use ${alternateKey ?? key} instead.`,
+  if (value) {
+    if (!isValidCloudflareId(value)) {
+      throw new Error(
+        `[wrangler] ${alternateKey ?? key} must be a Cloudflare resource ID (UUID). ` +
+          `Received "${value}".`,
       );
-      if (!isValidCloudflareId(fallbackValue)) {
-        throw new Error(
-          `[wrangler] ${fallbackKey} must be a Cloudflare resource ID (UUID). ` +
-            `Received "${fallbackValue}".`,
-        );
-      }
-      return fallbackValue;
     }
+    return value;
   }
-  if (!value) return null;
-  if (!isValidCloudflareId(value)) {
-    throw new Error(
-      `[wrangler] ${alternateKey ?? key} must be a Cloudflare resource ID (UUID). ` +
-        `Received "${value}".`,
+
+  for (const fallbackKey of fallbackKeys) {
+    const fallbackValue = process.env[fallbackKey];
+    if (!fallbackValue) continue;
+    console.warn(
+      `[wrangler] ${fallbackKey} is deprecated. Use ${alternateKey ?? key} instead.`,
     );
+    if (!isValidCloudflareId(fallbackValue)) {
+      throw new Error(
+        `[wrangler] ${fallbackKey} must be a Cloudflare resource ID (UUID). ` +
+          `Received "${fallbackValue}".`,
+      );
+    }
+    return fallbackValue;
   }
-  return value;
+
+  return null;
 };
 
 const applyBindingIds = (config) => {
@@ -75,6 +78,7 @@ const applyBindingIds = (config) => {
         const resolved = resolveBindingEnv(
           "USER_SESSIONS_ACROSS_DOMAINS_ID",
           "USER_SESSIONS_ACROSS_DOMAINS_ID_NEW",
+          ["USER_SESSIONS_ACROSS_DOMAINS"],
         );
         if (!resolved) {
           console.warn(
@@ -89,7 +93,7 @@ const applyBindingIds = (config) => {
         };
       }
       if (typeof entry?.id === "string" && entry.id.includes("${KV_GROWTH_ID}")) {
-        const resolved = resolveBindingEnv("KV_GROWTH_ID", undefined, "kv_growth_id");
+        const resolved = resolveBindingEnv("KV_GROWTH_ID", undefined, ["kv_growth_id"]);
         if (!resolved) {
           console.warn(
             "[wrangler] KV_GROWTH_ID is not set. " +
