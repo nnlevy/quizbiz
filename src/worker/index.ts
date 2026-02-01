@@ -111,10 +111,8 @@ type WorkerEnv = {
   GROWTH_TOKEN_SECRET?: string;
   GROWTH_ADMIN_KEY?: string;
   UsersAcrossAllDomains: D1Database;
-  DOMAINS_DB_ID?: D1Database;
   UserSessionsAcrossDomains: KVNamespace;
   USER_SESSIONS_ACROSS_DOMAINS?: KVNamespace;
-  USER_SESSIONS_ACROSS_DOMAINS_ID?: KVNamespace;
   User_Sessions_Across_Domains?: KVNamespace;
   USERSESSIONSACROSSDOMAINS_ID?: KVNamespace;
   KV_GROWTH?: KVNamespace;
@@ -138,7 +136,6 @@ const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
   const kv =
     env.UserSessionsAcrossDomains ||
     env.USER_SESSIONS_ACROSS_DOMAINS ||
-    env.USER_SESSIONS_ACROSS_DOMAINS_ID ||
     env.User_Sessions_Across_Domains ||
     env.USERSESSIONSACROSSDOMAINS_ID;
   if (!kv) {
@@ -148,7 +145,7 @@ const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
 };
 
 const getDomainsDb = (env: WorkerEnv): D1Database => {
-  const db = env.UsersAcrossAllDomains || env.DOMAINS_DB_ID || env["domains-db"];
+  const db = env.UsersAcrossAllDomains || env["domains-db"];
   if (!db) {
     throw new Error("Missing D1 binding for domains database.");
   }
