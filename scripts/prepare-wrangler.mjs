@@ -7,8 +7,23 @@ const HEX32_REGEX = /^[0-9a-f]{32}$/i;
 
 const isValidCloudflareId = (value) => UUID_REGEX.test(value) || HEX32_REGEX.test(value);
 
-const resolveBindingEnv = (key, alternateKey) => {
+const resolveBindingEnv = (key, alternateKey, fallbackKey) => {
   const value = process.env[alternateKey] ?? process.env[key];
+  if (!value && fallbackKey) {
+    const fallbackValue = process.env[fallbackKey];
+    if (fallbackValue) {
+      console.warn(
+        `[wrangler] ${fallbackKey} is deprecated. Use ${alternateKey ?? key} instead.`,
+      );
+      if (!isValidCloudflareId(fallbackValue)) {
+        throw new Error(
+          `[wrangler] ${fallbackKey} must be a Cloudflare resource ID (UUID). ` +
+            `Received "${fallbackValue}".`,
+        );
+      }
+      return fallbackValue;
+    }
+  }
   if (!value) return null;
   if (!isValidCloudflareId(value)) {
     throw new Error(
@@ -74,7 +89,7 @@ const applyBindingIds = (config) => {
         };
       }
       if (typeof entry?.id === "string" && entry.id.includes("${KV_GROWTH_ID}")) {
-        const resolved = resolveBindingEnv("KV_GROWTH_ID");
+        const resolved = resolveBindingEnv("KV_GROWTH_ID", undefined, "kv_growth_id");
         if (!resolved) {
           console.warn(
             "[wrangler] KV_GROWTH_ID is not set. " +
