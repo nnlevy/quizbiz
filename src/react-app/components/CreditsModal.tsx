@@ -5,6 +5,7 @@ import { useCredits } from "../context/CreditsContext";
 import { useSession } from "../context/SessionContext";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { CREDIT_TOPUP_AMOUNT } from "../utils/credits";
+import { trackReferralConversion } from "../utils/growthTracking";
 
 const sendAnonymousEvent = async (event: string, details?: Record<string, unknown>) => {
   try {
@@ -142,6 +143,7 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
         throw new Error(payload?.error || payload?.message || "Unable to create account.");
       }
       setNotice("Account created! Syncing your dashboard...");
+      trackReferralConversion("signup", { method: "email" });
       await refreshSession();
       onClose();
     } catch (signupError) {

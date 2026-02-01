@@ -42,6 +42,27 @@ import {
 import { runWaterIqAudit } from "../lib/waterIqAudit";
 import { appendVary } from "../shared/httpHeaders";
 import { REFERRAL_TOKEN_TTL_SECONDS } from "../shared/referral";
+import {
+  SHARE_AWARD_WINDOW_MS,
+  SHARE_CREDIT_AMOUNT,
+  SHARE_FINALIZE_LIMIT_PER_DAY,
+  SHARE_MIN_FINALIZE_DELAY_MS,
+  SHARE_START_LIMIT_PER_HOUR,
+  SHARE_TOKEN_TTL_MS,
+  SHARE_VARIANTS,
+  buildAttributionCookie,
+  buildDateBucket,
+  buildReferralRedirectLocation,
+  buildShareCopy,
+  createRefCode,
+  hashWithSalt,
+  isWithinWindow,
+  pickShareVariant,
+  resolveFinalizeOutcome,
+  signShareToken,
+  verifyShareToken,
+} from "./growthUtils";
+import { incrementCounter, incrementRateLimit } from "./growthRateLimit";
 
 const SHOWER_FLOW_RATE = 2.5;
 const SINK_FLOW_RATE = 1.5;
@@ -86,11 +107,17 @@ type WorkerEnv = {
   OPENAI_ORG_ID?: string;
   Google_Document_AI_Processor_Prediction_Endpoint: string;
   "Google-Service-Account-FINAL": string;
+  GROWTH_HASH_SALT?: string;
+  GROWTH_TOKEN_SECRET?: string;
+  GROWTH_ADMIN_KEY?: string;
   UsersAcrossAllDomains: D1Database;
+  DOMAINS_DB_ID?: D1Database;
   UserSessionsAcrossDomains: KVNamespace;
   USER_SESSIONS_ACROSS_DOMAINS?: KVNamespace;
+  USER_SESSIONS_ACROSS_DOMAINS_ID?: KVNamespace;
   User_Sessions_Across_Domains?: KVNamespace;
   USERSESSIONSACROSSDOMAINS_ID?: KVNamespace;
+  KV_GROWTH?: KVNamespace;
   "domains-db"?: D1Database;
   STRIPE_API_KEY?: string;
   STRIPE_PUBLISHABLE_KEY?: string;
@@ -111,12 +138,28 @@ const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
   const kv =
     env.UserSessionsAcrossDomains ||
     env.USER_SESSIONS_ACROSS_DOMAINS ||
+    env.USER_SESSIONS_ACROSS_DOMAINS_ID ||
     env.User_Sessions_Across_Domains ||
     env.USERSESSIONSACROSSDOMAINS_ID;
   if (!kv) {
     throw new Error("Missing KV binding for user sessions.");
   }
   return kv;
+};
+
+const getDomainsDb = (env: WorkerEnv): D1Database => {
+  const db = env.UsersAcrossAllDomains || env.DOMAINS_DB_ID || env["domains-db"];
+  if (!db) {
+    throw new Error("Missing D1 binding for domains database.");
+  }
+  return db;
+};
+
+const getGrowthKv = (env: WorkerEnv): KVNamespace => {
+  if (!env.KV_GROWTH) {
+    throw new Error("Missing KV_GROWTH binding.");
+  }
+  return env.KV_GROWTH;
 };
 
 type ChatCompletionResponse = {
@@ -977,6 +1020,73 @@ const ensureSession = async (c: Context) => {
 
   await persistSessionRecord(c.env, sessionId, session);
   return { sessionId, session, needsCookie };
+};
+
+const getRequestIp = (c: Context): string =>
+  c.req.header("cf-connecting-ip") ||
+  c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+  "0.0.0.0";
+
+const getRequestUserAgent = (c: Context): string => c.req.header("user-agent") || "unknown";
+
+const getGrowthHashes = async (c: Context) => {
+  if (!c.env.GROWTH_HASH_SALT) {
+    throw new Error("Missing GROWTH_HASH_SALT.");
+  }
+  const ip = getRequestIp(c);
+  const userAgent = getRequestUserAgent(c);
+  const ipHash = await hashWithSalt(ip, c.env.GROWTH_HASH_SALT);
+  const userAgentHash = await hashWithSalt(userAgent, c.env.GROWTH_HASH_SALT);
+  return { ipHash, userAgentHash };
+};
+
+const getGrowthDailyBucket = (timestampMs: number) =>
+  buildDateBucket(timestampMs).replace(/-/g, "");
+
+type GrowthEventType =
+  | "share_impression"
+  | "share_click"
+  | "share_start"
+  | "share_finalize"
+  | "referral_visit"
+  | "referral_convert";
+
+const logGrowthEvent = async (
+  db: D1Database,
+  payload: {
+    eventType: GrowthEventType;
+    platform?: string | null;
+    sessionId?: string | null;
+    userId?: string | null;
+    ipHash?: string | null;
+    userAgentHash?: string | null;
+    refCode?: string | null;
+    shareTokenId?: string | null;
+    page?: string | null;
+    meta?: Record<string, unknown> | null;
+  },
+) => {
+  const id = crypto.randomUUID();
+  const ts = Date.now();
+  await db
+    .prepare(
+      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+    )
+    .bind(
+      id,
+      ts,
+      payload.eventType,
+      payload.platform ?? null,
+      payload.sessionId ?? null,
+      payload.userId ?? null,
+      payload.ipHash ?? null,
+      payload.userAgentHash ?? null,
+      payload.refCode ?? null,
+      payload.shareTokenId ?? null,
+      payload.page ?? null,
+      payload.meta ? JSON.stringify(payload.meta) : null,
+    )
+    .run();
 };
 
 const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: boolean) => {
@@ -4183,6 +4293,598 @@ const handleReferralClaim = async (c: Context<{ Bindings: WorkerEnv }>) => {
   });
 };
 
+const handleGrowthShareConfig = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  const db = getDomainsDb(c.env);
+  const kv = getGrowthKv(c.env);
+  const now = Date.now();
+  const page = c.req.query("page") || "/";
+  const { ipHash, userAgentHash } = await getGrowthHashes(c);
+  await logGrowthEvent(db, {
+    eventType: "share_impression",
+    platform: "x",
+    sessionId,
+    userId: session.userId ?? null,
+    ipHash,
+    userAgentHash,
+    page,
+  });
+  const dayBucket = getGrowthDailyBucket(now);
+  await incrementCounter(kv, `cnt:share_impression:${dayBucket}`, 60 * 60 * 24 * 8);
+
+  c.header("Cache-Control", "max-age=60");
+  return c.json({
+    platformEnabled: { x: true },
+    creditAmount: SHARE_CREDIT_AMOUNT,
+    variants: SHARE_VARIANTS,
+    rateLimits: {
+      shareStartPerHour: SHARE_START_LIMIT_PER_HOUR,
+      shareFinalizePerDay: SHARE_FINALIZE_LIMIT_PER_DAY,
+      awardWindowDays: 7,
+      tokenTtlMinutes: SHARE_TOKEN_TTL_MS / 60000,
+    },
+  });
+};
+
+const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: { platform?: string; page?: string; variantId?: string } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Share start payload error:", error);
+    return c.json({ error: "Invalid share payload." }, 400);
+  }
+  if (payload.platform !== "x") {
+    return c.json({ error: "Unsupported share platform." }, 400);
+  }
+
+  if (!c.env.GROWTH_TOKEN_SECRET) {
+    return c.json({ error: "Share tokens are not configured." }, 500);
+  }
+
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  const { ipHash, userAgentHash } = await getGrowthHashes(c);
+  const kv = getGrowthKv(c.env);
+  const now = Date.now();
+  const date = new Date(now);
+  const hourBucket = `${getGrowthDailyBucket(now)}${String(date.getUTCHours()).padStart(2, "0")}`;
+
+  const sessionRateKey = `rl:share_start:${sessionId}:${hourBucket}`;
+  const ipRateKey = `rl:ip:${ipHash}:${hourBucket}`;
+  const sessionRate = await incrementRateLimit(
+    kv,
+    sessionRateKey,
+    SHARE_START_LIMIT_PER_HOUR,
+    60 * 60,
+  );
+  const ipRate = await incrementRateLimit(
+    kv,
+    ipRateKey,
+    SHARE_START_LIMIT_PER_HOUR,
+    60 * 60,
+  );
+  if (!sessionRate.allowed || !ipRate.allowed) {
+    return c.json({ error: "Too many attempts—try later." }, 429);
+  }
+
+  const variant = pickShareVariant(payload.variantId);
+  const shareTokenId = crypto.randomUUID();
+  const refCode = createRefCode();
+  const expiresTs = now + SHARE_TOKEN_TTL_MS;
+  const db = getDomainsDb(c.env);
+  const shareTokenInsert = db
+    .prepare(
+      `INSERT INTO share_tokens (id, created_ts, expires_ts, platform, variant_id, session_id, user_id, ip_hash, state, ref_code)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+    )
+    .bind(
+      shareTokenId,
+      now,
+      expiresTs,
+      "x",
+      variant.id,
+      sessionId,
+      session.userId ?? null,
+      ipHash,
+      "created",
+      refCode,
+    );
+  const shareClickInsert = db
+    .prepare(
+      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      now,
+      "share_click",
+      "x",
+      sessionId,
+      session.userId ?? null,
+      ipHash,
+      userAgentHash,
+      refCode,
+      shareTokenId,
+      payload.page ?? "/",
+      JSON.stringify({ variantId: variant.id }),
+    );
+  const shareStartInsert = db
+    .prepare(
+      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      now,
+      "share_start",
+      "x",
+      sessionId,
+      session.userId ?? null,
+      ipHash,
+      userAgentHash,
+      refCode,
+      shareTokenId,
+      payload.page ?? "/",
+      JSON.stringify({ variantId: variant.id }),
+    );
+  await db.batch([shareTokenInsert, shareClickInsert, shareStartInsert]);
+
+  await kv.put(`ref:${refCode}`, shareTokenId, { expirationTtl: 60 * 60 * 24 * 7 });
+  const dayBucket = getGrowthDailyBucket(now);
+  await incrementCounter(kv, `cnt:share_click:${dayBucket}`, 60 * 60 * 24 * 8);
+  await incrementCounter(kv, `cnt:share_start:${dayBucket}`, 60 * 60 * 24 * 8);
+
+  const origin = new URL(c.req.url).origin;
+  const shareUrl = `${origin}/r/${refCode}`;
+  const text = buildShareCopy(variant, shareUrl);
+  const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  const signedToken = await signShareToken(
+    { shareTokenId, refCode, exp: expiresTs },
+    c.env.GROWTH_TOKEN_SECRET,
+  );
+
+  return c.json({
+    intentUrl,
+    shareUrl,
+    ref_code: refCode,
+    signedToken,
+    variantId: variant.id,
+  });
+};
+
+const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: { platform?: string; signedToken?: string } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Share finalize payload error:", error);
+    return c.json({ status: "rejected", reason: "Invalid share payload." }, 400);
+  }
+  if (payload.platform !== "x" || !payload.signedToken) {
+    return c.json({ status: "rejected", reason: "Missing share token." }, 400);
+  }
+  if (!c.env.GROWTH_TOKEN_SECRET) {
+    return c.json({ status: "rejected", reason: "Share tokens are not configured." }, 500);
+  }
+
+  const verified = await verifyShareToken(payload.signedToken, c.env.GROWTH_TOKEN_SECRET);
+  if (!verified) {
+    return c.json({ status: "rejected", reason: "Invalid share token." }, 400);
+  }
+
+  const now = Date.now();
+  if (verified.exp < now) {
+    return c.json({ status: "rejected", reason: "Expired token" }, 410);
+  }
+
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  const { ipHash, userAgentHash } = await getGrowthHashes(c);
+  const kv = getGrowthKv(c.env);
+  const dayBucket = getGrowthDailyBucket(now);
+
+  const sessionFinalizeKey = `rl:share_finalize:${sessionId}:${dayBucket}`;
+  const ipFinalizeKey = `rl:ip:${ipHash}:${dayBucket}`;
+  const sessionRate = await incrementRateLimit(
+    kv,
+    sessionFinalizeKey,
+    SHARE_FINALIZE_LIMIT_PER_DAY,
+    60 * 60 * 24,
+  );
+  const ipRate = await incrementRateLimit(
+    kv,
+    ipFinalizeKey,
+    SHARE_FINALIZE_LIMIT_PER_DAY,
+    60 * 60 * 24,
+  );
+  if (!sessionRate.allowed || !ipRate.allowed) {
+    return c.json({ status: "rejected", reason: "Too many attempts—try later." }, 429);
+  }
+
+  const db = getDomainsDb(c.env);
+  const tokenRow = (await db
+    .prepare(
+      "SELECT id, created_ts, expires_ts, platform, variant_id, session_id, user_id, state, finalize_reason, credits_awarded, ref_code FROM share_tokens WHERE id = ?1",
+    )
+    .bind(verified.shareTokenId)
+    .first()) as
+    | {
+        id: string;
+        created_ts: number;
+        expires_ts: number;
+        platform: string;
+        variant_id: string;
+        session_id: string;
+        user_id: string | null;
+        state: "created" | "finalized" | "expired" | "void";
+        finalize_reason: string | null;
+        credits_awarded: number | null;
+        ref_code: string;
+      }
+    | null;
+
+  if (!tokenRow || tokenRow.ref_code !== verified.refCode) {
+    return c.json({ status: "rejected", reason: "Share token not found." }, 404);
+  }
+
+  const recordFinalizeRejection = async (reason: string) => {
+    await logGrowthEvent(db, {
+      eventType: "share_finalize",
+      platform: "x",
+      sessionId,
+      userId: session.userId ?? null,
+      ipHash,
+      userAgentHash,
+      refCode: tokenRow.ref_code,
+      shareTokenId: tokenRow.id,
+      page: c.req.path,
+      meta: { status: "rejected", reason },
+    });
+    await incrementCounter(kv, `cnt:share_finalize_rejected:${dayBucket}`, 60 * 60 * 24 * 8);
+  };
+
+  const resolved = resolveFinalizeOutcome(tokenRow);
+  if (resolved) {
+    return c.json({
+      status: resolved.status,
+      credits: resolved.status === "granted" ? resolved.credits : 0,
+      reason: resolved.status === "rejected" ? resolved.reason : undefined,
+    });
+  }
+
+  if (tokenRow.user_id) {
+    if (tokenRow.user_id !== session.userId) {
+      return c.json(
+        { status: "rejected", reason: "This share token belongs to another session." },
+        403,
+      );
+    }
+  } else if (tokenRow.session_id !== sessionId) {
+    return c.json(
+      { status: "rejected", reason: "This share token belongs to another session." },
+      403,
+    );
+  }
+
+  if (tokenRow.expires_ts < now) {
+    await db
+      .prepare("UPDATE share_tokens SET state = 'expired', finalize_ts = ?1 WHERE id = ?2")
+      .bind(now, tokenRow.id)
+      .run();
+    await recordFinalizeRejection("Expired token");
+    return c.json({ status: "rejected", reason: "Expired token" }, 410);
+  }
+
+  if (!isWithinWindow(tokenRow.created_ts, now, SHARE_TOKEN_TTL_MS)) {
+    await db
+      .prepare("UPDATE share_tokens SET state = 'expired', finalize_ts = ?1 WHERE id = ?2")
+      .bind(now, tokenRow.id)
+      .run();
+    await recordFinalizeRejection("Expired token");
+    return c.json({ status: "rejected", reason: "Expired token" }, 410);
+  }
+
+  if (now - tokenRow.created_ts < SHARE_MIN_FINALIZE_DELAY_MS) {
+    await recordFinalizeRejection("Too fast—try again in a moment.");
+    return c.json({ status: "rejected", reason: "Too fast—try again in a moment." }, 429);
+  }
+
+  const cutoffTs = now - SHARE_AWARD_WINDOW_MS;
+  const awardQuery = session.userId
+    ? db
+        .prepare(
+          "SELECT ts FROM credit_awards_ledger WHERE award_type = 'share_x' AND platform = 'x' AND user_id = ?1 AND ts >= ?2 AND status = 'granted' ORDER BY ts DESC LIMIT 1",
+        )
+        .bind(session.userId, cutoffTs)
+    : db
+        .prepare(
+          "SELECT ts FROM credit_awards_ledger WHERE award_type = 'share_x' AND platform = 'x' AND session_id = ?1 AND ts >= ?2 AND status = 'granted' ORDER BY ts DESC LIMIT 1",
+        )
+        .bind(sessionId, cutoffTs);
+
+  const recentAward = (await awardQuery.first()) as { ts: number } | null;
+  if (recentAward) {
+    const rejectReason = "Already claimed this week";
+    await db
+      .prepare(
+        "UPDATE share_tokens SET state = 'void', finalize_ts = ?1, finalize_reason = ?2 WHERE id = ?3",
+      )
+      .bind(now, rejectReason, tokenRow.id)
+      .run();
+    await db
+      .prepare(
+        `INSERT OR IGNORE INTO credit_awards_ledger (id, ts, award_type, platform, user_id, session_id, share_token_id, credits, status, reason, date_bucket)\n         VALUES (?1, ?2, 'share_x', 'x', ?3, ?4, ?5, ?6, 'rejected', ?7, ?8)`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        now,
+        session.userId ?? null,
+        sessionId,
+        tokenRow.id,
+        SHARE_CREDIT_AMOUNT,
+        rejectReason,
+        buildDateBucket(now),
+      )
+      .run();
+    await recordFinalizeRejection(rejectReason);
+    return c.json({ status: "rejected", credits: 0, reason: rejectReason });
+  }
+
+  const updateResult = await db
+    .prepare(
+      "UPDATE share_tokens SET state = 'finalized', finalize_ts = ?1, credits_awarded = ?2 WHERE id = ?3 AND state = 'created'",
+    )
+    .bind(now, SHARE_CREDIT_AMOUNT, tokenRow.id)
+    .run();
+
+  if (updateResult.changes === 0) {
+    const refreshed = (await db
+      .prepare("SELECT state, credits_awarded, finalize_reason FROM share_tokens WHERE id = ?1")
+      .bind(tokenRow.id)
+      .first()) as {
+      state: "finalized" | "expired" | "void";
+      credits_awarded?: number;
+      finalize_reason?: string;
+    } | null;
+    if (refreshed) {
+      const fallback = resolveFinalizeOutcome(refreshed);
+      if (fallback) {
+        return c.json({
+          status: fallback.status,
+          credits: fallback.status === "granted" ? fallback.credits : 0,
+          reason: fallback.status === "rejected" ? fallback.reason : undefined,
+        });
+      }
+    }
+    return c.json({ status: "rejected", reason: "Unable to finalize share." }, 409);
+  }
+
+  const awardInsert = await db
+    .prepare(
+      `INSERT OR IGNORE INTO credit_awards_ledger (id, ts, award_type, platform, user_id, session_id, share_token_id, credits, status, reason, date_bucket)\n       VALUES (?1, ?2, 'share_x', 'x', ?3, ?4, ?5, ?6, 'granted', NULL, ?7)`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      now,
+      session.userId ?? null,
+      sessionId,
+      tokenRow.id,
+      SHARE_CREDIT_AMOUNT,
+      buildDateBucket(now),
+    )
+    .run();
+
+  if (!awardInsert.meta?.changes) {
+    const rejectReason = "Already claimed this week";
+    await db
+      .prepare(
+        "UPDATE share_tokens SET state = 'void', credits_awarded = 0, finalize_reason = ?1 WHERE id = ?2",
+      )
+      .bind(rejectReason, tokenRow.id)
+      .run();
+    await recordFinalizeRejection(rejectReason);
+    return c.json({ status: "rejected", credits: 0, reason: rejectReason });
+  }
+
+  const nextCredits = await grantCredits(c.env, sessionId, session, SHARE_CREDIT_AMOUNT);
+
+  await logGrowthEvent(db, {
+    eventType: "share_finalize",
+    platform: "x",
+    sessionId,
+    userId: session.userId ?? null,
+    ipHash,
+    userAgentHash,
+    refCode: tokenRow.ref_code,
+    shareTokenId: tokenRow.id,
+    meta: { status: "granted", credits: SHARE_CREDIT_AMOUNT },
+  });
+  await incrementCounter(kv, `cnt:share_finalize_granted:${dayBucket}`, 60 * 60 * 24 * 8);
+
+  return c.json({
+    status: "granted",
+    credits: nextCredits,
+    nextUnlockHint: "You’re now closer to unlocking deeper savings insights.",
+  });
+};
+
+const handleGrowthReferralRedirect = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  const refCode = c.req.param("ref_code");
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  const now = Date.now();
+  const kv = getGrowthKv(c.env);
+  const db = getDomainsDb(c.env);
+  let shareTokenId = await kv.get(`ref:${refCode}`);
+  let tokenRow:
+    | { id: string; variant_id: "A" | "B" | "C"; ref_code: string }
+    | null = null;
+  if (shareTokenId) {
+    tokenRow = (await db
+      .prepare("SELECT id, variant_id, ref_code FROM share_tokens WHERE id = ?1")
+      .bind(shareTokenId)
+      .first()) as { id: string; variant_id: "A" | "B" | "C"; ref_code: string } | null;
+  }
+  if (!tokenRow) {
+    tokenRow = (await db
+      .prepare("SELECT id, variant_id, ref_code FROM share_tokens WHERE ref_code = ?1")
+      .bind(refCode)
+      .first()) as { id: string; variant_id: "A" | "B" | "C"; ref_code: string } | null;
+  }
+  if (!tokenRow) {
+    return c.redirect("/", 302);
+  }
+
+  const { ipHash, userAgentHash } = await getGrowthHashes(c);
+  await logGrowthEvent(db, {
+    eventType: "referral_visit",
+    platform: "x",
+    sessionId,
+    userId: session.userId ?? null,
+    ipHash,
+    userAgentHash,
+    refCode: tokenRow.ref_code,
+    shareTokenId: tokenRow.id,
+    page: "/r",
+  });
+  const dayBucket = getGrowthDailyBucket(now);
+  await incrementCounter(kv, `cnt:referral_visit:${dayBucket}`, 60 * 60 * 24 * 8);
+
+  await db
+    .prepare(
+      `INSERT INTO referral_attribution (id, ts, ref_code, landing_path, session_id, user_id, ip_hash, first_seen_ts, last_seen_ts, conversions)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0)\n       ON CONFLICT(ref_code, session_id)\n       DO UPDATE SET last_seen_ts = excluded.last_seen_ts`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      now,
+      tokenRow.ref_code,
+      "/",
+      sessionId,
+      session.userId ?? null,
+      ipHash,
+      now,
+      now,
+    )
+    .run();
+
+  const refCookie = buildAttributionCookie(
+    "ws_ref_code",
+    tokenRow.ref_code,
+    REFERRAL_TOKEN_TTL_SECONDS,
+    c.env.OAUTH_DOMAIN,
+  );
+  const firstSeenCookie = buildAttributionCookie(
+    "ws_ref_first_seen",
+    String(now),
+    REFERRAL_TOKEN_TTL_SECONDS,
+    c.env.OAUTH_DOMAIN,
+  );
+  c.header("Set-Cookie", refCookie);
+  c.res.headers.append("Set-Cookie", firstSeenCookie);
+
+  const destination = buildReferralRedirectLocation(new URL(c.req.url).origin, "/", tokenRow.variant_id);
+  return c.redirect(destination, 302);
+};
+
+const handleGrowthReferralConvert = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  let payload: { conversionType?: string; meta?: Record<string, unknown> } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch (error) {
+    console.error("Referral convert payload error:", error);
+    return c.json({ ok: false, error: "Invalid conversion payload." }, 400);
+  }
+  const cookies = parseCookies(c.req.header("cookie"));
+  const refCode = cookies.ws_ref_code;
+  if (!refCode) {
+    return c.json({ ok: true, attributed: false });
+  }
+
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
+  const now = Date.now();
+  const { ipHash, userAgentHash } = await getGrowthHashes(c);
+  const db = getDomainsDb(c.env);
+  await db
+    .prepare(
+      `INSERT INTO referral_attribution (id, ts, ref_code, landing_path, session_id, user_id, ip_hash, first_seen_ts, last_seen_ts, conversions)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1)\n       ON CONFLICT(ref_code, session_id)\n       DO UPDATE SET last_seen_ts = excluded.last_seen_ts, conversions = conversions + 1`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      now,
+      refCode,
+      c.req.path,
+      sessionId,
+      session.userId ?? null,
+      ipHash,
+      now,
+      now,
+    )
+    .run();
+
+  await logGrowthEvent(db, {
+    eventType: "referral_convert",
+    platform: "x",
+    sessionId,
+    userId: session.userId ?? null,
+    ipHash,
+    userAgentHash,
+    refCode,
+    page: c.req.path,
+    meta: { conversionType: payload.conversionType ?? "unknown", meta: payload.meta ?? null },
+  });
+
+  const kv = getGrowthKv(c.env);
+  const dayBucket = getGrowthDailyBucket(now);
+  await incrementCounter(kv, `cnt:referral_convert:${dayBucket}`, 60 * 60 * 24 * 8);
+
+  return c.json({ ok: true, attributed: true });
+};
+
+const handleGrowthAdminSummary = async (c: Context<{ Bindings: WorkerEnv }>) => {
+  if (!c.env.GROWTH_ADMIN_KEY) {
+    return c.json({ error: "Growth admin is not configured." }, 403);
+  }
+  const headerKey = c.req.header("x-growth-admin-key");
+  if (!headerKey || headerKey !== c.env.GROWTH_ADMIN_KEY) {
+    return c.json({ error: "Unauthorized." }, 403);
+  }
+
+  const day = c.req.query("day") || getGrowthDailyBucket(Date.now());
+  const kv = getGrowthKv(c.env);
+  const counters = await Promise.all([
+    kv.get(`cnt:share_impression:${day}`),
+    kv.get(`cnt:share_click:${day}`),
+    kv.get(`cnt:share_start:${day}`),
+    kv.get(`cnt:share_finalize_granted:${day}`),
+    kv.get(`cnt:share_finalize_rejected:${day}`),
+    kv.get(`cnt:referral_visit:${day}`),
+    kv.get(`cnt:referral_convert:${day}`),
+  ]);
+  const [shareImpression, shareClick, shareStart, finalizeGranted, finalizeRejected, referralVisit, referralConvert] =
+    counters.map((value) => Number.parseInt(value ?? "0", 10));
+
+  const db = getDomainsDb(c.env);
+  const events = await db
+    .prepare(
+      "SELECT id, ts, event_type, platform, session_id, user_id, ref_code, share_token_id, page, meta_json FROM growth_events ORDER BY ts DESC LIMIT 50",
+    )
+    .all();
+
+  return c.json({
+    day,
+    counters: {
+      shareImpression: Number.isFinite(shareImpression) ? shareImpression : 0,
+      shareClick: Number.isFinite(shareClick) ? shareClick : 0,
+      shareStart: Number.isFinite(shareStart) ? shareStart : 0,
+      finalizeGranted: Number.isFinite(finalizeGranted) ? finalizeGranted : 0,
+      finalizeRejected: Number.isFinite(finalizeRejected) ? finalizeRejected : 0,
+      referralVisit: Number.isFinite(referralVisit) ? referralVisit : 0,
+      referralConvert: Number.isFinite(referralConvert) ? referralConvert : 0,
+    },
+    events: events.results ?? [],
+  });
+};
+
 const getRebateCacheKey = (cacheKey: string) => `rebates:${cacheKey}`;
 
 const readRebateCache = async (env: WorkerEnv, cacheKey: string): Promise<RebateResponse | null> => {
@@ -4422,6 +5124,12 @@ app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);
 app.post("/", handleAnalyzeBill);
 app.post("/api/analyze-manual", handleManualAnalyze);
+app.get("/api/growth/share/config", handleGrowthShareConfig);
+app.post("/api/growth/share/start", handleGrowthShareStart);
+app.post("/api/growth/share/finalize", handleGrowthShareFinalize);
+app.post("/api/growth/referral/convert", handleGrowthReferralConvert);
+app.get("/api/growth/admin/summary", handleGrowthAdminSummary);
+app.get("/r/:ref_code", handleGrowthReferralRedirect);
 app.post("/api/referral/token", handleReferralToken);
 app.post("/api/referral/claim", handleReferralClaim);
 app.post("/api/rebates", handleRebateSearch);
