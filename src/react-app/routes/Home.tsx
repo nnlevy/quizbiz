@@ -9,6 +9,7 @@ import { useCredits } from "../context/CreditsContext";
 import ExploreTools from "../components/ExploreTools";
 import FeatureGrid from "../components/FeatureGrid";
 import Hero from "../components/Hero";
+import EarnCreditsCard from "../components/EarnCreditsCard";
 import QuickCheck from "../components/QuickCheck";
 import StartCard from "../components/StartCard";
 import TrustPrivacy from "../components/TrustPrivacy";
@@ -139,6 +140,8 @@ const Home = () => {
           onUploadChange={handleUpload}
         />
       </Hero>
+
+      <EarnCreditsCard />
 
       <section className="ws-section" aria-labelledby="feature-grid-title">
         <div className="ws-section-header">
