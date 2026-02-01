@@ -15,7 +15,9 @@
     "OPEN_API_KEY_NEW": "${OPEN_API_KEY_NEW}",
     "Google-Service-Account-FINAL": "${GOOGLE_SERVICE_ACCOUNT_FINAL}",
     "ADSENSE_CLIENT": "ca-pub-1860356577073395",
-    "GA_MEASUREMENT_ID": "G-98170RDCDD"
+    "GA_MEASUREMENT_ID": "G-98170RDCDD",
+    "OPENAI_ORG_ID": "org-3Kw3ohdIQc6cIpSonBIgKdf9",
+    "DOMAINS_DB_ID": "b41e909b-ad01-4fd5-84ca-d8d014706942"
   },
   "d1_databases": [
     {
