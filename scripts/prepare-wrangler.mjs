@@ -73,6 +73,20 @@ const applyBindingIds = (config) => {
           id: resolved,
         };
       }
+      if (typeof entry?.id === "string" && entry.id.includes("${KV_GROWTH_ID}")) {
+        const resolved = resolveBindingEnv("KV_GROWTH_ID");
+        if (!resolved) {
+          console.warn(
+            "[wrangler] KV_GROWTH_ID is not set. " +
+              "Keeping the placeholder value; set a build-time environment variable to inject the Cloudflare resource ID.",
+          );
+          return entry;
+        }
+        return {
+          ...entry,
+          id: resolved,
+        };
+      }
       if (typeof entry?.id === "string" && !isValidCloudflareId(entry.id)) {
         throw new Error(
           `[wrangler] KV namespace id must be a Cloudflare resource ID (UUID). ` +
