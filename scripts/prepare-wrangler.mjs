@@ -7,16 +7,24 @@ const HEX32_REGEX = /^[0-9a-f]{32}$/i;
 
 const isValidCloudflareId = (value) => UUID_REGEX.test(value) || HEX32_REGEX.test(value);
 
-const resolveRequiredEnv = (key, alternateKey) => {
+const resolveBindingEnv = (key, alternateKey, fallbackKey) => {
   const value = process.env[alternateKey] ?? process.env[key];
-  if (!value) {
-    const label = alternateKey ? `${alternateKey} (or ${key})` : key;
-    throw new Error(
-      `[wrangler] Missing required environment variable ${label}. ` +
-        "Set it as a build-time environment variable in Cloudflare (not just a runtime binding), " +
-        "using the Cloudflare resource ID (UUID), not the display name.",
-    );
+  if (!value && fallbackKey) {
+    const fallbackValue = process.env[fallbackKey];
+    if (fallbackValue) {
+      console.warn(
+        `[wrangler] ${fallbackKey} is deprecated. Use ${alternateKey ?? key} instead.`,
+      );
+      if (!isValidCloudflareId(fallbackValue)) {
+        throw new Error(
+          `[wrangler] ${fallbackKey} must be a Cloudflare resource ID (UUID). ` +
+            `Received "${fallbackValue}".`,
+        );
+      }
+      return fallbackValue;
+    }
   }
+  if (!value) return null;
   if (!isValidCloudflareId(value)) {
     throw new Error(
       `[wrangler] ${alternateKey ?? key} must be a Cloudflare resource ID (UUID). ` +
@@ -34,9 +42,17 @@ const applyBindingIds = (config) => {
         (entry.database_id.includes("${DOMAINS_DB_ID}") ||
           entry.database_id.includes("${DOMAINS_DB_ID_NEW}"))
       ) {
+        const resolved = resolveBindingEnv("DOMAINS_DB_ID", "DOMAINS_DB_ID_NEW");
+        if (!resolved) {
+          console.warn(
+            "[wrangler] DOMAINS_DB_ID (or DOMAINS_DB_ID_NEW) is not set. " +
+              "Keeping the placeholder value; set a build-time environment variable to inject the Cloudflare resource ID.",
+          );
+          return entry;
+        }
         return {
           ...entry,
-          database_id: resolveRequiredEnv("DOMAINS_DB_ID", "DOMAINS_DB_ID_NEW"),
+          database_id: resolved,
         };
       }
       if (typeof entry?.database_id === "string" && !isValidCloudflareId(entry.database_id)) {
@@ -56,9 +72,34 @@ const applyBindingIds = (config) => {
         (entry.id.includes("${USER_SESSIONS_ACROSS_DOMAINS_ID}") ||
           entry.id.includes("${USER_SESSIONS_ACROSS_DOMAINS_ID_NEW}"))
       ) {
+        const resolved = resolveBindingEnv(
+          "USER_SESSIONS_ACROSS_DOMAINS_ID",
+          "USER_SESSIONS_ACROSS_DOMAINS_ID_NEW",
+        );
+        if (!resolved) {
+          console.warn(
+            "[wrangler] USER_SESSIONS_ACROSS_DOMAINS_ID (or USER_SESSIONS_ACROSS_DOMAINS_ID_NEW) is not set. " +
+              "Keeping the placeholder value; set a build-time environment variable to inject the Cloudflare resource ID.",
+          );
+          return entry;
+        }
         return {
           ...entry,
-          id: resolveRequiredEnv("USER_SESSIONS_ACROSS_DOMAINS_ID", "USER_SESSIONS_ACROSS_DOMAINS_ID_NEW"),
+          id: resolved,
+        };
+      }
+      if (typeof entry?.id === "string" && entry.id.includes("${KV_GROWTH_ID}")) {
+        const resolved = resolveBindingEnv("KV_GROWTH_ID", undefined, "kv_growth_id");
+        if (!resolved) {
+          console.warn(
+            "[wrangler] KV_GROWTH_ID is not set. " +
+              "Keeping the placeholder value; set a build-time environment variable to inject the Cloudflare resource ID.",
+          );
+          return entry;
+        }
+        return {
+          ...entry,
+          id: resolved,
         };
       }
       if (typeof entry?.id === "string" && !isValidCloudflareId(entry.id)) {
