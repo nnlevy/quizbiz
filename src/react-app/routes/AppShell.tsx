@@ -30,6 +30,15 @@ const primaryNavItems = [
   { to: "/about", label: "About" },
 ];
 
+const toolsNavItems = [
+  { to: "/calculators", label: "Calculators", reloadDocument: true },
+  { to: "/savings-plan", label: "Savings Plan", reloadDocument: true },
+  { to: "/leak-check", label: "Leak Check", reloadDocument: true },
+  { to: "/rebates", label: "Rebates", reloadDocument: true },
+  { to: "/guides", label: "Guides", reloadDocument: true },
+  { to: "/water-iq", label: "Water IQ Challenge" },
+];
+
 const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adsRemoved, setAdsRemoved] = useState(false);
@@ -135,6 +144,23 @@ const AppShell = ({ children }: AppShellProps) => {
                 <RouterLink to={item.to}>{item.label}</RouterLink>
               </li>
             ))}
+            <li className="ws-header-nav__dropdown">
+              <details>
+                <summary>Tools</summary>
+                <div className="ws-header-nav__menu" role="menu">
+                  {toolsNavItems.map((item) => (
+                    <RouterLink
+                      key={item.to}
+                      to={item.to}
+                      reloadDocument={item.reloadDocument}
+                      role="menuitem"
+                    >
+                      {item.label}
+                    </RouterLink>
+                  ))}
+                </div>
+              </details>
+            </li>
           </ul>
         </nav>
         <button
@@ -176,34 +202,13 @@ const AppShell = ({ children }: AppShellProps) => {
             <li>
               <span className="ws-nav-section">Tools</span>
               <ul className="ws-subnav">
-                <li>
-                  <RouterLink to="/calculators" reloadDocument>
-                    Calculators
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/savings-plan" reloadDocument>
-                    Savings Plan
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/leak-check" reloadDocument>
-                    Leak Check
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/rebates" reloadDocument>
-                    Rebates
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/guides" reloadDocument>
-                    Guides
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
-                </li>
+                {toolsNavItems.map((item) => (
+                  <li key={item.to}>
+                    <RouterLink to={item.to} reloadDocument={item.reloadDocument}>
+                      {item.label}
+                    </RouterLink>
+                  </li>
+                ))}
               </ul>
             </li>
             <li>
