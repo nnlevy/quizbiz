@@ -349,7 +349,7 @@ const Calculators = () => {
             </div>
             <div className="ws-calculators__segment-buttons">
               {householdSegments.map((option) => (
-                <button
+                <Button
                   key={option.id}
                   type="button"
                   onClick={() => setSegmentId(option.id)}
@@ -359,7 +359,7 @@ const Calculators = () => {
                 >
                   <span className="ws-calculators__segment-label">{option.label}</span>
                   <span className="ws-calculators__segment-note">{option.note}</span>
-                </button>
+                </Button>
               ))}
             </div>
             <div className="ws-calculators__stat-grid">
@@ -485,23 +485,23 @@ const Calculators = () => {
         </div>
 
         <div className="ws-calculators__insight-grid">
-          <div className="ws-calculators__card">
+          <div className="ws-card">
             <div className="ws-calculators__insight-content">
               <p className="ws-calculators__eyebrow">Smart Insights</p>
-              <h2 className="ws-calculators__card-title">
+              <h2 className="ws-card__title">
                 Unlock AI-backed recommendations instantly
               </h2>
               <p className="ws-calculators__lede">
                 Use one credit to generate a tailored insight from your calculator inputs.
               </p>
-              <button
+              <Button
                 type="button"
                 onClick={handleGenerateInsight}
                 disabled={aiLoading}
                 className="ws-calculators__insight-button"
               >
                 {aiLoading ? "Generating insight..." : "Get Personalized Insight"}
-              </button>
+              </Button>
               {aiError ? <p className="ws-calculators__error">{aiError}</p> : null}
             </div>
           </div>
@@ -511,9 +511,10 @@ const Calculators = () => {
               <div className="ws-calculators__insight-shell">
                 <p className="ws-calculators__insight-title">{aiInsight.insight}</p>
                 <p className="ws-calculators__insight-note">{aiInsight.reference}</p>
+                <Button type="button" className="ws-calculators__insight-cta">
                 <button type="button" className="ws-calculators__insight-cta">
                   {aiInsight.cta}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="ws-calculators__insight-empty">
