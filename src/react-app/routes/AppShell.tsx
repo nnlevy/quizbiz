@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
+import BottomNav from "../components/BottomNav";
 import ConsentBanner from "../components/ConsentBanner";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
@@ -19,6 +20,15 @@ import "./AppShell.css";
 type AppShellProps = {
   children: ReactNode;
 };
+
+const primaryNavItems = [
+  { to: "/analyze-water-bill", label: "Upload a bill" },
+  { to: "/manual-entry", label: "Manual entry" },
+  { to: "/find-water-provider", label: "Find provider" },
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/research", label: "Research plan" },
+  { to: "/about", label: "About" },
+];
 
 const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -118,6 +128,15 @@ const AppShell = ({ children }: AppShellProps) => {
             </button>
           )}
         </div>
+        <nav className="ws-header-nav" aria-label="Primary">
+          <ul>
+            {primaryNavItems.map((item) => (
+              <li key={item.to}>
+                <RouterLink to={item.to}>{item.label}</RouterLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
         <button
           className="ws-menu-button"
           type="button"
@@ -149,21 +168,11 @@ const AppShell = ({ children }: AppShellProps) => {
             Close
           </button>
           <ul>
-            <li>
-              <RouterLink to="/analyze-water-bill">Upload a bill</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/manual-entry">Manual entry</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/find-water-provider">Find provider</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/dashboard">Dashboard</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/research">Research plan</RouterLink>
-            </li>
+            {primaryNavItems.map((item) => (
+              <li key={item.to}>
+                <RouterLink to={item.to}>{item.label}</RouterLink>
+              </li>
+            ))}
             <li>
               <span className="ws-nav-section">Tools</span>
               <ul className="ws-subnav">
@@ -217,9 +226,6 @@ const AppShell = ({ children }: AppShellProps) => {
                 </li>
               </ul>
             </li>
-            <li>
-              <RouterLink to="/about">About</RouterLink>
-            </li>
           </ul>
         </nav>
       </div>
@@ -227,6 +233,8 @@ const AppShell = ({ children }: AppShellProps) => {
       <main className="ws-main" id="main-content" tabIndex={-1}>
         {children}
       </main>
+
+      <BottomNav items={primaryNavItems} currentPath={location.pathname} />
 
       {showAds && (
         <section className="ws-ads" aria-label="Sponsored">
