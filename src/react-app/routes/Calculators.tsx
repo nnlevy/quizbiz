@@ -1,6 +1,13 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { RouterLink, useLocation } from "./router";
+import { type ReactNode, useEffect, useMemo, useReducer, useState } from "react";
+import { useLocation } from "./router";
 import { useCredits } from "../context/CreditsContext";
+import BillAmountStep from "../components/calculators/steps/BillAmountStep";
+import DripsPerMinuteStep from "../components/calculators/steps/DripsPerMinuteStep";
+import FlowRateStep from "../components/calculators/steps/FlowRateStep";
+import HouseholdSizeStep from "../components/calculators/steps/HouseholdSizeStep";
+import LeakingFaucetsStep from "../components/calculators/steps/LeakingFaucetsStep";
+import ShowerDurationStep from "../components/calculators/steps/ShowerDurationStep";
+import SummaryStep from "../components/calculators/steps/SummaryStep";
 import "./Calculators.css";
 
 const GALLONS_PER_DRIP = 1 / 15140;
@@ -51,6 +58,24 @@ const Card = ({ title, children, id }: { title: string; children: ReactNode; id?
   </section>
 );
 
+type StepAction =
+  | { type: "NEXT"; maxIndex: number }
+  | { type: "BACK" }
+  | { type: "GO_TO"; index: number };
+
+const stepReducer = (state: number, action: StepAction) => {
+  switch (action.type) {
+    case "NEXT":
+      return Math.min(state + 1, action.maxIndex);
+    case "BACK":
+      return Math.max(state - 1, 0);
+    case "GO_TO":
+      return action.index;
+    default:
+      return state;
+  }
+};
+
 const Calculators = () => {
   const { credits, deduct } = useCredits();
   const location = useLocation();
@@ -96,12 +121,88 @@ const Calculators = () => {
 
   const showerGallons = showerDuration * flowRate;
   const bathGallons = 35;
-  const maxSessionGallons = Math.max(showerGallons, bathGallons);
   const showerCost = showerGallons * GALLON_COST;
   const bathCost = bathGallons * GALLON_COST;
 
   const savingsRate = Math.min(0.35, Math.max(0.12, 0.12 + householdSize * 0.02));
   const savingsEstimate = billAmount * savingsRate;
+
+  const tips = [
+    `Repairing ${leakingFaucets} faucet${leakingFaucets === 1 ? "" : "s"} could save about $${(
+      gallonsPerYear * GALLON_COST
+    ).toFixed(0)} per year.`,
+    `Trimming showers by 2 minutes could save roughly $${Math.max(
+      0,
+      2 * flowRate * GALLON_COST * 30,
+    ).toFixed(0)} per month.`,
+    `Households of ${householdSize} people often reach a ${(savingsRate * 100).toFixed(
+      0,
+    )}% reduction by upgrading fixtures.`,
+  ];
+
+  const steps = [
+    {
+      id: "drips",
+      title: "Leak Cost Estimator",
+      subtitle: "Track how quickly drips add up.",
+      content: <DripsPerMinuteStep value={dripsPerMinute} onChange={setDripsPerMinute} />,
+    },
+    {
+      id: "faucets",
+      title: "Leak Cost Estimator",
+      subtitle: "How many fixtures are leaking?",
+      content: <LeakingFaucetsStep value={leakingFaucets} onChange={setLeakingFaucets} />,
+    },
+    {
+      id: "shower-duration",
+      title: "Shower vs. Bath Comparator",
+      subtitle: "Measure your shower time.",
+      content: <ShowerDurationStep value={showerDuration} onChange={setShowerDuration} />,
+    },
+    {
+      id: "flow-rate",
+      title: "Shower vs. Bath Comparator",
+      subtitle: "Confirm your flow rate.",
+      content: <FlowRateStep value={flowRate} onChange={setFlowRate} />,
+    },
+    {
+      id: "bill-amount",
+      title: "Bill Savings Projector",
+      subtitle: "Add your latest bill.",
+      content: <BillAmountStep value={billAmount} onChange={setBillAmount} />,
+    },
+    {
+      id: "household",
+      title: "Bill Savings Projector",
+      subtitle: "How many people are in your home?",
+      content: <HouseholdSizeStep value={householdSize} onChange={setHouseholdSize} />,
+    },
+    {
+      id: "summary",
+      title: "Summary",
+      subtitle: "Review your savings opportunities.",
+      content: (
+        <SummaryStep
+          gallonsPerDay={gallonsPerDay}
+          gallonsPerMonth={gallonsPerMonth}
+          gallonsPerYear={gallonsPerYear}
+          showerGallons={showerGallons}
+          bathGallons={bathGallons}
+          showerCost={showerCost}
+          bathCost={bathCost}
+          savingsEstimate={savingsEstimate}
+          savingsRate={savingsRate}
+          tips={tips}
+        />
+      ),
+    },
+  ];
+
+  const [stepIndex, dispatch] = useReducer(stepReducer, 0);
+  const maxStepIndex = steps.length - 1;
+  const currentStep = steps[stepIndex];
+  const isSummaryStep = stepIndex === maxStepIndex;
+  const progressPercent = ((stepIndex + 1) / steps.length) * 100;
 
   const handleGenerateInsight = async () => {
     setAiError(null);
@@ -194,157 +295,66 @@ const Calculators = () => {
           </div>
         </header>
 
-        <div className="ws-calculators__grid">
-          <Card id="leak-estimator" title="Leak Cost Estimator">
-            <div className="ws-calculators__card-body">
-              <label className="ws-calculators__label">
-                <span>Drips per minute</span>
-                <input
-                  className="ws-calculators__range"
-                  type="range"
-                  min={0}
-                  max={180}
-                  value={dripsPerMinute}
-                  onChange={(event) => setDripsPerMinute(Number(event.target.value))}
-                />
-                <span className="ws-calculators__range-value">{dripsPerMinute} drips/min</span>
-              </label>
-              <label className="ws-calculators__label">
-                <span>Leaking faucets</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={leakingFaucets}
-                  onChange={(event) => setLeakingFaucets(Number(event.target.value))}
-                />
-              </label>
-              <div className="ws-calculators__summary">
-                <div className="ws-calculators__summary-row">
-                  <span>Daily waste</span>
-                  <span className="ws-calculators__summary-value">
-                    {gallonsPerDay.toFixed(1)} gal · ${(gallonsPerDay * GALLON_COST).toFixed(2)}
-                  </span>
-                </div>
-                <div className="ws-calculators__summary-row">
-                  <span>Monthly waste</span>
-                  <span className="ws-calculators__summary-value">
-                    {gallonsPerMonth.toFixed(0)} gal · ${(gallonsPerMonth * GALLON_COST).toFixed(2)}
-                  </span>
-                </div>
-                <div className="ws-calculators__summary-row">
-                  <span>Yearly waste</span>
-                  <span className="ws-calculators__summary-value">
-                    {gallonsPerYear.toFixed(0)} gal · ${(gallonsPerYear * GALLON_COST).toFixed(2)}
-                  </span>
-                </div>
+        <div className="ws-calculators__stepper">
+          <div className="ws-calculators__progress">
+            <div className="ws-calculators__progress-header">
+              <div>
+                <p className="ws-calculators__progress-label">Progress</p>
+                <p className="ws-calculators__progress-title">
+                  Step {stepIndex + 1} of {steps.length}
+                </p>
               </div>
+              <div className="ws-calculators__progress-count">
+                {currentStep.title}
+              </div>
+            </div>
+            <div className="ws-calculators__progress-track" aria-hidden="true">
+              <span
+                className="ws-calculators__progress-fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <ol className="ws-calculators__progress-steps">
+              {steps.map((step, index) => (
+                <li
+                  key={step.id}
+                  className={`ws-calculators__progress-step ${
+                    index === stepIndex ? "is-active" : ""
+                  } ${index < stepIndex ? "is-complete" : ""}`}
+                >
+                  <span className="ws-calculators__progress-index">{index + 1}</span>
+                  <span className="ws-calculators__progress-text">{step.subtitle}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <Card id={`step-${currentStep.id}`} title={currentStep.title}>
+            <div className="ws-calculators__card-body">
+              <p className="ws-calculators__step-subtitle">{currentStep.subtitle}</p>
+              {currentStep.content}
             </div>
           </Card>
 
-          <Card id="shower-bath" title="Shower vs. Bath Comparator">
-            <div className="ws-calculators__card-body">
-              <label className="ws-calculators__label">
-                <span>Shower duration</span>
-                <input
-                  className="ws-calculators__range"
-                  type="range"
-                  min={2}
-                  max={30}
-                  value={showerDuration}
-                  onChange={(event) => setShowerDuration(Number(event.target.value))}
-                />
-                <span className="ws-calculators__range-value">{showerDuration} minutes</span>
-              </label>
-              <label className="ws-calculators__label">
-                <span>Flow rate (GPM)</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  step={0.1}
-                  min={1}
-                  max={5}
-                  value={flowRate}
-                  onChange={(event) => setFlowRate(Number(event.target.value))}
-                />
-              </label>
-              <div className="ws-calculators__summary">
-                <div className="ws-calculators__divider-labels">
-                  <span>Cost per session</span>
-                  <span>${GALLON_COST.toFixed(2)} per gallon</span>
-                </div>
-                <div className="ws-calculators__summary">
-                  <div className="ws-calculators__summary-row">
-                    <span>Shower</span>
-                    <span className="ws-calculators__summary-value">
-                      {showerGallons.toFixed(1)} gal · ${showerCost.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="ws-calculators__bar-track">
-                    <div
-                      className="ws-calculators__bar-fill is-sky"
-                      style={{ width: `${(showerGallons / maxSessionGallons) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="ws-calculators__summary">
-                  <div className="ws-calculators__summary-row">
-                    <span>Bath</span>
-                    <span className="ws-calculators__summary-value">
-                      {bathGallons.toFixed(1)} gal · ${bathCost.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="ws-calculators__bar-track">
-                    <div
-                      className="ws-calculators__bar-fill is-emerald"
-                      style={{ width: `${(bathGallons / maxSessionGallons) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card id="bill-savings" title="Bill Savings Projector">
-            <div className="ws-calculators__card-body">
-              <label className="ws-calculators__label">
-                <span>Current bill amount</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  min={0}
-                  value={billAmount}
-                  onChange={(event) => setBillAmount(Number(event.target.value))}
-                />
-              </label>
-              <label className="ws-calculators__label">
-                <span>Household size</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  min={1}
-                  value={householdSize}
-                  onChange={(event) => setHouseholdSize(Number(event.target.value))}
-                />
-              </label>
-              <div className="ws-calculators__savings">
-                <p className="ws-calculators__savings-label">Conservative</p>
-                <p className="ws-calculators__savings-value">
-                  ${savingsEstimate.toFixed(0)} saved per month
-                </p>
-                <p className="ws-calculators__savings-note">
-                  Estimated {(savingsRate * 100).toFixed(0)}% usage reduction.
-                </p>
-              </div>
-              <RouterLink
-                className="ws-calculators__link-button"
-                to="/dashboard"
+          <div className="ws-calculators__step-actions">
+            <button
+              type="button"
+              className="ws-calculators__ghost-button"
+              onClick={() => dispatch({ type: "BACK" })}
+              disabled={stepIndex === 0}
+            >
+              Back
+            </button>
+            {!isSummaryStep ? (
+              <button
+                type="button"
+                className="ws-calculators__primary-button"
+                onClick={() => dispatch({ type: "NEXT", maxIndex: maxStepIndex })}
               >
-                Start Savings Plan
-              </RouterLink>
-            </div>
-          </Card>
+                {stepIndex === maxStepIndex - 1 ? "View summary" : "Next"}
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="ws-calculators__insight-grid">
