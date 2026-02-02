@@ -1,6 +1,13 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { RouterLink, useLocation } from "./router";
 import { useCredits } from "../context/CreditsContext";
+import BillAmountStep from "../components/calculators/steps/BillAmountStep";
+import FlowRateStep from "../components/calculators/steps/FlowRateStep";
+import HouseholdSizeStep from "../components/calculators/steps/HouseholdSizeStep";
+import LeakDripsStep from "../components/calculators/steps/LeakDripsStep";
+import LeakFaucetsStep from "../components/calculators/steps/LeakFaucetsStep";
+import ShowerDurationStep from "../components/calculators/steps/ShowerDurationStep";
+import SummaryStep from "../components/calculators/steps/SummaryStep";
 import "./Calculators.css";
 
 const GALLONS_PER_DRIP = 1 / 15140;
@@ -30,26 +37,41 @@ const householdSegments = [
   },
 ];
 
+const calculatorSteps = [
+  { id: "drips", title: "Leak rate" },
+  { id: "faucets", title: "Leaking faucets" },
+  { id: "shower", title: "Shower duration" },
+  { id: "flow", title: "Flow rate" },
+  { id: "bill", title: "Monthly bill" },
+  { id: "size", title: "Household size" },
+  { id: "summary", title: "Summary" },
+] as const;
+
+type StepId = (typeof calculatorSteps)[number]["id"];
+
+type StepAction =
+  | { type: "NEXT" }
+  | { type: "BACK" }
+  | { type: "GOTO"; index: number };
+
+const stepReducer = (state: number, action: StepAction) => {
+  switch (action.type) {
+    case "NEXT":
+      return Math.min(state + 1, calculatorSteps.length - 1);
+    case "BACK":
+      return Math.max(0, state - 1);
+    case "GOTO":
+      return Math.min(Math.max(action.index, 0), calculatorSteps.length - 1);
+    default:
+      return state;
+  }
+};
+
 type AiInsight = {
   insight: string;
   reference: string;
   cta: string;
 };
-
-const Card = ({ title, children, id }: { title: string; children: ReactNode; id?: string }) => (
-  <section
-    id={id}
-    aria-labelledby={id ? `${id}-title` : undefined}
-    className="ws-calculators__card"
-  >
-    <div className="flex items-center justify-between">
-      <h3 id={id ? `${id}-title` : undefined} className="ws-calculators__card-title">
-        {title}
-      </h3>
-    </div>
-    {children}
-  </section>
-);
 
 const Calculators = () => {
   const { credits, deduct } = useCredits();
@@ -65,6 +87,7 @@ const Calculators = () => {
   const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [stepIndex, dispatch] = useReducer(stepReducer, 0);
 
   const segment = useMemo(
     () => householdSegments.find((option) => option.id === segmentId) ?? householdSegments[1],
@@ -89,7 +112,6 @@ const Calculators = () => {
   }, [location.search]);
 
   const dripsPerDay = dripsPerMinute * 60 * 24 * leakingFaucets;
-  // USGS reference: 15,140 drips = 1 gallon. Convert drips/day into gallons/day.
   const gallonsPerDay = dripsPerDay * GALLONS_PER_DRIP;
   const gallonsPerMonth = gallonsPerDay * 30;
   const gallonsPerYear = gallonsPerDay * 365;
@@ -110,7 +132,6 @@ const Calculators = () => {
       setAiError("You are out of credits. Add more to unlock AI insights.");
       return;
     }
-    // Credit check + deduction happens before the mocked AI call.
     const nextCredits = deduct(1);
     if (nextCredits == null) {
       setAiError("You are out of credits. Add more to unlock AI insights.");
@@ -141,6 +162,49 @@ const Calculators = () => {
       setAiError(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const activeStep = calculatorSteps[stepIndex];
+  const isFirstStep = stepIndex === 0;
+  const isLastStep = stepIndex === calculatorSteps.length - 1;
+
+  const handleBillAmountChange = (nextValue: number) => {
+    setBillAmount(nextValue);
+    setBillOverride(true);
+  };
+
+  const renderStep = (step: StepId) => {
+    switch (step) {
+      case "drips":
+        return <LeakDripsStep value={dripsPerMinute} onChange={setDripsPerMinute} />;
+      case "faucets":
+        return <LeakFaucetsStep value={leakingFaucets} onChange={setLeakingFaucets} />;
+      case "shower":
+        return <ShowerDurationStep value={showerDuration} onChange={setShowerDuration} />;
+      case "flow":
+        return <FlowRateStep value={flowRate} onChange={setFlowRate} />;
+      case "bill":
+        return <BillAmountStep value={billAmount} onChange={handleBillAmountChange} />;
+      case "size":
+        return <HouseholdSizeStep value={householdSize} onChange={setHouseholdSize} />;
+      case "summary":
+        return (
+          <SummaryStep
+            gallonsPerDay={gallonsPerDay}
+            gallonsPerMonth={gallonsPerMonth}
+            gallonsPerYear={gallonsPerYear}
+            showerGallons={showerGallons}
+            showerCost={showerCost}
+            bathGallons={bathGallons}
+            bathCost={bathCost}
+            maxSessionGallons={maxSessionGallons}
+            savingsEstimate={savingsEstimate}
+            savingsRate={savingsRate}
+          />
+        );
+      default:
+        return null;
     }
   };
 
@@ -194,158 +258,53 @@ const Calculators = () => {
           </div>
         </header>
 
-        <div className="ws-calculators__grid">
-          <Card id="leak-estimator" title="Leak Cost Estimator">
-            <div className="ws-calculators__card-body">
-              <label className="ws-calculators__label">
-                <span>Drips per minute</span>
-                <input
-                  className="ws-calculators__range"
-                  type="range"
-                  min={0}
-                  max={180}
-                  value={dripsPerMinute}
-                  onChange={(event) => setDripsPerMinute(Number(event.target.value))}
-                />
-                <span className="ws-calculators__range-value">{dripsPerMinute} drips/min</span>
-              </label>
-              <label className="ws-calculators__label">
-                <span>Leaking faucets</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={leakingFaucets}
-                  onChange={(event) => setLeakingFaucets(Number(event.target.value))}
-                />
-              </label>
-              <div className="ws-calculators__summary">
-                <div className="ws-calculators__summary-row">
-                  <span>Daily waste</span>
-                  <span className="ws-calculators__summary-value">
-                    {gallonsPerDay.toFixed(1)} gal · ${(gallonsPerDay * GALLON_COST).toFixed(2)}
-                  </span>
-                </div>
-                <div className="ws-calculators__summary-row">
-                  <span>Monthly waste</span>
-                  <span className="ws-calculators__summary-value">
-                    {gallonsPerMonth.toFixed(0)} gal · ${(gallonsPerMonth * GALLON_COST).toFixed(2)}
-                  </span>
-                </div>
-                <div className="ws-calculators__summary-row">
-                  <span>Yearly waste</span>
-                  <span className="ws-calculators__summary-value">
-                    {gallonsPerYear.toFixed(0)} gal · ${(gallonsPerYear * GALLON_COST).toFixed(2)}
-                  </span>
-                </div>
+        <section className="ws-calculators__stepper">
+          <div className="ws-calculators__card">
+            <div className="ws-calculators__step-header">
+              <div>
+                <p className="ws-calculators__progress-label">
+                  Step {stepIndex + 1} of {calculatorSteps.length}
+                </p>
+                <h2 className="ws-calculators__step-title">{activeStep.title}</h2>
+              </div>
+              <div className="ws-calculators__progress-dots">
+                {calculatorSteps.map((step, index) => (
+                  <button
+                    key={step.id}
+                    type="button"
+                    className={`ws-calculators__progress-dot ${
+                      index === stepIndex ? "is-active" : ""
+                    }`}
+                    onClick={() => dispatch({ type: "GOTO", index })}
+                    aria-label={`Go to step ${index + 1}`}
+                  />
+                ))}
               </div>
             </div>
-          </Card>
-
-          <Card id="shower-bath" title="Shower vs. Bath Comparator">
-            <div className="ws-calculators__card-body">
-              <label className="ws-calculators__label">
-                <span>Shower duration</span>
-                <input
-                  className="ws-calculators__range"
-                  type="range"
-                  min={2}
-                  max={30}
-                  value={showerDuration}
-                  onChange={(event) => setShowerDuration(Number(event.target.value))}
-                />
-                <span className="ws-calculators__range-value">{showerDuration} minutes</span>
-              </label>
-              <label className="ws-calculators__label">
-                <span>Flow rate (GPM)</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  step={0.1}
-                  min={1}
-                  max={5}
-                  value={flowRate}
-                  onChange={(event) => setFlowRate(Number(event.target.value))}
-                />
-              </label>
-              <div className="ws-calculators__summary">
-                <div className="ws-calculators__divider-labels">
-                  <span>Cost per session</span>
-                  <span>${GALLON_COST.toFixed(2)} per gallon</span>
-                </div>
-                <div className="ws-calculators__summary">
-                  <div className="ws-calculators__summary-row">
-                    <span>Shower</span>
-                    <span className="ws-calculators__summary-value">
-                      {showerGallons.toFixed(1)} gal · ${showerCost.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="ws-calculators__bar-track">
-                    <div
-                      className="ws-calculators__bar-fill is-sky"
-                      style={{ width: `${(showerGallons / maxSessionGallons) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="ws-calculators__summary">
-                  <div className="ws-calculators__summary-row">
-                    <span>Bath</span>
-                    <span className="ws-calculators__summary-value">
-                      {bathGallons.toFixed(1)} gal · ${bathCost.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="ws-calculators__bar-track">
-                    <div
-                      className="ws-calculators__bar-fill is-emerald"
-                      style={{ width: `${(bathGallons / maxSessionGallons) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div className="ws-calculators__card-body ws-calculators__step-body">
+              {renderStep(activeStep.id)}
             </div>
-          </Card>
-
-          <Card id="bill-savings" title="Bill Savings Projector">
-            <div className="ws-calculators__card-body">
-              <label className="ws-calculators__label">
-                <span>Current bill amount</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  min={0}
-                  value={billAmount}
-                  onChange={(event) => setBillAmount(Number(event.target.value))}
-                />
-              </label>
-              <label className="ws-calculators__label">
-                <span>Household size</span>
-                <input
-                  className="ws-calculators__input"
-                  type="number"
-                  min={1}
-                  value={householdSize}
-                  onChange={(event) => setHouseholdSize(Number(event.target.value))}
-                />
-              </label>
-              <div className="ws-calculators__savings">
-                <p className="ws-calculators__savings-label">Conservative</p>
-                <p className="ws-calculators__savings-value">
-                  ${savingsEstimate.toFixed(0)} saved per month
-                </p>
-                <p className="ws-calculators__savings-note">
-                  Estimated {(savingsRate * 100).toFixed(0)}% usage reduction.
-                </p>
-              </div>
-              <RouterLink
-                className="ws-calculators__link-button"
-                to="/dashboard"
+            <div className="ws-calculators__step-actions">
+              <button
+                type="button"
+                className="ws-calculators__step-button is-secondary"
+                onClick={() => dispatch({ type: "BACK" })}
+                disabled={isFirstStep}
               >
-                Start Savings Plan
-              </RouterLink>
+                Back
+              </button>
+              {!isLastStep ? (
+                <button
+                  type="button"
+                  className="ws-calculators__step-button"
+                  onClick={() => dispatch({ type: "NEXT" })}
+                >
+                  {stepIndex === calculatorSteps.length - 2 ? "View Summary" : "Next"}
+                </button>
+              ) : null}
             </div>
-          </Card>
-        </div>
+          </div>
+        </section>
 
         <div className="ws-calculators__insight-grid">
           <div className="ws-calculators__card">
@@ -369,17 +328,12 @@ const Calculators = () => {
             </div>
           </div>
 
-          <div
-            className={`ws-calculators__insight-card ${aiInsight ? "is-filled" : ""}`}
-          >
+          <div className={`ws-calculators__insight-card ${aiInsight ? "is-filled" : ""}`}>
             {aiInsight ? (
               <div className="ws-calculators__insight-shell">
                 <p className="ws-calculators__insight-title">{aiInsight.insight}</p>
                 <p className="ws-calculators__insight-note">{aiInsight.reference}</p>
-                <button
-                  type="button"
-                  className="ws-calculators__insight-cta"
-                >
+                <button type="button" className="ws-calculators__insight-cta">
                   {aiInsight.cta}
                 </button>
               </div>
@@ -393,6 +347,10 @@ const Calculators = () => {
             )}
           </div>
         </div>
+
+        <RouterLink className="ws-calculators__link-button" to="/dashboard">
+          Start Savings Plan
+        </RouterLink>
       </div>
     </div>
   );
