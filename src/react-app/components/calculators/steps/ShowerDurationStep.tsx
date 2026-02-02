@@ -6,7 +6,6 @@ const ShowerDurationStep = ({
 }: {
   value: number;
   onChange: (nextValue: number) => void;
-  onChange: (value: number) => void;
 }) => (
   <label className="ws-calculators__label">
     <span>Shower duration</span>
@@ -19,7 +18,6 @@ const ShowerDurationStep = ({
       onChange={(event: ChangeEvent<HTMLInputElement>) =>
         onChange(Number(event.target.value))
       }
-      onChange={(event) => onChange(Number(event.target.value))}
     />
     <span className="ws-calculators__range-value">{value} minutes</span>
   </label>

@@ -202,91 +202,6 @@
 .ws-calculators__progress-dot.is-active {
   background: var(--ws-color-sky-600);
   transform: scale(1.15);
-.ws-calculators__progress-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ws-calculators__progress-label {
-  font-size: var(--font-size-1);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--ws-color-slate-500);
-  margin: 0;
-}
-
-.ws-calculators__progress-title {
-  font-size: var(--font-size-4);
-  font-weight: 600;
-  color: var(--ws-color-ink-950);
-  margin: 0;
-}
-
-.ws-calculators__progress-count {
-  font-size: var(--font-size-2);
-  color: var(--ws-color-slate-600);
-}
-
-.ws-calculators__progress-track {
-  width: 100%;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--ws-color-slate-200);
-  overflow: hidden;
-}
-
-.ws-calculators__progress-fill {
-  display: block;
-  height: 100%;
-  background: var(--ws-color-sky-600);
-  border-radius: inherit;
-  transition: width 200ms ease;
-}
-
-.ws-calculators__progress-steps {
-  display: grid;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ws-calculators__progress-step {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem;
-  align-items: start;
-  font-size: var(--font-size-2);
-  color: var(--ws-color-slate-600);
-}
-
-.ws-calculators__progress-step.is-active {
-  color: var(--ws-color-ink-900);
-  font-weight: 600;
-}
-
-.ws-calculators__progress-step.is-complete .ws-calculators__progress-index {
-  background: var(--ws-color-emerald-600);
-  color: var(--ws-color-surface);
-  border-color: transparent;
-}
-
-.ws-calculators__progress-index {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  border: 1px solid var(--ws-color-slate-300);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-1);
-  font-weight: 600;
-  background: var(--ws-color-surface);
-}
-
-.ws-calculators__progress-text {
-  margin-top: 0.25rem;
 }
 
 .ws-calculators__card {
@@ -317,10 +232,6 @@
 
 .ws-calculators__step-body {
   padding-top: 0.5rem;
-.ws-calculators__step-subtitle {
-  margin: 0;
-  color: var(--ws-color-slate-600);
-  font-size: var(--font-size-2);
 }
 
 .ws-calculators__step-actions {
@@ -335,10 +246,6 @@
   border: none;
   background: var(--ws-color-sky-600);
   color: var(--ws-color-surface);
-.ws-calculators__primary-button,
-.ws-calculators__ghost-button {
-  min-height: 44px;
-  border-radius: 999px;
   padding: 0.5rem 1.5rem;
   font-size: var(--font-size-2);
   font-weight: 600;
@@ -356,32 +263,6 @@
   border: none;
 }
 
-.ws-calculators__primary-button {
-  background: var(--ws-color-sky-600);
-  color: var(--ws-color-surface);
-  transition: background 150ms ease;
-}
-
-.ws-calculators__primary-button:hover {
-  background: var(--ws-color-sky-700);
-}
-
-.ws-calculators__ghost-button {
-  background: transparent;
-  color: var(--ws-color-ink-900);
-  border: 1px solid var(--ws-color-slate-300);
-  transition: border-color 150ms ease, color 150ms ease;
-}
-
-.ws-calculators__ghost-button:hover:not(:disabled) {
-  border-color: var(--ws-color-slate-400);
-  color: var(--ws-color-ink-950);
-}
-
-.ws-calculators__ghost-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .ws-calculators__label {
   display: flex;
@@ -405,15 +286,11 @@
 }
 
 .ws-calculators__summary-cards {
-.ws-calculators__summary-grid {
   display: grid;
   gap: 1rem;
 }
 
 .ws-calculators__summary-card {
-  border-radius: 0.75rem;
-  border: 1px solid var(--ws-color-slate-300);
-  background: var(--ws-color-slate-100);
   border-radius: 0.9rem;
   border: 1px solid var(--ws-color-slate-200);
   background: var(--ws-color-surface);
@@ -457,8 +334,12 @@
 }
 
 .ws-calculators__summary-tip-list {
-.ws-calculators__summary-card--tips {
-  background: var(--ws-color-slate-50);
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  color: var(--ws-color-slate-700);
+  font-size: var(--font-size-2);
 }
 
 .ws-calculators__summary-card-title {
@@ -468,44 +349,6 @@
   color: var(--ws-color-ink-950);
 }
 
-.ws-calculators__summary-metric {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--font-size-2);
-  color: var(--ws-color-slate-700);
-}
-
-.ws-calculators__tips {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: grid;
-  gap: 0.5rem;
-  color: var(--ws-color-slate-700);
-  font-size: var(--font-size-2);
-}
-
-.ws-calculators__tip {
-  line-height: 1.4;
-}
-
-.ws-calculators__summary-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ws-calculators__summary-value {
-  font-weight: 600;
-  color: var(--ws-color-ink-950);
-}
-
-.ws-calculators__divider-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--font-size-1);
-  color: var(--ws-color-slate-600);
-}
 
 .ws-calculators__bar-track {
   height: 0.75rem;
@@ -697,14 +540,12 @@
   }
 
   .ws-calculators__step-header {
-  .ws-calculators__progress-header {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
   }
 
   .ws-calculators__summary-cards {
-  .ws-calculators__summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -719,7 +560,7 @@
     align-items: stretch;
   }
 
-  .ws-calculators__summary-grid {
+  .ws-calculators__summary-cards {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

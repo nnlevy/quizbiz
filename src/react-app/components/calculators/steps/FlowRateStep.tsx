@@ -6,7 +6,6 @@ const FlowRateStep = ({
 }: {
   value: number;
   onChange: (nextValue: number) => void;
-  onChange: (value: number) => void;
 }) => (
   <label className="ws-calculators__label">
     <span>Flow rate (GPM)</span>
@@ -20,7 +19,6 @@ const FlowRateStep = ({
       onChange={(event: ChangeEvent<HTMLInputElement>) =>
         onChange(Number(event.target.value))
       }
-      onChange={(event) => onChange(Number(event.target.value))}
     />
   </label>
 );

@@ -6,7 +6,6 @@ const HouseholdSizeStep = ({
 }: {
   value: number;
   onChange: (nextValue: number) => void;
-  onChange: (value: number) => void;
 }) => (
   <label className="ws-calculators__label">
     <span>Household size</span>
@@ -18,7 +17,6 @@ const HouseholdSizeStep = ({
       onChange={(event: ChangeEvent<HTMLInputElement>) =>
         onChange(Number(event.target.value))
       }
-      onChange={(event) => onChange(Number(event.target.value))}
     />
   </label>
 );
