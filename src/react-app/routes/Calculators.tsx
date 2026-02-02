@@ -1,6 +1,10 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RouterLink, useLocation } from "./router";
 import { useCredits } from "../context/CreditsContext";
+import Button from "../components/Button";
+import Card from "../components/Card";
+import Input from "../components/Input";
+import Slider from "../components/Slider";
 import "./Calculators.css";
 
 const GALLONS_PER_DRIP = 1 / 15140;
@@ -35,21 +39,6 @@ type AiInsight = {
   reference: string;
   cta: string;
 };
-
-const Card = ({ title, children, id }: { title: string; children: ReactNode; id?: string }) => (
-  <section
-    id={id}
-    aria-labelledby={id ? `${id}-title` : undefined}
-    className="ws-calculators__card"
-  >
-    <div className="flex items-center justify-between">
-      <h3 id={id ? `${id}-title` : undefined} className="ws-calculators__card-title">
-        {title}
-      </h3>
-    </div>
-    {children}
-  </section>
-);
 
 const Calculators = () => {
   const { credits, deduct } = useCredits();
@@ -168,7 +157,7 @@ const Calculators = () => {
             </div>
             <div className="ws-calculators__segment-buttons">
               {householdSegments.map((option) => (
-                <button
+                <Button
                   key={option.id}
                   type="button"
                   onClick={() => setSegmentId(option.id)}
@@ -178,7 +167,7 @@ const Calculators = () => {
                 >
                   <span className="ws-calculators__segment-label">{option.label}</span>
                   <span className="ws-calculators__segment-note">{option.note}</span>
-                </button>
+                </Button>
               ))}
             </div>
             <div className="ws-calculators__stat-grid">
@@ -196,12 +185,10 @@ const Calculators = () => {
 
         <div className="ws-calculators__grid">
           <Card id="leak-estimator" title="Leak Cost Estimator">
-            <div className="ws-calculators__card-body">
+            <div className="ws-card__body">
               <label className="ws-calculators__label">
                 <span>Drips per minute</span>
-                <input
-                  className="ws-calculators__range"
-                  type="range"
+                <Slider
                   min={0}
                   max={180}
                   value={dripsPerMinute}
@@ -211,8 +198,7 @@ const Calculators = () => {
               </label>
               <label className="ws-calculators__label">
                 <span>Leaking faucets</span>
-                <input
-                  className="ws-calculators__input"
+                <Input
                   type="number"
                   min={1}
                   max={50}
@@ -244,12 +230,10 @@ const Calculators = () => {
           </Card>
 
           <Card id="shower-bath" title="Shower vs. Bath Comparator">
-            <div className="ws-calculators__card-body">
+            <div className="ws-card__body">
               <label className="ws-calculators__label">
                 <span>Shower duration</span>
-                <input
-                  className="ws-calculators__range"
-                  type="range"
+                <Slider
                   min={2}
                   max={30}
                   value={showerDuration}
@@ -259,8 +243,7 @@ const Calculators = () => {
               </label>
               <label className="ws-calculators__label">
                 <span>Flow rate (GPM)</span>
-                <input
-                  className="ws-calculators__input"
+                <Input
                   type="number"
                   step={0.1}
                   min={1}
@@ -307,11 +290,10 @@ const Calculators = () => {
           </Card>
 
           <Card id="bill-savings" title="Bill Savings Projector">
-            <div className="ws-calculators__card-body">
+            <div className="ws-card__body">
               <label className="ws-calculators__label">
                 <span>Current bill amount</span>
-                <input
-                  className="ws-calculators__input"
+                <Input
                   type="number"
                   min={0}
                   value={billAmount}
@@ -320,8 +302,7 @@ const Calculators = () => {
               </label>
               <label className="ws-calculators__label">
                 <span>Household size</span>
-                <input
-                  className="ws-calculators__input"
+                <Input
                   type="number"
                   min={1}
                   value={householdSize}
@@ -337,10 +318,7 @@ const Calculators = () => {
                   Estimated {(savingsRate * 100).toFixed(0)}% usage reduction.
                 </p>
               </div>
-              <RouterLink
-                className="ws-calculators__link-button"
-                to="/dashboard"
-              >
+              <RouterLink className="ws-calculators__link-button" to="/dashboard">
                 Start Savings Plan
               </RouterLink>
             </div>
@@ -348,23 +326,23 @@ const Calculators = () => {
         </div>
 
         <div className="ws-calculators__insight-grid">
-          <div className="ws-calculators__card">
+          <div className="ws-card">
             <div className="ws-calculators__insight-content">
               <p className="ws-calculators__eyebrow">Smart Insights</p>
-              <h2 className="ws-calculators__card-title">
+              <h2 className="ws-card__title">
                 Unlock AI-backed recommendations instantly
               </h2>
               <p className="ws-calculators__lede">
                 Use one credit to generate a tailored insight from your calculator inputs.
               </p>
-              <button
+              <Button
                 type="button"
                 onClick={handleGenerateInsight}
                 disabled={aiLoading}
                 className="ws-calculators__insight-button"
               >
                 {aiLoading ? "Generating insight..." : "Get Personalized Insight"}
-              </button>
+              </Button>
               {aiError ? <p className="ws-calculators__error">{aiError}</p> : null}
             </div>
           </div>
@@ -376,12 +354,9 @@ const Calculators = () => {
               <div className="ws-calculators__insight-shell">
                 <p className="ws-calculators__insight-title">{aiInsight.insight}</p>
                 <p className="ws-calculators__insight-note">{aiInsight.reference}</p>
-                <button
-                  type="button"
-                  className="ws-calculators__insight-cta"
-                >
+                <Button type="button" className="ws-calculators__insight-cta">
                   {aiInsight.cta}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="ws-calculators__insight-empty">

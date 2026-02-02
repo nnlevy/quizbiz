@@ -1,0 +1,25 @@
+.ws-ui-button {
+  min-height: var(--ws-control-height, 44px);
+  border-radius: var(--ws-control-radius, 999px);
+  border: 1px solid var(--ws-button-border, transparent);
+  background: var(--ws-button-bg, var(--ws-color-slate-900));
+  color: var(--ws-button-color, var(--ws-color-surface));
+  padding: var(--ws-button-padding, 0.5rem 1.25rem);
+  font-size: var(--ws-control-font-size, var(--font-size-2));
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+
+.ws-ui-button:hover {
+  background: var(--ws-button-hover-bg, var(--ws-button-bg, var(--ws-color-slate-900)));
+}
+
+.ws-ui-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
