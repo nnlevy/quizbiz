@@ -2040,6 +2040,9 @@ function layout(options: {
     `
     : "";
   const badgeLink = `<a class="nav-link nav-badge" href="/water-iq" data-water-iq-badge>Water IQ Challenge</a>`;
+  const toolsLinks = homeownerDropdownLinks
+    .map((link) => `<a class="nav-link" href="${link.href}">${link.label}</a>`)
+    .join("");
   const navLinks = useEjectNav
     ? waterEjectNavLinks
     : [
@@ -2049,18 +2052,6 @@ function layout(options: {
           dropdown: true,
         },
       ];
-  const toolsDropdown = `
-    <div class="nav-dropdown">
-      <button type="button" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
-        Tools &amp; More <span class="dropdown-caret">▼</span>
-      </button>
-      <div class="dropdown-panel" id="tools-dropdown">
-        ${homeownerDropdownLinks
-          .map((link) => `<a class="dropdown-link" href="${link.href}">${link.label}</a>`)
-          .join("")}
-      </div>
-    </div>
-  `;
   const modeBar = `
     <div class="mode-bar" role="region" aria-label="Mode switcher">
       <div class="mode-bar__content">
@@ -2241,24 +2232,36 @@ function layout(options: {
               </a>
             </div>
             <nav class="nav-links" aria-label="Main navigation">
-              ${
-                useEjectNav
-                  ? navLinks
-                      .map(
-                        (link) =>
-                          `<a class="nav-link" href="${link.href}"${
-                            link.href === canonicalPath ? ' aria-current="page"' : ""
-                          }>${link.label}</a>`,
-                      )
-                      .join("")
-                  : toolsDropdown
-              }
-              ${badgeLink}
-              ${
-                useEjectNav
-                  ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
-                  : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
-              }
+              <details class="nav-menu">
+                <summary class="nav-menu__toggle">
+                  <span class="sr-only">Open navigation menu</span>
+                  <span class="nav-menu__icon" aria-hidden="true"></span>
+                </summary>
+                <div class="nav-menu__panel">
+                  <div class="nav-menu__links">
+                    ${
+                      useEjectNav
+                        ? navLinks
+                            .map(
+                              (link) =>
+                                `<a class="nav-link" href="${link.href}"${
+                                  link.href === canonicalPath ? ' aria-current="page"' : ""
+                                }>${link.label}</a>`,
+                            )
+                            .join("")
+                        : toolsLinks
+                    }
+                    ${badgeLink}
+                  </div>
+                  <div class="nav-menu__cta">
+                    ${
+                      useEjectNav
+                        ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
+                        : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
+                    }
+                  </div>
+                </div>
+              </details>
             </nav>
           </div>
           ${modeBar}
