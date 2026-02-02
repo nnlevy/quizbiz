@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { RouterLink, useLocation } from "./router";
 import { useCredits } from "../context/CreditsContext";
+import "./Calculators.css";
 
 const GALLONS_PER_DRIP = 1 / 15140;
 const GALLON_COST = 0.01;
@@ -39,10 +40,10 @@ const Card = ({ title, children, id }: { title: string; children: ReactNode; id?
   <section
     id={id}
     aria-labelledby={id ? `${id}-title` : undefined}
-    className="flex h-full flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+    className="ws-calculators__card"
   >
     <div className="flex items-center justify-between">
-      <h3 id={id ? `${id}-title` : undefined} className="text-lg font-semibold text-slate-900">
+      <h3 id={id ? `${id}-title` : undefined} className="ws-calculators__card-title">
         {title}
       </h3>
     </div>
@@ -144,80 +145,74 @@ const Calculators = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">
-              Calculators Hub
-            </p>
-            <h1 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
-              See what smarter water habits can unlock
-            </h1>
-            <p className="max-w-2xl text-base text-slate-600">
+    <div className="ws-calculators">
+      <div className="ws-calculators__container">
+        <header className="ws-calculators__header">
+          <div className="ws-calculators__hero">
+            <p className="ws-calculators__eyebrow">Calculators Hub</p>
+            <h1 className="ws-calculators__title">See what smarter water habits can unlock</h1>
+            <p className="ws-calculators__lede">
               National averages from EPA/USGS benchmarks prefill the calculators, so you can quickly
               compare your household against typical U.S. usage and uncover savings.
             </p>
           </div>
-          <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="ws-calculators__segment-card">
+            <div className="ws-calculators__segment-header">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Household profile</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="ws-calculators__segment-title">Household profile</h2>
+                <p className="ws-calculators__segment-subtitle">
                   Choose your segment to update the defaults and benchmarks.
                 </p>
               </div>
-              <div className="text-sm text-slate-500">Credits available: {credits}</div>
+              <div className="ws-calculators__credits">Credits available: {credits}</div>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="ws-calculators__segment-buttons">
               {householdSegments.map((option) => (
                 <button
                   key={option.id}
                   type="button"
                   onClick={() => setSegmentId(option.id)}
-                  className={`min-h-[44px] flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                    segmentId === option.id
-                      ? "border-sky-500 bg-sky-50 text-sky-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  className={`ws-calculators__segment-button ${
+                    segmentId === option.id ? "is-active" : ""
                   }`}
                 >
-                  <span className="block">{option.label}</span>
-                  <span className="block text-xs font-normal text-slate-400">{option.note}</span>
+                  <span className="ws-calculators__segment-label">{option.label}</span>
+                  <span className="ws-calculators__segment-note">{option.note}</span>
                 </button>
               ))}
             </div>
-            <div className="grid gap-4 text-sm text-slate-600 sm:grid-cols-2">
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Avg Bill</p>
-                <p className="text-lg font-semibold text-slate-900">${segment.avgBill}/mo</p>
+            <div className="ws-calculators__stat-grid">
+              <div className="ws-calculators__stat-card">
+                <p className="ws-calculators__stat-label">Avg Bill</p>
+                <p className="ws-calculators__stat-value">${segment.avgBill}/mo</p>
               </div>
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Household Size</p>
-                <p className="text-lg font-semibold text-slate-900">{segment.householdSize} people</p>
+              <div className="ws-calculators__stat-card">
+                <p className="ws-calculators__stat-label">Household Size</p>
+                <p className="ws-calculators__stat-value">{segment.householdSize} people</p>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="ws-calculators__grid">
           <Card id="leak-estimator" title="Leak Cost Estimator">
-            <div className="flex flex-col gap-4 text-sm text-slate-600">
-              <label className="flex flex-col gap-2">
-                <span className="font-medium text-slate-700">Drips per minute</span>
+            <div className="ws-calculators__card-body">
+              <label className="ws-calculators__label">
+                <span>Drips per minute</span>
                 <input
-                  className="h-12 accent-sky-600"
+                  className="ws-calculators__range"
                   type="range"
                   min={0}
                   max={180}
                   value={dripsPerMinute}
                   onChange={(event) => setDripsPerMinute(Number(event.target.value))}
                 />
-                <span className="text-xs text-slate-500">{dripsPerMinute} drips/min</span>
+                <span className="ws-calculators__range-value">{dripsPerMinute} drips/min</span>
               </label>
-              <label className="flex flex-col gap-2">
-                <span className="font-medium text-slate-700">Leaking faucets</span>
+              <label className="ws-calculators__label">
+                <span>Leaking faucets</span>
                 <input
-                  className="h-12 rounded-xl border border-slate-200 px-3"
+                  className="ws-calculators__input"
                   type="number"
                   min={1}
                   max={50}
@@ -225,22 +220,22 @@ const Calculators = () => {
                   onChange={(event) => setLeakingFaucets(Number(event.target.value))}
                 />
               </label>
-              <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm">
-                <div className="flex items-center justify-between">
+              <div className="ws-calculators__summary">
+                <div className="ws-calculators__summary-row">
                   <span>Daily waste</span>
-                  <span className="font-semibold text-slate-900">
+                  <span className="ws-calculators__summary-value">
                     {gallonsPerDay.toFixed(1)} gal · ${(gallonsPerDay * GALLON_COST).toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="ws-calculators__summary-row">
                   <span>Monthly waste</span>
-                  <span className="font-semibold text-slate-900">
+                  <span className="ws-calculators__summary-value">
                     {gallonsPerMonth.toFixed(0)} gal · ${(gallonsPerMonth * GALLON_COST).toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="ws-calculators__summary-row">
                   <span>Yearly waste</span>
-                  <span className="font-semibold text-slate-900">
+                  <span className="ws-calculators__summary-value">
                     {gallonsPerYear.toFixed(0)} gal · ${(gallonsPerYear * GALLON_COST).toFixed(2)}
                   </span>
                 </div>
@@ -249,23 +244,23 @@ const Calculators = () => {
           </Card>
 
           <Card id="shower-bath" title="Shower vs. Bath Comparator">
-            <div className="flex flex-col gap-4 text-sm text-slate-600">
-              <label className="flex flex-col gap-2">
-                <span className="font-medium text-slate-700">Shower duration</span>
+            <div className="ws-calculators__card-body">
+              <label className="ws-calculators__label">
+                <span>Shower duration</span>
                 <input
-                  className="h-12 accent-sky-600"
+                  className="ws-calculators__range"
                   type="range"
                   min={2}
                   max={30}
                   value={showerDuration}
                   onChange={(event) => setShowerDuration(Number(event.target.value))}
                 />
-                <span className="text-xs text-slate-500">{showerDuration} minutes</span>
+                <span className="ws-calculators__range-value">{showerDuration} minutes</span>
               </label>
-              <label className="flex flex-col gap-2">
-                <span className="font-medium text-slate-700">Flow rate (GPM)</span>
+              <label className="ws-calculators__label">
+                <span>Flow rate (GPM)</span>
                 <input
-                  className="h-12 rounded-xl border border-slate-200 px-3"
+                  className="ws-calculators__input"
                   type="number"
                   step={0.1}
                   min={1}
@@ -274,35 +269,35 @@ const Calculators = () => {
                   onChange={(event) => setFlowRate(Number(event.target.value))}
                 />
               </label>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="ws-calculators__summary">
+                <div className="ws-calculators__divider-labels">
                   <span>Cost per session</span>
                   <span>${GALLON_COST.toFixed(2)} per gallon</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="ws-calculators__summary">
+                  <div className="ws-calculators__summary-row">
                     <span>Shower</span>
-                    <span className="font-semibold text-slate-900">
+                    <span className="ws-calculators__summary-value">
                       {showerGallons.toFixed(1)} gal · ${showerCost.toFixed(2)}
                     </span>
                   </div>
-                  <div className="h-3 w-full rounded-full bg-slate-100">
+                  <div className="ws-calculators__bar-track">
                     <div
-                      className="h-3 rounded-full bg-sky-500"
+                      className="ws-calculators__bar-fill is-sky"
                       style={{ width: `${(showerGallons / maxSessionGallons) * 100}%` }}
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="ws-calculators__summary">
+                  <div className="ws-calculators__summary-row">
                     <span>Bath</span>
-                    <span className="font-semibold text-slate-900">
+                    <span className="ws-calculators__summary-value">
                       {bathGallons.toFixed(1)} gal · ${bathCost.toFixed(2)}
                     </span>
                   </div>
-                  <div className="h-3 w-full rounded-full bg-slate-100">
+                  <div className="ws-calculators__bar-track">
                     <div
-                      className="h-3 rounded-full bg-emerald-500"
+                      className="ws-calculators__bar-fill is-emerald"
                       style={{ width: `${(bathGallons / maxSessionGallons) * 100}%` }}
                     />
                   </div>
@@ -312,38 +307,38 @@ const Calculators = () => {
           </Card>
 
           <Card id="bill-savings" title="Bill Savings Projector">
-            <div className="flex flex-col gap-4 text-sm text-slate-600">
-              <label className="flex flex-col gap-2">
-                <span className="font-medium text-slate-700">Current bill amount</span>
+            <div className="ws-calculators__card-body">
+              <label className="ws-calculators__label">
+                <span>Current bill amount</span>
                 <input
-                  className="h-12 rounded-xl border border-slate-200 px-3"
+                  className="ws-calculators__input"
                   type="number"
                   min={0}
                   value={billAmount}
                   onChange={(event) => setBillAmount(Number(event.target.value))}
                 />
               </label>
-              <label className="flex flex-col gap-2">
-                <span className="font-medium text-slate-700">Household size</span>
+              <label className="ws-calculators__label">
+                <span>Household size</span>
                 <input
-                  className="h-12 rounded-xl border border-slate-200 px-3"
+                  className="ws-calculators__input"
                   type="number"
                   min={1}
                   value={householdSize}
                   onChange={(event) => setHouseholdSize(Number(event.target.value))}
                 />
               </label>
-              <div className="rounded-xl bg-emerald-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Conservative</p>
-                <p className="text-lg font-semibold text-emerald-700">
+              <div className="ws-calculators__savings">
+                <p className="ws-calculators__savings-label">Conservative</p>
+                <p className="ws-calculators__savings-value">
                   ${savingsEstimate.toFixed(0)} saved per month
                 </p>
-                <p className="text-xs text-emerald-600">
+                <p className="ws-calculators__savings-note">
                   Estimated {(savingsRate * 100).toFixed(0)}% usage reduction.
                 </p>
               </div>
               <RouterLink
-                className="min-h-[44px] rounded-full bg-emerald-500 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                className="ws-calculators__link-button"
                 to="/dashboard"
               >
                 Start Savings Plan
@@ -352,52 +347,46 @@ const Calculators = () => {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">
-                Smart Insights
-              </p>
-              <h2 className="text-2xl font-semibold text-slate-900">
+        <div className="ws-calculators__insight-grid">
+          <div className="ws-calculators__card">
+            <div className="ws-calculators__insight-content">
+              <p className="ws-calculators__eyebrow">Smart Insights</p>
+              <h2 className="ws-calculators__card-title">
                 Unlock AI-backed recommendations instantly
               </h2>
-              <p className="text-sm text-slate-600">
+              <p className="ws-calculators__lede">
                 Use one credit to generate a tailored insight from your calculator inputs.
               </p>
               <button
                 type="button"
                 onClick={handleGenerateInsight}
                 disabled={aiLoading}
-                className="min-h-[44px] w-full rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70"
+                className="ws-calculators__insight-button"
               >
                 {aiLoading ? "Generating insight..." : "Get Personalized Insight"}
               </button>
-              {aiError ? <p className="text-sm text-rose-500">{aiError}</p> : null}
+              {aiError ? <p className="ws-calculators__error">{aiError}</p> : null}
             </div>
           </div>
 
           <div
-            className={`rounded-2xl border border-dashed p-6 text-sm text-slate-600 transition ${
-              aiInsight
-                ? "border-transparent bg-gradient-to-br from-sky-200 via-white to-emerald-200"
-                : "border-slate-300 bg-white"
-            }`}
+            className={`ws-calculators__insight-card ${aiInsight ? "is-filled" : ""}`}
           >
             {aiInsight ? (
-              <div className="flex h-full flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm">
-                <p className="text-base font-semibold text-slate-900">{aiInsight.insight}</p>
-                <p className="text-sm text-slate-500">{aiInsight.reference}</p>
+              <div className="ws-calculators__insight-shell">
+                <p className="ws-calculators__insight-title">{aiInsight.insight}</p>
+                <p className="ws-calculators__insight-note">{aiInsight.reference}</p>
                 <button
                   type="button"
-                  className="min-h-[44px] rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+                  className="ws-calculators__insight-cta"
                 >
                   {aiInsight.cta}
                 </button>
               </div>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <p className="text-base font-semibold text-slate-700">No insight yet.</p>
-                <p className="text-sm text-slate-500">
+              <div className="ws-calculators__insight-empty">
+                <p className="ws-calculators__insight-empty-title">No insight yet.</p>
+                <p className="ws-calculators__insight-empty-text">
                   Generate an insight to see personalized guidance and savings prompts.
                 </p>
               </div>

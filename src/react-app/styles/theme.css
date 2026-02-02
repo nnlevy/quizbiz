@@ -1,0 +1,90 @@
+:root {
+  /* Typography scale */
+  --ws-font-family: "Open Sans", sans-serif;
+  --ws-font-size-1: 0.7rem;
+  --ws-font-size-2: 0.85rem;
+  --ws-font-size-3: 1rem;
+  --ws-font-size-4: 1.25rem;
+  --ws-font-size-5: 1.6rem;
+  --ws-font-size-6: 2.25rem;
+
+  /* Primary palette */
+  --ws-color-ink-950: #0f172a;
+  --ws-color-ink-900: #102a43;
+  --ws-color-ink-800: #0b4f4a;
+  --ws-color-slate-700: #52606d;
+  --ws-color-slate-800: #334155;
+  --ws-color-slate-600: #94a3b8;
+  --ws-color-slate-500: #cbd5f5;
+  --ws-color-slate-400: #d9e2ec;
+  --ws-color-slate-300: #e2e8f0;
+  --ws-color-slate-200: #f1f5f9;
+  --ws-color-slate-100: #f8fafc;
+  --ws-color-slate-50: #f0f4f8;
+  --ws-color-surface: #ffffff;
+  --ws-color-shell-top: #f9fbff;
+  --ws-color-shell-bottom: #eef4fb;
+
+  /* Accents */
+  --ws-color-teal-700: #0f6f63;
+  --ws-color-teal-600: #0f766e;
+  --ws-color-teal-500: #0b4f4a;
+  --ws-color-sky-700: #075985;
+  --ws-color-sky-600: #0ea5e9;
+  --ws-color-sky-500: #38bdf8;
+  --ws-color-sky-650: #0284c7;
+  --ws-color-sky-300: #bae6fd;
+  --ws-color-sky-100: #e0f2fe;
+  --ws-color-sky-50: #f0f9ff;
+  --ws-color-emerald-600: #059669;
+  --ws-color-emerald-500: #10b981;
+  --ws-color-emerald-100: #d1fae5;
+  --ws-color-rose-600: #b91c1c;
+  --ws-color-rose-500: #b42318;
+
+  /* Translucent accents */
+  --ws-color-surface-98: rgba(249, 251, 255, 0.98);
+  --ws-color-surface-90: rgba(255, 255, 255, 0.9);
+  --ws-color-surface-85: rgba(255, 255, 255, 0.85);
+  --ws-color-surface-75: rgba(255, 255, 255, 0.75);
+  --ws-color-teal-12: rgba(14, 116, 144, 0.12);
+  --ws-color-teal-15: rgba(14, 116, 144, 0.15);
+  --ws-color-teal-25: rgba(14, 116, 144, 0.25);
+  --ws-color-teal-35: rgba(14, 116, 144, 0.35);
+  --ws-color-teal-40: rgba(14, 116, 144, 0.4);
+  --ws-color-teal-20-strong: rgba(15, 118, 110, 0.2);
+  --ws-color-teal-12-strong: rgba(15, 118, 110, 0.12);
+  --ws-color-sky-15: rgba(14, 165, 233, 0.15);
+  --ws-color-emerald-15: rgba(16, 185, 129, 0.15);
+  --ws-color-emerald-40: rgba(16, 185, 129, 0.4);
+  --ws-color-emerald-20: rgba(16, 185, 129, 0.2);
+  --ws-color-slate-12: rgba(100, 116, 139, 0.15);
+  --ws-color-slate-40: rgba(148, 163, 184, 0.4);
+  --ws-color-slate-30: rgba(148, 163, 184, 0.3);
+  --ws-color-slate-20: rgba(148, 163, 184, 0.2);
+  --ws-color-slate-50: rgba(148, 163, 184, 0.5);
+  --ws-color-slate-50-translucent: rgba(248, 250, 252, 0.5);
+  --ws-color-slate-08: rgba(12, 33, 68, 0.08);
+
+  /* Shadows and overlays */
+  --ws-shadow-08: rgba(15, 23, 42, 0.08);
+  --ws-shadow-12: rgba(15, 23, 42, 0.12);
+  --ws-shadow-15: rgba(15, 23, 42, 0.15);
+  --ws-shadow-20: rgba(15, 23, 42, 0.2);
+  --ws-shadow-35: rgba(15, 23, 42, 0.35);
+  --ws-shadow-08-alt: rgba(15, 35, 95, 0.08);
+  --ws-shadow-25-dark: rgba(0, 0, 0, 0.25);
+  --ws-overlay-65: rgba(15, 23, 42, 0.65);
+
+  /* Special surfaces */
+  --ws-color-highlight: rgba(254, 215, 170, 0.8);
+  --ws-color-info-panel: rgba(255, 255, 255, 0.85);
+  --ws-color-tag: rgba(14, 116, 144, 0.15);
+  --ws-color-tooltip: rgba(14, 116, 144, 0.12);
+  --ws-color-sky-60: rgba(224, 242, 254, 0.6);
+
+  /* Gradients */
+  --ws-gradient-shell: linear-gradient(180deg, #f9fbff 0%, #eef4fb 100%);
+  --ws-gradient-quick-check: linear-gradient(135deg, #f0f9ff 0%, #ffffff 65%);
+  --ws-gradient-ai-insight: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(255, 255, 255, 0.9) 55%, rgba(16, 185, 129, 0.2));
+}
