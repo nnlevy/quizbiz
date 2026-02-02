@@ -6,6 +6,14 @@ import FlowRateStep from "../components/calculators/steps/FlowRateStep";
 import HouseholdSizeStep from "../components/calculators/steps/HouseholdSizeStep";
 import LeakDripsStep from "../components/calculators/steps/LeakDripsStep";
 import LeakFaucetsStep from "../components/calculators/steps/LeakFaucetsStep";
+import { type ReactNode, useEffect, useMemo, useReducer, useState } from "react";
+import { useLocation } from "./router";
+import { useCredits } from "../context/CreditsContext";
+import BillAmountStep from "../components/calculators/steps/BillAmountStep";
+import DripsPerMinuteStep from "../components/calculators/steps/DripsPerMinuteStep";
+import FlowRateStep from "../components/calculators/steps/FlowRateStep";
+import HouseholdSizeStep from "../components/calculators/steps/HouseholdSizeStep";
+import LeakingFaucetsStep from "../components/calculators/steps/LeakingFaucetsStep";
 import ShowerDurationStep from "../components/calculators/steps/ShowerDurationStep";
 import SummaryStep from "../components/calculators/steps/SummaryStep";
 import "./Calculators.css";
@@ -73,6 +81,39 @@ type AiInsight = {
   cta: string;
 };
 
+const Card = ({ title, children, id }: { title: string; children: ReactNode; id?: string }) => (
+  <section
+    id={id}
+    aria-labelledby={id ? `${id}-title` : undefined}
+    className="ws-calculators__card"
+  >
+    <div className="flex items-center justify-between">
+      <h3 id={id ? `${id}-title` : undefined} className="ws-calculators__card-title">
+        {title}
+      </h3>
+    </div>
+    {children}
+  </section>
+);
+
+type StepAction =
+  | { type: "NEXT"; maxIndex: number }
+  | { type: "BACK" }
+  | { type: "GO_TO"; index: number };
+
+const stepReducer = (state: number, action: StepAction) => {
+  switch (action.type) {
+    case "NEXT":
+      return Math.min(state + 1, action.maxIndex);
+    case "BACK":
+      return Math.max(state - 1, 0);
+    case "GO_TO":
+      return action.index;
+    default:
+      return state;
+  }
+};
+
 const Calculators = () => {
   const { credits, deduct } = useCredits();
   const location = useLocation();
@@ -118,12 +159,88 @@ const Calculators = () => {
 
   const showerGallons = showerDuration * flowRate;
   const bathGallons = 35;
-  const maxSessionGallons = Math.max(showerGallons, bathGallons);
   const showerCost = showerGallons * GALLON_COST;
   const bathCost = bathGallons * GALLON_COST;
 
   const savingsRate = Math.min(0.35, Math.max(0.12, 0.12 + householdSize * 0.02));
   const savingsEstimate = billAmount * savingsRate;
+
+  const tips = [
+    `Repairing ${leakingFaucets} faucet${leakingFaucets === 1 ? "" : "s"} could save about $${(
+      gallonsPerYear * GALLON_COST
+    ).toFixed(0)} per year.`,
+    `Trimming showers by 2 minutes could save roughly $${Math.max(
+      0,
+      2 * flowRate * GALLON_COST * 30,
+    ).toFixed(0)} per month.`,
+    `Households of ${householdSize} people often reach a ${(savingsRate * 100).toFixed(
+      0,
+    )}% reduction by upgrading fixtures.`,
+  ];
+
+  const steps = [
+    {
+      id: "drips",
+      title: "Leak Cost Estimator",
+      subtitle: "Track how quickly drips add up.",
+      content: <DripsPerMinuteStep value={dripsPerMinute} onChange={setDripsPerMinute} />,
+    },
+    {
+      id: "faucets",
+      title: "Leak Cost Estimator",
+      subtitle: "How many fixtures are leaking?",
+      content: <LeakingFaucetsStep value={leakingFaucets} onChange={setLeakingFaucets} />,
+    },
+    {
+      id: "shower-duration",
+      title: "Shower vs. Bath Comparator",
+      subtitle: "Measure your shower time.",
+      content: <ShowerDurationStep value={showerDuration} onChange={setShowerDuration} />,
+    },
+    {
+      id: "flow-rate",
+      title: "Shower vs. Bath Comparator",
+      subtitle: "Confirm your flow rate.",
+      content: <FlowRateStep value={flowRate} onChange={setFlowRate} />,
+    },
+    {
+      id: "bill-amount",
+      title: "Bill Savings Projector",
+      subtitle: "Add your latest bill.",
+      content: <BillAmountStep value={billAmount} onChange={setBillAmount} />,
+    },
+    {
+      id: "household",
+      title: "Bill Savings Projector",
+      subtitle: "How many people are in your home?",
+      content: <HouseholdSizeStep value={householdSize} onChange={setHouseholdSize} />,
+    },
+    {
+      id: "summary",
+      title: "Summary",
+      subtitle: "Review your savings opportunities.",
+      content: (
+        <SummaryStep
+          gallonsPerDay={gallonsPerDay}
+          gallonsPerMonth={gallonsPerMonth}
+          gallonsPerYear={gallonsPerYear}
+          showerGallons={showerGallons}
+          bathGallons={bathGallons}
+          showerCost={showerCost}
+          bathCost={bathCost}
+          savingsEstimate={savingsEstimate}
+          savingsRate={savingsRate}
+          tips={tips}
+        />
+      ),
+    },
+  ];
+
+  const [stepIndex, dispatch] = useReducer(stepReducer, 0);
+  const maxStepIndex = steps.length - 1;
+  const currentStep = steps[stepIndex];
+  const isSummaryStep = stepIndex === maxStepIndex;
+  const progressPercent = ((stepIndex + 1) / steps.length) * 100;
 
   const handleGenerateInsight = async () => {
     setAiError(null);
@@ -305,6 +422,67 @@ const Calculators = () => {
             </div>
           </div>
         </section>
+        <div className="ws-calculators__stepper">
+          <div className="ws-calculators__progress">
+            <div className="ws-calculators__progress-header">
+              <div>
+                <p className="ws-calculators__progress-label">Progress</p>
+                <p className="ws-calculators__progress-title">
+                  Step {stepIndex + 1} of {steps.length}
+                </p>
+              </div>
+              <div className="ws-calculators__progress-count">
+                {currentStep.title}
+              </div>
+            </div>
+            <div className="ws-calculators__progress-track" aria-hidden="true">
+              <span
+                className="ws-calculators__progress-fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <ol className="ws-calculators__progress-steps">
+              {steps.map((step, index) => (
+                <li
+                  key={step.id}
+                  className={`ws-calculators__progress-step ${
+                    index === stepIndex ? "is-active" : ""
+                  } ${index < stepIndex ? "is-complete" : ""}`}
+                >
+                  <span className="ws-calculators__progress-index">{index + 1}</span>
+                  <span className="ws-calculators__progress-text">{step.subtitle}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <Card id={`step-${currentStep.id}`} title={currentStep.title}>
+            <div className="ws-calculators__card-body">
+              <p className="ws-calculators__step-subtitle">{currentStep.subtitle}</p>
+              {currentStep.content}
+            </div>
+          </Card>
+
+          <div className="ws-calculators__step-actions">
+            <button
+              type="button"
+              className="ws-calculators__ghost-button"
+              onClick={() => dispatch({ type: "BACK" })}
+              disabled={stepIndex === 0}
+            >
+              Back
+            </button>
+            {!isSummaryStep ? (
+              <button
+                type="button"
+                className="ws-calculators__primary-button"
+                onClick={() => dispatch({ type: "NEXT", maxIndex: maxStepIndex })}
+              >
+                {stepIndex === maxStepIndex - 1 ? "View summary" : "Next"}
+              </button>
+            ) : null}
+          </div>
+        </div>
 
         <div className="ws-calculators__insight-grid">
           <div className="ws-calculators__card">
