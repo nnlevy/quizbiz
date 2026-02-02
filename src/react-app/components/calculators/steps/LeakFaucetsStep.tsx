@@ -1,26 +1,25 @@
 import type { ChangeEvent } from "react";
 
-const HouseholdSizeStep = ({
+const LeakFaucetsStep = ({
   value,
   onChange,
 }: {
   value: number;
   onChange: (nextValue: number) => void;
-  onChange: (value: number) => void;
 }) => (
   <label className="ws-calculators__label">
-    <span>Household size</span>
+    <span>Leaking faucets</span>
     <input
       className="ws-calculators__input"
       type="number"
       min={1}
+      max={50}
       value={value}
       onChange={(event: ChangeEvent<HTMLInputElement>) =>
         onChange(Number(event.target.value))
       }
-      onChange={(event) => onChange(Number(event.target.value))}
     />
   </label>
 );
 
-export default HouseholdSizeStep;
+export default LeakFaucetsStep;
