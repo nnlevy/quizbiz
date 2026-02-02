@@ -12,7 +12,7 @@ import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
-import WsImage from "../components/WsImage";
+import WaterShortcutLogo from "../components/WaterShortcutLogo";
 
 import "./AppShell.css";
 
@@ -101,16 +101,7 @@ const AppShell = ({ children }: AppShellProps) => {
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
-            <WsImage
-              className="ws-logo__image"
-              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png"
-              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_160/v1735510676/watershortcut-favicon.png 2x"
-              sizes="40px"
-              alt="WaterShortcut logo"
-              width={40}
-              height={40}
-              eager
-            />
+            <WaterShortcutLogo className="ws-logo__icon" width={40} height={40} />
             <span className="ws-logo__text">WaterShortcut</span>
           </RouterLink>
           {showDeferred && (
