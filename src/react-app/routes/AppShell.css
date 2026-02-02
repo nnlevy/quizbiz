@@ -36,12 +36,18 @@
   color: inherit;
 }
 
-.ws-logo__image {
+.ws-logo__image,
+.ws-logo__icon {
   height: 40px;
   width: auto;
   max-width: 120px;
   display: block;
   object-fit: contain;
+}
+
+.ws-logo__icon {
+  color: var(--ws-color-teal-600);
+  --ws-logo-secondary: var(--ws-color-sky-400);
 }
 
 .ws-logo__text {
