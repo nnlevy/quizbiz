@@ -1,5 +1,15 @@
+@import "./styles/theme.css";
+
 :root {
-  font-family: "Open Sans", sans-serif;
+  --font-family: var(--ws-font-family);
+  --font-size-1: var(--ws-font-size-1);
+  --font-size-2: var(--ws-font-size-2);
+  --font-size-3: var(--ws-font-size-3);
+  --font-size-4: var(--ws-font-size-4);
+  --font-size-5: var(--ws-font-size-5);
+  --font-size-6: var(--ws-font-size-6);
+
+  font-family: var(--font-family);
   line-height: 1.5;
   font-weight: 400;
   text-rendering: optimizeLegibility;
@@ -10,7 +20,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #f0f4f8;
+  background-color: var(--ws-color-slate-50);
 }
 
 a {
@@ -22,7 +32,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #0ea5e9;
+  outline: 3px solid var(--ws-color-sky-600);
   outline-offset: 2px;
 }
 
@@ -45,8 +55,8 @@ textarea:focus-visible {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  font-size: 0.7rem;
+  font-size: var(--font-size-1);
   font-weight: 700;
-  color: #52606d;
+  color: var(--ws-color-slate-700);
   margin: 0;
 }
