@@ -824,6 +824,11 @@
   outline: none;
 }
 
+.ws-quick-check__input:focus-within {
+  border-color: var(--ws-color-teal-35);
+  box-shadow: 0 0 0 3px var(--ws-color-teal-15);
+}
+
 .ws-quick-check__estimate {
   background: var(--ws-color-slate-100);
   border-radius: 1rem;
