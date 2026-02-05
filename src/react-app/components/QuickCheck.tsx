@@ -6,6 +6,14 @@ const QuickCheck = () => {
   const [billAmount, setBillAmount] = useState(100);
   const yearlySavings = useMemo(() => billAmount * 0.2 * 12, [billAmount]);
   const calculatorHref = `/calculators?bill_amount=${encodeURIComponent(String(billAmount))}`;
+  const clampAmount = (value: number) => Math.min(500, Math.max(0, value));
+  const handleAmountChange = (value: number) => {
+    if (!Number.isFinite(value)) {
+      setBillAmount(0);
+      return;
+    }
+    setBillAmount(clampAmount(value));
+  };
 
   return (
     <section className="ws-quick-check" aria-labelledby="quick-check-title" id="quick-check">
@@ -34,18 +42,42 @@ const QuickCheck = () => {
           <label className="ws-field" htmlFor="bill-range">
             Monthly Water Bill ($)
           </label>
-          <input
-            className="ws-quick-check__range"
-            id="bill-range"
-            type="range"
-            min={0}
-            max={500}
-            value={billAmount}
-            onChange={(event) => setBillAmount(Number(event.target.value))}
-          />
-          <div className="ws-quick-check__range-labels">
-            <span>$0</span>
-            <span>$500+</span>
+          <div className="ws-quick-check__controls">
+            <div className="ws-quick-check__slider">
+              <input
+                className="ws-quick-check__range"
+                id="bill-range"
+                type="range"
+                min={0}
+                max={500}
+                value={billAmount}
+                onChange={(event) => handleAmountChange(Number(event.target.value))}
+              />
+              <div className="ws-quick-check__range-labels">
+                <span>$0</span>
+                <span className="ws-quick-check__range-hint">Typical: $80–$120</span>
+                <span>$500+</span>
+              </div>
+            </div>
+            <div className="ws-quick-check__numeric">
+              <label className="ws-field" htmlFor="bill-input">
+                Or type a value
+              </label>
+              <div className="ws-quick-check__input">
+                <span aria-hidden="true">$</span>
+                <input
+                  className="ws-input ws-quick-check__number"
+                  id="bill-input"
+                  type="number"
+                  min={0}
+                  max={500}
+                  inputMode="numeric"
+                  value={billAmount}
+                  onChange={(event) => handleAmountChange(Number(event.target.value))}
+                  aria-label="Monthly water bill amount in dollars"
+                />
+              </div>
+            </div>
           </div>
           <div className="ws-quick-check__estimate">
             <p className="ws-quick-check__estimate-label">Potential Savings</p>

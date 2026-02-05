@@ -29,21 +29,23 @@ const StartCard = ({
   onUploadChange,
 }: StartCardProps) => (
   <InfoCard id={id} variant="cta" aria-label="Analyze a water bill" className="ws-start-card">
-    <div>
-      <h2>Analyze my water bill</h2>
-      <p className="ws-subtitle">Pick the mode that fits your time right now.</p>
-      <RouterLink className="ws-footer-link" to="/find-water-provider">
-        Look up my water bill portal
-      </RouterLink>
+    <div className="ws-start-card__header">
+      <div>
+        <h2>Analyze my water bill</h2>
+        <p className="ws-subtitle">
+          Most customers start here. Pick the mode that fits your time right now.
+        </p>
+      </div>
+      <p className="ws-start-card__helper">
+        PDF water bills are supported, and larger files may take a few seconds to process.
+      </p>
     </div>
     <div className="ws-mode-grid" role="group" aria-label="Choose a starting mode">
-      <label
+      <button
         className={`ws-button${activeAction === "upload" ? " is-loading" : ""}${
           isUploading ? " is-disabled" : ""
         }`}
-        htmlFor="bill-upload"
-        role="button"
-        tabIndex={0}
+        type="button"
         aria-busy={activeAction === "upload"}
         aria-disabled={isUploading}
         onClick={() => {
@@ -51,20 +53,14 @@ const StartCard = ({
             return;
           }
           onUploadClick();
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            if (!isUploading) {
-              onUploadClick();
-              fileInputRef.current?.click();
-            }
-          }
+          fileInputRef.current?.click();
         }}
       >
-        <span className="ws-button__label">Upload a bill</span>
+        <span className="ws-button__label">
+          Upload a bill <span className="ws-start-card__badge">Recommended</span>
+        </span>
         <span className="ws-button__spinner" aria-hidden />
-      </label>
+      </button>
       <button
         className={`ws-button-secondary${activeAction === "demo" ? " is-loading" : ""}`}
         type="button"
@@ -101,6 +97,12 @@ const StartCard = ({
         {errorMessage}
       </p>
     )}
+    <div className="ws-start-card__links" aria-label="Supporting actions">
+      <span className="ws-start-card__divider" aria-hidden="true" />
+      <RouterLink className="ws-start-card__portal" to="/find-water-provider">
+        Look up my water bill portal
+      </RouterLink>
+    </div>
     <p className="ws-subtitle ws-start-card__privacy">
       Uploads and manual entries are deleted after analysis.{" "}
       <RouterLink to="/privacy">Learn how we handle data</RouterLink>.
