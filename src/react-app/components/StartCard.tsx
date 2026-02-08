@@ -56,9 +56,7 @@ const StartCard = ({
           fileInputRef.current?.click();
         }}
       >
-        <span className="ws-button__label">
-          Upload a bill <span className="ws-start-card__badge">Recommended</span>
-        </span>
+        <span className="ws-button__label">Upload a bill (Recommended)</span>
         <span className="ws-button__spinner" aria-hidden />
       </button>
       <button
@@ -100,7 +98,7 @@ const StartCard = ({
     <div className="ws-start-card__links" aria-label="Supporting actions">
       <span className="ws-start-card__divider" aria-hidden="true" />
       <RouterLink className="ws-start-card__portal" to="/find-water-provider">
-        Look up my water bill portal
+        Click here to look up a water bill
       </RouterLink>
     </div>
     <p className="ws-subtitle ws-start-card__privacy">

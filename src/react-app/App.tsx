@@ -772,7 +772,7 @@ function App({ focusUpload = false }: AppProps) {
         window.location.hash;
       window.history.replaceState({}, document.title, updatedUrl);
     }
-  }, []);
+  }, [refreshSession, setGlobalCredits, triggerCreditPulse]);
 
   const handleCreditsClick = useCallback(async () => {
     await startCheckout();

@@ -44,17 +44,17 @@ const WaterIqResult = ({ token }: { token: string }) => {
     return { persona, hook, moves };
   }, [decoded]);
 
-  if (!decoded || !payload) return <WaterIqInvalid />;
-
-  const badgeLabel = decoded.badge.replace(/_/g, " ");
+  const badgeLabel = decoded?.badge.replace(/_/g, " ") ?? "";
   const challengeLink = appendReferralToUrl(`/water-iq?challenge=${token}`, referralToken);
   const sharePageUrl = appendReferralToUrl(`/water-iq/r/${token}`, referralToken);
   const shareUrl =
     typeof window !== "undefined"
       ? appendReferralToUrl(window.location.href, referralToken)
       : `/water-iq/r/${token}`;
-  const scoreAngle = Math.min(Math.max(decoded.score, 0), 10) * 36;
-  const shareText = `I scored ${decoded.score}/10 on WaterShortcut’s Water IQ (${badgeLabel}). ${payload.hook.short}`;
+  const scoreAngle = Math.min(Math.max(decoded?.score ?? 0, 0), 10) * 36;
+  const shareText = decoded && payload
+    ? `I scored ${decoded.score}/10 on WaterShortcut’s Water IQ (${badgeLabel}). ${payload.hook.short}`
+    : "Check out my Water IQ score on WaterShortcut.";
 
   const rewardShareCredit = useCallback(
     (channel: string) => {
@@ -94,9 +94,13 @@ const WaterIqResult = ({ token }: { token: string }) => {
   }, [draftText, rewardShareCredit, shareText, shareUrl]);
 
   const handleGenerateDraft = useCallback(() => {
+    if (!decoded || !payload) {
+      setShareStatus("Unable to generate draft for this result.");
+      return;
+    }
     const draft = `🌊 I just scored ${decoded.score}/10 on WaterShortcut’s Water IQ (${badgeLabel}).\n\n${payload.hook.short}\n\nTry it and tag 3 friends: ${challengeLink}`;
     setDraftText(draft);
-  }, [badgeLabel, challengeLink, decoded.score, payload.hook.short]);
+  }, [badgeLabel, challengeLink, decoded, payload]);
 
   const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `${shareText} ${shareUrl}`,
@@ -110,6 +114,8 @@ const WaterIqResult = ({ token }: { token: string }) => {
       .then((tokenValue) => setReferralToken(tokenValue))
       .catch(() => setReferralToken(null));
   }, []);
+
+  if (!decoded || !payload) return <WaterIqInvalid />;
 
   return (
     <section className="section water-iq">

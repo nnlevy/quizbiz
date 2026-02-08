@@ -498,17 +498,6 @@
   font-size: 0.95rem;
 }
 
-.ws-start-card__badge {
-  background: var(--ws-color-teal-12);
-  color: var(--ws-color-teal-700);
-  border-radius: 999px;
-  padding: 0.15rem 0.55rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
 .ws-start-card__links {
   display: grid;
   gap: 0.75rem;
@@ -1451,10 +1440,6 @@ details.ws-info-card summary {
 
   .ws-start-card__helper {
     font-size: 0.9rem;
-  }
-
-  .ws-start-card__badge {
-    font-size: 0.6rem;
   }
 
   .ws-quick-check__range-labels {

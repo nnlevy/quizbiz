@@ -46,7 +46,7 @@ export const getStoredConsent = (): ConsentState | null => {
   try {
     const raw = window.localStorage.getItem(CONSENT_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as ConsentState) : null;
-  } catch (err) {
+  } catch {
     return null;
   }
 };
