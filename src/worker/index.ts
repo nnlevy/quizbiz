@@ -127,9 +127,11 @@ type WorkerEnv = {
   WS_ADMIN_EXPORT_KEY?: string;
   OAUTH_API_KEY?: string;
   OAUTH_Client_ID: string;
+  OAUTH_CLIENT_ID?: string;
   OAUTH_Client_Secret?: string;
+  OAUTH_CLIENT_SECRET?: string;
   OAUTH_DOMAIN?: string;
-  OUATH_Client_Secret: string;
+  OUATH_Client_Secret?: string;
 };
 
 const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
@@ -814,7 +816,8 @@ const verifyGoogleIdToken = async (token: string, env: WorkerEnv): Promise<Googl
     throw new Error("Invalid ID token issuer.");
   }
   const audiences = Array.isArray(payload.aud) ? payload.aud : payload.aud ? [payload.aud] : [];
-  if (!audiences.includes(env.OAUTH_Client_ID)) {
+  const expectedAudience = env.OAUTH_Client_ID ?? env.OAUTH_CLIENT_ID;
+  if (!expectedAudience || !audiences.includes(expectedAudience)) {
     throw new Error("Invalid ID token audience.");
   }
   if (!payload.exp || payload.exp < nowSeconds - 60) {
@@ -1294,7 +1297,8 @@ app.use("*", async (c, next) => {
     host &&
     host !== seoSite.canonicalHost &&
     !host.startsWith("localhost") &&
-    !host.startsWith("127.")
+    !host.startsWith("127.") &&
+    (c.req.method === "GET" || c.req.method === "HEAD")
   ) {
     const url = new URL(c.req.url);
     url.host = seoSite.canonicalHost;
@@ -1381,7 +1385,8 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.get("/auth/google", async (c) => {
-  if (!c.env.OAUTH_Client_ID) {
+  const oauthClientId = c.env.OAUTH_Client_ID ?? c.env.OAUTH_CLIENT_ID;
+  if (!oauthClientId) {
     return c.redirect(buildAuthErrorRedirect(c, "/", "missing_oauth_client"), 302);
   }
   const { sessionId, needsCookie } = await ensureSession(c);
@@ -1400,7 +1405,7 @@ app.get("/auth/google", async (c) => {
 
   const redirectUri = "https://www.watershortcut.com/auth/google/callback";
   const params = new URLSearchParams({
-    client_id: c.env.OAUTH_Client_ID,
+    client_id: oauthClientId,
     redirect_uri: redirectUri,
     response_type: "code",
     scope: GOOGLE_OAUTH_SCOPES,
@@ -1426,8 +1431,10 @@ app.get("/auth/google/callback", async (c) => {
   const statePayload = storedState as { returnTo?: string; sessionId?: string };
   const origin = new URL(c.req.url).origin;
   const returnTo = sanitizeReturnTo(statePayload.returnTo, origin, "/");
-  const clientSecret = c.env.OAUTH_Client_Secret ?? c.env.OUATH_Client_Secret;
-  if (!c.env.OAUTH_Client_ID || !clientSecret) {
+  const oauthClientId = c.env.OAUTH_Client_ID ?? c.env.OAUTH_CLIENT_ID;
+  const clientSecret =
+    c.env.OAUTH_Client_Secret ?? c.env.OAUTH_CLIENT_SECRET ?? c.env.OUATH_Client_Secret;
+  if (!oauthClientId || !clientSecret) {
     return c.redirect(buildAuthErrorRedirect(c, returnTo, "missing_oauth_client"), 302);
   }
 
@@ -1437,7 +1444,7 @@ app.get("/auth/google/callback", async (c) => {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: c.env.OAUTH_Client_ID,
+      client_id: oauthClientId,
       client_secret: clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
@@ -1456,7 +1463,7 @@ app.get("/auth/google/callback", async (c) => {
   let idTokenPayload: GoogleIdTokenPayload;
   try {
     idTokenPayload = await verifyGoogleIdToken(tokenPayload.id_token, c.env);
-  } catch (error) {
+  } catch {
     return c.redirect(buildAuthErrorRedirect(c, returnTo, "invalid_id_token"), 302);
   }
 
@@ -1489,8 +1496,8 @@ app.get("/auth/google/callback", async (c) => {
   const mergeCredits = (existing?: number | null) =>
     Math.max(existing ?? DEFAULT_CREDITS, sessionCredits ?? DEFAULT_CREDITS);
 
-  let userId = existingByProvider?.id ?? existingByEmail?.id ?? crypto.randomUUID();
-  let resolvedCredits = mergeCredits(existingByProvider?.credits ?? existingByEmail?.credits ?? null);
+  const userId = existingByProvider?.id ?? existingByEmail?.id ?? crypto.randomUUID();
+  const resolvedCredits = mergeCredits(existingByProvider?.credits ?? existingByEmail?.credits ?? null);
 
   if (existingByProvider || existingByEmail) {
     await db
@@ -1684,8 +1691,8 @@ app.get("/__ads", (c) => {
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
-  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
-  const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
+  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID);
+  const oauthClientId = ((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID) ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1748,8 +1755,8 @@ app.get("/water-iq/r/:token", (c) => {
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
-  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
-  const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
+  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID);
+  const oauthClientId = ((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID) ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1883,8 +1890,8 @@ siteRoutes.forEach((route) => {
     const adsenseClient = resolveAdsenseClient(c.env);
     const gaMeasurementId = resolveGaMeasurementId(c.env);
     const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
-    const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
-    const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
+    const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID);
+    const oauthClientId = ((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID) ?? "";
     const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
     const consentRequired = isConsentRequired(country);
     const showPrivacyControls = consentRequired;
@@ -3682,7 +3689,7 @@ app.post("/api/water-iq/event", async (c) => {
 
   if (!allowed.has(type)) return c.json({ ok: false, error: "Unknown event type" }, 400);
 
-  storeEvent({ type: type as any, ref });
+  storeEvent({ type: type as Parameters<typeof storeEvent>[0]["type"], ref });
 
   return c.json({ ok: true });
 });
@@ -3949,10 +3956,10 @@ app.post("/api/credits/checkout", async (c) => {
     cancel_url: cancelUrl,
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": "usd",
-    "line_items[0][price_data][unit_amount]": "500",
-    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (10 pack)",
+    "line_items[0][price_data][unit_amount]": "1000",
+    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (5 pack)",
     "line_items[0][price_data][product_data][description]":
-      "Add 10 credits for water eject and bill analysis tools.",
+      "Add 5 credits for water tools and AI insights.",
   });
 
   const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -4339,7 +4346,8 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
     return c.json({ error: "Unsupported share platform." }, 400);
   }
 
-  if (!c.env.GROWTH_TOKEN_SECRET) {
+  const growthTokenSecret = resolveGrowthTokenSecret(c.env);
+  if (!growthTokenSecret) {
     return c.json({ error: "Share tokens are not configured." }, 500);
   }
 
@@ -4439,7 +4447,7 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
   const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   const signedToken = await signShareToken(
     { shareTokenId, refCode, exp: expiresTs },
-    c.env.GROWTH_TOKEN_SECRET,
+    growthTokenSecret,
   );
 
   return c.json({
@@ -4462,11 +4470,12 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
   if (payload.platform !== "x" || !payload.signedToken) {
     return c.json({ status: "rejected", reason: "Missing share token." }, 400);
   }
-  if (!c.env.GROWTH_TOKEN_SECRET) {
+  const growthTokenSecret = resolveGrowthTokenSecret(c.env);
+  if (!growthTokenSecret) {
     return c.json({ status: "rejected", reason: "Share tokens are not configured." }, 500);
   }
 
-  const verified = await verifyShareToken(payload.signedToken, c.env.GROWTH_TOKEN_SECRET);
+  const verified = await verifyShareToken(payload.signedToken, growthTokenSecret);
   if (!verified) {
     return c.json({ status: "rejected", reason: "Invalid share token." }, 400);
   }
@@ -4714,7 +4723,7 @@ const handleGrowthReferralRedirect = async (c: Context<{ Bindings: WorkerEnv }>)
   const now = Date.now();
   const kv = getGrowthKv(c.env);
   const db = getDomainsDb(c.env);
-  let shareTokenId = await kv.get(`ref:${refCode}`);
+  const shareTokenId = await kv.get(`ref:${refCode}`);
   let tokenRow:
     | { id: string; variant_id: "A" | "B" | "C"; ref_code: string }
     | null = null;
@@ -5024,11 +5033,17 @@ const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
     return c.json({ error: "Invalid calculator request body." }, 400);
   }
 
+  const creditCheck = await requireCredits(c, 1);
+  if (!creditCheck.ok) {
+    return creditCheck.response;
+  }
+
   const toNumber = (value: unknown, fallback: number) => {
     const parsed = typeof value === "number" ? value : Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
   };
 
+  const segmentId = typeof payload.segmentId === "string" ? payload.segmentId : "home";
   const billAmount = Math.max(0, toNumber(payload.billAmount, 0));
   const householdSize = Math.max(1, toNumber(payload.householdSize, 1));
   const dripsPerMinute = Math.max(0, toNumber(payload.dripsPerMinute, 0));
@@ -5056,7 +5071,7 @@ const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
   }, you could be wasting about ${gallonsPerYear.toFixed(0)} gallons a year.`;
   let reference = `${showerVsBath} Estimated savings potential: ~$${monthlySavings.toFixed(
     0,
-  )}/mo for a ${householdSize}-person household.`;
+  )}/mo for a ${householdSize}-${segmentId === "commercial" ? "staff" : "person"} profile.`;
   let cta = "Start with the leak fixes";
 
   if (gallonsPerYear < 500) {
@@ -5073,10 +5088,53 @@ const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
     )}/year at typical rates. ${showerVsBath}`;
   }
 
+  if (isOpenAiConfigured(c.env)) {
+    const profileLabel = segmentId === "commercial" ? "commercial business" : "household";
+    const prompt = `You are a water-efficiency coach. Return ONLY valid JSON with this shape:
+{
+  "insight": string,
+  "reference": string,
+  "cta": string
+}
+Rules:
+- 1 sentence for each field.
+- Keep language practical, factual, and concise.
+- Mention dollars only as estimates.
+- Use this context exactly:
+segment=${profileLabel}, billAmount=$${billAmount.toFixed(2)}, size=${householdSize}, dripsPerMinute=${dripsPerMinute}, leakingFaucets=${leakingFaucets}, showerDuration=${showerDuration}, flowRate=${flowRate}.`;
+    try {
+      const openAiData = await analyzeTextWithOpenAI(c.env, {
+        content: prompt,
+        includeWaterContext: false,
+      });
+      const content = openAiData.choices?.[0]?.message?.content || "";
+      const parsed = extractJsonObject(content);
+      if (parsed) {
+        const next = JSON.parse(parsed) as { insight?: string; reference?: string; cta?: string };
+        if (isNonEmptyString(next.insight) && isNonEmptyString(next.reference) && isNonEmptyString(next.cta)) {
+          insight = next.insight;
+          reference = next.reference;
+          cta = next.cta;
+        }
+      }
+    } catch (error) {
+      console.warn("Calculator insight OpenAI fallback used:", error);
+    }
+  }
+
+  const updatedCredits = await debitCredits(
+    c,
+    creditCheck.sessionId,
+    creditCheck.session,
+    1,
+    creditCheck.needsCookie,
+  );
+
   return c.json({
     insight,
     reference,
     cta,
+    credits: updatedCredits,
   });
 };
 
@@ -5372,6 +5430,7 @@ async function callVisionAPI(
   }
 }
 
+/* eslint-disable no-useless-escape */
 async function analyzeTextWithOpenAI(
   env: WorkerEnv,
   options: { content: string; includeWaterContext?: boolean },
@@ -5463,6 +5522,7 @@ function buildLocalTrendPrompt(input: { zip: string; city: string; state: string
 
   return `You are a water utility analyst. Return ONLY valid JSON (no markdown) matching:\n{\n  \"summary\": string,\n  \"seasonalPatterns\": [\n    { \"season\": string, \"trend\": string, \"drivers\": string[] }\n  ],\n  \"recommendations\": string[],\n  \"utilityPrograms\": [\n    { \"name\": string, \"detail\": string }\n  ]\n}\nRules:\n- Base insights on typical residential water patterns for the location.\n- Provide 3-4 seasonalPatterns with concrete drivers (e.g., irrigation, drought rules).\n- Provide 3-5 recommendations that are actionable.\n- Provide 2-3 utilityPrograms; if unsure, mark them as \"Potential\" in the name.\n\nLocation:\n${locationDescriptor}`;
 }
+/* eslint-enable no-useless-escape */
 
 function buildRebatePrompt(input: {
   zip: string;
@@ -5877,6 +5937,10 @@ function validateLocationEnv(env: WorkerEnv): void {
 
 function isOpenAiConfigured(env: WorkerEnv): boolean {
   return Boolean(env.OPEN_API_KEY_NEW);
+}
+
+function resolveGrowthTokenSecret(env: WorkerEnv): string | null {
+  return env.GROWTH_TOKEN_SECRET || env.OPEN_API_KEY_NEW || null;
 }
 
 function validateUploadEnv(env: WorkerEnv): void {

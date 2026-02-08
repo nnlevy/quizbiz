@@ -39,7 +39,7 @@ const householdSegments = [
 ];
 
 const calculatorSteps = [
-  { id: "drips", title: "Leak rate" },
+  { id: "drips", title: "Estimate the impact of a leak" },
   { id: "faucets", title: "Leaking faucets" },
   { id: "shower", title: "Shower duration" },
   { id: "flow", title: "Flow rate" },
@@ -75,7 +75,7 @@ type AiInsight = {
 };
 
 const Calculators = () => {
-  const { credits, deduct } = useCredits();
+  const { credits, setCredits } = useCredits();
   const location = useLocation();
   const [segmentId, setSegmentId] = useState("home");
   const [billAmount, setBillAmount] = useState(120);
@@ -146,11 +146,6 @@ const Calculators = () => {
       setAiError("You are out of credits. Add more to unlock AI insights.");
       return;
     }
-    const nextCredits = deduct(1);
-    if (nextCredits == null) {
-      setAiError("You are out of credits. Add more to unlock AI insights.");
-      return;
-    }
     setAiLoading(true);
     try {
       const response = await fetch("/api/calculator-insight", {
@@ -166,12 +161,17 @@ const Calculators = () => {
           flowRate,
         }),
       });
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error || "We couldn’t generate an insight yet.");
+      const payload = (await response.json().catch(() => null)) as
+        | (AiInsight & { credits?: number })
+        | { error?: string; credits?: number }
+        | null;
+      if (typeof payload?.credits === "number") {
+        setCredits(payload.credits);
       }
-      const payload = (await response.json()) as AiInsight;
-      setAiInsight(payload);
+      if (!response.ok) {
+        throw new Error((payload as { error?: string } | null)?.error || "We couldn’t generate an insight yet.");
+      }
+      setAiInsight(payload as AiInsight);
     } catch (error) {
       setAiError(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
@@ -201,7 +201,13 @@ const Calculators = () => {
       case "bill":
         return <BillAmountStep value={billAmount} onChange={handleBillAmountChange} />;
       case "size":
-        return <HouseholdSizeStep value={householdSize} onChange={setHouseholdSize} />;
+        return (
+          <HouseholdSizeStep
+            value={householdSize}
+            onChange={setHouseholdSize}
+            isCommercial={segmentId === "commercial"}
+          />
+        );
       case "summary":
         return (
           <SummaryStep
@@ -238,7 +244,7 @@ const Calculators = () => {
           <div className="ws-calculators__segment-card">
             <div className="ws-calculators__segment-header">
               <div>
-                <h2 className="ws-calculators__segment-title">Household profile</h2>
+                <h2 className="ws-calculators__segment-title">Average Waterbill Stats</h2>
                 <p className="ws-calculators__segment-subtitle">
                   Choose your segment to update the defaults and benchmarks.
                 </p>
@@ -266,8 +272,8 @@ const Calculators = () => {
                 <p className="ws-calculators__stat-value">${segment.avgBill}/mo</p>
               </div>
               <div className="ws-calculators__stat-card">
-                <p className="ws-calculators__stat-label">Household Size</p>
-                <p className="ws-calculators__stat-value">{segment.householdSize} people</p>
+                <p className="ws-calculators__stat-label">{segment.id === "commercial" ? "Typical Occupancy" : "Household Size"}</p>
+                <p className="ws-calculators__stat-value">{segment.householdSize} {segment.id === "commercial" ? "staff/day" : "people"}</p>
               </div>
             </div>
           </div>

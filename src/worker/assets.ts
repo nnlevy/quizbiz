@@ -126,7 +126,7 @@ export function clientScript(defaultAdsenseClient: string) {
     try {
       const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
       return raw ? (JSON.parse(raw) as ConsentState) : null;
-    } catch (err) {
+    } catch {
       return null;
     }
   };
@@ -134,7 +134,7 @@ export function clientScript(defaultAdsenseClient: string) {
   const writeConsentCookie = (consent: ConsentState) => {
     try {
       document.cookie = `ws_consent=${encodeURIComponent(JSON.stringify(consent))}; Max-Age=31536000; Path=/; SameSite=Lax`;
-    } catch (err) {
+    } catch {
       console.warn('Failed to write consent cookie');
     }
   };
@@ -168,7 +168,7 @@ export function clientScript(defaultAdsenseClient: string) {
   const storeConsent = (consent: ConsentState) => {
     try {
       localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(consent));
-    } catch (err) {
+    } catch {
       console.warn('Failed to persist consent choice');
     }
     writeConsentCookie(consent);
@@ -188,14 +188,14 @@ export function clientScript(defaultAdsenseClient: string) {
   const getWaterIqAnalyticsOptIn = () => {
     try {
       return localStorage.getItem(WATER_IQ_ANALYTICS_KEY) === 'true';
-    } catch (err) {
+    } catch {
       return false;
     }
   };
   const setWaterIqAnalyticsOptIn = (value: boolean) => {
     try {
       localStorage.setItem(WATER_IQ_ANALYTICS_KEY, value ? 'true' : 'false');
-    } catch (err) {
+    } catch {
       // ignore
     }
   };
@@ -1418,8 +1418,8 @@ export function clientScript(defaultAdsenseClient: string) {
           fallback.textContent = 'Support WaterShortcut by turning off your ad blocker.';
           slot.appendChild(fallback);
         }, 4000);
-      } catch (err) {
-        console.error('AdSense failed to fill a slot', err);
+      } catch (error) {
+        console.error('AdSense failed to fill a slot', error);
       }
     });
 
@@ -1583,7 +1583,7 @@ export function clientScript(defaultAdsenseClient: string) {
       const sid = Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
       localStorage.setItem(key, sid);
       return sid;
-    } catch (err) {
+    } catch {
       return 'anon-' + Math.random().toString(36).slice(2);
     }
   };
@@ -1879,7 +1879,7 @@ export function clientScript(defaultAdsenseClient: string) {
         body: JSON.stringify({ type, ref }),
         keepalive: true,
       });
-    } catch (err) {
+    } catch {
       // ignore
     }
   };
@@ -2217,7 +2217,7 @@ export function clientScript(defaultAdsenseClient: string) {
       const token = waterIqEncodeToken(tokenObj);
       try {
         localStorage.setItem('ws_water_iq_badge', computed.badge.id);
-      } catch (err) {
+      } catch {
         // ignore
       }
       if (analyticsOn && hasAnalyticsConsent()) {
@@ -2227,7 +2227,7 @@ export function clientScript(defaultAdsenseClient: string) {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ answers, variant, token, ref }),
           });
-        } catch (err) {
+        } catch {
           // ignore
         }
         void trackWaterIqEvent('quiz_complete', ref);
@@ -2242,7 +2242,7 @@ export function clientScript(defaultAdsenseClient: string) {
     const badgeLabel = (() => {
       try {
         return localStorage.getItem('ws_water_iq_badge');
-      } catch (err) {
+      } catch {
         return null;
       }
     })();
@@ -2278,7 +2278,7 @@ export function clientScript(defaultAdsenseClient: string) {
         const existing = Number(localStorage.getItem('ws_credits') || '5');
         const updated = existing + amount;
         localStorage.setItem('ws_credits', String(updated));
-      } catch (err) {
+      } catch {
         // ignore
       }
       if (statusEl) {
@@ -2292,7 +2292,7 @@ export function clientScript(defaultAdsenseClient: string) {
       const alreadyRewarded = (() => {
         try {
           return localStorage.getItem(rewardKey) === 'true';
-        } catch (err) {
+        } catch {
           return false;
         }
       })();
@@ -2300,7 +2300,7 @@ export function clientScript(defaultAdsenseClient: string) {
         if (score >= 10) {
           try {
             localStorage.setItem(rewardKey, 'true');
-          } catch (err) {
+          } catch {
             // ignore
           }
           scoreRewardEl.hidden = false;
@@ -2308,7 +2308,7 @@ export function clientScript(defaultAdsenseClient: string) {
         } else if (score >= 8) {
           try {
             localStorage.setItem(rewardKey, 'true');
-          } catch (err) {
+          } catch {
             // ignore
           }
           scoreRewardEl.hidden = false;
@@ -2330,14 +2330,14 @@ export function clientScript(defaultAdsenseClient: string) {
         try {
           await navigator.share({ title: 'Water IQ Challenge', text: shareText, url: shareUrl });
           return;
-        } catch (err) {
+        } catch {
           // fall back
         }
       }
       try {
         await navigator.clipboard.writeText(`${shareText}\\n${shareUrl}`);
         alert('Copied share text + link.');
-      } catch (err) {
+      } catch {
         prompt('Copy your link:', shareUrl);
       }
     };
@@ -2348,7 +2348,7 @@ export function clientScript(defaultAdsenseClient: string) {
       try {
         await navigator.clipboard.writeText(challengeUrl);
         alert('Challenge link copied.');
-      } catch (err) {
+      } catch {
         prompt('Copy challenge link:', challengeUrl);
       }
     });
@@ -2363,7 +2363,7 @@ export function clientScript(defaultAdsenseClient: string) {
       let alreadyRewarded = false;
       try {
         alreadyRewarded = localStorage.getItem(shareRewardKey) === 'true';
-      } catch (err) {
+      } catch {
         alreadyRewarded = false;
       }
       if (alreadyRewarded) {
@@ -2372,7 +2372,7 @@ export function clientScript(defaultAdsenseClient: string) {
       }
       try {
         localStorage.setItem(shareRewardKey, 'true');
-      } catch (err) {
+      } catch {
         // ignore
       }
       applyCreditReward(1, `Shared via ${channel}. +1 credit added.`, shareStatus);
@@ -2401,7 +2401,7 @@ export function clientScript(defaultAdsenseClient: string) {
       try {
         await navigator.clipboard.writeText(shareTextWithUrl);
         rewardShareCredit('copy link');
-      } catch (err) {
+      } catch {
         if (shareStatus) shareStatus.textContent = 'Copy failed. Please try again.';
       }
     });
@@ -2418,7 +2418,7 @@ export function clientScript(defaultAdsenseClient: string) {
       try {
         await navigator.clipboard.writeText(draft);
         rewardShareCredit('draft share');
-      } catch (err) {
+      } catch {
         if (shareStatus) shareStatus.textContent = 'Copy failed. Please try again.';
       }
     });
@@ -2428,13 +2428,26 @@ export function clientScript(defaultAdsenseClient: string) {
     let socialProofShareText = '';
     if (socialProof && token) {
       fetch(`/api/water-iq/social-proof?token=${encodeURIComponent(token)}`)
-        .then((res) => res.json() as Promise<any>)
+        .then(
+          (res) =>
+            res.json() as Promise<{
+              data?: {
+                ok?: boolean;
+                n?: number;
+                topPledge?: { label?: string; pct?: number };
+              };
+            }>,
+        )
         .then((json) => {
           if (!json?.data?.ok) {
             socialProof.textContent = 'Social proof is unavailable (you may have opted out of analytics).';
             return;
           }
           const data = json.data;
+          if (!data.topPledge?.label || typeof data.topPledge.pct !== 'number') {
+            socialProof.textContent = 'Social proof is unavailable (you may have opted out of analytics).';
+            return;
+          }
           socialProof.innerHTML = `${escapeHtml((WATER_IQ_COPY as typeof WATER_IQ_COPY)[arm].socialProofPrefix)} <strong>${escapeHtml(
             data.topPledge.label,
           )}</strong> (${data.topPledge.pct}%). <span class="wsMuted">${escapeHtml(
@@ -2455,7 +2468,7 @@ export function clientScript(defaultAdsenseClient: string) {
         try {
           await navigator.clipboard.writeText(socialProofShareText);
           alert('Social proof copied.');
-        } catch (err) {
+        } catch {
           prompt('Copy social proof:', socialProofShareText);
         }
       });
@@ -2478,7 +2491,12 @@ export function clientScript(defaultAdsenseClient: string) {
         body: JSON.stringify({ token, city }),
       }).catch(() => null);
       const res = await fetch(`/api/water-iq/city-average?city=${encodeURIComponent(city)}`)
-        .then((r) => r.json() as Promise<any>)
+        .then(
+          (r) =>
+            r.json() as Promise<{
+              data?: { ok?: boolean; city?: string; avgScore?: number; n?: number };
+            }>,
+        )
         .catch(() => null);
       if (cityResult) {
         if (res?.data?.ok) {
@@ -2495,10 +2513,10 @@ export function clientScript(defaultAdsenseClient: string) {
     const followupStatus = panel.querySelector<HTMLElement>('[data-water-iq-followup-status]');
     followupForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const email = followupForm.querySelector<HTMLInputElement>('input[name=\"email\"]')?.value?.trim() || '';
+      const email = followupForm.querySelector<HTMLInputElement>('input[name="email"]')?.value?.trim() || '';
       const daysSelect = followupForm.querySelector('select[name="days"]') as HTMLSelectElement | null;
       const days = Number(daysSelect?.value || 7);
-      const consent = Boolean(followupForm.querySelector<HTMLInputElement>('input[name=\"consent\"]')?.checked);
+      const consent = Boolean(followupForm.querySelector<HTMLInputElement>('input[name="consent"]')?.checked);
       if (!email) {
         if (followupStatus) followupStatus.textContent = 'Enter an email to schedule your check-in.';
         return;
@@ -2511,7 +2529,9 @@ export function clientScript(defaultAdsenseClient: string) {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ token, email, days, consent }),
-      }).then((r) => r.json() as Promise<any>).catch(() => null);
+      })
+        .then((r) => r.json() as Promise<{ ok?: boolean; error?: string }>)
+        .catch(() => null);
       if (followupStatus) {
         followupStatus.textContent = res?.ok ? '✅ Scheduled. We’ll check in soon.' : `❌ ${res?.error ?? 'Could not schedule'}`;
       }
@@ -2531,14 +2551,16 @@ export function clientScript(defaultAdsenseClient: string) {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ token, action }),
-        }).then((r) => r.json() as Promise<any>).catch(() => null);
+        })
+          .then((r) => r.json() as Promise<{ ok?: boolean; awarded?: boolean; error?: string }>)
+          .catch(() => null);
         const status = panel.querySelector<HTMLElement>('[data-water-iq-reward-status]');
         if (res?.ok && res.awarded) {
           try {
             const existing = Number(localStorage.getItem('ws_credits') || '5');
             const updated = existing + 1;
             localStorage.setItem('ws_credits', String(updated));
-          } catch (err) {
+          } catch {
             // ignore
           }
           button.disabled = true;

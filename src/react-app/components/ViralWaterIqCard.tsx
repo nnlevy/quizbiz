@@ -95,7 +95,7 @@ const ViralWaterIqCard = ({
     };
 
     void loadInsight();
-  }, [badge.id, isActive, normalized, score, state.status]);
+  }, [analyticsContext, badge.id, isActive, normalized, score, state.status]);
 
   const handleShare = async () => {
     if (!state.shareUrl) {

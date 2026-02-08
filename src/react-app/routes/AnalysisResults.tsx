@@ -37,7 +37,7 @@ const AnalysisResults = () => {
     const stored = getAnalysisHistory().find((entry) => entry.id === id);
     if (stored) return stored;
     return null;
-  }, [location.pathname, location.state]);
+  }, [location.pathname, recordState?.record]);
 
   useEffect(() => {
     if (!record) {

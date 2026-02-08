@@ -3,12 +3,14 @@ import type { ChangeEvent } from "react";
 const HouseholdSizeStep = ({
   value,
   onChange,
+  isCommercial = false,
 }: {
   value: number;
   onChange: (nextValue: number) => void;
+  isCommercial?: boolean;
 }) => (
   <label className="ws-calculators__label">
-    <span>Household size</span>
+    <span>{isCommercial ? "Average daily staff or occupants" : "Household size"}</span>
     <input
       className="ws-calculators__input"
       type="number"

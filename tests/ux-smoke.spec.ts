@@ -30,7 +30,7 @@ test.describe("home UX smoke checks", () => {
   test("tool cards navigate to calculators", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: /Leak Detector/ }).click();
-    await expect(page).toHaveURL(/\\/calculators#leak-estimator/);
+    await expect(page).toHaveURL(/\/calculators#leak-estimator/);
     await expect(page.locator("#leak-estimator")).toBeVisible();
   });
 });
