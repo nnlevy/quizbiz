@@ -30,7 +30,15 @@ try {
     signal: controller.signal,
   });
 
-  const payloadText = await response.text();
+  const encoding = (response.headers.get("content-encoding") || "").toLowerCase();
+  const contentType = (response.headers.get("content-type") || "").toLowerCase();
+
+  const rawBuffer = Buffer.from(await response.arrayBuffer());
+  const decodedBuffer = encoding.includes("gzip")
+    ? (await import("node:zlib")).gunzipSync(rawBuffer)
+    : rawBuffer;
+  const payloadText = decodedBuffer.toString("utf-8");
+
   if (!response.ok) {
     console.error("Smoke check failed with status:", response.status);
     console.error(payloadText);
@@ -42,7 +50,8 @@ try {
     payload = JSON.parse(payloadText);
   } catch {
     console.error("Expected JSON response but got:");
-    console.error(payloadText);
+    console.error({ contentType, encoding });
+    console.error(payloadText.slice(0, 2000));
     process.exit(1);
   }
 
