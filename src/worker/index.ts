@@ -1068,25 +1068,33 @@ const logGrowthEvent = async (
 ) => {
   const id = crypto.randomUUID();
   const ts = Date.now();
-  await db
-    .prepare(
-      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
-    )
-    .bind(
-      id,
-      ts,
-      payload.eventType,
-      payload.platform ?? null,
-      payload.sessionId ?? null,
-      payload.userId ?? null,
-      payload.ipHash ?? null,
-      payload.userAgentHash ?? null,
-      payload.refCode ?? null,
-      payload.shareTokenId ?? null,
-      payload.page ?? null,
-      payload.meta ? JSON.stringify(payload.meta) : null,
-    )
-    .run();
+  try {
+    await db
+      .prepare(
+        `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+      )
+      .bind(
+        id,
+        ts,
+        payload.eventType,
+        payload.platform ?? null,
+        payload.sessionId ?? null,
+        payload.userId ?? null,
+        payload.ipHash ?? null,
+        payload.userAgentHash ?? null,
+        payload.refCode ?? null,
+        payload.shareTokenId ?? null,
+        payload.page ?? null,
+        payload.meta ? JSON.stringify(payload.meta) : null,
+      )
+      .run();
+  } catch (error) {
+    // Growth tracking must never break user-facing flows.
+    console.warn("Growth event log failed", {
+      eventType: payload.eventType,
+      message: (error as Error)?.message,
+    });
+  }
 };
 
 const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: boolean) => {
