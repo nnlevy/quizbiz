@@ -11,12 +11,6 @@ type AnalyzeState = {
 };
 
 const Analyze = () => {
-  usePageMeta({
-    title: "AI water bill analysis in progress | WaterShortcut",
-    description:
-      "Watch AI water bill analysis progress and see insights that help you save water and money.",
-    canonicalPath: "/analyze-water-bill",
-  });
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state || {}) as AnalyzeState;
@@ -29,6 +23,24 @@ const Analyze = () => {
   const isManual = state.mode === "manual";
   const hasUpload = state.mode === "upload" || Boolean(state.fileName);
   const hasMode = isDemo || isManual || hasUpload;
+
+  const metaTitle = !hasMode
+    ? "Analyze your water bill | WaterShortcut"
+    : complete
+      ? "Water bill analysis results | WaterShortcut"
+      : "AI water bill analysis in progress | WaterShortcut";
+
+  const metaDescription = !hasMode
+    ? "Upload a water bill PDF, try a demo bill, or enter totals manually to get a clear savings plan."
+    : complete
+      ? "Your water bill insights are ready: spikes, tier jumps, and the fastest ways to save."
+      : "Watch AI water bill analysis progress and see insights that help you save water and money.";
+
+  usePageMeta({
+    title: metaTitle,
+    description: metaDescription,
+    canonicalPath: "/analyze-water-bill",
+  });
   const latestAnalysis = useMemo(() => getAnalysisHistory()[0] ?? null, []);
   const spikes = useMemo(() => {
     if (!latestAnalysis) return [];
@@ -45,7 +57,11 @@ const Analyze = () => {
     return hasMode ? "Uploaded bill" : "No bill selected yet";
   }, [hasMode, state.mode, state.fileName]);
 
-  const heroEyebrow = complete ? "Analysis complete" : "Analysis in progress";
+  const heroEyebrow = !hasMode
+    ? "Start your analysis"
+    : complete
+      ? "Analysis complete"
+      : "Analysis in progress";
   const heroTitle = complete
     ? isDemo
       ? "Demo insights are ready."
@@ -123,10 +139,21 @@ const Analyze = () => {
           <h2>Start your analysis</h2>
           <p>Upload a bill, try the demo bill, or use manual entry to generate insights.</p>
           <div className="ws-tool-grid">
-            <button className="ws-button" type="button" onClick={() => navigate("/")}>
-              Go to upload options
+            <button className="ws-button" type="button" onClick={() => navigate("/")}> 
+              Upload a bill
             </button>
-            <button className="ws-button-secondary" type="button" onClick={() => navigate("/manual-entry")}>
+            <button
+              className="ws-button-secondary"
+              type="button"
+              onClick={() => navigate("/analyze-water-bill", { state: { mode: "demo" } })}
+            >
+              Try demo bill
+            </button>
+            <button
+              className="ws-button-secondary"
+              type="button"
+              onClick={() => navigate("/manual-entry")}
+            >
               Manual entry
             </button>
           </div>
