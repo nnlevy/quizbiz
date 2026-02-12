@@ -4135,16 +4135,28 @@ const handleAnalyzeBill = async (c: any) => {
     return c.html(renderAnalysisResponse(openAiData));
   } catch (error) {
     console.error("Error handling file upload:", error);
-    const configIssue =
-      error instanceof Error &&
-      /service account|OAuth token|Document AI/i.test(error.message);
-    const errorMessage = configIssue
+
+    const message = error instanceof Error ? error.message : String(error);
+
+    const documentAiIssue =
+      /service account|oauth token|document ai/i.test(message);
+
+    const openAiQuotaIssue =
+      /insufficient_quota|quota|billing/i.test(message);
+
+    const openAiIssue = /openai/i.test(message);
+
+    const errorMessage = documentAiIssue
       ? "File processing is temporarily unavailable due to Google Document AI credentials. Please verify the service account secret and try again."
-      : "An error occurred during file upload.";
-    return c.json(
-      { error: errorMessage },
-      500,
-    );
+      : openAiQuotaIssue
+        ? "AI analysis is temporarily unavailable due to usage limits. Please try again later."
+        : openAiIssue
+          ? "AI analysis is temporarily unavailable. Please try again later."
+          : "An error occurred during file upload.";
+
+    const status = documentAiIssue ? 500 : openAiIssue ? 503 : 500;
+
+    return c.json({ error: errorMessage }, status);
   } finally {
     if (fileBytes) {
       fileBytes.fill(0);
