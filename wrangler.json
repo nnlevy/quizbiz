@@ -3,7 +3,9 @@
   "name": "watershortcut",
   "main": "./src/worker/index.ts",
   "compatibility_date": "2025-04-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "observability": {
     "enabled": true
   },
@@ -35,7 +37,7 @@
     },
     {
       "binding": "KV_GROWTH",
-      "id": "${KV_GROWTH_ID}"
+      "id": "7746d8e39dff4c9f80ebc1ff7b2716f4"
     }
   ],
   "assets": {
