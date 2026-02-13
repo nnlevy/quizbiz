@@ -995,6 +995,8 @@
 .ws-home ins.adsbygoogle[style*="position: fixed"],
 .ws-home .ws-margin-ad {
   display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 body[data-ads-disabled="true"] .ws-ads,
@@ -1002,6 +1004,8 @@ body[data-ads-disabled="true"] .footer-ad,
 body[data-ads-disabled="true"] ins.adsbygoogle,
 body[data-ads-disabled="true"] .ws-margin-ad {
   display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .ws-footer-link {
