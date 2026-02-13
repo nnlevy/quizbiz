@@ -49,6 +49,39 @@ const Dashboard = () => {
   const [plan, setPlan] = useState(getSavingsPlan());
   const badges = useMemo(() => getBadges(), []);
   const latestAlerts = history[0]?.alerts ?? [];
+  const sampleHistory = [
+    {
+      id: "sample-history-june",
+      billingPeriod: "May 2026",
+      date: "6/3/2026",
+      usage: "12,480 gallons",
+      cost: "$74.22",
+    },
+    {
+      id: "sample-history-may",
+      billingPeriod: "Apr 2026",
+      date: "5/2/2026",
+      usage: "11,930 gallons",
+      cost: "$69.18",
+    },
+  ];
+  const sampleAlert = {
+    id: "sample-alert-tier",
+    title: "Usage approaching next tier",
+    detail: "Irrigation use may push you into a higher-priced tier next cycle.",
+  };
+  const sampleTip = {
+    id: "sample-tip-aerator",
+    title: "Install high-efficiency faucet aerators",
+    description: "Typical homes save 700-1,000 gallons each month with 1.0 GPM models.",
+    source: "AI analysis sample",
+  };
+  const sampleGoal = {
+    id: "sample-goal",
+    title: "Cut outdoor water use",
+    target: "12% in 4 months",
+    progress: 38,
+  };
 
   const handleSignOut = async () => {
     try {
@@ -143,6 +176,71 @@ const Dashboard = () => {
             Your dashboard becomes a living history of bill insights, goals, and alerts once you
             sign in.
           </p>
+          <h3>Sample preview</h3>
+          <p className="ws-subtitle">
+            This read-only preview mirrors the dashboard cards you&apos;ll get once you create an
+            account.
+          </p>
+          <div className="ws-info-card" aria-label="Sample analysis history">
+            <h4>Bill history</h4>
+            <ul className="ws-history-list">
+              {sampleHistory.map((entry) => (
+                <li key={entry.id}>
+                  <div>
+                    <strong>{entry.billingPeriod}</strong>
+                    <p className="ws-subtitle">
+                      {entry.date} · {entry.usage} · {entry.cost}
+                    </p>
+                  </div>
+                  <span className="ws-footer-link" aria-hidden="true">
+                    Sample
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="ws-info-card" aria-label="Sample alerts">
+            <h4>Personalized insights &amp; alerts</h4>
+            <ul className="ws-alert-list">
+              <li>
+                <strong>{sampleAlert.title}</strong>
+                <p className="ws-subtitle">{sampleAlert.detail}</p>
+              </li>
+            </ul>
+          </div>
+          <div className="ws-info-card" aria-label="Sample savings plan">
+            <h4>Savings plan</h4>
+            <ul className="ws-plan-list">
+              <li>
+                <strong>{sampleTip.title}</strong>
+                <p className="ws-subtitle">{sampleTip.description}</p>
+                <span className="ws-tag">Saved from {sampleTip.source}</span>
+              </li>
+            </ul>
+          </div>
+          <div className="ws-info-card" aria-label="Sample goal progress">
+            <h4>Water-saving goals</h4>
+            <div className="ws-goal-grid">
+              <div className="ws-goal-card">
+                <h5>{sampleGoal.title}</h5>
+                <p className="ws-subtitle">Target: {sampleGoal.target}</p>
+                <label className="ws-field" htmlFor="sample-goal-progress">
+                  Progress: {sampleGoal.progress}%
+                  <input
+                    id="sample-goal-progress"
+                    className="ws-input"
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={sampleGoal.progress}
+                    readOnly
+                    disabled
+                    aria-readonly="true"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
           <ul className="ws-alert-list">
             <li>Analysis history timeline with every bill you scan.</li>
             <li>Personalized conservation tips tailored to your utility.</li>
