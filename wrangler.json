@@ -3,8 +3,12 @@
   "name": "watershortcut",
   "main": "./src/worker/index.ts",
   "compatibility_date": "2025-04-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": { "enabled": true },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true
+  },
   "upload_source_maps": true,
   "vars": {
     "Google_Document_AI_Processor_Prediction_Endpoint": "https://us-documentai.googleapis.com/v1/projects/32766728438/locations/us/processors/dc3fed4aeef15611:process",

@@ -4416,7 +4416,7 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
   );
 
   // If we couldn't hash IP (e.g., missing salt), fall back to session-based rate limiting only.
-  let ipRate = { allowed: true, remaining: SHARE_START_LIMIT_PER_HOUR } as const;
+  let ipRate = { allowed: true, count: 0 };
   if (ipHash) {
     ipRate = await incrementRateLimit(
       kv,
