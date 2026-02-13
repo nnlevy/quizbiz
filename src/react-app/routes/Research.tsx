@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
@@ -15,6 +15,60 @@ const LOCATIONS = [
   "Tampa, FL",
 ];
 
+type ResearchLinks = {
+  conservationOffice: string;
+  rebates: string;
+  outageAlerts: string;
+  leakAdjustmentPolicy: string;
+};
+
+type EnrichedResearchLinks = Partial<ResearchLinks>;
+
+const parseLocation = (input: string) => {
+  const parts = input
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length < 2) {
+    return { city: input.trim(), state: "" };
+  }
+
+  return {
+    city: parts[0],
+    state: parts[1],
+  };
+};
+
+const buildFallbackResearchLinks = (input: string): ResearchLinks => {
+  const { city, state } = parseLocation(input);
+  const locationQuery = [city, state].filter(Boolean).join(" ");
+  const utilityQuery = [city, state, "water utility"].filter(Boolean).join(" ");
+
+  return {
+    conservationOffice: `https://www.google.com/search?q=${encodeURIComponent(
+      `${utilityQuery} conservation office`,
+    )}`,
+    rebates: `https://www.google.com/search?q=${encodeURIComponent(
+      `${utilityQuery} rebates`,
+    )}`,
+    outageAlerts: `https://www.google.com/search?q=${encodeURIComponent(
+      `${utilityQuery} outage alerts sign up`,
+    )}`,
+    leakAdjustmentPolicy: `https://www.google.com/search?q=${encodeURIComponent(
+      `${locationQuery} leak adjustment policy`,
+    )}`,
+  };
+};
+
+const resolveResearchLinks = (
+  fallbackLinks: ResearchLinks,
+  enrichedLinks: EnrichedResearchLinks | null,
+): ResearchLinks => ({
+  ...fallbackLinks,
+  ...enrichedLinks,
+});
+
 const Research = () => {
   usePageMeta({
     title: "Water research plan | Save water",
@@ -24,6 +78,7 @@ const Research = () => {
   });
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [enrichedLinks, setEnrichedLinks] = useState<EnrichedResearchLinks | null>(null);
 
   const suggestions = useMemo(
     () => LOCATIONS.filter((location) => location.toLowerCase().includes(query.toLowerCase())),
@@ -35,6 +90,25 @@ const Research = () => {
     if (!query.trim()) return;
     setSelected(query.trim());
   };
+
+  useEffect(() => {
+    if (!selected) {
+      setEnrichedLinks(null);
+      return;
+    }
+
+    // Placeholder for future API-backed enrichment.
+    // We intentionally keep fallback link generation separate so the checklist
+    // remains fully usable even when enrichment is unavailable.
+    setEnrichedLinks(null);
+  }, [selected]);
+
+  const resolvedLinks = useMemo(() => {
+    if (!selected) return null;
+
+    const fallbackLinks = buildFallbackResearchLinks(selected);
+    return resolveResearchLinks(fallbackLinks, enrichedLinks);
+  }, [selected, enrichedLinks]);
 
   return (
     <section className="ws-page" aria-labelledby="research-title">
@@ -67,13 +141,24 @@ const Research = () => {
         </button>
       </form>
 
-      {selected && (
+      {selected && resolvedLinks && (
         <div className="ws-progress" aria-live="polite">
           <h2>Recommended checklist for {selected}</h2>
           <ul className="ws-checklist">
-            <li>Call the water conservation office and ask about appliance rebates.</li>
-            <li>Request the latest outage alert sign-up link for {selected}.</li>
-            <li>Search for “{selected} leak adjustment policy” and record requirements.</li>
+            <li>
+              Find your local <a href={resolvedLinks.conservationOffice}>water conservation office</a>{" "}
+              and ask about appliance rebates.
+            </li>
+            <li>
+              Review available <a href={resolvedLinks.rebates}>water-saving rebates</a> for {selected}.
+            </li>
+            <li>
+              Sign up for <a href={resolvedLinks.outageAlerts}>outage alerts</a> from your provider.
+            </li>
+            <li>
+              Read the <a href={resolvedLinks.leakAdjustmentPolicy}>leak adjustment policy</a> and
+              record any required documentation.
+            </li>
           </ul>
           <div className="ws-tool-grid">
             <RouterLink className="ws-footer-link" to="/analyze-water-bill">
