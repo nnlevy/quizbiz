@@ -150,11 +150,7 @@ const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
 };
 
 const getDomainsDb = (env: WorkerEnv): D1Database => {
-<<<<<<< HEAD
   const db = env.UsersAcrossAllDomains || env.DOMAINS_DB_ID || env["domains-db"];
-=======
-  const db = env.UsersAcrossAllDomains || env["domains-db"];
->>>>>>> origin/main
   if (!db) {
     throw new Error("Missing D1 binding for domains database.");
   }
@@ -1075,27 +1071,6 @@ const logGrowthEvent = async (
 ) => {
   const id = crypto.randomUUID();
   const ts = Date.now();
-<<<<<<< HEAD
-  await db
-    .prepare(
-      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
-    )
-    .bind(
-      id,
-      ts,
-      payload.eventType,
-      payload.platform ?? null,
-      payload.sessionId ?? null,
-      payload.userId ?? null,
-      payload.ipHash ?? null,
-      payload.userAgentHash ?? null,
-      payload.refCode ?? null,
-      payload.shareTokenId ?? null,
-      payload.page ?? null,
-      payload.meta ? JSON.stringify(payload.meta) : null,
-    )
-    .run();
-=======
   try {
     await db
       .prepare(
@@ -1123,7 +1098,6 @@ const logGrowthEvent = async (
       message: (error as Error)?.message,
     });
   }
->>>>>>> origin/main
 };
 
 const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: boolean) => {
@@ -4395,12 +4369,8 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
     return c.json({ error: "Unsupported share platform." }, 400);
   }
 
-<<<<<<< HEAD
-  if (!c.env.GROWTH_TOKEN_SECRET) {
-=======
   const growthTokenSecret = resolveGrowthTokenSecret(c.env);
   if (!growthTokenSecret) {
->>>>>>> origin/main
     return c.json({ error: "Share tokens are not configured." }, 500);
   }
 
@@ -4500,11 +4470,7 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
   const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   const signedToken = await signShareToken(
     { shareTokenId, refCode, exp: expiresTs },
-<<<<<<< HEAD
-    c.env.GROWTH_TOKEN_SECRET,
-=======
     growthTokenSecret,
->>>>>>> origin/main
   );
 
   return c.json({
@@ -4527,20 +4493,12 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
   if (payload.platform !== "x" || !payload.signedToken) {
     return c.json({ status: "rejected", reason: "Missing share token." }, 400);
   }
-<<<<<<< HEAD
-  if (!c.env.GROWTH_TOKEN_SECRET) {
-    return c.json({ status: "rejected", reason: "Share tokens are not configured." }, 500);
-  }
-
-  const verified = await verifyShareToken(payload.signedToken, c.env.GROWTH_TOKEN_SECRET);
-=======
   const growthTokenSecret = resolveGrowthTokenSecret(c.env);
   if (!growthTokenSecret) {
     return c.json({ status: "rejected", reason: "Share tokens are not configured." }, 500);
   }
 
   const verified = await verifyShareToken(payload.signedToken, growthTokenSecret);
->>>>>>> origin/main
   if (!verified) {
     return c.json({ status: "rejected", reason: "Invalid share token." }, 400);
   }
@@ -4714,15 +4672,7 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     const refreshed = (await db
       .prepare("SELECT state, credits_awarded, finalize_reason FROM share_tokens WHERE id = ?1")
       .bind(tokenRow.id)
-<<<<<<< HEAD
       .first()) as { state: "finalized" | "expired" | "void"; credits_awarded?: number; finalize_reason?: string } | null;
-=======
-      .first()) as {
-      state: "finalized" | "expired" | "void";
-      credits_awarded?: number;
-      finalize_reason?: string;
-    } | null;
->>>>>>> origin/main
     if (refreshed) {
       const fallback = resolveFinalizeOutcome(refreshed);
       if (fallback) {
@@ -4736,11 +4686,7 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     return c.json({ status: "rejected", reason: "Unable to finalize share." }, 409);
   }
 
-<<<<<<< HEAD
-  await db
-=======
   const awardInsert = await db
->>>>>>> origin/main
     .prepare(
       `INSERT OR IGNORE INTO credit_awards_ledger (id, ts, award_type, platform, user_id, session_id, share_token_id, credits, status, reason, date_bucket)\n       VALUES (?1, ?2, 'share_x', 'x', ?3, ?4, ?5, ?6, 'granted', NULL, ?7)`,
     )
@@ -4755,8 +4701,6 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     )
     .run();
 
-<<<<<<< HEAD
-=======
   if (!awardInsert.meta?.changes) {
     const rejectReason = "Already claimed this week";
     await db
@@ -4769,7 +4713,6 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     return c.json({ status: "rejected", credits: 0, reason: rejectReason });
   }
 
->>>>>>> origin/main
   const nextCredits = await grantCredits(c.env, sessionId, session, SHARE_CREDIT_AMOUNT);
 
   await logGrowthEvent(db, {
@@ -4799,11 +4742,7 @@ const handleGrowthReferralRedirect = async (c: Context<{ Bindings: WorkerEnv }>)
   const now = Date.now();
   const kv = getGrowthKv(c.env);
   const db = getDomainsDb(c.env);
-<<<<<<< HEAD
-  let shareTokenId = await kv.get(`ref:${refCode}`);
-=======
   const shareTokenId = await kv.get(`ref:${refCode}`);
->>>>>>> origin/main
   let tokenRow:
     | { id: string; variant_id: "A" | "B" | "C"; ref_code: string }
     | null = null;

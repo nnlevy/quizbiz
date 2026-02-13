@@ -111,11 +111,7 @@ export const verifyShareToken = async (
 ): Promise<SignedShareTokenPayload | null> => {
   const [payloadSegment, signatureSegment] = token.split(".");
   if (!payloadSegment || !signatureSegment) return null;
-<<<<<<< HEAD
-  let payload: SignedShareTokenPayload;
-=======
   let payload: SignedShareTokenPayload | null = null;
->>>>>>> origin/main
   try {
     payload = JSON.parse(new TextDecoder().decode(fromBase64Url(payloadSegment))) as
       | SignedShareTokenPayload
