@@ -27,8 +27,6 @@ export type ShareFinalizeResponse = {
   nextUnlockHint?: string;
 };
 
-<<<<<<< HEAD
-=======
 type ShareStartSuccess = {
   intentUrl: string;
   signedToken: string;
@@ -49,7 +47,6 @@ const isShareStartSuccess = (payload: unknown): payload is ShareStartSuccess => 
   );
 };
 
->>>>>>> origin/main
 const readSessionValue = (key: string) => {
   if (typeof window === "undefined") return null;
   return window.sessionStorage.getItem(key);
@@ -106,57 +103,42 @@ export const useShareCredits = () => {
     };
   }, []);
 
-  const startShare = useCallback(
-    async (variantId?: "A" | "B" | "C") => {
-      setIsLoading(true);
-      setHint(null);
-      setToastMessage(null);
-      try {
-        const page = typeof window === "undefined" ? "/" : window.location.pathname;
-        const response = await fetch("/api/growth/share/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ platform: "x", page, variantId }),
-        });
-        const payload = (await response.json().catch(() => null)) as
-<<<<<<< HEAD
-          | {
-              intentUrl?: string;
-              signedToken?: string;
-              variantId?: "A" | "B" | "C";
-            }
-          | { error?: string }
-          | null;
-        if (!response.ok || !payload || !payload.intentUrl || !payload.signedToken) {
-          throw new Error(payload && "error" in payload ? payload.error : "Unable to start share.");
-=======
-          | ShareStartSuccess
-          | ShareStartError
-          | null;
-        if (!response.ok || !isShareStartSuccess(payload)) {
-          const message =
-            payload && typeof payload === "object" && "error" in payload
-              ? (payload as ShareStartError).error
-              : null;
-          throw new Error(message || "Unable to start share.");
->>>>>>> origin/main
-        }
-        writeSessionValue(SHARE_TOKEN_KEY, payload.signedToken);
-        if (payload.variantId) {
-          writeSessionValue(SHARE_VARIANT_KEY, payload.variantId);
-        }
-        setHint("Post your tweet, then come back to claim your credits.");
-        setClaimPrompt(true);
-        window.open(payload.intentUrl, "_blank", "noopener,noreferrer");
-      } catch (error) {
-        setToastTone("error");
-        setToastMessage(error instanceof Error ? error.message : "Unable to start share.");
-      } finally {
-        setIsLoading(false);
+  const startShare = useCallback(async (variantId?: "A" | "B" | "C") => {
+    setIsLoading(true);
+    setHint(null);
+    setToastMessage(null);
+    try {
+      const page = typeof window === "undefined" ? "/" : window.location.pathname;
+      const response = await fetch("/api/growth/share/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform: "x", page, variantId }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | ShareStartSuccess
+        | ShareStartError
+        | null;
+      if (!response.ok || !isShareStartSuccess(payload)) {
+        const message =
+          payload && typeof payload === "object" && "error" in payload
+            ? (payload as ShareStartError).error
+            : null;
+        throw new Error(message || "Unable to start share.");
       }
-    },
-    [],
-  );
+      writeSessionValue(SHARE_TOKEN_KEY, payload.signedToken);
+      if (payload.variantId) {
+        writeSessionValue(SHARE_VARIANT_KEY, payload.variantId);
+      }
+      setHint("Post your tweet, then come back to claim your credits.");
+      setClaimPrompt(true);
+      window.open(payload.intentUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setToastTone("error");
+      setToastMessage(error instanceof Error ? error.message : "Unable to start share.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const finalizeShare = useCallback(async () => {
     const signedToken = readSessionValue(SHARE_TOKEN_KEY);
