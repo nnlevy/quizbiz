@@ -17,7 +17,50 @@ type ManualFormState = {
   notes: string;
 };
 
+type ManualAnalyzePayload = {
+  period: string;
+  usage: number;
+  unit: string;
+  cost: number;
+  rate: number | null;
+  household: number | null;
+  notes: string;
+};
+
 const UNIT_OPTIONS = ["Gallons", "CCF", "HCF"];
+
+const parsePositiveNumber = (value: string) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseOptionalNumber = (value: string) => {
+  if (!value.trim()) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+// Keep `/api/analyze-manual` payload schema consistent with numbers for required fields,
+// and nullable numbers for optional fields.
+const toManualAnalyzePayload = (formState: ManualFormState): ManualAnalyzePayload | null => {
+  const usage = parsePositiveNumber(formState.usage);
+  const cost = parsePositiveNumber(formState.cost);
+  if (usage === null || cost === null) {
+    return null;
+  }
+
+  return {
+    period: formState.period,
+    usage,
+    unit: formState.unit,
+    cost,
+    rate: parseOptionalNumber(formState.rate),
+    household: parseOptionalNumber(formState.household),
+    notes: formState.notes,
+  };
+};
 
 const ManualEntry = () => {
   usePageMeta({
@@ -65,16 +108,16 @@ const ManualEntry = () => {
 
   const validate = () => {
     const nextErrors: Partial<Record<keyof ManualFormState, string>> = {};
-    const usage = Number(formState.usage);
-    const cost = Number(formState.cost);
-    if (!formState.usage || !Number.isFinite(usage) || usage <= 0) {
+    const usage = parsePositiveNumber(formState.usage);
+    const cost = parsePositiveNumber(formState.cost);
+    if (usage === null) {
       nextErrors.usage = "Enter a total usage amount above 0.";
     }
-    if (!formState.cost || !Number.isFinite(cost) || cost <= 0) {
+    if (cost === null) {
       nextErrors.cost = "Enter a total cost above $0.";
     }
-    const household = Number(formState.household);
-    if (formState.household && (!Number.isFinite(household) || household < 1)) {
+    const household = parseOptionalNumber(formState.household);
+    if (formState.household.trim() && (household === null || household < 1)) {
       nextErrors.household = "Household size should be 1 or more.";
     }
     return nextErrors;
@@ -101,18 +144,15 @@ const ManualEntry = () => {
         }
       };
 
+      const payload = toManualAnalyzePayload(formState);
+      if (!payload) {
+        throw new Error("Please fix the highlighted fields to continue.");
+      }
+
       const response = await fetch("/api/analyze-manual", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          period: formState.period,
-          usage: formState.usage,
-          unit: formState.unit,
-          cost: formState.cost,
-          rate: formState.rate,
-          household: formState.household,
-          notes: formState.notes,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const responseText = await response.text();
