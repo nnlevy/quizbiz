@@ -27,6 +27,8 @@ export type ShareFinalizeResponse = {
   nextUnlockHint?: string;
 };
 
+<<<<<<< HEAD
+=======
 type ShareStartSuccess = {
   intentUrl: string;
   signedToken: string;
@@ -47,6 +49,7 @@ const isShareStartSuccess = (payload: unknown): payload is ShareStartSuccess => 
   );
 };
 
+>>>>>>> origin/main
 const readSessionValue = (key: string) => {
   if (typeof window === "undefined") return null;
   return window.sessionStorage.getItem(key);
@@ -116,6 +119,17 @@ export const useShareCredits = () => {
           body: JSON.stringify({ platform: "x", page, variantId }),
         });
         const payload = (await response.json().catch(() => null)) as
+<<<<<<< HEAD
+          | {
+              intentUrl?: string;
+              signedToken?: string;
+              variantId?: "A" | "B" | "C";
+            }
+          | { error?: string }
+          | null;
+        if (!response.ok || !payload || !payload.intentUrl || !payload.signedToken) {
+          throw new Error(payload && "error" in payload ? payload.error : "Unable to start share.");
+=======
           | ShareStartSuccess
           | ShareStartError
           | null;
@@ -125,6 +139,7 @@ export const useShareCredits = () => {
               ? (payload as ShareStartError).error
               : null;
           throw new Error(message || "Unable to start share.");
+>>>>>>> origin/main
         }
         writeSessionValue(SHARE_TOKEN_KEY, payload.signedToken);
         if (payload.variantId) {

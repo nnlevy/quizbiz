@@ -2,7 +2,10 @@ import { CSSProperties, useMemo, useState } from "react";
 
 import { useCredits } from "../context/CreditsContext";
 import { useShareCredits } from "../hooks/useShareCredits";
+<<<<<<< HEAD
+=======
 import { appendReferralToUrl, fetchReferralToken } from "../utils/referral";
+>>>>>>> origin/main
 
 const unlockHintForCredits = (credits: number) => {
   if (credits < 5) {
@@ -29,8 +32,11 @@ const EarnCreditsCard = () => {
     finalizeShare,
   } = useShareCredits();
   const [isClaiming, setIsClaiming] = useState(false);
+<<<<<<< HEAD
+=======
   const [isInviting, setIsInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+>>>>>>> origin/main
 
   const handleStartShare = () => {
     const variants = config?.variants ?? [];
@@ -47,6 +53,8 @@ const EarnCreditsCard = () => {
     setIsClaiming(false);
   };
 
+<<<<<<< HEAD
+=======
   const handleInviteFriend = async () => {
     if (typeof window === "undefined") return;
     setInviteMessage(null);
@@ -84,6 +92,7 @@ const EarnCreditsCard = () => {
     }
   };
 
+>>>>>>> origin/main
   const socialProof = useMemo(() => {
     return "💧 Join thousands saving water this month";
   }, []);
@@ -126,14 +135,22 @@ const EarnCreditsCard = () => {
         )}
 
         <div className="earn-credits-card__secondary">
+<<<<<<< HEAD
+          <button type="button" className="ws-button-secondary" disabled>
+            Invite a friend (coming soon)
+=======
           <button type="button" className="ws-button-secondary" onClick={handleInviteFriend} disabled={isInviting}>
             {isInviting ? "Preparing invite..." : "Invite a friend"}
+>>>>>>> origin/main
           </button>
           <a className="ws-button-secondary" href="/analyze-water-bill">
             Complete a mission
           </a>
         </div>
+<<<<<<< HEAD
+=======
         {inviteMessage && <p className="earn-credits-card__hint">{inviteMessage}</p>}
+>>>>>>> origin/main
 
         <div className="earn-credits-card__footer">
           <p className="earn-credits-card__social">{socialProof}</p>
