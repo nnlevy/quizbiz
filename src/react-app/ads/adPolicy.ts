@@ -27,13 +27,16 @@ const AD_PAGE_RULES: AdPageRule[] = [
     },
   },
   {
-    description: "Analysis flows avoid sticky ads near form inputs",
+    description: "Critical funnel routes are ad-free (trust + conversion)",
     match: (pathname) =>
       pathname.startsWith("/analysis-results") ||
       pathname === "/analyze-water-bill" ||
       pathname === "/manual-entry" ||
+      pathname === "/dashboard" ||
       pathname === "/find-water-provider",
     visibility: {
+      footer: false,
+      inline: false,
       sticky: false,
     },
   },
