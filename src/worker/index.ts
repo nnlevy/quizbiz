@@ -1324,6 +1324,13 @@ app.use("*", async (c, next) => {
   await next();
   const res = c.res;
   if (!res.body) return;
+
+  // Avoid compressing API responses at the Worker layer. Cloudflare will handle
+  // response compression correctly, and double/incorrect compression can break
+  // JSON fetch() clients.
+  const pathname = new URL(c.req.url).pathname;
+  if (pathname.startsWith("/api/")) return;
+
   if (res.headers.get("Content-Encoding")) return;
   const acceptEncoding = c.req.header("accept-encoding") || "";
   const preferredEncoding = acceptsEncoding(acceptEncoding, "br")
