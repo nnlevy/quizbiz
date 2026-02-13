@@ -4333,20 +4333,29 @@ const handleReferralClaim = async (c: Context<{ Bindings: WorkerEnv }>) => {
 const handleGrowthShareConfig = async (c: Context<{ Bindings: WorkerEnv }>) => {
   const { sessionId, session, needsCookie } = await ensureSession(c);
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
-  const db = getDomainsDb(c.env);
   const kv = getGrowthKv(c.env);
   const now = Date.now();
   const page = c.req.query("page") || "/";
-  const { ipHash, userAgentHash } = await getGrowthHashes(c);
-  await logGrowthEvent(db, {
-    eventType: "share_impression",
-    platform: "x",
-    sessionId,
-    userId: session.userId ?? null,
-    ipHash,
-    userAgentHash,
-    page,
-  });
+
+  // Best-effort telemetry only. This endpoint must not hard-500.
+  try {
+    const db = getDomainsDb(c.env);
+    const { ipHash, userAgentHash } = await getGrowthHashes(c);
+    await logGrowthEvent(db, {
+      eventType: "share_impression",
+      platform: "x",
+      sessionId,
+      userId: session.userId ?? null,
+      ipHash,
+      userAgentHash,
+      page,
+    });
+  } catch (error) {
+    console.warn("Growth share config telemetry skipped", {
+      message: (error as Error)?.message,
+    });
+  }
+
   const dayBucket = getGrowthDailyBucket(now);
   await incrementCounter(kv, `cnt:share_impression:${dayBucket}`, 60 * 60 * 24 * 8);
 
@@ -4383,26 +4392,40 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
 
   const { sessionId, session, needsCookie } = await ensureSession(c);
   setSessionCookieIfNeeded(c, sessionId, needsCookie);
-  const { ipHash, userAgentHash } = await getGrowthHashes(c);
+  let ipHash: string | null = null;
+  let userAgentHash: string | null = null;
+  try {
+    const hashes = await getGrowthHashes(c);
+    ipHash = hashes.ipHash;
+    userAgentHash = hashes.userAgentHash;
+  } catch (error) {
+    // Missing salts should not hard-break share.
+    console.warn("Growth hashes unavailable", { message: (error as Error)?.message });
+  }
   const kv = getGrowthKv(c.env);
   const now = Date.now();
   const date = new Date(now);
   const hourBucket = `${getGrowthDailyBucket(now)}${String(date.getUTCHours()).padStart(2, "0")}`;
 
   const sessionRateKey = `rl:share_start:${sessionId}:${hourBucket}`;
-  const ipRateKey = `rl:ip:${ipHash}:${hourBucket}`;
   const sessionRate = await incrementRateLimit(
     kv,
     sessionRateKey,
     SHARE_START_LIMIT_PER_HOUR,
     60 * 60,
   );
-  const ipRate = await incrementRateLimit(
-    kv,
-    ipRateKey,
-    SHARE_START_LIMIT_PER_HOUR,
-    60 * 60,
-  );
+
+  // If we couldn't hash IP (e.g., missing salt), fall back to session-based rate limiting only.
+  let ipRate = { allowed: true, remaining: SHARE_START_LIMIT_PER_HOUR } as const;
+  if (ipHash) {
+    ipRate = await incrementRateLimit(
+      kv,
+      `rl:ip:${ipHash}:${hourBucket}`,
+      SHARE_START_LIMIT_PER_HOUR,
+      60 * 60,
+    );
+  }
+
   if (!sessionRate.allowed || !ipRate.allowed) {
     return c.json({ error: "Too many attempts—try later." }, 429);
   }
@@ -4412,59 +4435,68 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
   const refCode = createRefCode();
   const expiresTs = now + SHARE_TOKEN_TTL_MS;
   const db = getDomainsDb(c.env);
-  const shareTokenInsert = db
-    .prepare(
-      `INSERT INTO share_tokens (id, created_ts, expires_ts, platform, variant_id, session_id, user_id, ip_hash, state, ref_code)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
-    )
-    .bind(
-      shareTokenId,
-      now,
-      expiresTs,
-      "x",
-      variant.id,
-      sessionId,
-      session.userId ?? null,
-      ipHash,
-      "created",
-      refCode,
-    );
-  const shareClickInsert = db
-    .prepare(
-      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
-    )
-    .bind(
-      crypto.randomUUID(),
-      now,
-      "share_click",
-      "x",
-      sessionId,
-      session.userId ?? null,
-      ipHash,
-      userAgentHash,
-      refCode,
-      shareTokenId,
-      payload.page ?? "/",
-      JSON.stringify({ variantId: variant.id }),
-    );
-  const shareStartInsert = db
-    .prepare(
-      `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
-    )
-    .bind(
-      crypto.randomUUID(),
-      now,
-      "share_start",
-      "x",
-      sessionId,
-      session.userId ?? null,
-      ipHash,
-      userAgentHash,
-      refCode,
-      shareTokenId,
-      payload.page ?? "/",
-      JSON.stringify({ variantId: variant.id }),
-    );
-  await db.batch([shareTokenInsert, shareClickInsert, shareStartInsert]);
+
+  try {
+    const shareTokenInsert = db
+      .prepare(
+        `INSERT INTO share_tokens (id, created_ts, expires_ts, platform, variant_id, session_id, user_id, ip_hash, state, ref_code)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+      )
+      .bind(
+        shareTokenId,
+        now,
+        expiresTs,
+        "x",
+        variant.id,
+        sessionId,
+        session.userId ?? null,
+        ipHash,
+        "created",
+        refCode,
+      );
+
+    const shareClickInsert = db
+      .prepare(
+        `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        now,
+        "share_click",
+        "x",
+        sessionId,
+        session.userId ?? null,
+        ipHash,
+        userAgentHash,
+        refCode,
+        shareTokenId,
+        payload.page ?? "/",
+        JSON.stringify({ variantId: variant.id }),
+      );
+
+    const shareStartInsert = db
+      .prepare(
+        `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        now,
+        "share_start",
+        "x",
+        sessionId,
+        session.userId ?? null,
+        ipHash,
+        userAgentHash,
+        refCode,
+        shareTokenId,
+        payload.page ?? "/",
+        JSON.stringify({ variantId: variant.id }),
+      );
+
+    await db.batch([shareTokenInsert, shareClickInsert, shareStartInsert]);
+  } catch (error) {
+    console.error("Growth share start failed", error);
+    return c.json({ error: "Sharing is temporarily unavailable. Try again later." }, 503);
+  }
 
   await kv.put(`ref:${refCode}`, shareTokenId, { expirationTtl: 60 * 60 * 24 * 7 });
   const dayBucket = getGrowthDailyBucket(now);
