@@ -2,6 +2,10 @@ import { CSSProperties, useMemo, useState } from "react";
 
 import { useCredits } from "../context/CreditsContext";
 import { useShareCredits } from "../hooks/useShareCredits";
+<<<<<<< HEAD
+=======
+import { appendReferralToUrl, fetchReferralToken } from "../utils/referral";
+>>>>>>> origin/main
 
 const unlockHintForCredits = (credits: number) => {
   if (credits < 5) {
@@ -28,6 +32,11 @@ const EarnCreditsCard = () => {
     finalizeShare,
   } = useShareCredits();
   const [isClaiming, setIsClaiming] = useState(false);
+<<<<<<< HEAD
+=======
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+>>>>>>> origin/main
 
   const handleStartShare = () => {
     const variants = config?.variants ?? [];
@@ -44,6 +53,46 @@ const EarnCreditsCard = () => {
     setIsClaiming(false);
   };
 
+<<<<<<< HEAD
+=======
+  const handleInviteFriend = async () => {
+    if (typeof window === "undefined") return;
+    setInviteMessage(null);
+    setIsInviting(true);
+    try {
+      const token = await fetchReferralToken();
+      if (!token) {
+        throw new Error("Unable to generate your invite link right now.");
+      }
+
+      const inviteUrl = appendReferralToUrl(window.location.origin, token);
+      const inviteText = "I use WaterShortcut to cut my water bill. Try it:";
+
+      if (navigator.share) {
+        await navigator.share({
+          title: "WaterShortcut",
+          text: inviteText,
+          url: inviteUrl,
+        });
+        setInviteMessage("Invite sent. Your friend will get a personalized referral link.");
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteUrl);
+        setInviteMessage("Invite link copied. Share it with a friend to spread savings.");
+        return;
+      }
+
+      setInviteMessage(`Share this invite link: ${inviteUrl}`);
+    } catch (error) {
+      setInviteMessage(error instanceof Error ? error.message : "Unable to create an invite link.");
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+>>>>>>> origin/main
   const socialProof = useMemo(() => {
     return "💧 Join thousands saving water this month";
   }, []);
@@ -86,13 +135,22 @@ const EarnCreditsCard = () => {
         )}
 
         <div className="earn-credits-card__secondary">
+<<<<<<< HEAD
           <button type="button" className="ws-button-secondary" disabled>
             Invite a friend (coming soon)
+=======
+          <button type="button" className="ws-button-secondary" onClick={handleInviteFriend} disabled={isInviting}>
+            {isInviting ? "Preparing invite..." : "Invite a friend"}
+>>>>>>> origin/main
           </button>
           <a className="ws-button-secondary" href="/analyze-water-bill">
             Complete a mission
           </a>
         </div>
+<<<<<<< HEAD
+=======
+        {inviteMessage && <p className="earn-credits-card__hint">{inviteMessage}</p>}
+>>>>>>> origin/main
 
         <div className="earn-credits-card__footer">
           <p className="earn-credits-card__social">{socialProof}</p>

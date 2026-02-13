@@ -93,6 +93,14 @@ const ManualEntry = () => {
     setStatus("Sending your details to the AI...");
     setIsSubmitting(true);
     try {
+      const parseAnalysisResponse = <T,>(text: string): T => {
+        try {
+          return JSON.parse(text) as T;
+        } catch {
+          throw new Error("We couldn’t read the analysis response. Please try again.");
+        }
+      };
+
       const response = await fetch("/api/analyze-manual", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -107,20 +115,20 @@ const ManualEntry = () => {
         }),
       });
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as
-          | { error?: string; credits?: number }
-          | null;
+        const payload = parseAnalysisResponse<{ error?: string; credits?: number }>(responseText);
         if (typeof payload?.credits === "number") {
           setCredits(payload.credits);
         }
         throw new Error(payload?.error || "We couldn’t analyze the manual entry yet.");
       }
 
-      const payload = (await response.json()) as {
+      const payload = parseAnalysisResponse<{
         analysis?: AnalysisResult | null;
         credits?: number;
-      };
+      }>(responseText);
       if (typeof payload.credits === "number") {
         setCredits(payload.credits);
       }
@@ -133,7 +141,8 @@ const ManualEntry = () => {
       saveAnalysisRecord(record);
       navigate(`/analysis-results/${record.id}`, { state: { record, mode: "manual" } });
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Something went wrong.");
+      const normalizedError = submitError instanceof Error ? submitError.message : "Something went wrong.";
+      setError(normalizedError || "Something went wrong.");
       setStatus(null);
     } finally {
       setIsSubmitting(false);

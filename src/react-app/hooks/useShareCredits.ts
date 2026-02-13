@@ -27,6 +27,29 @@ export type ShareFinalizeResponse = {
   nextUnlockHint?: string;
 };
 
+<<<<<<< HEAD
+=======
+type ShareStartSuccess = {
+  intentUrl: string;
+  signedToken: string;
+  variantId?: "A" | "B" | "C";
+};
+
+type ShareStartError = {
+  error?: string;
+};
+
+const isShareStartSuccess = (payload: unknown): payload is ShareStartSuccess => {
+  if (!payload || typeof payload !== "object") return false;
+  return (
+    "intentUrl" in payload &&
+    typeof (payload as ShareStartSuccess).intentUrl === "string" &&
+    "signedToken" in payload &&
+    typeof (payload as ShareStartSuccess).signedToken === "string"
+  );
+};
+
+>>>>>>> origin/main
 const readSessionValue = (key: string) => {
   if (typeof window === "undefined") return null;
   return window.sessionStorage.getItem(key);
@@ -96,6 +119,7 @@ export const useShareCredits = () => {
           body: JSON.stringify({ platform: "x", page, variantId }),
         });
         const payload = (await response.json().catch(() => null)) as
+<<<<<<< HEAD
           | {
               intentUrl?: string;
               signedToken?: string;
@@ -105,6 +129,17 @@ export const useShareCredits = () => {
           | null;
         if (!response.ok || !payload || !payload.intentUrl || !payload.signedToken) {
           throw new Error(payload && "error" in payload ? payload.error : "Unable to start share.");
+=======
+          | ShareStartSuccess
+          | ShareStartError
+          | null;
+        if (!response.ok || !isShareStartSuccess(payload)) {
+          const message =
+            payload && typeof payload === "object" && "error" in payload
+              ? (payload as ShareStartError).error
+              : null;
+          throw new Error(message || "Unable to start share.");
+>>>>>>> origin/main
         }
         writeSessionValue(SHARE_TOKEN_KEY, payload.signedToken);
         if (payload.variantId) {

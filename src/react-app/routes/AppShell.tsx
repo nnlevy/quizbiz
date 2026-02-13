@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import AdSenseSlot from "../components/AdSenseSlot";
+import BottomNav from "../components/BottomNav";
 import ConsentBanner from "../components/ConsentBanner";
 import SiteFooter from "../components/SiteFooter";
 import { DEFAULT_ADSENSE_SLOTS } from "../../config/adsense";
@@ -12,13 +13,31 @@ import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
-import WsImage from "../components/WsImage";
+import WaterShortcutLogo from "../components/WaterShortcutLogo";
 
 import "./AppShell.css";
 
 type AppShellProps = {
   children: ReactNode;
 };
+
+const primaryNavItems = [
+  { to: "/analyze-water-bill", label: "Upload a bill" },
+  { to: "/manual-entry", label: "Manual entry" },
+  { to: "/find-water-provider", label: "Find provider" },
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/research", label: "Research plan" },
+  { to: "/about", label: "About" },
+];
+
+const toolsNavItems = [
+  { to: "/calculators", label: "Calculators", reloadDocument: true },
+  { to: "/savings-plan", label: "Savings Plan", reloadDocument: true },
+  { to: "/leak-check", label: "Leak Check", reloadDocument: true },
+  { to: "/rebates", label: "Rebates", reloadDocument: true },
+  { to: "/guides", label: "Guides", reloadDocument: true },
+  { to: "/water-iq", label: "Water IQ Challenge" },
+];
 
 const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -101,16 +120,7 @@ const AppShell = ({ children }: AppShellProps) => {
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
-            <WsImage
-              className="ws-logo__image"
-              src="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png"
-              srcSet="https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_80/v1735510676/watershortcut-favicon.png 1x, https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto,w_160/v1735510676/watershortcut-favicon.png 2x"
-              sizes="40px"
-              alt="WaterShortcut logo"
-              width={40}
-              height={40}
-              eager
-            />
+            <WaterShortcutLogo className="ws-logo__icon" width={40} height={40} />
             <span className="ws-logo__text">WaterShortcut</span>
           </RouterLink>
           {showDeferred && (
@@ -127,6 +137,32 @@ const AppShell = ({ children }: AppShellProps) => {
             </button>
           )}
         </div>
+        <nav className="ws-header-nav" aria-label="Primary">
+          <ul>
+            {primaryNavItems.map((item) => (
+              <li key={item.to}>
+                <RouterLink to={item.to}>{item.label}</RouterLink>
+              </li>
+            ))}
+            <li className="ws-header-nav__dropdown">
+              <details>
+                <summary>Tools</summary>
+                <div className="ws-header-nav__menu" role="menu">
+                  {toolsNavItems.map((item) => (
+                    <RouterLink
+                      key={item.to}
+                      to={item.to}
+                      reloadDocument={item.reloadDocument}
+                      role="menuitem"
+                    >
+                      {item.label}
+                    </RouterLink>
+                  ))}
+                </div>
+              </details>
+            </li>
+          </ul>
+        </nav>
         <button
           className="ws-menu-button"
           type="button"
@@ -158,52 +194,21 @@ const AppShell = ({ children }: AppShellProps) => {
             Close
           </button>
           <ul>
-            <li>
-              <RouterLink to="/analyze-water-bill">Upload a bill</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/manual-entry">Manual entry</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/find-water-provider">Find provider</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/dashboard">Dashboard</RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/research">Research plan</RouterLink>
-            </li>
+            {primaryNavItems.map((item) => (
+              <li key={item.to}>
+                <RouterLink to={item.to}>{item.label}</RouterLink>
+              </li>
+            ))}
             <li>
               <span className="ws-nav-section">Tools</span>
               <ul className="ws-subnav">
-                <li>
-                  <RouterLink to="/calculators" reloadDocument>
-                    Calculators
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/savings-plan" reloadDocument>
-                    Savings Plan
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/leak-check" reloadDocument>
-                    Leak Check
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/rebates" reloadDocument>
-                    Rebates
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/guides" reloadDocument>
-                    Guides
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
-                </li>
+                {toolsNavItems.map((item) => (
+                  <li key={item.to}>
+                    <RouterLink to={item.to} reloadDocument={item.reloadDocument}>
+                      {item.label}
+                    </RouterLink>
+                  </li>
+                ))}
               </ul>
             </li>
             <li>
@@ -226,9 +231,6 @@ const AppShell = ({ children }: AppShellProps) => {
                 </li>
               </ul>
             </li>
-            <li>
-              <RouterLink to="/about">About</RouterLink>
-            </li>
           </ul>
         </nav>
       </div>
@@ -236,6 +238,8 @@ const AppShell = ({ children }: AppShellProps) => {
       <main className="ws-main" id="main-content" tabIndex={-1}>
         {children}
       </main>
+
+      <BottomNav items={primaryNavItems} currentPath={location.pathname} />
 
       {showAds && (
         <section className="ws-ads" aria-label="Sponsored">

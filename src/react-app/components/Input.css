@@ -1,0 +1,15 @@
+.ws-ui-input {
+  height: var(--ws-control-height, 3rem);
+  border-radius: var(--ws-input-radius, 0.75rem);
+  border: 1px solid var(--ws-input-border, var(--ws-color-slate-400));
+  background: var(--ws-input-bg, var(--ws-color-surface));
+  color: var(--ws-input-color, var(--ws-color-ink-950));
+  padding: 0 0.75rem;
+  font-size: var(--ws-control-font-size, var(--font-size-2));
+}
+
+.ws-ui-input:focus {
+  outline: none;
+  border-color: var(--ws-input-focus-border, var(--ws-color-sky-600));
+  box-shadow: 0 0 0 3px var(--ws-input-focus-ring, color-mix(in srgb, var(--ws-color-sky-600) 30%, transparent));
+}

@@ -3,13 +3,16 @@
   "name": "watershortcut",
   "main": "./src/worker/index.ts",
   "compatibility_date": "2025-04-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "observability": {
     "enabled": true
   },
   "upload_source_maps": true,
   "vars": {
     "Google_Document_AI_Processor_Prediction_Endpoint": "https://us-documentai.googleapis.com/v1/projects/32766728438/locations/us/processors/dc3fed4aeef15611:process",
+<<<<<<< HEAD
     "STRIPE_API_KEY": "${STRIPE_API_KEY}",
     "STRIPE_PUBLISHABLE_KEY": "${STRIPE_PUBLISHABLE_KEY}",
     "OPEN_API_KEY_NEW": "${OPEN_API_KEY_NEW}",
@@ -17,11 +20,11 @@
     "GROWTH_TOKEN_SECRET": "${GROWTH_TOKEN_SECRET}",
     "GROWTH_ADMIN_KEY": "${GROWTH_ADMIN_KEY}",
     "Google-Service-Account-FINAL": "${GOOGLE_SERVICE_ACCOUNT_FINAL}",
+=======
+>>>>>>> origin/main
     "ADSENSE_CLIENT": "ca-pub-1860356577073395",
     "GA_MEASUREMENT_ID": "G-98170RDCDD",
-    "OPENAI_ORG_ID": "org-3Kw3ohdIQc6cIpSonBIgKdf9",
-    "DOMAINS_DB_ID": "b41e909b-ad01-4fd5-84ca-d8d014706942",
-    "USER_SESSIONS_ACROSS_DOMAINS_ID": "ce39949d2f244c78b3e19967288f44fb"
+    "OPENAI_ORG_ID": "org-3Kw3ohdIQc6cIpSonBIgKdf9"
   },
   "d1_databases": [
     {
@@ -37,16 +40,21 @@
   ],
   "kv_namespaces": [
     {
-      "binding": "USER_SESSIONS_ACROSS_DOMAINS",
+      "binding": "User_Sessions_Across_Domains",
       "id": "ce39949d2f244c78b3e19967288f44fb"
     },
     {
+<<<<<<< HEAD
       "binding": "USER_SESSIONS_ACROSS_DOMAINS_ID",
       "id": "ce39949d2f244c78b3e19967288f44fb"
     },
     {
       "binding": "KV_GROWTH",
       "id": "${KV_GROWTH_ID}"
+=======
+      "binding": "KV_GROWTH",
+      "id": "7746d8e39dff4c9f80ebc1ff7b2716f4"
+>>>>>>> origin/main
     }
   ],
   "assets": {

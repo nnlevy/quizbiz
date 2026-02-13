@@ -129,9 +129,11 @@ type WorkerEnv = {
   WS_ADMIN_EXPORT_KEY?: string;
   OAUTH_API_KEY?: string;
   OAUTH_Client_ID: string;
+  OAUTH_CLIENT_ID?: string;
   OAUTH_Client_Secret?: string;
+  OAUTH_CLIENT_SECRET?: string;
   OAUTH_DOMAIN?: string;
-  OUATH_Client_Secret: string;
+  OUATH_Client_Secret?: string;
 };
 
 const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
@@ -148,7 +150,11 @@ const getUserSessionsKv = (env: WorkerEnv): KVNamespace => {
 };
 
 const getDomainsDb = (env: WorkerEnv): D1Database => {
+<<<<<<< HEAD
   const db = env.UsersAcrossAllDomains || env.DOMAINS_DB_ID || env["domains-db"];
+=======
+  const db = env.UsersAcrossAllDomains || env["domains-db"];
+>>>>>>> origin/main
   if (!db) {
     throw new Error("Missing D1 binding for domains database.");
   }
@@ -817,7 +823,8 @@ const verifyGoogleIdToken = async (token: string, env: WorkerEnv): Promise<Googl
     throw new Error("Invalid ID token issuer.");
   }
   const audiences = Array.isArray(payload.aud) ? payload.aud : payload.aud ? [payload.aud] : [];
-  if (!audiences.includes(env.OAUTH_Client_ID)) {
+  const expectedAudience = env.OAUTH_Client_ID ?? env.OAUTH_CLIENT_ID;
+  if (!expectedAudience || !audiences.includes(expectedAudience)) {
     throw new Error("Invalid ID token audience.");
   }
   if (!payload.exp || payload.exp < nowSeconds - 60) {
@@ -1068,6 +1075,7 @@ const logGrowthEvent = async (
 ) => {
   const id = crypto.randomUUID();
   const ts = Date.now();
+<<<<<<< HEAD
   await db
     .prepare(
       `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
@@ -1087,6 +1095,35 @@ const logGrowthEvent = async (
       payload.meta ? JSON.stringify(payload.meta) : null,
     )
     .run();
+=======
+  try {
+    await db
+      .prepare(
+        `INSERT INTO growth_events (id, ts, event_type, platform, session_id, user_id, ip_hash, user_agent_hash, ref_code, share_token_id, page, meta_json)\n       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+      )
+      .bind(
+        id,
+        ts,
+        payload.eventType,
+        payload.platform ?? null,
+        payload.sessionId ?? null,
+        payload.userId ?? null,
+        payload.ipHash ?? null,
+        payload.userAgentHash ?? null,
+        payload.refCode ?? null,
+        payload.shareTokenId ?? null,
+        payload.page ?? null,
+        payload.meta ? JSON.stringify(payload.meta) : null,
+      )
+      .run();
+  } catch (error) {
+    // Growth tracking must never break user-facing flows.
+    console.warn("Growth event log failed", {
+      eventType: payload.eventType,
+      message: (error as Error)?.message,
+    });
+  }
+>>>>>>> origin/main
 };
 
 const setSessionCookieIfNeeded = (c: Context, sessionId: string, needsCookie: boolean) => {
@@ -1297,7 +1334,8 @@ app.use("*", async (c, next) => {
     host &&
     host !== seoSite.canonicalHost &&
     !host.startsWith("localhost") &&
-    !host.startsWith("127.")
+    !host.startsWith("127.") &&
+    (c.req.method === "GET" || c.req.method === "HEAD")
   ) {
     const url = new URL(c.req.url);
     url.host = seoSite.canonicalHost;
@@ -1384,7 +1422,8 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.get("/auth/google", async (c) => {
-  if (!c.env.OAUTH_Client_ID) {
+  const oauthClientId = c.env.OAUTH_Client_ID ?? c.env.OAUTH_CLIENT_ID;
+  if (!oauthClientId) {
     return c.redirect(buildAuthErrorRedirect(c, "/", "missing_oauth_client"), 302);
   }
   const { sessionId, needsCookie } = await ensureSession(c);
@@ -1403,7 +1442,7 @@ app.get("/auth/google", async (c) => {
 
   const redirectUri = "https://www.watershortcut.com/auth/google/callback";
   const params = new URLSearchParams({
-    client_id: c.env.OAUTH_Client_ID,
+    client_id: oauthClientId,
     redirect_uri: redirectUri,
     response_type: "code",
     scope: GOOGLE_OAUTH_SCOPES,
@@ -1429,8 +1468,10 @@ app.get("/auth/google/callback", async (c) => {
   const statePayload = storedState as { returnTo?: string; sessionId?: string };
   const origin = new URL(c.req.url).origin;
   const returnTo = sanitizeReturnTo(statePayload.returnTo, origin, "/");
-  const clientSecret = c.env.OAUTH_Client_Secret ?? c.env.OUATH_Client_Secret;
-  if (!c.env.OAUTH_Client_ID || !clientSecret) {
+  const oauthClientId = c.env.OAUTH_Client_ID ?? c.env.OAUTH_CLIENT_ID;
+  const clientSecret =
+    c.env.OAUTH_Client_Secret ?? c.env.OAUTH_CLIENT_SECRET ?? c.env.OUATH_Client_Secret;
+  if (!oauthClientId || !clientSecret) {
     return c.redirect(buildAuthErrorRedirect(c, returnTo, "missing_oauth_client"), 302);
   }
 
@@ -1440,7 +1481,7 @@ app.get("/auth/google/callback", async (c) => {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: c.env.OAUTH_Client_ID,
+      client_id: oauthClientId,
       client_secret: clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
@@ -1459,7 +1500,7 @@ app.get("/auth/google/callback", async (c) => {
   let idTokenPayload: GoogleIdTokenPayload;
   try {
     idTokenPayload = await verifyGoogleIdToken(tokenPayload.id_token, c.env);
-  } catch (error) {
+  } catch {
     return c.redirect(buildAuthErrorRedirect(c, returnTo, "invalid_id_token"), 302);
   }
 
@@ -1492,8 +1533,8 @@ app.get("/auth/google/callback", async (c) => {
   const mergeCredits = (existing?: number | null) =>
     Math.max(existing ?? DEFAULT_CREDITS, sessionCredits ?? DEFAULT_CREDITS);
 
-  let userId = existingByProvider?.id ?? existingByEmail?.id ?? crypto.randomUUID();
-  let resolvedCredits = mergeCredits(existingByProvider?.credits ?? existingByEmail?.credits ?? null);
+  const userId = existingByProvider?.id ?? existingByEmail?.id ?? crypto.randomUUID();
+  const resolvedCredits = mergeCredits(existingByProvider?.credits ?? existingByEmail?.credits ?? null);
 
   if (existingByProvider || existingByEmail) {
     await db
@@ -1687,8 +1728,8 @@ app.get("/__ads", (c) => {
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
-  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
-  const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
+  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID);
+  const oauthClientId = ((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID) ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1751,8 +1792,8 @@ app.get("/water-iq/r/:token", (c) => {
   const adsenseClient = resolveAdsenseClient(c.env);
   const gaMeasurementId = resolveGaMeasurementId(c.env);
   const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
-  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
-  const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
+  const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID);
+  const oauthClientId = ((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID) ?? "";
   const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
   const consentRequired = isConsentRequired(country);
   const showPrivacyControls = consentRequired;
@@ -1886,8 +1927,8 @@ siteRoutes.forEach((route) => {
     const adsenseClient = resolveAdsenseClient(c.env);
     const gaMeasurementId = resolveGaMeasurementId(c.env);
     const stripePublishableKey = (c.env as WorkerEnv).STRIPE_PUBLISHABLE_KEY ?? "";
-    const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID);
-    const oauthClientId = (c.env as WorkerEnv).OAUTH_Client_ID ?? "";
+    const oauthEnabled = Boolean((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID);
+    const oauthClientId = ((c.env as WorkerEnv).OAUTH_Client_ID ?? (c.env as WorkerEnv).OAUTH_CLIENT_ID) ?? "";
     const country = (c.req.raw.cf as { country?: string } | undefined)?.country;
     const consentRequired = isConsentRequired(country);
     const showPrivacyControls = consentRequired;
@@ -2043,6 +2084,9 @@ function layout(options: {
     `
     : "";
   const badgeLink = `<a class="nav-link nav-badge" href="/water-iq" data-water-iq-badge>Water IQ Challenge</a>`;
+  const toolsLinks = homeownerDropdownLinks
+    .map((link) => `<a class="nav-link" href="${link.href}">${link.label}</a>`)
+    .join("");
   const navLinks = useEjectNav
     ? waterEjectNavLinks
     : [
@@ -2052,18 +2096,6 @@ function layout(options: {
           dropdown: true,
         },
       ];
-  const toolsDropdown = `
-    <div class="nav-dropdown">
-      <button type="button" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
-        Tools &amp; More <span class="dropdown-caret">▼</span>
-      </button>
-      <div class="dropdown-panel" id="tools-dropdown">
-        ${homeownerDropdownLinks
-          .map((link) => `<a class="dropdown-link" href="${link.href}">${link.label}</a>`)
-          .join("")}
-      </div>
-    </div>
-  `;
   const modeBar = `
     <div class="mode-bar" role="region" aria-label="Mode switcher">
       <div class="mode-bar__content">
@@ -2244,24 +2276,36 @@ function layout(options: {
               </a>
             </div>
             <nav class="nav-links" aria-label="Main navigation">
-              ${
-                useEjectNav
-                  ? navLinks
-                      .map(
-                        (link) =>
-                          `<a class="nav-link" href="${link.href}"${
-                            link.href === canonicalPath ? ' aria-current="page"' : ""
-                          }>${link.label}</a>`,
-                      )
-                      .join("")
-                  : toolsDropdown
-              }
-              ${badgeLink}
-              ${
-                useEjectNav
-                  ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
-                  : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
-              }
+              <details class="nav-menu">
+                <summary class="nav-menu__toggle">
+                  <span class="sr-only">Open navigation menu</span>
+                  <span class="nav-menu__icon" aria-hidden="true"></span>
+                </summary>
+                <div class="nav-menu__panel">
+                  <div class="nav-menu__links">
+                    ${
+                      useEjectNav
+                        ? navLinks
+                            .map(
+                              (link) =>
+                                `<a class="nav-link" href="${link.href}"${
+                                  link.href === canonicalPath ? ' aria-current="page"' : ""
+                                }>${link.label}</a>`,
+                            )
+                            .join("")
+                        : toolsLinks
+                    }
+                    ${badgeLink}
+                  </div>
+                  <div class="nav-menu__cta">
+                    ${
+                      useEjectNav
+                        ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
+                        : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
+                    }
+                  </div>
+                </div>
+              </details>
             </nav>
           </div>
           ${modeBar}
@@ -3682,7 +3726,7 @@ app.post("/api/water-iq/event", async (c) => {
 
   if (!allowed.has(type)) return c.json({ ok: false, error: "Unknown event type" }, 400);
 
-  storeEvent({ type: type as any, ref });
+  storeEvent({ type: type as Parameters<typeof storeEvent>[0]["type"], ref });
 
   return c.json({ ok: true });
 });
@@ -3949,10 +3993,10 @@ app.post("/api/credits/checkout", async (c) => {
     cancel_url: cancelUrl,
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": "usd",
-    "line_items[0][price_data][unit_amount]": "500",
-    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (10 pack)",
+    "line_items[0][price_data][unit_amount]": "1000",
+    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (5 pack)",
     "line_items[0][price_data][product_data][description]":
-      "Add 10 credits for water eject and bill analysis tools.",
+      "Add 5 credits for water tools and AI insights.",
   });
 
   const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -4120,16 +4164,28 @@ const handleAnalyzeBill = async (c: any) => {
     return c.html(renderAnalysisResponse(openAiData));
   } catch (error) {
     console.error("Error handling file upload:", error);
-    const configIssue =
-      error instanceof Error &&
-      /service account|OAuth token|Document AI/i.test(error.message);
-    const errorMessage = configIssue
+
+    const message = error instanceof Error ? error.message : String(error);
+
+    const documentAiIssue =
+      /service account|oauth token|document ai/i.test(message);
+
+    const openAiQuotaIssue =
+      /insufficient_quota|quota|billing/i.test(message);
+
+    const openAiIssue = /openai/i.test(message);
+
+    const errorMessage = documentAiIssue
       ? "File processing is temporarily unavailable due to Google Document AI credentials. Please verify the service account secret and try again."
-      : "An error occurred during file upload.";
-    return c.json(
-      { error: errorMessage },
-      500,
-    );
+      : openAiQuotaIssue
+        ? "AI analysis is temporarily unavailable due to usage limits. Please try again later."
+        : openAiIssue
+          ? "AI analysis is temporarily unavailable. Please try again later."
+          : "An error occurred during file upload.";
+
+    const status = documentAiIssue ? 500 : openAiIssue ? 503 : 500;
+
+    return c.json({ error: errorMessage }, status);
   } finally {
     if (fileBytes) {
       fileBytes.fill(0);
@@ -4339,7 +4395,12 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
     return c.json({ error: "Unsupported share platform." }, 400);
   }
 
+<<<<<<< HEAD
   if (!c.env.GROWTH_TOKEN_SECRET) {
+=======
+  const growthTokenSecret = resolveGrowthTokenSecret(c.env);
+  if (!growthTokenSecret) {
+>>>>>>> origin/main
     return c.json({ error: "Share tokens are not configured." }, 500);
   }
 
@@ -4439,7 +4500,11 @@ const handleGrowthShareStart = async (c: Context<{ Bindings: WorkerEnv }>) => {
   const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   const signedToken = await signShareToken(
     { shareTokenId, refCode, exp: expiresTs },
+<<<<<<< HEAD
     c.env.GROWTH_TOKEN_SECRET,
+=======
+    growthTokenSecret,
+>>>>>>> origin/main
   );
 
   return c.json({
@@ -4462,11 +4527,20 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
   if (payload.platform !== "x" || !payload.signedToken) {
     return c.json({ status: "rejected", reason: "Missing share token." }, 400);
   }
+<<<<<<< HEAD
   if (!c.env.GROWTH_TOKEN_SECRET) {
     return c.json({ status: "rejected", reason: "Share tokens are not configured." }, 500);
   }
 
   const verified = await verifyShareToken(payload.signedToken, c.env.GROWTH_TOKEN_SECRET);
+=======
+  const growthTokenSecret = resolveGrowthTokenSecret(c.env);
+  if (!growthTokenSecret) {
+    return c.json({ status: "rejected", reason: "Share tokens are not configured." }, 500);
+  }
+
+  const verified = await verifyShareToken(payload.signedToken, growthTokenSecret);
+>>>>>>> origin/main
   if (!verified) {
     return c.json({ status: "rejected", reason: "Invalid share token." }, 400);
   }
@@ -4640,7 +4714,15 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     const refreshed = (await db
       .prepare("SELECT state, credits_awarded, finalize_reason FROM share_tokens WHERE id = ?1")
       .bind(tokenRow.id)
+<<<<<<< HEAD
       .first()) as { state: "finalized" | "expired" | "void"; credits_awarded?: number; finalize_reason?: string } | null;
+=======
+      .first()) as {
+      state: "finalized" | "expired" | "void";
+      credits_awarded?: number;
+      finalize_reason?: string;
+    } | null;
+>>>>>>> origin/main
     if (refreshed) {
       const fallback = resolveFinalizeOutcome(refreshed);
       if (fallback) {
@@ -4654,7 +4736,11 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     return c.json({ status: "rejected", reason: "Unable to finalize share." }, 409);
   }
 
+<<<<<<< HEAD
   await db
+=======
+  const awardInsert = await db
+>>>>>>> origin/main
     .prepare(
       `INSERT OR IGNORE INTO credit_awards_ledger (id, ts, award_type, platform, user_id, session_id, share_token_id, credits, status, reason, date_bucket)\n       VALUES (?1, ?2, 'share_x', 'x', ?3, ?4, ?5, ?6, 'granted', NULL, ?7)`,
     )
@@ -4669,6 +4755,21 @@ const handleGrowthShareFinalize = async (c: Context<{ Bindings: WorkerEnv }>) =>
     )
     .run();
 
+<<<<<<< HEAD
+=======
+  if (!awardInsert.meta?.changes) {
+    const rejectReason = "Already claimed this week";
+    await db
+      .prepare(
+        "UPDATE share_tokens SET state = 'void', credits_awarded = 0, finalize_reason = ?1 WHERE id = ?2",
+      )
+      .bind(rejectReason, tokenRow.id)
+      .run();
+    await recordFinalizeRejection(rejectReason);
+    return c.json({ status: "rejected", credits: 0, reason: rejectReason });
+  }
+
+>>>>>>> origin/main
   const nextCredits = await grantCredits(c.env, sessionId, session, SHARE_CREDIT_AMOUNT);
 
   await logGrowthEvent(db, {
@@ -4698,7 +4799,11 @@ const handleGrowthReferralRedirect = async (c: Context<{ Bindings: WorkerEnv }>)
   const now = Date.now();
   const kv = getGrowthKv(c.env);
   const db = getDomainsDb(c.env);
+<<<<<<< HEAD
   let shareTokenId = await kv.get(`ref:${refCode}`);
+=======
+  const shareTokenId = await kv.get(`ref:${refCode}`);
+>>>>>>> origin/main
   let tokenRow:
     | { id: string; variant_id: "A" | "B" | "C"; ref_code: string }
     | null = null;
@@ -5008,11 +5113,17 @@ const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
     return c.json({ error: "Invalid calculator request body." }, 400);
   }
 
+  const creditCheck = await requireCredits(c, 1);
+  if (!creditCheck.ok) {
+    return creditCheck.response;
+  }
+
   const toNumber = (value: unknown, fallback: number) => {
     const parsed = typeof value === "number" ? value : Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
   };
 
+  const segmentId = typeof payload.segmentId === "string" ? payload.segmentId : "home";
   const billAmount = Math.max(0, toNumber(payload.billAmount, 0));
   const householdSize = Math.max(1, toNumber(payload.householdSize, 1));
   const dripsPerMinute = Math.max(0, toNumber(payload.dripsPerMinute, 0));
@@ -5040,7 +5151,7 @@ const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
   }, you could be wasting about ${gallonsPerYear.toFixed(0)} gallons a year.`;
   let reference = `${showerVsBath} Estimated savings potential: ~$${monthlySavings.toFixed(
     0,
-  )}/mo for a ${householdSize}-person household.`;
+  )}/mo for a ${householdSize}-${segmentId === "commercial" ? "staff" : "person"} profile.`;
   let cta = "Start with the leak fixes";
 
   if (gallonsPerYear < 500) {
@@ -5057,10 +5168,53 @@ const handleCalculatorInsight = async (c: Context<{ Bindings: WorkerEnv }>) => {
     )}/year at typical rates. ${showerVsBath}`;
   }
 
+  if (isOpenAiConfigured(c.env)) {
+    const profileLabel = segmentId === "commercial" ? "commercial business" : "household";
+    const prompt = `You are a water-efficiency coach. Return ONLY valid JSON with this shape:
+{
+  "insight": string,
+  "reference": string,
+  "cta": string
+}
+Rules:
+- 1 sentence for each field.
+- Keep language practical, factual, and concise.
+- Mention dollars only as estimates.
+- Use this context exactly:
+segment=${profileLabel}, billAmount=$${billAmount.toFixed(2)}, size=${householdSize}, dripsPerMinute=${dripsPerMinute}, leakingFaucets=${leakingFaucets}, showerDuration=${showerDuration}, flowRate=${flowRate}.`;
+    try {
+      const openAiData = await analyzeTextWithOpenAI(c.env, {
+        content: prompt,
+        includeWaterContext: false,
+      });
+      const content = openAiData.choices?.[0]?.message?.content || "";
+      const parsed = extractJsonObject(content);
+      if (parsed) {
+        const next = JSON.parse(parsed) as { insight?: string; reference?: string; cta?: string };
+        if (isNonEmptyString(next.insight) && isNonEmptyString(next.reference) && isNonEmptyString(next.cta)) {
+          insight = next.insight;
+          reference = next.reference;
+          cta = next.cta;
+        }
+      }
+    } catch (error) {
+      console.warn("Calculator insight OpenAI fallback used:", error);
+    }
+  }
+
+  const updatedCredits = await debitCredits(
+    c,
+    creditCheck.sessionId,
+    creditCheck.session,
+    1,
+    creditCheck.needsCookie,
+  );
+
   return c.json({
     insight,
     reference,
     cta,
+    credits: updatedCredits,
   });
 };
 
@@ -5356,6 +5510,7 @@ async function callVisionAPI(
   }
 }
 
+/* eslint-disable no-useless-escape */
 async function analyzeTextWithOpenAI(
   env: WorkerEnv,
   options: { content: string; includeWaterContext?: boolean },
@@ -5447,6 +5602,7 @@ function buildLocalTrendPrompt(input: { zip: string; city: string; state: string
 
   return `You are a water utility analyst. Return ONLY valid JSON (no markdown) matching:\n{\n  \"summary\": string,\n  \"seasonalPatterns\": [\n    { \"season\": string, \"trend\": string, \"drivers\": string[] }\n  ],\n  \"recommendations\": string[],\n  \"utilityPrograms\": [\n    { \"name\": string, \"detail\": string }\n  ]\n}\nRules:\n- Base insights on typical residential water patterns for the location.\n- Provide 3-4 seasonalPatterns with concrete drivers (e.g., irrigation, drought rules).\n- Provide 3-5 recommendations that are actionable.\n- Provide 2-3 utilityPrograms; if unsure, mark them as \"Potential\" in the name.\n\nLocation:\n${locationDescriptor}`;
 }
+/* eslint-enable no-useless-escape */
 
 function buildRebatePrompt(input: {
   zip: string;
@@ -5861,6 +6017,10 @@ function validateLocationEnv(env: WorkerEnv): void {
 
 function isOpenAiConfigured(env: WorkerEnv): boolean {
   return Boolean(env.OPEN_API_KEY_NEW);
+}
+
+function resolveGrowthTokenSecret(env: WorkerEnv): string | null {
+  return env.GROWTH_TOKEN_SECRET || env.OPEN_API_KEY_NEW || null;
 }
 
 function validateUploadEnv(env: WorkerEnv): void {

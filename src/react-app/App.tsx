@@ -382,6 +382,10 @@ function App({ focusUpload = false }: AppProps) {
     typeof window !== "undefined" &&
     window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
 
+  const isSelfCheckMode =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("selfcheck") === "1";
+
   const [isMobile, setIsMobile] = useState(initialIsMobile);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showerReduction, setShowerReduction] = useState(5);
@@ -520,6 +524,74 @@ function App({ focusUpload = false }: AppProps) {
       setHasBillUpload(true);
     }
   }, [analysisResult]);
+
+  useEffect(() => {
+    if (!isSelfCheckMode) return;
+    console.info("WS_SELF_CHECK_ON", {
+      path: typeof window !== "undefined" ? window.location.pathname : "",
+      hash: typeof window !== "undefined" ? window.location.hash : "",
+    });
+
+    const handleHashChange = () => {
+      console.info("WS_NAV_HASH", { hash: window.location.hash });
+    };
+
+    const handlePopState = () => {
+      console.info("WS_NAV_POP", { path: window.location.pathname, search: window.location.search });
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const clickable = target.closest<HTMLElement>("a,button");
+      if (!clickable) return;
+
+      if (clickable.tagName.toLowerCase() === "a") {
+        const anchor = clickable as HTMLAnchorElement;
+        console.info("WS_CLICK", {
+          kind: "link",
+          text: anchor.textContent?.trim() || "",
+          href: anchor.getAttribute("href") || "",
+        });
+        return;
+      }
+
+      console.info("WS_CLICK", {
+        kind: "button",
+        text: clickable.textContent?.trim() || "",
+        id: clickable.id || "",
+        className: clickable.className || "",
+      });
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handlePopState);
+    document.addEventListener("click", handleClick, true);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handlePopState);
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, [isSelfCheckMode]);
+
+  useEffect(() => {
+    if (!isSelfCheckMode) return;
+    if (!analysisResult) return;
+    console.info("WS_ANALYSIS_READY", {
+      analysisId: analysisResult.analysisId,
+      topMoves: analysisResult.topMoves.map((move) => ({
+        title: move.title,
+        ctaLabel: move.ctaLabel,
+        ctaHref: move.ctaHref,
+      })),
+    });
+  }, [isSelfCheckMode, analysisResult]);
+
+  useEffect(() => {
+    if (!isSelfCheckMode) return;
+    console.info("WS_UPLOAD_STEP", { step: uploadStep, isUploading, hasPreview: Boolean(uploadPreview) });
+  }, [isSelfCheckMode, uploadStep, isUploading, uploadPreview]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -666,6 +738,9 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const handleMobileStart = () => {
+    if (isSelfCheckMode) {
+      console.info("WS_FLOW", { action: "mobile_start", isMobile });
+    }
     if (isMobile) {
       setIsMobileFlowOpen(true);
       setFlowStep(0);
@@ -772,7 +847,7 @@ function App({ focusUpload = false }: AppProps) {
         window.location.hash;
       window.history.replaceState({}, document.title, updatedUrl);
     }
-  }, []);
+  }, [refreshSession, setGlobalCredits, triggerCreditPulse]);
 
   const handleCreditsClick = useCallback(async () => {
     await startCheckout();
@@ -839,6 +914,14 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const handleWaterEjectClick = () => {
+    if (isSelfCheckMode) {
+      console.info("WS_FLOW", {
+        action: "water_eject_click",
+        credits,
+        isIphone: deviceInfo.isIphone,
+      });
+    }
+
     const updatedCredits = spendCredit("Water eject triggered.");
     if (updatedCredits === null) {
       logEvent("water_eject", {
@@ -929,6 +1012,10 @@ function App({ focusUpload = false }: AppProps) {
   };
 
   const openUploadSection = (focusFile = false) => {
+    if (isSelfCheckMode) {
+      console.info("WS_FLOW", { action: "open_upload_section", focusFile });
+    }
+
     setSectionOpenState((prev) => ({
       ...prev,
       upload: true,

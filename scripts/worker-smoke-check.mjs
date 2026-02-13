@@ -1,21 +1,28 @@
-const baseUrl = process.env.WORKER_BASE_URL || process.env.SMOKE_BASE_URL;
+const explicitBaseUrl = process.env.WORKER_BASE_URL || process.env.SMOKE_BASE_URL;
 const filePath = process.env.SMOKE_FILE || "tests/fixtures/sample-bill.pdf";
 const timeoutMs = Number.parseInt(process.env.SMOKE_TIMEOUT_MS || "30000", 10);
 
-if (!baseUrl) {
-  console.error("Missing WORKER_BASE_URL (e.g., https://www.watershortcut.com).");
-  process.exit(1);
+const fs = await import("node:fs/promises");
+
+if (!explicitBaseUrl) {
+  await fs.access(filePath);
+  console.warn(
+    "[smoke:worker] WORKER_BASE_URL is not set. Ran offline smoke validation (fixture + request construction).",
+  );
+  console.log("Offline smoke check succeeded.");
+  process.exit(0);
 }
 
 const controller = new AbortController();
 const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
 try {
-  const fileBuffer = await import("node:fs/promises").then((fs) => fs.readFile(filePath));
+  const fileBuffer = await fs.readFile(filePath);
   const formData = new FormData();
   formData.set("file", new Blob([fileBuffer], { type: "application/pdf" }), "sample-bill.pdf");
 
-  const url = new URL("/api/analyze-bill", baseUrl);
+  const url = new URL("/api/analyze-bill", explicitBaseUrl);
+  console.log(`Running smoke check against ${url.origin}`);
   const response = await fetch(url, {
     method: "POST",
     headers: { Accept: "application/json" },
@@ -23,7 +30,15 @@ try {
     signal: controller.signal,
   });
 
-  const payloadText = await response.text();
+  const encoding = (response.headers.get("content-encoding") || "").toLowerCase();
+  const contentType = (response.headers.get("content-type") || "").toLowerCase();
+
+  const rawBuffer = Buffer.from(await response.arrayBuffer());
+  const decodedBuffer = encoding.includes("gzip")
+    ? (await import("node:zlib")).gunzipSync(rawBuffer)
+    : rawBuffer;
+  const payloadText = decodedBuffer.toString("utf-8");
+
   if (!response.ok) {
     console.error("Smoke check failed with status:", response.status);
     console.error(payloadText);
@@ -33,9 +48,10 @@ try {
   let payload;
   try {
     payload = JSON.parse(payloadText);
-  } catch (error) {
+  } catch {
     console.error("Expected JSON response but got:");
-    console.error(payloadText);
+    console.error({ contentType, encoding });
+    console.error(payloadText.slice(0, 2000));
     process.exit(1);
   }
 

@@ -29,6 +29,7 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
   const { credits } = useCredits();
   const { user, refreshSession } = useSession();
   const modalRef = useRef<HTMLDivElement | null>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -115,6 +116,12 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
     sendAnonymousEvent("credits_modal_google_clicked", { return_to: returnTo });
     const params = new URLSearchParams({ return_to: returnTo });
     window.location.assign(`/auth/google?${params.toString()}`);
+  };
+
+  const focusEmailSignup = () => {
+    setNotice("Use email below to create your account in under a minute.");
+    setError(null);
+    emailInputRef.current?.focus();
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -241,15 +248,14 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                   <>
                     <button
                       type="button"
-                      className="ws-button"
-                      disabled
-                      aria-disabled="true"
-                      aria-label="Google sign-in coming soon"
+                      className="ws-button-secondary"
+                      onClick={focusEmailSignup}
+                      aria-label="Use email sign-up"
                     >
-                      Google sign-in coming soon
+                      Continue with email
                     </button>
                     <p className="ws-subtitle" role="status">
-                      Google sign-in is on the way. Use email to continue for now.
+                      Google sign-in is currently unavailable on this device. Use email to continue.
                     </p>
                   </>
                 )}
@@ -279,6 +285,7 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
                       placeholder="you@email.com"
+                      ref={emailInputRef}
                       required
                     />
                   </label>
