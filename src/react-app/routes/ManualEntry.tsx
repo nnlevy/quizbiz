@@ -158,26 +158,26 @@ const ManualEntry = () => {
       const responseText = await response.text();
 
       if (!response.ok) {
-        const payload = parseAnalysisResponse<{ error?: string; credits?: number }>(responseText);
-        if (typeof payload?.credits === "number") {
-          setCredits(payload.credits);
+        const errorPayload = parseAnalysisResponse<{ error?: string; credits?: number }>(responseText);
+        if (typeof errorPayload?.credits === "number") {
+          setCredits(errorPayload.credits);
         }
-        throw new Error(payload?.error || "We couldn’t analyze the manual entry yet.");
+        throw new Error(errorPayload?.error || "We couldn’t analyze the manual entry yet.");
       }
 
-      const payload = parseAnalysisResponse<{
+      const resultPayload = parseAnalysisResponse<{
         analysis?: AnalysisResult | null;
         credits?: number;
       }>(responseText);
-      if (typeof payload.credits === "number") {
-        setCredits(payload.credits);
+      if (typeof resultPayload.credits === "number") {
+        setCredits(resultPayload.credits);
       }
-      if (!payload.analysis || !isAnalysisResult(payload.analysis)) {
+      if (!resultPayload.analysis || !isAnalysisResult(resultPayload.analysis)) {
         throw new Error("The AI response was incomplete. Please try again.");
       }
 
       setStatus("Your manual insights are ready.");
-      const record = toAnalysisRecord(payload.analysis, "manual");
+      const record = toAnalysisRecord(resultPayload.analysis, "manual");
       saveAnalysisRecord(record);
       navigate(`/analysis-results/${record.id}`, { state: { record, mode: "manual" } });
     } catch (submitError) {
