@@ -1291,7 +1291,7 @@ const createCompressionStream = (
 
 app.use("*", async (c, next) => {
   const proto = c.req.header("x-forwarded-proto");
-  const host = c.req.header("host") || "";
+  const host = (c.req.header("host") || "").split(":")[0].toLowerCase();
 
   if (
     proto &&
@@ -1300,6 +1300,18 @@ app.use("*", async (c, next) => {
     !host.startsWith("127.")
   ) {
     const url = new URL(c.req.url);
+    url.protocol = "https:";
+    return c.redirect(url.toString(), 301);
+  }
+
+  // Force the canonical host for SEO + consistent cookies.
+  // We prefer the explicit www host for WaterShortcut.
+  if (
+    host === "watershortcut.com" &&
+    (c.req.method === "GET" || c.req.method === "HEAD")
+  ) {
+    const url = new URL(c.req.url);
+    url.host = "www.watershortcut.com";
     url.protocol = "https:";
     return c.redirect(url.toString(), 301);
   }
@@ -5264,7 +5276,39 @@ app.get("/api/usage-defaults", (c) =>
 
 app.get("/api/", (c) => c.json({ name: "WaterShortcut" }));
 
-export default app;
+const CANONICAL_HOST = "www.watershortcut.com";
+
+export default {
+  fetch: (req: Request, env: WorkerEnv, ctx: ExecutionContext) => {
+    const url = new URL(req.url);
+    const host = req.headers.get("host") || url.host;
+    const proto = req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+
+    if (
+      proto &&
+      proto !== "https" &&
+      !host.startsWith("localhost") &&
+      !host.startsWith("127.")
+    ) {
+      url.protocol = "https:";
+      return Response.redirect(url.toString(), 301);
+    }
+
+    if (
+      host &&
+      host !== CANONICAL_HOST &&
+      !host.startsWith("localhost") &&
+      !host.startsWith("127.") &&
+      (req.method === "GET" || req.method === "HEAD")
+    ) {
+      url.host = CANONICAL_HOST;
+      url.protocol = "https:";
+      return Response.redirect(url.toString(), 301);
+    }
+
+    return app.fetch(req, env, ctx);
+  },
+};
 
 async function generateHash(buffer: ArrayBuffer): Promise<string> {
   const key = await subtle.importKey(
