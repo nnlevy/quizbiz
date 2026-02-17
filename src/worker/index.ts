@@ -2092,16 +2092,20 @@ function layout(options: {
     : "";
   const badgeLink = `<a class="nav-link nav-badge" href="/water-iq" data-water-iq-badge>Water IQ Challenge</a>`;
   const toolsLinks = homeownerDropdownLinks
-    .map((link) => `<a class="nav-link" href="${link.href}">${link.label}</a>`)
+    .map(
+      (link) =>
+        `<a class="nav-link" href="${link.href}"${link.href === canonicalPath ? ' aria-current="page"' : ""}>${link.label}</a>`,
+    )
     .join("");
   const navLinks = useEjectNav
     ? waterEjectNavLinks
     : [
-        {
-          label: "Tools & More",
-          href: "#tools-dropdown",
-          dropdown: true,
-        },
+        { label: "Home", href: "/" },
+        { label: "Tools", href: "/tools" },
+        { label: "Water Savings Score", href: "/water-iq" },
+        { label: "Analyze bill", href: "/analyze-water-bill" },
+        { label: "Guides", href: "/guides" },
+        { label: "About", href: "/about" },
       ];
   const modeBar = `
     <div class="mode-bar" role="region" aria-label="Mode switcher">
@@ -2302,13 +2306,13 @@ function layout(options: {
                             .join("")
                         : toolsLinks
                     }
-                    ${badgeLink}
+                    ${useEjectNav ? "" : badgeLink}
                   </div>
                   <div class="nav-menu__cta">
                     ${
                       useEjectNav
-                        ? `<a class="btn primary primary-cta" href="/">Back to save on your water bill</a>`
-                        : `<a class="btn primary primary-cta" href="/analyze-water-bill">Analyze</a>`
+                        ? `<a class="btn primary primary-cta" href="/">Back to tools</a>`
+                        : `<a class="btn primary primary-cta" href="/water-iq">Get your Water Savings Score</a>`
                     }
                   </div>
                 </div>
