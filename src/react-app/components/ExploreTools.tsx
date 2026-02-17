@@ -7,10 +7,11 @@ const ExploreTools = () => (
       <p className="eyebrow">Explore more tools</p>
       <h2 className="ws-section-title">Keep learning and saving</h2>
       <p className="ws-section-lede">
-        Want to browse before uploading? Try a quick quiz or build a research plan.
+        Jump to the Tools Hub to browse savings, DIY, social, and learning options.
       </p>
     </div>
     <div className="ws-tool-grid" role="list">
+      <RouterLink to="/tools">Open Tools Hub</RouterLink>
       <RouterLink to="/water-iq">Take the Water IQ Challenge</RouterLink>
       <RouterLink to="/guides" reloadDocument>
         Explore water-saving guides

@@ -63,6 +63,7 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
         <a href="/water-iq">Water IQ Challenge</a>
         <a href="/guides">Water-Saving Tips</a>
         <a href="/guides/find-fix-leaks">Leak Detection</a>
+        <a href="/legacy">Legacy experience</a>
       </div>
       <div className="footer-trust">
         <p>

@@ -86,4 +86,11 @@
   --ws-gradient-shell: linear-gradient(180deg, #f9fbff 0%, #eef4fb 100%);
   --ws-gradient-quick-check: linear-gradient(135deg, #f0f9ff 0%, #ffffff 65%);
   --ws-gradient-ai-insight: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(255, 255, 255, 0.9) 55%, rgba(16, 185, 129, 0.2));
+
+  /* Platform tokens */
+  --ws-ink-accent: var(--ws-color-ink-900);
+  --ws-aqua-accent: var(--ws-color-sky-600);
+  --ws-ui-border: var(--ws-color-slate-400);
+  --ws-ui-shadow: 0 12px 30px var(--ws-shadow-08);
+  --ws-ui-radius: 1rem;
 }

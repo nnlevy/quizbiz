@@ -6,12 +6,13 @@ const EjectWater = () => {
     title: "Eject water shortcut | WaterShortcut",
     description:
       "Use the Water Eject shortcut to clear water from your iPhone speaker. WaterShortcut helps you save water too.",
-    canonicalPath: "/eject-water",
+    canonicalPath: "/tools/device-water-eject",
   });
 
   return (
     <section className="ws-page" aria-labelledby="eject-title">
       <div className="ws-hero">
+        <p className="ws-device-label">Device utility (traffic satellite)</p>
         <p className="eyebrow">iOS-only shortcut</p>
         <h1 id="eject-title">Eject water from your iPhone speaker.</h1>
         <p>
@@ -30,8 +31,8 @@ const EjectWater = () => {
         >
           Open iOS Shortcut
         </a>
-        <RouterLink className="ws-footer-link" to="/analyze-water-bill">
-          Back to savings mode →
+        <RouterLink className="ws-footer-link" to="/tools">
+          Back to Tools Hub
         </RouterLink>
       </div>
     </section>

@@ -38,6 +38,7 @@ const SignUp = lazy(() => import("./routes/SignUp"));
 const Dashboard = lazy(() => import("./routes/Dashboard"));
 const Calculators = lazy(() => import("./routes/Calculators"));
 const LeakCheckHub = lazy(() => import("./routes/LeakCheckHub"));
+const ToolsHub = lazy(() => import("./routes/ToolsHub"));
 
 if (typeof window !== "undefined") {
   const globalWindow = window as typeof window & {
@@ -67,7 +68,8 @@ const SeoHiddenNav = () => (
     <a href="/manual-entry">Manual entry</a>
     <a href="/find-water-provider">Look up my water bill</a>
     <a href="/research">Research</a>
-    <a href="/eject-water">Eject Water</a>
+    <a href="/tools">Tools Hub</a>
+    <a href="/tools/device-water-eject">Device water eject utility</a>
     <a href="/about">About</a>
     {/* Legacy SPA link kept for SEO discovery without exposing in primary navigation. */}
     <a href="/legacy">Legacy WaterShortcut</a>
@@ -230,10 +232,17 @@ const RouterView = () => {
         </AppShell>
       );
     }
-    if (pathname.startsWith("/eject-water")) {
+    if (pathname.startsWith("/tools/device-water-eject") || pathname.startsWith("/eject-water")) {
       return (
         <AppShell>
           <EjectWater />
+        </AppShell>
+      );
+    }
+    if (pathname.startsWith("/tools")) {
+      return (
+        <AppShell>
+          <ToolsHub />
         </AppShell>
       );
     }

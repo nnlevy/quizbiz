@@ -280,8 +280,9 @@
 .ws-calculators__summary {
   display: grid;
   gap: 0.75rem;
-  border-radius: 0.75rem;
-  background: var(--ws-color-slate-100);
+  border-radius: 0.9rem;
+  background: var(--ws-color-surface);
+  border: 1px solid var(--ws-ui-border);
   padding: 1rem;
 }
 
@@ -324,13 +325,13 @@
   margin: 0;
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--ws-color-emerald-600);
+  color: var(--ws-color-ink-900);
 }
 
 .ws-calculators__summary-card-subtext {
   margin: 0;
   font-size: var(--font-size-2);
-  color: var(--ws-color-emerald-600);
+  color: var(--ws-color-slate-700);
 }
 
 .ws-calculators__summary-tip-list {
@@ -372,7 +373,8 @@
 
 .ws-calculators__savings {
   border-radius: 0.75rem;
-  background: var(--ws-color-emerald-100);
+  background: #dff5ea;
+  border: 1px solid #9fd7bb;
   padding: 1rem;
 }
 
@@ -380,20 +382,20 @@
   font-size: var(--font-size-1);
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: var(--ws-color-emerald-600);
+  color: var(--ws-color-ink-900);
   margin: 0;
 }
 
 .ws-calculators__savings-value {
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--ws-color-emerald-600);
+  color: var(--ws-color-ink-900);
   margin: 0.35rem 0 0;
 }
 
 .ws-calculators__savings-note {
   font-size: var(--font-size-1);
-  color: var(--ws-color-emerald-600);
+  color: var(--ws-color-slate-800);
   margin: 0.35rem 0 0;
 }
 

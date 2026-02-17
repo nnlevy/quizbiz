@@ -22,21 +22,12 @@ type AppShellProps = {
 };
 
 const primaryNavItems = [
-  { to: "/analyze-water-bill", label: "Upload a bill" },
-  { to: "/manual-entry", label: "Manual entry" },
-  { to: "/find-water-provider", label: "Find provider" },
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/research", label: "Research plan" },
-  { to: "/about", label: "About" },
-];
-
-const toolsNavItems = [
-  { to: "/calculators", label: "Calculators", reloadDocument: true },
-  { to: "/savings-plan", label: "Savings Plan", reloadDocument: true },
-  { to: "/leak-check", label: "Leak Check", reloadDocument: true },
-  { to: "/rebates", label: "Rebates", reloadDocument: true },
+  { to: "/", label: "Home" },
+  { to: "/tools", label: "Tools" },
+  { to: "/water-iq", label: "Water Savings Score" },
+  { to: "/analyze-water-bill", label: "Analyze Bill" },
   { to: "/guides", label: "Guides", reloadDocument: true },
-  { to: "/water-iq", label: "Water IQ Challenge" },
+  { to: "/about", label: "About" },
 ];
 
 const AppShell = ({ children }: AppShellProps) => {
@@ -141,26 +132,9 @@ const AppShell = ({ children }: AppShellProps) => {
           <ul>
             {primaryNavItems.map((item) => (
               <li key={item.to}>
-                <RouterLink to={item.to}>{item.label}</RouterLink>
+                <RouterLink to={item.to} reloadDocument={item.reloadDocument}>{item.label}</RouterLink>
               </li>
             ))}
-            <li className="ws-header-nav__dropdown">
-              <details>
-                <summary>Tools</summary>
-                <div className="ws-header-nav__menu" role="menu">
-                  {toolsNavItems.map((item) => (
-                    <RouterLink
-                      key={item.to}
-                      to={item.to}
-                      reloadDocument={item.reloadDocument}
-                      role="menuitem"
-                    >
-                      {item.label}
-                    </RouterLink>
-                  ))}
-                </div>
-              </details>
-            </li>
           </ul>
         </nav>
         <button
@@ -196,41 +170,9 @@ const AppShell = ({ children }: AppShellProps) => {
           <ul>
             {primaryNavItems.map((item) => (
               <li key={item.to}>
-                <RouterLink to={item.to}>{item.label}</RouterLink>
+                <RouterLink to={item.to} reloadDocument={item.reloadDocument}>{item.label}</RouterLink>
               </li>
             ))}
-            <li>
-              <span className="ws-nav-section">Tools</span>
-              <ul className="ws-subnav">
-                {toolsNavItems.map((item) => (
-                  <li key={item.to}>
-                    <RouterLink to={item.to} reloadDocument={item.reloadDocument}>
-                      {item.label}
-                    </RouterLink>
-                  </li>
-                ))}
-              </ul>
-            </li>
-            <li>
-              <span className="ws-nav-section">Learn</span>
-              <ul className="ws-subnav">
-                <li>
-                  <RouterLink to="/guides/water-bill" reloadDocument>
-                    Read Your Bill
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/guides/find-fix-leaks" reloadDocument>
-                    Leak Detection
-                  </RouterLink>
-                </li>
-                <li>
-                  <RouterLink to="/guides" reloadDocument>
-                    Water-Saving Tips
-                  </RouterLink>
-                </li>
-              </ul>
-            </li>
           </ul>
         </nav>
       </div>
