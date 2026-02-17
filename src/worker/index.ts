@@ -449,14 +449,16 @@ function injectAdSlots(
 }
 
 const homeownerDropdownLinks = [
-  { label: "Analyze", href: "/analyze-water-bill" },
-  { label: "Plan", href: "/savings-plan" },
+  { label: "Tools", href: "/tools" },
+  { label: "Water Savings Score", href: "/water-iq" },
+  { label: "Upload a bill", href: "/analyze-water-bill" },
+  { label: "Manual entry", href: "/manual-entry" },
+  { label: "Find provider", href: "/find-water-provider" },
   { label: "Calculators", href: "/calculators" },
-  { label: "Water IQ Challenge", href: "/water-iq" },
   { label: "Leaks", href: "/leak-check" },
   { label: "Rebates", href: "/rebates" },
   { label: "Guides", href: "/guides" },
-  { label: "Find provider", href: "/find-water-provider" },
+  { label: "About", href: "/about" },
 ];
 
 const waterEjectNavLinks = [
@@ -520,6 +522,15 @@ const siteRoutes: SiteRoute[] = [
       "Upload a water bill for a clear breakdown and a savings plan. Or use fast calculators for showers, toilets, leaks, laundry, and outdoor watering.",
     body: renderHome(),
     pageCssClass: "home",
+    adsEnabled: false,
+  },
+  {
+    path: "/tools",
+    title: "Water tools hub | WaterShortcut",
+    description:
+      "Most used water-saving tools, calculators, and guides. Start with your Water Savings Score or jump straight to leak checks.",
+    body: renderToolsHub(),
+    pageCssClass: "tools-hub",
     adsEnabled: false,
   },
   {
@@ -1914,6 +1925,9 @@ app.get("/learn/water-saving-tips", (c) => c.redirect("/guides", 301));
 app.get("/learn/water-bill-spikes", (c) => c.redirect("/guides/water-bill", 301));
 app.get("/learn/hidden-leaks", (c) => c.redirect("/guides/find-fix-leaks", 301));
 
+app.get("/tools/device-water-eject", (c) => c.redirect("/blog-how-to-eject.html", 302));
+app.get("/tools/device-water-eject/", (c) => c.redirect("/blog-how-to-eject.html", 302));
+
 siteRoutes.forEach((route) => {
   app.get(route.path, (c) => {
     const adsenseSlots = buildAdsenseSlots(c.env);
@@ -2449,9 +2463,9 @@ function renderHome(): string {
         <h1>${escapeHtml(copy.home.title)}</h1>
         <p>${escapeHtml(copy.home.subtitle)}</p>
         <div class="actions">
-          <a class="btn primary" href="/analyze-water-bill">${escapeHtml(copy.home.primaryCta)}</a>
-          <a class="btn secondary" href="/analyze-water-bill#demo">${escapeHtml(copy.home.secondaryCta)}</a>
-          <a class="btn secondary" href="/analyze-water-bill#manual">${escapeHtml(copy.home.tertiaryCta)}</a>
+          <a class="btn primary" href="/water-iq">Get your Water Savings Score</a>
+          <a class="btn secondary" href="/analyze-water-bill">Upload a bill</a>
+          <a class="btn secondary" href="/tools">Explore tools</a>
         </div>
       </div>
       <div class="layout-slab">
@@ -2509,6 +2523,54 @@ function renderHome(): string {
         <div class="answer">No. But we can help you find the biggest, easiest opportunities.</div>
       </div>
     </section>
+  `;
+}
+
+function renderToolsHub(): string {
+  return `
+    <section class="hero">
+      <div>
+        <p class="badge">Tools hub</p>
+        <h1>Pick the fastest way to save water</h1>
+        <p>Start with your Water Savings Score, or jump straight into the tools most people use.</p>
+        <div class="actions">
+          <a class="btn primary" href="/water-iq">Get your Water Savings Score</a>
+          <a class="btn secondary" href="/analyze-water-bill">Upload a bill</a>
+          <a class="btn secondary" href="/leak-check">Run the leak check</a>
+        </div>
+      </div>
+      <div class="layout-slab">
+        <ul class="bullet-list">
+          <li>No login required</li>
+          <li>Fast, mobile-friendly</li>
+          <li>Sources you can click</li>
+        </ul>
+      </div>
+    </section>
+    ${section(
+      "Most used",
+      `<div class="cards">
+        <div class="card"><h3>Leak detector</h3><p>Spot hidden drips fast.</p><a class="btn secondary" href="/leak-check">Start</a></div>
+        <div class="card"><h3>Shower vs bath</h3><p>See where you stand.</p><a class="btn secondary" href="/calculators/shower">Start</a></div>
+        <div class="card"><h3>Bill audit</h3><p>Project annual savings.</p><a class="btn secondary" href="/calculators?bill_amount=100">Start</a></div>
+      </div>`
+    )}
+    ${section(
+      "Categories",
+      `<div class="grid">
+        <a class="inline-list" href="/analyze-water-bill">Save Money: Analyze a bill</a>
+        <a class="inline-list" href="/savings-plan">Save Money: Savings plan</a>
+        <a class="inline-list" href="/calculators">DIY: Calculators</a>
+        <a class="inline-list" href="/guides">DIY: Guides</a>
+        <a class="inline-list" href="/rebates">DIY: Rebates</a>
+        <a class="inline-list" href="/water-iq">Social: Water IQ Challenge</a>
+      </div>`
+    )}
+    ${section(
+      "Device utility",
+      `<p class="muted">Device utility (traffic satellite). For the iPhone speaker water-eject how-to.</p>
+       <a class="btn secondary" href="/blog-how-to-eject.html">Water Eject guide</a>`
+    )}
   `;
 }
 
