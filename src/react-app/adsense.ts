@@ -217,13 +217,17 @@ const showVignetteBanner = () => {
   banner.id = VIGNETTE_BANNER_ID;
   banner.innerHTML = `
     <div class="ws-vignette-banner__content">
-      <strong>Interstitial ad blocked.</strong>
-      <span>Continue to WaterShortcut.</span>
+      <strong>Ad overlay detected.</strong>
+      <span>If the close button is stuck, tap Continue to return.</span>
     </div>
     <button type="button" class="ws-vignette-banner__button">Continue</button>
   `;
   const button = banner.querySelector<HTMLButtonElement>("button");
-  button?.addEventListener("click", () => banner.remove());
+  button?.addEventListener("click", () => {
+    clearVignetteHash();
+    banner.remove();
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  });
   setTimeout(() => {
     if (!document.body.contains(banner)) return;
     banner.classList.add("is-visible");
@@ -233,7 +237,10 @@ const showVignetteBanner = () => {
 
 const handleVignetteExperience = () => {
   if (!isVignetteExperience()) return;
-  clearVignetteHash();
+  // Do NOT immediately clear the hash. Google vignette/interstitial experiences can rely on
+  // the #google_vignette fragment for their own dismiss logic. Clearing it too early can
+  // leave users stuck behind an un-closeable overlay.
+  // Instead, offer a user-controlled "Continue" button that clears the hash if needed.
   showVignetteBanner();
 };
 

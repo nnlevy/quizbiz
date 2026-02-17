@@ -1,7 +1,7 @@
 const site = {
   brandName: "WaterShortcut",
   canonicalHost: "www.watershortcut.com",
-  defaultOgImage: "https://res.cloudinary.com/dlxzgqi9g/image/upload/f_auto,q_auto/v1735510676/watershortcut-favicon.png",
+  defaultOgImage: "https://www.watershortcut.com/og/watershortcut-og.png",
   twitterHandle: "@watershortcut",
   locale: "en_US",
 };
@@ -173,11 +173,13 @@ const pages = {
     title: "Sign in | WaterShortcut",
     description: "Sign in to access AI water bill analysis history and save water.",
     canonicalPath: "/sign-in",
+    robots: "noindex,follow",
   },
   "/sign-up": {
     title: "Create a WaterShortcut account",
     description: "Create a WaterShortcut account to save water and track AI insights.",
     canonicalPath: "/sign-up",
+    robots: "noindex,follow",
   },
   "/dashboard": {
     title: "WaterShortcut dashboard",
@@ -189,6 +191,7 @@ const pages = {
     title: "WaterShortcut credits",
     description: "Manage credits for AI water bill analysis and water-saving tools.",
     canonicalPath: "/credits",
+    robots: "noindex,follow",
   },
   "/contact": {
     title: "Contact WaterShortcut",
