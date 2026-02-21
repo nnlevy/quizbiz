@@ -12,7 +12,7 @@ const pages = {
     description:
       "Upload a water bill for a clear breakdown and a savings plan. Or use fast calculators for showers, toilets, leaks, laundry, and outdoor watering.",
     canonicalPath: "/",
-    h1: "Cut your water bill with AI-powered insights",
+    h1: "Stop guessing what's driving your water bill.",
     intro:
       "WaterShortcut turns confusing water bills into a clear checklist. Upload a PDF to find leaks, avoid tier jumps, and lower costs without guesswork.",
     bodyHtml:
