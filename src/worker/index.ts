@@ -2467,8 +2467,8 @@ function renderHome(): string {
         <h1>${escapeHtml(copy.home.title)}</h1>
         <p>${escapeHtml(copy.home.subtitle)}</p>
         <div class="actions">
-          <a class="btn primary" href="/water-iq">Get your Water Savings Score</a>
-          <a class="btn secondary" href="/analyze-water-bill">Upload a bill</a>
+          <a class="btn primary" href="/water-iq">Homeowner or renter? Get my quick score</a>
+          <a class="btn secondary" href="/analyze-water-bill">Upload my latest bill</a>
           <a class="btn secondary" href="/tools">Explore tools</a>
         </div>
       </div>
@@ -2479,37 +2479,42 @@ function renderHome(): string {
       </div>
     </section>
     ${section(
-      "Pick a shortcut.",
+      "Does this sound familiar?",
       `<div class="cards">
-        <div class="card"><h3>Bill analyzer</h3><p>Turn line items into actions.</p><a class="btn secondary" href="/analyze-water-bill">Open</a></div>
-        <div class="card"><h3>Savings plan</h3><p>Answer a few questions. Get a checklist.</p><a class="btn secondary" href="/savings-plan">Start</a></div>
-        <div class="card"><h3>Quick calculators</h3><p>See gallons. Then dollars.</p><a class="btn secondary" href="/calculators">Browse</a></div>
+        <div class="card"><h3>My usage looks random</h3><p>Unsure if it is seasonal, a leak, or a billing mismatch.</p><a class="btn secondary" href="/analyze-water-bill">Check my bill</a></div>
+        <div class="card"><h3>I want plain-English steps</h3><p>No jargon, just what to do this week.</p><a class="btn secondary" href="/water-iq">Get my plan</a></div>
+        <div class="card"><h3>I rent and need low-friction options</h3><p>Tenant-safe actions without major upgrades.</p><a class="btn secondary" href="/tools">See renter-safe options</a></div>
       </div>`,
     )}
     ${section(
-      "Quick wins (today).",
+      "What you'll get in minutes",
       `<ul class="bullet-list">
-        <li><a href="/leak-check">Fix a sneaky leak</a></li>
-        <li><a href="/calculators/shower">Right-size your shower flow</a></li>
-        <li><a href="/calculators/outdoor">Water outdoors on purpose</a></li>
+        <li>Bill clarity: what changed and why it matters.</li>
+        <li>Priority actions ranked by likely savings and effort.</li>
+        <li>The best first step based on your home situation.</li>
       </ul>`,
     )}
     ${section(
-      "Built for trust.",
-      `<ul class="bullet-list">
-        <li>Sources you can click</li>
-        <li>Fast on mobile</li>
-        <li>No account needed</li>
-      </ul>`,
+      "Choose the easiest first step",
+      `<div class="cards">
+        <div class="card"><h3>Upload a bill</h3><p>Best when you want bill-specific guidance now.</p><a class="btn secondary" href="/analyze-water-bill">Analyze my bill</a></div>
+        <div class="card"><h3>Quick score</h3><p>Best when you need direction before line-item details.</p><a class="btn secondary" href="/water-iq">Get my score</a></div>
+        <div class="card"><h3>Calculators</h3><p>Best when you want fast leak and usage estimates.</p><a class="btn secondary" href="/calculators">Open calculators</a></div>
+      </div>`,
     )}
     ${section(
-      "Popular tools.",
+      "No hard sell, just a useful starting point",
       `<div class="grid">
-        <a class="inline-list" href="/calculators/shower">Shower calculator</a>
-        <a class="inline-list" href="/calculators/toilet">Toilet calculator</a>
-        <a class="inline-list" href="/leak-check">Leak check</a>
-        <a class="inline-list" href="/rebates">Rebates wizard</a>
-        <a class="inline-list" href="/calculators/laundry">Laundry calculator</a>
+        <a class="inline-list" href="/privacy">No login required</a>
+        <a class="inline-list" href="/trust">You stay in control</a>
+        <a class="inline-list" href="/sources">Sources you can verify</a>
+      </div>`,
+    )}
+    ${section(
+      "Not ready to upload a bill?",
+      `<div class="grid">
+        <a class="inline-list" href="/calculators">Start with calculators only</a>
+        <a class="inline-list" href="/tools">Browse renter-safe and homeowner-safe tools</a>
       </div>`,
     )}
     <section class="section faq">

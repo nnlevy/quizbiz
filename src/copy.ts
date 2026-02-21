@@ -17,9 +17,9 @@ export const copy = {
     privacySettings: "Change privacy settings",
   },
   home: {
-    title: "Cut your water bill with AI-powered insights",
+    title: "Stop guessing what's driving your water bill.",
     subtitle:
-      "Turn a confusing bill into a clear checklist. Upload a PDF (or enter numbers manually) to spot leaks, avoid tier jumps, and lower costs—without guesswork.",
+      "For homeowners and renters: get clear next steps in minutes, without utility jargon.",
     primaryCta: "Upload a bill",
     secondaryCta: "Demo bill",
     tertiaryCta: "Manual entry",
