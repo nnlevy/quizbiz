@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { usePageMeta } from "../hooks/usePageMeta";
+import { RouterLink } from "./router";
+
 type Mode = "emergency" | "proactive";
 
 type LocationData = {
@@ -73,12 +76,10 @@ const fetchWeatherSnapshot = async (lat: number, lng: number): Promise<WeatherDa
     };
     const currentTempC = payload.current?.temperature_2m;
     const lowTempC = payload.daily?.temperature_2m_min?.[0];
-    const currentTempF =
-      typeof currentTempC === "number" ? currentTempC * 1.8 + 32 : null;
+    const currentTempF = typeof currentTempC === "number" ? currentTempC * 1.8 + 32 : null;
     const past24HrLowF = typeof lowTempC === "number" ? lowTempC * 1.8 + 32 : null;
     const freezeRisk =
-      (currentTempF !== null && currentTempF <= 32) ||
-      (past24HrLowF !== null && past24HrLowF <= 32);
+      (currentTempF !== null && currentTempF <= 32) || (past24HrLowF !== null && past24HrLowF <= 32);
     return {
       currentTempF,
       past24HrLowF,
@@ -92,6 +93,12 @@ const fetchWeatherSnapshot = async (lat: number, lng: number): Promise<WeatherDa
 };
 
 const LeakCheckHub = () => {
+  usePageMeta({
+    title: "Leak check | WaterShortcut",
+    description: "A fast, guided checklist to find common household leaks and what to do next.",
+    canonicalPath: "/leak-check",
+  });
+
   const [mode, setMode] = useState<Mode>("proactive");
   const [location, setLocation] = useState<LocationData | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -207,7 +214,7 @@ const LeakCheckHub = () => {
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error || "We couldn’t run the triage yet.");
+        throw new Error(payload?.error || "We couldn't run the triage yet.");
       }
       const payload = (await response.json()) as TriagePlan;
       setTriagePlan(payload);
@@ -226,351 +233,265 @@ const LeakCheckHub = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <header className="border-b border-white/10 bg-slate-950/90">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3 text-sm uppercase tracking-[0.25em] text-red-300">
-            <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-semibold">Leak Check</span>
-            <span className="hidden text-xs text-slate-300 sm:inline">AI-Powered Triage</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setMode("emergency")}
-              className={`rounded-full border px-4 py-2 transition ${
-                mode === "emergency"
-                  ? "border-red-400 bg-red-500 text-white"
-                  : "border-white/20 bg-transparent text-white/70"
-              }`}
-            >
-              Emergency Triage
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("proactive")}
-              className={`rounded-full border px-4 py-2 transition ${
-                mode === "proactive"
-                  ? "border-orange-200 bg-white text-slate-900"
-                  : "border-white/20 bg-transparent text-white/70"
-              }`}
-            >
-              Proactive Guide
-            </button>
-          </div>
+    <section className="ws-page" aria-labelledby="leak-check-title">
+      <div className="ws-hero">
+        <p className="eyebrow">Leak check hub</p>
+        <h1 id="leak-check-title">Stop water damage fast with a guided checklist.</h1>
+        <p className="ws-hero-lede">
+          Two modes, one mission: get you safe during a leak and help you prevent the next one.
+        </p>
+        <div className="ws-hero-actions" role="group" aria-label="Leak check mode">
+          <button
+            type="button"
+            onClick={() => setMode("emergency")}
+            className={mode === "emergency" ? "ws-button" : "ws-button-secondary"}
+            aria-pressed={mode === "emergency"}
+          >
+            Emergency triage
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("proactive")}
+            className={mode === "proactive" ? "ws-button" : "ws-button-secondary"}
+            aria-pressed={mode === "proactive"}
+          >
+            Proactive guide
+          </button>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-6xl px-6 pb-20 pt-10">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="space-y-8">
-            <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.4em] text-red-300">AI Leak Check Hub</p>
-              <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
-                Stop water damage fast with an AI-guided response.
-              </h1>
-              <p className="max-w-2xl text-lg text-slate-200">
-                Two modes, one mission: get you safe during a leak and help you prevent the next one.
-              </p>
-            </div>
+      {mode === "emergency" ? (
+        <>
+          <section className="ws-progress" aria-labelledby="triage-title">
+            <h2 id="triage-title">Emergency triage flow</h2>
+            <p className="ws-subtitle">Follow each step. The AI will prioritize safety before repairs.</p>
 
-            {mode === "emergency" ? (
-              <div className="space-y-6">
-                <div className="rounded-3xl border border-red-400/60 bg-gradient-to-br from-red-600 via-red-700 to-orange-700 p-6 text-white shadow-2xl">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-100">
-                        Active leak?
-                      </p>
-                      <h2 className="text-3xl font-bold sm:text-4xl">Start Emergency Mode</h2>
-                      <p className="mt-2 text-base text-red-100">
-                        High-contrast, rapid triage with a live AI checklist.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setMode("emergency")}
-                      className="animate-pulse rounded-full bg-white px-6 py-4 text-base font-bold text-red-700 shadow-xl"
-                    >
-                      ACTIVE LEAK? START EMERGENCY MODE
-                    </button>
-                  </div>
-                </div>
+            <div className="ws-result-grid" role="list">
+              <article className="ws-result-card" role="listitem" aria-labelledby="triage-step1">
+                <h3 id="triage-step1">1) Capture context (optional)</h3>
+                <p className="ws-subtitle">Request GPS and check the last 24 hours of local weather.</p>
+                <button
+                  type="button"
+                  onClick={handleRequestLocation}
+                  className={`ws-button-secondary ws-button--full${isLocating ? " is-loading" : ""}`}
+                  disabled={isLocating}
+                >
+                  <span className="ws-button__label">
+                    <span className="ws-button__spinner" aria-hidden="true" />
+                    {isLocating ? "Locating..." : "Request location"}
+                  </span>
+                </button>
+                <p className="ws-subtitle" style={{ marginTop: "0.75rem" }}>
+                  <strong>Location:</strong> {location ? location.label : "Not captured yet"}
+                </p>
+              </article>
 
-                <div className="rounded-3xl border border-red-400/30 bg-slate-900/80 p-6 shadow-xl">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-2xl font-semibold">Emergency Triage Flow</h3>
-                      <p className="text-sm text-slate-300">
-                        Follow each step. The AI will prioritize safety before repairs.
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-orange-300/40 bg-orange-500/10 px-4 py-2 text-sm font-semibold text-orange-200">
-                      Secure AI analysis in progress
-                    </span>
-                  </div>
-
-                  <div className="mt-6 space-y-6">
-                    <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200">Step 1</p>
-                          <h4 className="text-xl font-semibold">Contextual intelligence gather</h4>
-                          <p className="text-sm text-slate-300">
-                            Request GPS and check the last 24 hours of local weather.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleRequestLocation}
-                          className="rounded-full border border-red-300 bg-red-500/20 px-5 py-3 text-sm font-semibold text-white"
-                        >
-                          {isLocating ? "Locating..." : "Request location"}
-                        </button>
-                      </div>
-                      <div className="mt-4 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Location</p>
-                          <p>{location ? location.label : "Not captured yet"}</p>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Freeze risk</p>
-                          <p>{freezeBadge}</p>
-                          {weather && (
-                            <p className="mt-1 text-xs text-slate-400">
-                              {weather.summary}
-                              {weather.currentTempF != null && weather.past24HrLowF != null
-                                ? ` (${weather.currentTempF.toFixed(0)}°F now, ${weather.past24HrLowF.toFixed(0)}°F low)`
-                                : ""}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200">Step 2</p>
-                          <h4 className="text-xl font-semibold">Visual assessment</h4>
-                          <p className="text-sm text-slate-300">
-                            Add a photo if you can—it improves the guidance, but it&apos;s optional.
-                          </p>
-                        </div>
-                        <label className="cursor-pointer rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg">
-                          Take/Upload Photo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="sr-only"
-                            onChange={handlePhotoUpload}
-                          />
-                        </label>
-                      </div>
-                      {photoPreview ? (
-                        <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
-                          <img src={photoPreview} alt="Leak preview" className="h-52 w-full object-cover" />
-                        </div>
-                      ) : (
-                        <p className="mt-4 text-sm text-slate-400">
-                          No photo captured yet. You can still run triage without one.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200">Step 3</p>
-                          <h4 className="text-xl font-semibold">Smart synthesis AI call</h4>
-                          <p className="text-sm text-slate-300">
-                            We combine location, freeze risk, and any photo you provide to build the response plan.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleEmergencyAnalysis}
-                          disabled={!location || !weather || isAnalyzing}
-                          className="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {isAnalyzing ? "Analyzing..." : "Run AI triage"}
-                        </button>
-                      </div>
-                      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300">
-                        Payload includes GPS coordinates, freeze risk flag, and any attached photo metadata.
-                      </div>
-                      {triageError && (
-                        <p className="mt-3 text-sm text-red-200" role="alert">
-                          {triageError}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200">Step 4</p>
-                        <h4 className="text-2xl font-semibold">Immediate action checklist</h4>
-                        <p className="text-sm text-slate-300">
-                          Large, high-contrast instructions you can follow in real time.
-                        </p>
-                      </div>
-                      {triagePlan ? (
-                        <div className="mt-4 space-y-4 text-lg font-semibold">
-                          <div className="rounded-2xl bg-red-500/20 p-4">{triagePlan.immediate_action}</div>
-                          <div className="rounded-2xl bg-orange-500/20 p-4">{triagePlan.secondary_action}</div>
-                          <div className="rounded-2xl bg-white/10 p-4 text-base font-normal text-slate-200">
-                            {triagePlan.context_note}
-                          </div>
-                          <div className="rounded-2xl border border-red-400/60 bg-red-600/30 p-4 text-base text-red-100">
-                            ⚠️ {triagePlan.warning}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="mt-4 text-sm text-slate-400">
-                          Run the AI triage to receive your emergency instructions.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowPostCrisis(true)}
-                      className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900"
-                    >
-                      Leak stopped? Mark resolved
-                    </button>
-                    <span className="text-xs text-slate-400">
-                      AI guidance is advisory. For severe leaks, contact emergency services.
-                    </span>
-                  </div>
-                </div>
-
-                <details className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200">
-                  <summary className="cursor-pointer text-sm font-semibold text-orange-200">
-                    AI transparency (system prompt + async flow)
-                  </summary>
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">System prompt</p>
-                      <pre className="whitespace-pre-wrap rounded-xl bg-black/50 p-4 text-xs text-slate-200">
-                        {TRIAGE_SYSTEM_PROMPT}
-                      </pre>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Async pseudo-code</p>
-                      <pre className="whitespace-pre-wrap rounded-xl bg-black/50 p-4 text-xs text-slate-200">
-                        {EMERGENCY_ANALYSIS_PSEUDOCODE}
-                      </pre>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="rounded-3xl border border-orange-200/40 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-                  <h2 className="text-3xl font-semibold">Standard Leak Audit</h2>
-                  <p className="mt-2 text-base text-slate-300">
-                    Not in crisis? Follow the proactive checklist and log your checks.
+              <article className="ws-result-card" role="listitem" aria-labelledby="triage-freeze">
+                <h3 id="triage-freeze">Freeze risk</h3>
+                <p className="ws-subtitle">{freezeBadge}</p>
+                {weather ? (
+                  <p className="ws-subtitle">
+                    {weather.summary}
+                    {weather.currentTempF != null && weather.past24HrLowF != null
+                      ? ` (${weather.currentTempF.toFixed(0)}°F now, ${weather.past24HrLowF.toFixed(0)}°F low)`
+                      : ""}
                   </p>
-                </div>
-                <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-6">
-                  <h3 className="text-xl font-semibold">Interactive checklist</h3>
-                  <ul className="mt-4 space-y-3">
-                    {defaultChecklist.map((item) => (
-                      <li key={item.id} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <input
-                          id={item.id}
-                          type="checkbox"
-                          checked={Boolean(checklistState[item.id])}
-                          onChange={() => toggleChecklist(item.id)}
-                          className="mt-1 h-5 w-5 rounded border-white/20 bg-transparent text-orange-400"
-                        />
-                        <label htmlFor={item.id} className="text-base text-slate-200">
-                          {item.label}
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                    Tip: log your findings now so the AI bill analysis can compare before/after usage.
-                  </div>
-                </div>
-              </div>
-            )}
+                ) : (
+                  <p className="ws-subtitle">Run location capture to attach a weather snapshot.</p>
+                )}
+              </article>
+            </div>
           </section>
 
-          <aside className="space-y-6">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h3 className="text-xl font-semibold">Triage readiness</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Emergency mode focuses only on what you need right now.
-              </p>
-              <div className="mt-4 space-y-3 text-sm text-slate-200">
-                <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                  <p className="font-semibold">1. Safety first</p>
-                  <p className="text-xs text-slate-400">
-                    We emphasize shutoff valves and electrical hazards before repairs.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                  <p className="font-semibold">2. AI with context</p>
-                  <p className="text-xs text-slate-400">
-                    Weather history helps flag frozen pipe bursts automatically.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                  <p className="font-semibold">3. Calm follow-through</p>
-                  <p className="text-xs text-slate-400">
-                    Mark resolved to unlock post-crisis savings guidance.
-                  </p>
-                </div>
+          <section className="ws-progress" aria-labelledby="triage-photo-title">
+            <h2 id="triage-photo-title">2) Add a photo (optional)</h2>
+            <p className="ws-subtitle">Useful for documenting the source while you work the checklist.</p>
+            <label className="ws-field">
+              <span>Photo</span>
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} className="ws-input" />
+            </label>
+            {photoPreview ? (
+              <div className="ws-result-card">
+                <h3>Preview</h3>
+                <img
+                  src={photoPreview}
+                  alt="Leak photo preview"
+                  style={{
+                    width: "100%",
+                    borderRadius: "0.9rem",
+                    border: "1px solid var(--ws-color-slate-300)",
+                  }}
+                />
               </div>
-            </div>
+            ) : null}
+          </section>
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h3 className="text-xl font-semibold">Post-crisis value</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                After the leak stops, we help you quantify the impact and prevent the next one.
-              </p>
-              <a
-                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-slate-900"
-                href="/analyze-water-bill"
-              >
-                Analyze my bill
-              </a>
+          <section className="ws-progress" aria-labelledby="triage-run-title">
+            <h2 id="triage-run-title">3) Run AI triage</h2>
+            <p className="ws-subtitle">
+              You'll get an immediate action list, a secondary action, and a safety warning.
+            </p>
+            {triageError ? <p className="ws-form-error">{triageError}</p> : null}
+            <button
+              type="button"
+              onClick={handleEmergencyAnalysis}
+              className={`ws-button ws-button--full${isAnalyzing ? " is-loading" : ""}`}
+              disabled={isAnalyzing}
+            >
+              <span className="ws-button__label">
+                <span className="ws-button__spinner" aria-hidden="true" />
+                {isAnalyzing ? "Running triage..." : "Run triage"}
+              </span>
+            </button>
+          </section>
+
+          <section className="ws-progress" aria-labelledby="triage-output-title">
+            <h2 id="triage-output-title">Immediate action checklist</h2>
+            <p className="ws-subtitle">
+              AI guidance is advisory. If the leak is severe, or water is near electrical outlets, stop and call a licensed professional.
+            </p>
+
+            {triagePlan ? (
+              <div className="ws-result-grid" role="list">
+                <article className="ws-result-card" role="listitem">
+                  <h3>Immediate action</h3>
+                  <p>{triagePlan.immediate_action}</p>
+                </article>
+                <article className="ws-result-card" role="listitem">
+                  <h3>Secondary action</h3>
+                  <p>{triagePlan.secondary_action}</p>
+                </article>
+                <article className="ws-result-card" role="listitem">
+                  <h3>Context note</h3>
+                  <p>{triagePlan.context_note}</p>
+                </article>
+                <article
+                  className="ws-result-card"
+                  role="listitem"
+                  style={{
+                    borderColor: "var(--ws-color-rose-500)",
+                    background: "rgba(185, 28, 28, 0.06)",
+                  }}
+                >
+	                  <h3>Safety warning</h3>
+	                  <p>
+	                    <span aria-hidden="true">{"\u26A0\uFE0F"}</span> {triagePlan.warning}
+	                  </p>
+	                </article>
+	              </div>
+            ) : (
+              <p className="ws-subtitle">Run the AI triage to receive your emergency instructions.</p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowPostCrisis(true)}
+              className="ws-button-secondary ws-button--full"
+              style={{ marginTop: "0.75rem" }}
+            >
+              Leak stopped? Mark resolved
+            </button>
+          </section>
+
+          <details className="ws-progress">
+            <summary style={{ cursor: "pointer", fontWeight: 700 }}>
+              AI transparency (system prompt + async flow)
+            </summary>
+            <div style={{ marginTop: "0.75rem" }}>
+              <p className="eyebrow">System prompt</p>
+              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{TRIAGE_SYSTEM_PROMPT}</pre>
             </div>
-          </aside>
+            <div style={{ marginTop: "0.75rem" }}>
+              <p className="eyebrow">Async pseudo-code</p>
+              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{EMERGENCY_ANALYSIS_PSEUDOCODE}</pre>
+            </div>
+          </details>
+        </>
+      ) : (
+        <section className="ws-progress" aria-labelledby="proactive-title">
+          <h2 id="proactive-title">Standard leak audit</h2>
+          <p className="ws-subtitle">Not in crisis? Follow the checklist and log your checks.</p>
+          <ul className="ws-checklist">
+            {defaultChecklist.map((item) => (
+              <li key={item.id}>
+                <label style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+                  <input
+                    id={item.id}
+                    type="checkbox"
+                    checked={Boolean(checklistState[item.id])}
+                    onChange={() => toggleChecklist(item.id)}
+                    style={{ marginTop: "0.15rem", accentColor: "var(--ws-color-teal-600)" }}
+                  />
+                  <span>{item.label}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <p className="ws-subtitle">
+            Tip: log your findings now so the AI bill analysis can compare before/after usage.
+          </p>
+        </section>
+      )}
+
+      <section className="ws-section" aria-labelledby="readiness-title">
+        <div className="ws-section-header">
+          <p className="eyebrow">What to expect</p>
+          <h2 id="readiness-title" className="ws-section-title">Triage readiness</h2>
+          <p className="ws-section-lede">Emergency mode focuses only on what you need right now.</p>
         </div>
-      </main>
+        <div className="ws-rails-grid" role="list">
+          <article className="ws-rail-card" role="listitem">
+            <h3>1) Safety first</h3>
+            <p>We emphasize shutoff valves and electrical hazards before repairs.</p>
+          </article>
+          <article className="ws-rail-card" role="listitem">
+            <h3>2) AI with context</h3>
+            <p>Weather history helps flag frozen pipe burst patterns.</p>
+          </article>
+          <article className="ws-rail-card" role="listitem">
+            <h3>3) Calm follow-through</h3>
+            <p>Mark resolved to unlock post-crisis savings guidance.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="ws-progress" aria-labelledby="post-crisis-title">
+        <h2 id="post-crisis-title">Post-crisis value</h2>
+        <p className="ws-subtitle">After the leak stops, quantify the impact and prevent the next one.</p>
+        <RouterLink className="ws-button-secondary ws-button--full" to="/analyze-water-bill">
+          Analyze my bill
+        </RouterLink>
+      </section>
 
       {showPostCrisis ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-2xl">
-            <h2 className="text-2xl font-semibold">Leak stopped? Nice work.</h2>
-            <p className="mt-2 text-sm text-slate-300">
-              Let&apos;s see how much that water cost you and prevent the next one.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href="/analyze-water-bill"
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900"
-              >
-                Analyze My Bill
-              </a>
+        <div className="credits-modal-overlay" role="dialog" aria-modal="true" aria-label="Leak resolved">
+          <div className="credits-modal" style={{ maxWidth: 560 }}>
+            <div className="credits-modal__header">
+              <div>
+                <h2 style={{ marginTop: 0 }}>Leak stopped? Nice work.</h2>
+                <p className="ws-subtitle">Let's estimate the impact and prevent the next spike.</p>
+              </div>
               <button
                 type="button"
+                className="credits-modal__close"
                 onClick={() => setShowPostCrisis(false)}
-                className="rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white"
-              >
+                aria-label="Close"
+	              >
+	                {"\u00D7"}
+	              </button>
+	            </div>
+            <div className="ws-hero-actions" style={{ marginTop: "1.25rem" }}>
+              <RouterLink to="/analyze-water-bill" className="ws-button" onClick={() => setShowPostCrisis(false)}>
+                Analyze my bill
+              </RouterLink>
+              <button type="button" onClick={() => setShowPostCrisis(false)} className="ws-button-secondary">
                 Close
               </button>
             </div>
           </div>
         </div>
       ) : null}
-    </div>
+    </section>
   );
 };
 
