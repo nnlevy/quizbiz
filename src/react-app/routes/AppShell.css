@@ -1072,6 +1072,12 @@
   visibility: hidden !important;
 }
 
+.adsbygoogle[data-ws-ad-suppressed="true"] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
 body[data-ads-disabled="true"] .ws-ads,
 body[data-ads-disabled="true"] .footer-ad,
 body[data-ads-disabled="true"] ins.adsbygoogle,
