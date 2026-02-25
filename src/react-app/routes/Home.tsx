@@ -25,7 +25,7 @@ const Home = () => {
         titleId="home-title"
       >
         <div className="ws-cta-card">
-          <h2>Start with the right entry point</h2>
+          <h2>Take Our Water IQ Challenge.</h2>
           <div className="ws-hero-actions">
             <RouterLink className="ws-button" to="/water-iq">
               Homeowner or renter? Get my quick score
@@ -39,7 +39,7 @@ const Home = () => {
 
       <section className="ws-section" aria-labelledby="rail-title">
         <div className="ws-section-header">
-          <p className="eyebrow">Pain prompts</p>
+          <p className="eyebrow">Shortcuts to save money and conserve water</p>
           <h2 id="rail-title" className="ws-section-title">Does this sound familiar?</h2>
         </div>
         <div className="ws-rails-grid" role="list">
@@ -66,10 +66,10 @@ const Home = () => {
 
       <section className="ws-section" aria-labelledby="contract-title">
         <div className="ws-section-header">
-          <p className="eyebrow">Up-front contract</p>
+          <p className="eyebrow">About Us</p>
           <h2 id="contract-title" className="ws-section-title">What you'll get in minutes</h2>
           <p className="ws-section-lede">
-            A clear read on what changed, your top actions, and the easiest next step for your home type.
+            Our mission is to make it fast and easy to understand changes in your water consumption. Water conservation should be a fun way to save money. Our goal is to provide you with:
           </p>
         </div>
         <div className="ws-rails-grid" role="list">
@@ -82,8 +82,8 @@ const Home = () => {
             <p>Priority actions ranked by likely savings and effort.</p>
           </article>
           <article className="ws-rail-card" role="listitem">
-            <h3>3) Best starting point</h3>
-            <p>Upload, quick score, or calculators based on your situation.</p>
+            <h3>3) Pure joy</h3>
+            <p>Earn credits and compete with friends for the highest water savings score.</p>
           </article>
         </div>
       </section>
@@ -129,16 +129,16 @@ const Home = () => {
       <section className="ws-section" aria-labelledby="reassurance-title">
         <div className="ws-section-header">
           <p className="eyebrow">Reassurance</p>
-          <h2 id="reassurance-title" className="ws-section-title">No hard sell, just a useful starting point</h2>
+          <h2 id="reassurance-title" className="ws-section-title">What are you waiting for?</h2>
           <p className="ws-section-lede">
-            No login required. Start where you are. Keep only what helps.
+            No login required. <a href="https://watershortcut.com/tools">Click here to explore our tools</a>
           </p>
         </div>
       </section>
       <section className="ws-section" aria-labelledby="off-ramp-title">
         <div className="ws-section-header">
           <p className="eyebrow">Off-ramp</p>
-          <h2 id="off-ramp-title" className="ws-section-title">Not ready to upload a bill?</h2>
+          <h2 id="off-ramp-title" className="ws-section-title">Try our AI calculators to compare your water usage to average consumption</h2>
           <p className="ws-section-lede">
             Start with one calculator and come back when you have your bill handy.
           </p>

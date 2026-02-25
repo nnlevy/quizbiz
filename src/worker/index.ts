@@ -2487,11 +2487,14 @@ function renderHome(): string {
       </div>`,
     )}
     ${section(
-      "What you'll get in minutes",
+      "About Us",
       `<ul class="bullet-list">
+        <li>Our mission is to make it fast and easy to understand changes in your water consumption.</li>
+        <li>Water conservation should be a fun way to save money.</li>
+        <li>Our goal is to provide you with:</li>
         <li>Bill clarity: what changed and why it matters.</li>
         <li>Priority actions ranked by likely savings and effort.</li>
-        <li>The best first step based on your home situation.</li>
+        <li>Pure joy: earn credits and compete with friends for the highest water savings score.</li>
       </ul>`,
     )}
     ${section(
@@ -2503,15 +2506,15 @@ function renderHome(): string {
       </div>`,
     )}
     ${section(
-      "No hard sell, just a useful starting point",
+      "What are you waiting for?",
       `<div class="grid">
-        <a class="inline-list" href="/privacy">No login required</a>
+        <a class="inline-list" href="https://watershortcut.com/tools">No login required. Click here to explore our tools</a>
         <a class="inline-list" href="/trust">You stay in control</a>
         <a class="inline-list" href="/sources">Sources you can verify</a>
       </div>`,
     )}
     ${section(
-      "Not ready to upload a bill?",
+      "Try our AI calculators to compare your water usage to average consumption",
       `<div class="grid">
         <a class="inline-list" href="/calculators">Start with calculators only</a>
         <a class="inline-list" href="/tools">Browse renter-safe and homeowner-safe tools</a>
