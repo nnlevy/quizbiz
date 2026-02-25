@@ -536,7 +536,45 @@ export function clientScript(defaultAdsenseClient: string) {
     const form = document.querySelector<HTMLFormElement>('#rebate-form');
     const status = document.querySelector<HTMLElement>('#rebate-status');
     const results = document.querySelector<HTMLElement>('#rebate-results');
+    const summary = document.querySelector<HTMLElement>('#rebate-summary');
+    const meter = document.querySelector<HTMLElement>('#rebate-upgrade-meter');
     if (!form || !status || !results) return;
+
+    const getSelectedUpgrades = () =>
+      Array.from(form.querySelectorAll<HTMLInputElement>('input[name="upgrade"]:checked')).map(
+        (input) => input.value,
+      );
+
+    const parseAmountRange = (amount: string) => {
+      const values = Array.from(amount.matchAll(/\$\s*([\d,]+(?:\.\d+)?)/g))
+        .map((match) => Number.parseFloat(match[1].replace(/,/g, '')))
+        .filter((value) => Number.isFinite(value));
+      if (!values.length) return null;
+      return {
+        min: Math.min(...values),
+        max: Math.max(...values),
+      };
+    };
+
+    const renderUpgradeMeter = () => {
+      if (!meter) return;
+      const selected = getSelectedUpgrades();
+      const count = selected.length;
+      const vibe =
+        count === 0
+          ? 'Select a few upgrades to widen your rebate hunt.'
+          : count < 3
+            ? 'Nice start. Add 1–2 more for better odds.'
+            : count <= 5
+              ? 'Sweet spot unlocked. Great chance of useful matches.'
+              : 'Full treasure mode. You’re scanning every angle.';
+      meter.innerHTML = `<span class="badge">${count} upgrade${count === 1 ? '' : 's'} selected</span><span class="muted">${escapeHtml(vibe)}</span>`;
+    };
+
+    renderUpgradeMeter();
+    form.querySelectorAll<HTMLInputElement>('input[name="upgrade"]').forEach((checkbox) => {
+      checkbox.addEventListener('change', renderUpgradeMeter);
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -544,20 +582,24 @@ export function clientScript(defaultAdsenseClient: string) {
       const city = (form.querySelector('input[name="city"]') as HTMLInputElement | null)?.value || '';
       const state = (form.querySelector('input[name="state"]') as HTMLInputElement | null)?.value || '';
       const utility = (form.querySelector('input[name="utility"]') as HTMLInputElement | null)?.value || '';
-      const upgrades = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="upgrade"]:checked')).map(
-        (input) => input.value,
-      );
+      const homeType = (form.querySelector('select[name="homeType"]') as HTMLSelectElement | null)?.value || '';
+      const timeline = (form.querySelector('select[name="timeline"]') as HTMLSelectElement | null)?.value || '';
+      const upgrades = getSelectedUpgrades();
       if (!zip.trim()) {
         status.textContent = 'Please enter a ZIP code to continue.';
         return;
       }
       status.textContent = 'Searching for rebates…';
       results.innerHTML = '';
+      if (summary) {
+        summary.hidden = true;
+        summary.innerHTML = '';
+      }
       try {
         const response = await fetch('/api/rebates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ zip, city, state, utility, upgrades }),
+          body: JSON.stringify({ zip, city, state, utility, homeType, timeline, upgrades }),
         });
         const data = (await response.json()) as {
           lastChecked?: string;
@@ -567,7 +609,10 @@ export function clientScript(defaultAdsenseClient: string) {
             amount: string;
             eligibility: string[];
             howToApply: string;
-            links: Array<{ label: string; url: string }>;
+            links: Array<{ label: string; url: string; whyItMatters?: string; sourceQuality?: "official" | "reference" }>;
+            category?: string;
+            applicationWindow?: string;
+            matchReason?: string;
             estimated?: boolean;
           }>;
           error?: string;
@@ -584,6 +629,25 @@ export function clientScript(defaultAdsenseClient: string) {
           results.innerHTML = '<div class="card"><h3>No programs found yet.</h3><p class="muted">Try another ZIP or check official rebate finders.</p></div>';
           return;
         }
+        const ranges = rebateResults
+          .map((result) => parseAmountRange(result.amount))
+          .filter((range): range is { min: number; max: number } => Boolean(range));
+        if (summary) {
+          const estimateCount = rebateResults.filter((result) => result.estimated).length;
+          const minTotal = ranges.reduce((sum, range) => sum + range.min, 0);
+          const maxTotal = ranges.reduce((sum, range) => sum + range.max, 0);
+          const hasTotals = ranges.length > 0;
+          summary.hidden = false;
+          summary.innerHTML = `
+            <h3>Your rebate snapshot</h3>
+            <p class="small">Found ${rebateResults.length} program${rebateResults.length === 1 ? '' : 's'} for your selected area and upgrades.</p>
+            <div class="inline-list">
+              <span class="badge">${estimateCount} estimated value${estimateCount === 1 ? '' : 's'}</span>
+              ${hasTotals ? `<span class="badge">Potential total: ${dollars(minTotal)}–${dollars(maxTotal)}</span>` : '<span class="badge">Potential total: check program pages</span>'}
+            </div>
+            <p class="muted">Fun challenge: apply to your top 2 in the next 48 hours while eligibility pages are fresh.</p>
+          `;
+        }
         results.innerHTML = rebateResults
           .map((result) => {
             const eligibilityList = result.eligibility?.length
@@ -592,19 +656,26 @@ export function clientScript(defaultAdsenseClient: string) {
                   .join('')}</ul>`
               : '';
             const linkList = result.links
-              .map(
-                (link) =>
-                  `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`,
-              )
+              .map((link) => {
+                const qualityLabel = link.sourceQuality === 'official' ? 'Official' : 'Reference';
+                const titleText = `${link.whyItMatters || 'Source detail'} (${qualityLabel})`;
+                return `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener" title="${escapeHtml(titleText)}">${escapeHtml(link.label)}</a>`;
+              })
               .join(' ');
+            const officialSourceCount = result.links.filter((link) => link.sourceQuality === 'official').length;
             return `
               <div class="card">
                 <h3>${escapeHtml(result.program)}</h3>
                 <p class="small">Provided by ${escapeHtml(result.provider)}</p>
+                ${result.category ? `<p class="small"><strong>Category:</strong> ${escapeHtml(result.category)}</p>` : ''}
                 <p><strong>Estimated rebate:</strong> ${escapeHtml(result.amount)}${result.estimated ? ' (estimate)' : ''}</p>
                 ${eligibilityList}
+                ${result.matchReason ? `<p class="small"><strong>Why this matched:</strong> ${escapeHtml(result.matchReason)}</p>` : ''}
+                ${result.applicationWindow ? `<p class="small"><strong>Application timing:</strong> ${escapeHtml(result.applicationWindow)}</p>` : ''}
+                <p class="small"><strong>Source quality:</strong> ${officialSourceCount} official link${officialSourceCount === 1 ? "" : "s"}</p>
                 <p class="muted">${escapeHtml(result.howToApply)}</p>
                 <div class="inline-list">${linkList}</div>
+                <p class="small">Pro move: save receipts + model numbers before submitting.</p>
               </div>
             `;
           })

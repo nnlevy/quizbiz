@@ -257,7 +257,10 @@ type RebateResult = {
   amount: string;
   eligibility: string[];
   howToApply: string;
-  links: Array<{ label: string; url: string }>;
+  links: Array<{ label: string; url: string; whyItMatters?: string; sourceQuality?: "official" | "reference" }>;
+  category?: string;
+  applicationWindow?: string;
+  matchReason?: string;
   estimated?: boolean;
 };
 
@@ -3322,11 +3325,19 @@ function renderRebatesWizard(): string {
     <section class="hero">
       <div>
         <h1>Find rebates.</h1>
-        <p>Get instant, AI-researched rebate leads for your utility.</p>
-        <p class="muted">Programs change—verify details on official sites.</p>
+        <p>Get instant, AI-researched rebate leads for your utility, then turn them into an easy action plan.</p>
+        <p class="muted">We prioritize utility, city, state, WaterSense, and ENERGY STAR pathways, but programs change—always verify details on official pages.</p>
       </div>
     </section>
     <section class="section layout-slab" id="rebate-tool">
+      <div class="card">
+        <h2>Rebate treasure map</h2>
+        <p class="small">Pick upgrades you care about. We’ll use your location to return likely matches, estimate value, and package next steps you can copy/paste.</p>
+        <div class="inline-list" id="rebate-upgrade-meter" aria-live="polite">
+          <span class="badge">0 upgrades selected</span>
+          <span class="muted">Tip: selecting 3–5 upgrades usually finds more options.</span>
+        </div>
+      </div>
       <form id="rebate-form">
         <div class="form-inline">
           <div class="form-row">
@@ -3345,6 +3356,15 @@ function renderRebatesWizard(): string {
             <label>Utility provider (optional)</label>
             <input type="text" name="utility" placeholder="Austin Water" />
           </div>
+          <div class="form-row">
+            <label>Home type (optional)</label>
+            <select name="homeType">
+              <option value="">Select one</option>
+              <option value="single-family">Single-family</option>
+              <option value="multifamily">Multifamily / condo</option>
+              <option value="renter">Renter</option>
+            </select>
+          </div>
         </div>
         <div class="form-row">
           <label>Upgrades to check</label>
@@ -3355,19 +3375,40 @@ function renderRebatesWizard(): string {
             <label class="tag"><input type="checkbox" name="upgrade" value="Smart irrigation controller" /> Smart irrigation controller</label>
             <label class="tag"><input type="checkbox" name="upgrade" value="Leak detector" /> Leak detector</label>
             <label class="tag"><input type="checkbox" name="upgrade" value="High-efficiency washer" /> High-efficiency washer</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="Rain barrel or cistern" /> Rain barrel or cistern</label>
+            <label class="tag"><input type="checkbox" name="upgrade" value="Turf replacement / xeriscape" /> Turf replacement / xeriscape</label>
           </div>
+        </div>
+        <div class="form-row">
+          <label>Project timeline (optional)</label>
+          <select name="timeline">
+            <option value="">Any timeline</option>
+            <option value="this-month">Doing upgrades this month</option>
+            <option value="this-season">Doing upgrades this season</option>
+            <option value="just-researching">Just researching</option>
+          </select>
         </div>
         <div class="wizard-actions">
           <button class="btn primary" type="submit">Find rebates</button>
         </div>
       </form>
       <p class="muted" id="rebate-status">Enter your ZIP to see local rebate programs.</p>
+      <div id="rebate-summary" class="card" hidden></div>
       <div id="rebate-results" class="cards"></div>
       <p class="muted">Programs change—verify details on official sites before you apply.</p>
+    </section>
+    <section class="section">
+      <h2>How to maximize approval odds</h2>
+      <div class="cards">
+        <div class="card"><h3>1) Screenshot eligibility rules</h3><p class="small">Save utility pages before you buy. Rules can update mid-season.</p></div>
+        <div class="card"><h3>2) Buy approved models only</h3><p class="small">WaterSense/ENERGY STAR model numbers matter for many applications.</p></div>
+        <div class="card"><h3>3) Submit fast</h3><p class="small">Many programs are first-come, first-served or capped by annual funding.</p></div>
+      </div>
     </section>
     ${sourcesList([
       "https://lookforwatersense.epa.gov/Rebate-Finder.html",
       "https://www.energystar.gov/rebate-finder",
+      "https://www.epa.gov/watersense",
     ])}
   `;
 }
@@ -5056,12 +5097,65 @@ const writeRebateCache = async (env: WorkerEnv, cacheKey: string, payload: Rebat
   });
 };
 
+function buildFallbackRebateResults(input: { zip: string; locationLabel: string; upgrades: string[] }): RebateResult[] {
+  const descriptor = input.locationLabel ? `${input.locationLabel} (ZIP ${input.zip})` : `ZIP ${input.zip}`;
+  const upgradeHint = input.upgrades.length ? `for ${input.upgrades.slice(0, 3).join(", ")}` : "for WaterSense and ENERGY STAR upgrades";
+  return [
+    {
+      program: "EPA WaterSense Rebate Finder",
+      provider: "U.S. Environmental Protection Agency",
+      amount: "Program-specific (varies by utility)",
+      eligibility: [
+        `Search your local utility in ${descriptor}`,
+        "Look for WaterSense-labeled products",
+      ],
+      howToApply: `Use the official finder to identify local programs ${upgradeHint}, then apply through the listed utility or municipality page.`,
+      links: [
+        {
+          label: "WaterSense Rebate Finder",
+          url: "https://lookforwatersense.epa.gov/Rebate-Finder.html",
+          whyItMatters: "Official EPA directory of utility rebate programs",
+          sourceQuality: "official",
+        },
+      ],
+      category: "WaterSense fixtures",
+      applicationWindow: "Rolling; depends on local utility budgets",
+      matchReason: `Reliable national starting point for ${descriptor}`,
+      estimated: true,
+    },
+    {
+      program: "ENERGY STAR Rebate Finder",
+      provider: "U.S. EPA + DOE",
+      amount: "Program-specific (varies by state/utility)",
+      eligibility: [
+        `Enter ${input.zip} to find local offers`,
+        "Check product model eligibility before purchase",
+      ],
+      howToApply: "Search by ZIP, verify approved models, and submit through the utility or state portal listed on the official page.",
+      links: [
+        {
+          label: "ENERGY STAR Rebate Finder",
+          url: "https://www.energystar.gov/rebate-finder",
+          whyItMatters: "Official federal rebate index for efficient equipment",
+          sourceQuality: "official",
+        },
+      ],
+      category: "Efficient appliances and home systems",
+      applicationWindow: "Often seasonal or funding-capped",
+      matchReason: `Strong fallback source when utility-specific data is sparse in ${descriptor}`,
+      estimated: true,
+    },
+  ];
+}
+
 const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
   let payload: {
     zip?: string;
     city?: string;
     state?: string;
     utility?: string;
+    homeType?: string;
+    timeline?: string;
     upgrades?: string[];
   } = {};
   try {
@@ -5086,6 +5180,8 @@ const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
     zip,
     locationLabel,
     utility: payload.utility?.trim() || "",
+    homeType: payload.homeType?.trim() || "",
+    timeline: payload.timeline?.trim() || "",
     upgrades: upgrades.slice().sort(),
   });
   const cached = await readRebateCache(c.env, cacheKey);
@@ -5097,16 +5193,19 @@ const handleRebateSearch = async (c: Context<{ Bindings: WorkerEnv }>) => {
     zip,
     locationLabel,
     utility: payload.utility?.trim() || "",
+    homeType: payload.homeType?.trim() || "",
+    timeline: payload.timeline?.trim() || "",
     upgrades,
   });
 
   try {
     const openAiData = await analyzeRebatesWithOpenAI(c.env, prompt);
     const parsed = parseRebatePayload(openAiData);
+    const finalResults = parsed.length > 0 ? parsed : buildFallbackRebateResults({ zip, locationLabel, upgrades });
     const lastChecked = new Date().toISOString();
     const responsePayload: RebateResponse = {
       lastChecked,
-      results: parsed,
+      results: finalResults,
     };
     await writeRebateCache(c.env, cacheKey, responsePayload);
     return c.json(responsePayload);
@@ -5704,6 +5803,8 @@ function buildRebatePrompt(input: {
   zip: string;
   locationLabel: string;
   utility: string;
+  homeType: string;
+  timeline: string;
   upgrades: string[];
 }): string {
   const upgradeList = input.upgrades.length
@@ -5712,9 +5813,12 @@ function buildRebatePrompt(input: {
   const locationDescriptor = input.locationLabel
     ? `${input.locationLabel} (ZIP ${input.zip})`
     : `ZIP ${input.zip}`;
-  const utilityDescriptor = input.utility ? `Utility provider: ${input.utility}.` : "";
+  const utilityDescriptor = input.utility ? `Utility provider: ${input.utility}.` : "Utility provider not provided.";
+  const homeTypeDescriptor = input.homeType || "unspecified";
+  const timelineDescriptor = input.timeline || "any";
 
-  return `You are a water rebate researcher. Return ONLY valid JSON (no markdown) matching:
+  return `You are a meticulous water rebate researcher.
+Return ONLY valid JSON (no markdown) matching:
 {
   "results": [
     {
@@ -5723,18 +5827,27 @@ function buildRebatePrompt(input: {
       "amount": string,
       "eligibility": string[],
       "howToApply": string,
-      "links": [{ "label": string, "url": string }],
+      "links": [{ "label": string, "url": string, "whyItMatters": string }],
+      "category": string,
+      "applicationWindow": string,
+      "matchReason": string,
       "estimated": boolean
     }
   ]
 }
 Rules:
 - Focus on water efficiency rebates for ${locationDescriptor}.
-- Include ${utilityDescriptor}
+- ${utilityDescriptor}
+- Home type context: ${homeTypeDescriptor}.
+- Project timeline context: ${timelineDescriptor}.
 - Upgrades of interest: ${upgradeList}.
-- Provide at least 3 results if available; otherwise return an empty array.
-- Every result must include at least one official source link (utility/state/city).
-- If the amount is uncertain, set "estimated": true and describe as a range in amount.
+- Prioritize active official sources first: utility providers, city/state agencies, .gov domains, WaterSense, and ENERGY STAR.
+- Avoid blogs, affiliate pages, and generic SEO pages unless they are the only lead and clearly mark estimated=true.
+- Provide at least 3 results when credible programs exist; otherwise return an empty array.
+- Every result must include at least one official link and a short whyItMatters explanation for each link.
+- Prefer links that are clearly rebates/incentives program pages (not generic homepages).
+- Include category (e.g., indoor fixture, irrigation, appliance), applicationWindow (deadline/funding note), and matchReason tied to location/upgrades.
+- If amount is uncertain, set estimated=true and provide a realistic range in amount.
 - If no credible program is found, return an empty results array.
 Return JSON only.`;
 }
@@ -5892,19 +6005,34 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
       const provider = sanitizeText(result.provider);
       const amount = sanitizeText(result.amount);
       const howToApply = sanitizeText(result.howToApply);
+      const category = sanitizeText(result.category);
+      const applicationWindow = sanitizeText(result.applicationWindow);
+      const matchReason = sanitizeText(result.matchReason);
       const eligibility = Array.isArray(result.eligibility)
         ? result.eligibility.map((item) => sanitizeText(item)).filter((item): item is string => Boolean(item))
         : [];
       const links = Array.isArray(result.links)
         ? result.links
-            .map((link) => ({
-              label: sanitizeText(link?.label || "Official source"),
-              url: sanitizeHttpUrl(link?.url),
-            }))
-            .filter(
-              (link): link is { label: string; url: string } =>
-                Boolean(link.label) && Boolean(link.url),
-            )
+            .map((link) => {
+              const label = sanitizeText(link?.label || "Official source");
+              const url = sanitizeHttpUrl(link?.url);
+              const whyItMatters = sanitizeText(link?.whyItMatters);
+              if (!label || !url) {
+                return null;
+              }
+              const sourceQuality = getRebateLinkQuality(url);
+              if (!sourceQuality) {
+                return null;
+              }
+              return {
+                label,
+                url,
+                sourceQuality,
+                ...(whyItMatters ? { whyItMatters } : {}),
+              };
+            })
+            .filter((link): link is { label: string; url: string; whyItMatters?: string; sourceQuality: "official" | "reference" } => Boolean(link))
+            .sort((a, b) => rebateSourceRank(a.sourceQuality) - rebateSourceRank(b.sourceQuality))
         : [];
       if (!program || !provider || !howToApply || links.length === 0) {
         return null;
@@ -5917,11 +6045,60 @@ function parseRebatePayload(data: ChatCompletionResponse): RebateResult[] {
         eligibility,
         howToApply,
         links,
+        ...(category ? { category } : {}),
+        ...(applicationWindow ? { applicationWindow } : {}),
+        ...(matchReason ? { matchReason } : {}),
         ...(estimated !== undefined ? { estimated } : {}),
       };
     });
 
-  return mappedResults.filter((result): result is RebateResult => result !== null);
+  const filtered = mappedResults.filter((result): result is RebateResult => result !== null);
+  const deduped = new Map<string, RebateResult>();
+  for (const result of filtered) {
+    const dedupeKey = `${result.program.toLowerCase()}::${result.provider.toLowerCase()}`;
+    if (!deduped.has(dedupeKey)) {
+      deduped.set(dedupeKey, result);
+    }
+  }
+  return Array.from(deduped.values()).slice(0, 8);
+}
+
+function rebateSourceRank(value: "official" | "reference"): number {
+  return value === "official" ? 0 : 1;
+}
+
+function getRebateLinkQuality(urlValue: string): "official" | "reference" | null {
+  try {
+    const url = new URL(urlValue);
+    const host = url.hostname.toLowerCase();
+    const path = `${url.pathname}${url.search}`.toLowerCase();
+
+    const isGovernment = host.endsWith(".gov") || host.endsWith(".us");
+    const isKnownOfficialDomain =
+      host.includes("energystar.gov") ||
+      host.includes("epa.gov") ||
+      host.includes("watersense") ||
+      host.includes("publicutility") ||
+      host.includes("municipal") ||
+      host.includes("cityof") ||
+      host.includes("county");
+    const looksLikeProgramPage =
+      path.includes("rebate") ||
+      path.includes("incentive") ||
+      path.includes("conservation") ||
+      path.includes("watersense") ||
+      path.includes("efficiency");
+
+    if ((isGovernment || isKnownOfficialDomain) && looksLikeProgramPage) {
+      return "official";
+    }
+    if (isGovernment || isKnownOfficialDomain) {
+      return "reference";
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
