@@ -13,7 +13,7 @@ import { useScrollUnlock } from "../hooks/useScrollUnlock";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { RouterLink, useLocation } from "./router";
 import { ADS_FREE_FLAG } from "../utils/credits";
-import WaterShortcutLogo from "../components/WaterShortcutLogo";
+import DropletCheckIcon from "../components/DropletCheckIcon";
 
 import "./AppShell.css";
 
@@ -111,8 +111,7 @@ const AppShell = ({ children }: AppShellProps) => {
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
-            <WaterShortcutLogo className="ws-logo__icon" width={40} height={40} />
-            <span className="ws-logo__text">WaterShortcut</span>
+            <span className="ws-logo__text">WaterShortcut.com</span>
           </RouterLink>
           {showDeferred && (
             <button
@@ -144,7 +143,7 @@ const AppShell = ({ children }: AppShellProps) => {
           aria-controls="ws-navigation-drawer"
           onClick={() => setMenuOpen((open) => !open)}
         >
-          <span aria-hidden="true">☰</span>
+          <DropletCheckIcon className="ws-menu-button__icon" />
           <span className="sr-only">Toggle navigation</span>
         </button>
       </header>

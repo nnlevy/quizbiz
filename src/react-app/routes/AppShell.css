@@ -128,19 +128,6 @@
   color: inherit;
 }
 
-.ws-logo__image,
-.ws-logo__icon {
-  height: 40px;
-  width: auto;
-  max-width: 120px;
-  display: block;
-  object-fit: contain;
-}
-
-.ws-logo__icon {
-  color: var(--ws-color-teal-600);
-  --ws-logo-secondary: var(--ws-color-sky-400);
-}
 
 .ws-logo__text {
   font-weight: 700;
@@ -171,14 +158,21 @@
   border: none;
   background: var(--ws-color-ink-900);
   color: var(--ws-color-surface);
-  padding: 0.65rem 0.85rem;
+  padding: 0;
   border-radius: 999px;
   font-size: 1rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  min-width: 44px;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  width: 48px;
+  height: 48px;
+}
+
+.ws-menu-button__icon {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .ws-drawer {
