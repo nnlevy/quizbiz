@@ -2508,7 +2508,7 @@ function renderHome(): string {
     ${section(
       "What are you waiting for?",
       `<div class="grid">
-        <a class="inline-list" href="https://watershortcut.com/tools">No login required. Click here to explore our tools</a>
+        <a class="inline-list" href="/tools">No login required. Click here to explore our tools</a>
         <a class="inline-list" href="/trust">You stay in control</a>
         <a class="inline-list" href="/sources">Sources you can verify</a>
       </div>`,

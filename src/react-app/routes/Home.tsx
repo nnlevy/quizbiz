@@ -131,7 +131,7 @@ const Home = () => {
           <p className="eyebrow">Reassurance</p>
           <h2 id="reassurance-title" className="ws-section-title">What are you waiting for?</h2>
           <p className="ws-section-lede">
-            No login required. <a href="https://watershortcut.com/tools">Click here to explore our tools</a>
+            No login required. <a href="/tools">Click here to explore our tools</a>
           </p>
         </div>
       </section>
