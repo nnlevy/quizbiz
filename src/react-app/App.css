@@ -1659,6 +1659,10 @@ ins.adsbygoogle[style*="position: fixed"] {
   box-sizing: border-box;
 }
 
+ins.adsbygoogle.ws-margin-ad--hidden[style*="position: fixed"] {
+  pointer-events: none !important;
+}
+
 .adsbygoogle[data-ws-ad-suppressed="true"] {
   display: none !important;
 }
