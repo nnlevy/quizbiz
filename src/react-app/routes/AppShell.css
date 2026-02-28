@@ -4,6 +4,51 @@
   flex-direction: column;
   background: var(--ws-gradient-shell);
   color: var(--ws-color-ink-900);
+  position: relative;
+  isolation: isolate;
+}
+
+.ws-shell::before {
+  content: "";
+  position: fixed;
+  inset: -20vh 0 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.24;
+  background-image: repeating-linear-gradient(
+    102deg,
+    transparent 0 22px,
+    color-mix(in srgb, var(--ws-color-sky-600) 22%, transparent) 22px 24px,
+    transparent 24px 44px
+  );
+  background-size: 220px 200px;
+  animation: ws-rain-drift 18s linear infinite;
+}
+
+.ws-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--ws-color-sky-100) 50%, transparent), transparent 40%);
+}
+
+@keyframes ws-rain-drift {
+  from {
+    transform: translate3d(0, -12%, 0);
+  }
+  to {
+    transform: translate3d(2%, 14%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-shell::before,
+  .ws-logo__icon,
+  .ws-logo__text {
+    animation: none;
+  }
 }
 
 .ws-header {
@@ -13,8 +58,8 @@
   padding: 1rem 1.5rem;
   position: sticky;
   top: 0;
-  background: var(--ws-color-surface-98);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--ws-color-surface-98) 88%, transparent);
+  backdrop-filter: blur(10px);
   z-index: 5;
   border-bottom: 1px solid var(--ws-color-slate-400);
 }
@@ -131,6 +176,59 @@
 
 .ws-logo__text {
   font-weight: 700;
+  position: relative;
+  color: var(--ws-color-ink-900);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: transform 200ms ease;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .ws-logo__text {
+    color: transparent;
+    background-image:
+      radial-gradient(circle at calc(var(--ws-logo-x, 0.45) * 100%) calc(var(--ws-logo-y, 0.4) * 100%), rgba(255, 255, 255, 0.85), transparent 45%),
+      linear-gradient(120deg, var(--ws-color-ink-900), var(--ws-color-sky-700), var(--ws-color-teal-600), var(--ws-color-ink-900));
+    background-size: 180% 180%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: ws-logo-shimmer 9s linear infinite;
+  }
+}
+
+.ws-logo:hover .ws-logo__text,
+.ws-logo:focus-visible .ws-logo__text {
+  transform: translateY(-1px);
+}
+
+.ws-logo__icon {
+  height: 1em;
+  width: auto;
+  color: var(--ws-color-teal-600);
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--ws-color-sky-650) 24%, transparent));
+  animation: ws-logo-drop-bob 2.8s ease-in-out infinite;
+}
+
+@keyframes ws-logo-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes ws-logo-drop-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-1px) scale(1.03);
+  }
 }
 
 .ws-header__credits {
@@ -298,6 +396,25 @@
   margin: 0 auto;
 }
 
+.ws-home {
+  position: relative;
+  isolation: isolate;
+}
+
+.ws-home::before {
+  content: "";
+  position: absolute;
+  inset: -1.75rem -1rem auto;
+  height: 15rem;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--ws-color-teal-600) 22%, transparent), transparent 56%),
+    radial-gradient(circle at 82% 22%, color-mix(in srgb, var(--ws-color-sky-650) 24%, transparent), transparent 52%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+  z-index: -1;
+  filter: blur(0.2px);
+}
+
 .ws-hero {
   display: grid;
   gap: 1rem;
@@ -319,6 +436,56 @@
 
 .ws-hero-card {
   display: grid;
+}
+
+.ws-home-hero-card {
+  border: 1px solid color-mix(in srgb, var(--ws-color-teal-40) 55%, white);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(241, 253, 255, 0.92));
+  position: relative;
+  overflow: hidden;
+}
+
+.ws-home-hero-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -14% -35% auto;
+  width: 13rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ws-color-teal-600) 35%, transparent), transparent 68%);
+  pointer-events: none;
+}
+
+.ws-home-hero-card__subtitle {
+  margin: -0.5rem 0 0;
+  color: var(--ws-color-slate-700);
+}
+
+.ws-home-proof-list {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--ws-color-slate-800);
+  font-size: 0.9rem;
+}
+
+.ws-home-proof-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ws-home-proof-list li::before {
+  content: "";
+  width: 0.62rem;
+  height: 0.76rem;
+  background: var(--ws-color-teal-500);
+  border-radius: 62% 62% 62% 0;
+  transform: rotate(-45deg) translateY(1px);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ws-color-teal-500) 16%, transparent);
 }
 
 .ws-hero-actions {
@@ -489,6 +656,13 @@
   background: var(--ws-color-surface);
   box-shadow: var(--ws-ui-shadow);
   padding: 1rem;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.ws-rail-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px var(--ws-shadow-12);
+  border-color: color-mix(in srgb, var(--ws-color-teal-35) 45%, var(--ws-ui-border));
 }
 
 .ws-rail-card__icon {
@@ -605,11 +779,61 @@
 .ws-section-title {
   margin: 0;
   font-size: 1.6rem;
+  text-wrap: balance;
 }
 
 .ws-section-lede {
   margin: 0;
   color: var(--ws-color-slate-700);
+}
+
+.ws-home-value-band {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ws-color-slate-300) 75%, white);
+  border-radius: calc(var(--ws-ui-radius) + 0.25rem);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.88), rgba(240, 252, 255, 0.68));
+}
+
+.ws-home-start-steps {
+  padding: 1.1rem;
+  border-radius: calc(var(--ws-ui-radius) + 0.35rem);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(232, 248, 255, 0.82));
+  border: 1px solid color-mix(in srgb, var(--ws-color-sky-100) 40%, var(--ws-color-slate-300));
+}
+
+.ws-start-step-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ws-start-step-card {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border-radius: calc(var(--ws-ui-radius) + 0.1rem);
+  border: 1px solid color-mix(in srgb, var(--ws-ui-border) 85%, white);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(247, 252, 255, 0.92));
+  box-shadow: 0 10px 22px var(--ws-shadow-08);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.ws-start-step-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px var(--ws-shadow-12);
+  border-color: color-mix(in srgb, var(--ws-color-sky-650) 28%, var(--ws-ui-border));
+}
+
+.ws-start-step-card__eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ws-color-sky-700);
+}
+
+.ws-start-step-card__cta {
+  margin-top: 0.2rem;
 }
 
 .ws-tool-card-grid {

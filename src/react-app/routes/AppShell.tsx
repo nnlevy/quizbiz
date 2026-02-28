@@ -34,6 +34,7 @@ const AppShell = ({ children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adsRemoved, setAdsRemoved] = useState(false);
   const drawerRef = useRef<HTMLDivElement | null>(null);
+  const logoTextRef = useRef<HTMLSpanElement | null>(null);
   const location = useLocation();
   const { credits, pulse } = useCredits();
   const { openModal } = useCreditsModal();
@@ -92,6 +93,33 @@ const AppShell = ({ children }: AppShellProps) => {
     };
   }, []);
 
+
+  useEffect(() => {
+    const logo = logoTextRef.current;
+    if (!logo) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = logo.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+      logo.style.setProperty("--ws-logo-x", `${Math.max(0, Math.min(1, x))}`);
+      logo.style.setProperty("--ws-logo-y", `${Math.max(0, Math.min(1, y))}`);
+    };
+
+    const handlePointerLeave = () => {
+      logo.style.removeProperty("--ws-logo-x");
+      logo.style.removeProperty("--ws-logo-y");
+    };
+
+    logo.addEventListener("pointermove", handlePointerMove);
+    logo.addEventListener("pointerleave", handlePointerLeave);
+
+    return () => {
+      logo.removeEventListener("pointermove", handlePointerMove);
+      logo.removeEventListener("pointerleave", handlePointerLeave);
+    };
+  }, []);
+
   const showDeferred = scrollUnlocked;
   const isHome = location.pathname === "/";
   const pageAllowsAds = isAdTypeEnabled(location.pathname, "footer");
@@ -111,7 +139,8 @@ const AppShell = ({ children }: AppShellProps) => {
       <header className="ws-header">
         <div className="ws-header__brand">
           <RouterLink className="ws-logo" to="/">
-            <span className="ws-logo__text">WaterShortcut.com</span>
+            <DropletCheckIcon className="ws-logo__icon" aria-hidden="true" />
+            <span className="ws-logo__text" ref={logoTextRef}>WaterShortcut.com</span>
           </RouterLink>
           {showDeferred && (
             <button
