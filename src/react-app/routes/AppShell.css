@@ -11,18 +11,17 @@
 .ws-shell::before {
   content: "";
   position: fixed;
-  inset: -20vh 0 0;
+  inset: -10vh 0 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.24;
-  background-image: repeating-linear-gradient(
-    102deg,
-    transparent 0 22px,
-    color-mix(in srgb, var(--ws-color-sky-600) 22%, transparent) 22px 24px,
-    transparent 24px 44px
-  );
-  background-size: 220px 200px;
-  animation: ws-rain-drift 18s linear infinite;
+  opacity: 0.3;
+  background-image:
+    radial-gradient(12px 18px at 12% 8%, color-mix(in srgb, var(--ws-color-sky-600) 28%, transparent), transparent 72%),
+    radial-gradient(10px 15px at 38% 22%, color-mix(in srgb, var(--ws-color-teal-600) 25%, transparent), transparent 70%),
+    radial-gradient(14px 20px at 64% 14%, color-mix(in srgb, var(--ws-color-sky-500) 24%, transparent), transparent 72%),
+    radial-gradient(10px 14px at 82% 26%, color-mix(in srgb, var(--ws-color-teal-500) 22%, transparent), transparent 70%);
+  background-size: 300px 240px;
+  animation: ws-rain-drift 14s linear infinite;
 }
 
 .ws-shell::after {
@@ -36,10 +35,10 @@
 
 @keyframes ws-rain-drift {
   from {
-    transform: translate3d(0, -12%, 0);
+    transform: translate3d(0, -10%, 0);
   }
   to {
-    transform: translate3d(2%, 14%, 0);
+    transform: translate3d(0, 12%, 0);
   }
 }
 
@@ -166,6 +165,7 @@
   font-weight: 700;
   text-decoration: none;
   font-size: 1.1rem;
+  line-height: 1.15;
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
@@ -201,7 +201,7 @@
 }
 
 .ws-logo__icon {
-  height: 1em;
+  height: 1.25em;
   width: auto;
   color: var(--ws-color-teal-600);
   flex-shrink: 0;
@@ -401,18 +401,23 @@
   isolation: isolate;
 }
 
-.ws-home::before {
+.ws-home .ws-hero-layout {
+  position: relative;
+  isolation: isolate;
+  border-radius: 2rem;
+  padding: 1rem;
+}
+
+.ws-home .ws-hero-layout::before {
   content: "";
   position: absolute;
-  inset: -1.75rem -1rem auto;
-  height: 15rem;
-  border-radius: 2rem;
+  inset: 0;
+  border-radius: inherit;
   background:
-    radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--ws-color-teal-600) 22%, transparent), transparent 56%),
-    radial-gradient(circle at 82% 22%, color-mix(in srgb, var(--ws-color-sky-650) 24%, transparent), transparent 52%),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+    radial-gradient(circle at 20% 22%, color-mix(in srgb, var(--ws-color-teal-600) 18%, transparent), transparent 58%),
+    radial-gradient(circle at 80% 16%, color-mix(in srgb, var(--ws-color-sky-650) 20%, transparent), transparent 54%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.24));
   z-index: -1;
-  filter: blur(0.2px);
 }
 
 .ws-hero {
@@ -478,14 +483,11 @@
   gap: 0.45rem;
 }
 
-.ws-home-proof-list li::before {
-  content: "";
-  width: 0.62rem;
-  height: 0.76rem;
-  background: var(--ws-color-teal-500);
-  border-radius: 62% 62% 62% 0;
-  transform: rotate(-45deg) translateY(1px);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ws-color-teal-500) 16%, transparent);
+.ws-home-proof-list__icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--ws-aqua-accent);
+  flex-shrink: 0;
 }
 
 .ws-hero-actions {

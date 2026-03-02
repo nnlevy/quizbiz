@@ -23,11 +23,9 @@ type AppShellProps = {
 
 const primaryNavItems = [
   { to: "/", label: "Home" },
-  { to: "/tools", label: "Tools" },
-  { to: "/water-iq", label: "Water Savings Score" },
   { to: "/analyze-water-bill", label: "Analyze Bill" },
-  { to: "/guides", label: "Guides", reloadDocument: true },
-  { to: "/about", label: "About" },
+  { to: "/water-iq", label: "Water Savings Score" },
+  { to: "/tools", label: "Tools" },
 ];
 
 const AppShell = ({ children }: AppShellProps) => {

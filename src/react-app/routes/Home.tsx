@@ -36,9 +36,18 @@ const Home = () => {
             </RouterLink>
           </div>
           <ul className="ws-home-proof-list" aria-label="Core value points">
-            <li>Personalized savings plan</li>
-            <li>Leak and spike detection</li>
-            <li>Renter-safe action ideas</li>
+            <li>
+              <DropletCheckIcon className="ws-home-proof-list__icon" aria-hidden="true" />
+              Personalized savings plan
+            </li>
+            <li>
+              <DropletCheckIcon className="ws-home-proof-list__icon" aria-hidden="true" />
+              Leak and spike detection
+            </li>
+            <li>
+              <DropletCheckIcon className="ws-home-proof-list__icon" aria-hidden="true" />
+              Renter-safe action ideas
+            </li>
           </ul>
         </div>
       </Hero>
