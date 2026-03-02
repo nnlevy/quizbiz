@@ -18,16 +18,15 @@ const DEFAULT_AD_VISIBILITY: AdVisibility = {
 
 const AD_PAGE_RULES: AdPageRule[] = [
   {
-    description: "Homepage is ad-free",
+    description: "Homepage suppresses inline and sticky ads",
     match: (pathname) => pathname === "/",
     visibility: {
-      footer: false,
       inline: false,
       sticky: false,
     },
   },
   {
-    description: "Critical funnel routes are ad-free (trust + conversion)",
+    description: "Critical funnel routes suppress inline and sticky ads",
     match: (pathname) =>
       pathname.startsWith("/analysis-results") ||
       pathname === "/analyze-water-bill" ||
@@ -35,7 +34,6 @@ const AD_PAGE_RULES: AdPageRule[] = [
       pathname === "/dashboard" ||
       pathname === "/find-water-provider",
     visibility: {
-      footer: false,
       inline: false,
       sticky: false,
     },

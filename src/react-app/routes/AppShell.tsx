@@ -21,7 +21,13 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-const primaryNavItems = [
+type PrimaryNavItem = {
+  to: string;
+  label: string;
+  reloadDocument?: boolean;
+};
+
+const primaryNavItems: PrimaryNavItem[] = [
   { to: "/", label: "Home" },
   { to: "/analyze-water-bill", label: "Analyze Bill" },
   { to: "/water-iq", label: "Water Savings Score" },
@@ -121,7 +127,7 @@ const AppShell = ({ children }: AppShellProps) => {
   const showDeferred = scrollUnlocked;
   const isHome = location.pathname === "/";
   const pageAllowsAds = isAdTypeEnabled(location.pathname, "footer");
-  const showAds = showDeferred && !adsRemoved && pageAllowsAds;
+  const showAds = !adsRemoved && pageAllowsAds;
 
   useFocusTrap({
     active: menuOpen,

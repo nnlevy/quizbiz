@@ -14,7 +14,6 @@ const ROUTE_CHANGE_EVENT = "adsense:route-change";
 
 let historyPatched = false;
 let scriptLoadPromise: Promise<void> | null = null;
-let autoAdsQueued = false;
 let dimensionPatchApplied = false;
 let marginAdsObserver: MutationObserver | null = null;
 let marginAdsRaf = 0;
@@ -261,21 +260,9 @@ const ensureScriptPresent = () => {
 };
 
 const ensureAutoAds = () => {
-  if (autoAdsQueued) return;
-  if (isHomePage()) {
-    debugLog("Skipped auto ads init: homepage");
-    return;
-  }
-  if (!hasEligibleSlots()) {
-    debugLog("Skipped auto ads init: no eligible slots found");
-    return;
-  }
-  const adsQueue =
-    (window as typeof window & { adsbygoogle?: Array<Record<string, unknown>> }).adsbygoogle || [];
-  (window as typeof window & { adsbygoogle: Array<Record<string, unknown>> }).adsbygoogle = adsQueue;
-  adsQueue.push({});
-  autoAdsQueued = true;
-  debugLog("Queued auto ads init");
+  // We intentionally disable Auto Ads and only render explicit, policy-scoped slots.
+  // This prevents contextual overlays or in-content injections from disrupting core UI.
+  debugLog("Auto ads disabled; using explicit AdSense slots only");
 };
 
 const initializeSlot = (slot: HTMLElement) => {
