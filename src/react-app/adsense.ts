@@ -28,6 +28,11 @@ const MIN_MARGIN_AD_VIEWPORT_WIDTH = 1200;
 const SUPPRESSED_AD_DATASET = "wsAdSuppressed";
 const VIGNETTE_BANNER_ID = "ws-vignette-banner";
 const VIGNETTE_DISMISS_DELAY_MS = 1400;
+const VIGNETTE_FAILSAFE_RETRY_MS = 500;
+const VIGNETTE_FAILSAFE_MAX_ATTEMPTS = 8;
+
+let vignetteFailsafeTimer: number | null = null;
+let vignetteFailsafeAttempts = 0;
 
 type MarginAdState = {
   shownAt: number;
@@ -209,6 +214,36 @@ const clearVignetteHash = () => {
   return true;
 };
 
+const stopVignetteFailsafe = () => {
+  if (vignetteFailsafeTimer === null) return;
+  window.clearTimeout(vignetteFailsafeTimer);
+  vignetteFailsafeTimer = null;
+};
+
+const scheduleVignetteFailsafe = () => {
+  stopVignetteFailsafe();
+  vignetteFailsafeAttempts = 0;
+
+  const runAttempt = () => {
+    if (!isVignetteExperience()) {
+      stopVignetteFailsafe();
+      return;
+    }
+
+    clearVignetteHash();
+    vignetteFailsafeAttempts += 1;
+
+    if (vignetteFailsafeAttempts >= VIGNETTE_FAILSAFE_MAX_ATTEMPTS) {
+      stopVignetteFailsafe();
+      return;
+    }
+
+    vignetteFailsafeTimer = window.setTimeout(runAttempt, VIGNETTE_FAILSAFE_RETRY_MS);
+  };
+
+  runAttempt();
+};
+
 const showVignetteBanner = () => {
   if (document.getElementById(VIGNETTE_BANNER_ID)) return;
   const banner = document.createElement("div");
@@ -236,10 +271,7 @@ const showVignetteBanner = () => {
 
 const handleVignetteExperience = () => {
   if (!isVignetteExperience()) return;
-  // Do NOT immediately clear the hash. Google vignette/interstitial experiences can rely on
-  // the #google_vignette fragment for their own dismiss logic. Clearing it too early can
-  // leave users stuck behind an un-closeable overlay.
-  // Instead, offer a user-controlled "Continue" button that clears the hash if needed.
+  scheduleVignetteFailsafe();
   showVignetteBanner();
 };
 

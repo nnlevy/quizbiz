@@ -32,6 +32,15 @@ type RouterContextValue = {
 
 const RouterContext = createContext<RouterContextValue | undefined>(undefined);
 
+const isBlockedHash = (hash: string) => hash.toLowerCase().includes("google_vignette");
+
+const clearBlockedHash = () => {
+  if (!isBlockedHash(window.location.hash)) return false;
+  const sanitizedUrl = `${window.location.pathname}${window.location.search}`;
+  window.history.replaceState(window.history.state, "", sanitizedUrl);
+  return true;
+};
+
 const readLocation = (): LocationState => ({
   pathname: window.location.pathname,
   search: window.location.search,
@@ -46,11 +55,26 @@ export const RouterProvider = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const handlePopState = () => {
+    const sanitizeHash = () => {
+      if (!clearBlockedHash()) return;
       setLocation(readLocation());
     };
+
+    sanitizeHash();
+
+    window.addEventListener("hashchange", sanitizeHash);
+
+    const handlePopState = () => {
+      clearBlockedHash();
+      setLocation(readLocation());
+    };
+
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("hashchange", sanitizeHash);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   useEffect(() => {
