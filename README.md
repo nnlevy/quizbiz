@@ -70,10 +70,12 @@ npm run preview
 ## API endpoints
 - `POST /api/location` — location-to-provider helper (preserves legacy POST `/`).
 - `POST /api/analyze-bill` — PDF upload handler that calls Google Document AI and OpenAI (legacy POST `/` still routes here).
+- `GET /api/health` — runtime binding/config check for AI + document processing.
 
 ## Deployment
 Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrangler.json` plus the generated `dist/watershortcut/wrangler.json` during CI. Ensure secrets are set in Cloudflare:
-- `OPEN_API_KEY_NEW` (OpenAI API key used by `analyzeTextWithOpenAI` in `src/worker/index.ts`)
+- `PORTFOLIO_AI_SERVICE` (preferred Worker service binding to `riskfreettrial#PortfolioAIService`)
+- `OPEN_API_KEY_NEW` (optional legacy fallback only)
 - `OPENAI_ORG_ID` (optional)
 - `Google_Document_AI_Processor_Prediction_Endpoint`
 - `Google-Service-Account-FINAL` (service account JSON used by `getOAuthToken`)

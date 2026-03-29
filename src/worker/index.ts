@@ -103,8 +103,9 @@ const subtle = (() => {
 })();
 
 type WorkerEnv = {
-  OPEN_API_KEY_NEW: string;
+  OPEN_API_KEY_NEW?: string;
   OPENAI_ORG_ID?: string;
+  PORTFOLIO_AI_SERVICE?: PortfolioAiServiceBinding;
   Google_Document_AI_Processor_Prediction_Endpoint: string;
   "Google-Service-Account-FINAL": string;
   GROWTH_HASH_SALT?: string;
@@ -171,6 +172,66 @@ type ChatCompletionResponse = {
     };
   }>;
   error?: unknown;
+};
+
+type PortfolioAiServiceBinding = {
+  createChatCompletion: (input: Record<string, unknown>) => Promise<{
+    ok?: boolean;
+    status?: number;
+    data?: ChatCompletionResponse;
+    error?: string;
+  }>;
+};
+
+const getPortfolioAiService = (env: WorkerEnv): PortfolioAiServiceBinding | null => {
+  const service = env.PORTFOLIO_AI_SERVICE;
+  if (service && typeof service.createChatCompletion === "function") {
+    return service;
+  }
+  return null;
+};
+
+const buildLegacyOpenAiHeaders = (env: WorkerEnv): Record<string, string> => {
+  if (!env.OPEN_API_KEY_NEW) {
+    throw new Error("Missing env var: OPEN_API_KEY_NEW");
+  }
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
+  };
+  if (env.OPENAI_ORG_ID) {
+    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
+  }
+  return headers;
+};
+
+const requestOpenAiChatCompletion = async (
+  env: WorkerEnv,
+  payload: Record<string, unknown>,
+  errorContext: string,
+): Promise<ChatCompletionResponse> => {
+  const aiService = getPortfolioAiService(env);
+  if (aiService) {
+    const response = await aiService.createChatCompletion(payload);
+    if (response?.ok && response.data) {
+      return response.data;
+    }
+    throw new Error(response?.error || errorContext);
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: buildLegacyOpenAiHeaders(env),
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json()) as ChatCompletionResponse;
+  if (!response.ok) {
+    console.error(`${errorContext}:`, JSON.stringify(data, null, 2));
+    throw new Error(errorContext);
+  }
+
+  return data;
 };
 
 type GoogleIdTokenPayload = {
@@ -1265,6 +1326,21 @@ const hashPassword = async (password: string) => {
 };
 
 const app = new Hono<{ Bindings: WorkerEnv; Variables: { cspNonce: string } }>();
+
+app.get("/api/health", (c) =>
+  c.json({
+    ok: true,
+    checks: {
+      openApiKeyNew: Boolean(c.env.OPEN_API_KEY_NEW),
+      openaiOrgId: Boolean(c.env.OPENAI_ORG_ID),
+      portfolioAiService: Boolean(getPortfolioAiService(c.env)),
+      aiConfigured: isOpenAiConfigured(c.env),
+      growthTokenSecret: Boolean(c.env.GROWTH_TOKEN_SECRET),
+      googleDocEndpoint: Boolean(c.env.Google_Document_AI_Processor_Prediction_Endpoint),
+      googleServiceAccount: Boolean(c.env["Google-Service-Account-FINAL"]),
+    },
+  }),
+);
 
 type SupportedContentEncoding = "br" | "gzip";
 
@@ -5716,19 +5792,9 @@ async function analyzeTextWithOpenAI(
     ? `You are a world-leading expert in water conservation and efficiency.\nReturn ONLY valid JSON matching this schema (no markdown, no prose):\n{\n  \"analysisId\": string,\n  \"billingSummary\": {\n    \"billingPeriod\": string,\n    \"totalUsage\": { \"value\": number, \"unit\": string },\n    \"totalCost\": number,\n    \"rateTiers\": [\n      { \"name\": string, \"usageLimit\": string, \"rate\": string, \"cost\": number }\n    ]\n  },\n  \"usageHistory\": [\n    { \"label\": string, \"usage\": number, \"cost\": number, \"average\": number }\n  ],\n  \"alerts\": [\n    { \"id\": string, \"title\": string, \"detail\": string }\n  ],\n  \"savingsSummary\": string,\n  \"topMoves\": [\n    {\n      \"title\": string,\n      \"why\": string,\n      \"effort\": \"Low\" | \"Med\" | \"High\",\n      \"impact\": string,\n      \"steps\": string[],\n      \"ctaLabel\": string,\n      \"ctaHref\": string\n    }\n  ],\n  \"payingFor\": string,\n  \"nextStep\": string,\n  \"confidenceNote\": string\n}\nRules:\n- Provide exactly 3 topMoves.\n- Provide 12 usageHistory items labeled with short month names (e.g., \"Jan\").\n- Provide at least 3 alerts with specific fixes.\n- Ensure billingSummary and rateTiers align with the bill text inputs.\n- Keep language short, plain-English, and action-first.\n- Use realistic impact ranges instead of guarantees.\n- Use internal links for ctaHref when possible (e.g., /leak-check, /calculators/shower).\n\nBill text:\n${content}`
     : content;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
-  };
-
-  if (env.OPENAI_ORG_ID) {
-    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
+  return requestOpenAiChatCompletion(
+    env,
+    {
       model: "gpt-4o-mini",
       max_tokens: 2000,
       messages: [
@@ -5737,39 +5803,18 @@ async function analyzeTextWithOpenAI(
           content: prompt,
         },
       ],
-    }),
-  });
-
-  const data = (await response.json()) as ChatCompletionResponse;
-
-  if (!response.ok) {
-    console.error(
-      "OpenAI API request failed:",
-      JSON.stringify(data, null, 2),
-    );
-    throw new Error("Failed to analyze text with OpenAI");
-  }
-
-  return data;
+    },
+    "Failed to analyze text with OpenAI",
+  );
 }
 
 async function analyzeLocalTrendsWithOpenAI(
   env: WorkerEnv,
   prompt: string,
 ): Promise<ChatCompletionResponse> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
-  };
-
-  if (env.OPENAI_ORG_ID) {
-    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
+  return requestOpenAiChatCompletion(
+    env,
+    {
       model: "gpt-4o-mini",
       max_tokens: 1600,
       messages: [
@@ -5778,17 +5823,9 @@ async function analyzeLocalTrendsWithOpenAI(
           content: prompt,
         },
       ],
-    }),
-  });
-
-  const data = (await response.json()) as ChatCompletionResponse;
-
-  if (!response.ok) {
-    console.error("OpenAI trends request failed:", JSON.stringify(data, null, 2));
-    throw new Error("Failed to analyze local trends with OpenAI");
-  }
-
-  return data;
+    },
+    "Failed to analyze local trends with OpenAI",
+  );
 }
 
 function buildLocalTrendPrompt(input: { zip: string; city: string; state: string }): string {
@@ -5856,19 +5893,9 @@ async function analyzeRebatesWithOpenAI(
   env: WorkerEnv,
   prompt: string,
 ): Promise<ChatCompletionResponse> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
-  };
-
-  if (env.OPENAI_ORG_ID) {
-    headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
+  return requestOpenAiChatCompletion(
+    env,
+    {
       model: "gpt-4o-mini",
       max_tokens: 1800,
       messages: [
@@ -5877,16 +5904,9 @@ async function analyzeRebatesWithOpenAI(
           content: prompt,
         },
       ],
-    }),
-  });
-
-  const data = (await response.json()) as ChatCompletionResponse;
-  if (!response.ok) {
-    console.error("OpenAI rebate request failed:", JSON.stringify(data, null, 2));
-    throw new Error("Failed to analyze rebates with OpenAI");
-  }
-
-  return data;
+    },
+    "Failed to analyze rebates with OpenAI",
+  );
 }
 
 function clampInsightWords(insight: string, maxWords = 20): string {
@@ -5927,7 +5947,7 @@ async function generateViralInsight(
     badgeLabel: string;
   },
 ): Promise<string> {
-  if (!env.OPEN_API_KEY_NEW) {
+  if (!isOpenAiConfigured(env)) {
     const fallback = input.hasLeakInteraction
       ? "Even small leaks can add up; households with similar checks often avoid surprise spikes."
       : input.hasBillUpload
@@ -5937,18 +5957,9 @@ async function generateViralInsight(
   }
 
   try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.OPEN_API_KEY_NEW}`,
-    };
-    if (env.OPENAI_ORG_ID) {
-      headers["OpenAI-Organization"] = env.OPENAI_ORG_ID;
-    }
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
+    const data = await requestOpenAiChatCompletion(
+      env,
+      {
         model: "gpt-4o-mini",
         temperature: 0,
         max_tokens: 80,
@@ -5958,14 +5969,9 @@ async function generateViralInsight(
             content: buildViralInsightPrompt(input),
           },
         ],
-      }),
-    });
-
-    const data = (await response.json()) as ChatCompletionResponse;
-    if (!response.ok) {
-      console.error("OpenAI insight request failed:", JSON.stringify(data, null, 2));
-      throw new Error("Failed to generate insight");
-    }
+      },
+      "Failed to generate insight",
+    );
 
     const content = data.choices?.[0]?.message?.content?.trim() ?? "";
     return clampInsightWords(
@@ -6283,13 +6289,15 @@ function validateFile(file: File): boolean {
 }
 
 function validateLocationEnv(env: WorkerEnv): void {
-  if (!env.OPEN_API_KEY_NEW) {
-    throw new Error("Missing env var: OPEN_API_KEY_NEW");
+  if (!isOpenAiConfigured(env)) {
+    throw new Error(
+      "Missing AI configuration. Bind PORTFOLIO_AI_SERVICE or set OPEN_API_KEY_NEW as a legacy fallback.",
+    );
   }
 }
 
 function isOpenAiConfigured(env: WorkerEnv): boolean {
-  return Boolean(env.OPEN_API_KEY_NEW);
+  return Boolean(getPortfolioAiService(env) || env.OPEN_API_KEY_NEW);
 }
 
 function resolveGrowthTokenSecret(env: WorkerEnv): string | null {

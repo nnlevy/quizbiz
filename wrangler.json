@@ -38,6 +38,14 @@
       "id": "7746d8e39dff4c9f80ebc1ff7b2716f4"
     }
   ],
+  "services": [
+    {
+      "binding": "PORTFOLIO_AI_SERVICE",
+      "service": "riskfreetrial",
+      "entrypoint": "PortfolioAIService",
+      "remote": true
+    }
+  ],
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"

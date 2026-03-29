@@ -10,7 +10,8 @@ Set these secrets in the target Cloudflare Worker environment:
 | --- | --- | --- |
 | `Google_Document_AI_Processor_Prediction_Endpoint` | `callVisionAPI` | Full Document AI processor `:process` endpoint. |
 | `Google-Service-Account-FINAL` | `getOAuthToken` | Full Google service account JSON (includes `client_email` + `private_key`). |
-| `OPEN_API_KEY_NEW` | `analyzeTextWithOpenAI` | OpenAI API key (the Worker expects this name). |
+| `PORTFOLIO_AI_SERVICE` | `requestOpenAiChatCompletion` | Preferred Worker service binding to `riskfreettrial#PortfolioAIService`. |
+| `OPEN_API_KEY_NEW` | `requestOpenAiChatCompletion` | Optional legacy fallback OpenAI API key. |
 | `OPENAI_ORG_ID` | `analyzeTextWithOpenAI` | Optional org header when required. |
 
 Optional bindings (not required for bill analysis):
@@ -38,7 +39,7 @@ required.
 
 ## Automated smoke check
 
-Run the smoke check against a deployed Worker to confirm the Document AI endpoint, service account OAuth flow, and OpenAI API key are wired correctly.
+Run the smoke check against a deployed Worker to confirm the Document AI endpoint, service account OAuth flow, and AI path are wired correctly.
 
 ```bash
 WORKER_BASE_URL="https://www.watershortcut.com" \
@@ -55,7 +56,7 @@ Notes:
 
 1. Verify `Google_Document_AI_Processor_Prediction_Endpoint` matches the processor region and ID for the Document AI instance.
 2. Confirm `Google-Service-Account-FINAL` is the full JSON payload and the service account has access to the processor.
-3. Confirm `OPEN_API_KEY_NEW` is a valid OpenAI API key (and `OPENAI_ORG_ID` if required).
+3. Confirm `PORTFOLIO_AI_SERVICE` is bound to `riskfreettrial#PortfolioAIService`, or keep `OPEN_API_KEY_NEW` only as a temporary fallback (plus `OPENAI_ORG_ID` if required).
 4. Trigger the bill analysis endpoint:
    ```bash
    curl -X POST "https://www.watershortcut.com/api/analyze-bill" \
