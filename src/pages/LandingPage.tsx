@@ -25,8 +25,8 @@ const features: Feature[] = [
     title: "Build a savings plan",
     description: "Pick the fastest fixes that match your home.",
     outcome: "Turn 3 quick wins into monthly savings.",
-    href: "/savings-plan",
-    cta: "See my plan",
+    href: "/analyze-water-bill",
+    cta: "Build from my bill",
   },
   {
     title: "Spot leaks fast",

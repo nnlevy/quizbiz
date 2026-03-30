@@ -1911,6 +1911,12 @@ function App({ focusUpload = false }: AppProps) {
     topMovesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const isPdfFile = (file: File): boolean => {
+    const normalizedType = (file.type || "").toLowerCase();
+    const normalizedName = (file.name || "").toLowerCase();
+    return normalizedType === "application/pdf" || normalizedName.endsWith(".pdf");
+  };
+
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
@@ -1919,7 +1925,7 @@ function App({ focusUpload = false }: AppProps) {
       return;
     }
     setUploadError(null);
-    if (file.type !== "application/pdf") {
+    if (!isPdfFile(file)) {
       setResponseMessage(copy.analyze.errors.wrongType);
       setSelectedFile(null);
       setUploadPreview(null);
@@ -1947,7 +1953,7 @@ function App({ focusUpload = false }: AppProps) {
       setResponseMessage(copy.analyze.errors.tooLarge);
       return;
     }
-    if (file.type !== "application/pdf") {
+    if (!isPdfFile(file)) {
       setResponseMessage(copy.analyze.errors.wrongType);
       return;
     }

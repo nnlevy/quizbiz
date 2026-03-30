@@ -21,7 +21,7 @@ const SiteMapPage = () => (
           <a href="/research">Research plan</a>
         </li>
         <li>
-          <a href="/savings-plan">Savings plan</a>
+          <a href="/analyze-water-bill">Savings plan (from bill analysis)</a>
         </li>
         <li>
           <a href="/calculators">Calculators</a>
@@ -38,10 +38,10 @@ const SiteMapPage = () => (
           <a href="/leak-check">Leak check</a>
         </li>
         <li>
-          <a href="/rebates">Rebates</a>
+          <a href="/tools">Rebates and tools</a>
         </li>
         <li>
-          <a href="/guides">Guides</a>
+          <a href="/learn/water-saving-tips">Guides</a>
         </li>
         <li>
           <a href="/calculators/shower">Shower calculator</a>
@@ -52,19 +52,19 @@ const SiteMapPage = () => (
       <h2>Learn</h2>
       <ul>
         <li>
-          <a href="/guides/water-bill">How to read a water bill</a>
+          <a href="/learn/read-water-bill">How to read a water bill</a>
         </li>
         <li>
-          <a href="/guides/find-fix-leaks">Leak detection guide</a>
+          <a href="/learn/leak-detection">Leak detection guide</a>
         </li>
         <li>
-          <a href="/guides">Water-saving tips</a>
+          <a href="/learn/water-saving-tips">Water-saving tips</a>
         </li>
         <li>
-          <a href="/guides/water-bill">Water bill spikes</a>
+          <a href="/learn/water-bill-spikes">Water bill spikes</a>
         </li>
         <li>
-          <a href="/guides/find-fix-leaks">Hidden leaks</a>
+          <a href="/learn/hidden-leaks">Hidden leaks</a>
         </li>
       </ul>
     </section>

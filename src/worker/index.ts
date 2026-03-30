@@ -1998,11 +1998,11 @@ app.get("/terms/privacy", (c) => c.redirect("/privacy", 301));
 app.get("/terms/tos", (c) => c.redirect("/terms", 301));
 app.get("/game", (c) => c.redirect("/water-iq", 301));
 app.get("/leak-patrol", (c) => c.redirect("/water-iq", 301));
-app.get("/learn/read-water-bill", (c) => c.redirect("/guides/water-bill", 301));
-app.get("/learn/leak-detection", (c) => c.redirect("/guides/find-fix-leaks", 301));
-app.get("/learn/water-saving-tips", (c) => c.redirect("/guides", 301));
-app.get("/learn/water-bill-spikes", (c) => c.redirect("/guides/water-bill", 301));
-app.get("/learn/hidden-leaks", (c) => c.redirect("/guides/find-fix-leaks", 301));
+app.get("/guides/water-bill", (c) => c.redirect("/learn/read-water-bill", 301));
+app.get("/guides/find-fix-leaks", (c) => c.redirect("/learn/leak-detection", 301));
+app.get("/guides", (c) => c.redirect("/learn/water-saving-tips", 301));
+app.get("/guides/water-bill-spikes", (c) => c.redirect("/learn/water-bill-spikes", 301));
+app.get("/guides/hidden-leaks", (c) => c.redirect("/learn/hidden-leaks", 301));
 
 app.get("/tools/device-water-eject", (c) => c.redirect("/blog-how-to-eject.html", 302));
 app.get("/tools/device-water-eject/", (c) => c.redirect("/blog-how-to-eject.html", 302));
@@ -6277,8 +6277,9 @@ function validateFile(file: File): boolean {
     return false;
   }
 
-  const type = file.type.toLowerCase();
-  const isAllowed = type.includes("application/pdf");
+  const type = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+  const isAllowed = type.includes("application/pdf") || name.endsWith(".pdf");
 
   if (!isAllowed) {
     console.error("File validation failed (unsupported type).");
