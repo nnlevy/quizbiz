@@ -1,4 +1,4 @@
-import { FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { logEvent } from "../analytics";
 import { useCredits } from "../context/CreditsContext";
@@ -55,21 +55,6 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
     onNotice: setCheckoutNotice,
   });
 
-  const fetchPacks = useCallback(async () => {
-    setPacksLoading(true);
-    try {
-      const response = await fetch("/api/credits/offerings");
-      if (response.ok) {
-        const data = (await response.json()) as { offerings?: CreditPack[] };
-        setPacks(data.offerings ?? []);
-      }
-    } catch {
-      // Offerings are best-effort
-    } finally {
-      setPacksLoading(false);
-    }
-  }, []);
-
   const resolveAuthError = (code: string) => {
     switch (code) {
       case "missing_oauth_params":
@@ -106,8 +91,15 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
     if (!isOpen) return;
     logEvent("credits_modal_viewed");
     sendAnonymousEvent("credits_modal_viewed");
-    fetchPacks();
-  }, [isOpen, fetchPacks]);
+    setPacksLoading(true);
+    fetch("/api/credits/offerings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { offerings?: CreditPack[] } | null) => {
+        setPacks(data?.offerings ?? []);
+      })
+      .catch(() => undefined)
+      .finally(() => setPacksLoading(false));
+  }, [isOpen]);
 
   useFocusTrap({
     active: isOpen,
