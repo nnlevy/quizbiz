@@ -1,11 +1,21 @@
-import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { logEvent } from "../analytics";
 import { useCredits } from "../context/CreditsContext";
 import { useSession } from "../context/SessionContext";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { CREDIT_TOPUP_AMOUNT } from "../utils/credits";
+import { useCreditsCheckout } from "../hooks/useCreditsCheckout";
 import { trackReferralConversion } from "../utils/growthTracking";
+
+type CreditPack = {
+  id: string;
+  label: string;
+  credits: number;
+  bonusCredits: number;
+  priceCents: number;
+  description: string;
+  type: "pack" | "subscription";
+};
 
 const sendAnonymousEvent = async (event: string, details?: Record<string, unknown>) => {
   try {
@@ -36,7 +46,29 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [packs, setPacks] = useState<CreditPack[]>([]);
+  const [packsLoading, setPacksLoading] = useState(false);
+  const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
   const oauthEnabled = typeof window !== "undefined" && window.__WS_OAUTH_ENABLED__ !== false;
+
+  const { startCheckout } = useCreditsCheckout({
+    onNotice: setCheckoutNotice,
+  });
+
+  const fetchPacks = useCallback(async () => {
+    setPacksLoading(true);
+    try {
+      const response = await fetch("/api/credits/offerings");
+      if (response.ok) {
+        const data = (await response.json()) as { offerings?: CreditPack[] };
+        setPacks(data.offerings ?? []);
+      }
+    } catch {
+      // Offerings are best-effort
+    } finally {
+      setPacksLoading(false);
+    }
+  }, []);
 
   const resolveAuthError = (code: string) => {
     switch (code) {
@@ -74,7 +106,8 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
     if (!isOpen) return;
     logEvent("credits_modal_viewed");
     sendAnonymousEvent("credits_modal_viewed");
-  }, [isOpen]);
+    fetchPacks();
+  }, [isOpen, fetchPacks]);
 
   useFocusTrap({
     active: isOpen,
@@ -211,10 +244,39 @@ const CreditsModal = ({ isOpen, returnTo, onClose }: CreditsModalProps) => {
                 <li key={benefit}>{benefit}</li>
               ))}
             </ul>
-            <div className="credits-modal__note">
-              <strong>Starter credits included.</strong> Top up {CREDIT_TOPUP_AMOUNT} credits anytime
-              to keep exploring deeper insights.
-            </div>
+            {packs.length > 0 && (
+              <div className="credits-modal__packs">
+                <h3>Get more credits</h3>
+                <div className="credits-modal__pack-grid">
+                  {packs.map((pack) => (
+                    <button
+                      key={pack.id}
+                      type="button"
+                      className="credits-modal__pack"
+                      onClick={() => startCheckout(pack.id)}
+                    >
+                      <strong>{pack.label}</strong>
+                      <span className="ws-data">
+                        {pack.credits}{pack.bonusCredits > 0 ? `+${pack.bonusCredits}` : ""} credits
+                      </span>
+                      <span className="credits-modal__pack-price">
+                        ${(pack.priceCents / 100).toFixed(2)}
+                        {pack.type === "subscription" ? "/mo" : ""}
+                      </span>
+                      <span className="ws-subtitle">{pack.description}</span>
+                    </button>
+                  ))}
+                </div>
+                {checkoutNotice && <p className="ws-subtitle" role="status">{checkoutNotice}</p>}
+              </div>
+            )}
+            {packsLoading && <p className="ws-subtitle">Loading credit packs...</p>}
+            {!packsLoading && packs.length === 0 && (
+              <div className="credits-modal__note">
+                <strong>5 starter credits included.</strong> Top up credits anytime
+                to keep exploring deeper insights.
+              </div>
+            )}
           </div>
 
           <div className="credits-modal__panel credits-modal__cta" aria-label="Create account">

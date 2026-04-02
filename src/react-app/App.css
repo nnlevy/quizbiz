@@ -3761,9 +3761,60 @@ ins.adsbygoogle.ws-margin-ad--hidden[style*="position: fixed"] {
 .credits-modal__note {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
-  background: #e0f2fe;
-  color: #0f172a;
+  border-radius: var(--ws-radius-lg);
+  background: var(--ws-color-surface-container-low);
+  color: var(--ws-color-on-surface);
+}
+
+.credits-modal__packs {
+  margin-top: 1rem;
+}
+
+.credits-modal__packs h3 {
+  margin-bottom: 0.75rem;
+}
+
+.credits-modal__pack-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.credits-modal__pack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: var(--ws-radius-lg);
+  background: var(--ws-color-surface-container-lowest);
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--ws-color-on-surface);
+  transition: border-color 0.2s ease, transform 0.2s var(--ws-ease-swell);
+}
+
+.credits-modal__pack:hover {
+  border-color: var(--ws-color-primary);
+  transform: scale(1.01);
+}
+
+.credits-modal__pack strong {
+  font-family: var(--ws-font-headline);
+  font-size: 1rem;
+}
+
+.credits-modal__pack .ws-data {
+  font-family: var(--ws-font-data);
+  font-weight: 600;
+  color: var(--ws-color-primary);
+}
+
+.credits-modal__pack-price {
+  font-family: var(--ws-font-data);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ws-color-on-surface);
 }
 
 .credits-modal__divider {

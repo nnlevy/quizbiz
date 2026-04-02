@@ -44,6 +44,12 @@
       "service": "riskfreetrial",
       "entrypoint": "PortfolioAIService",
       "remote": true
+    },
+    {
+      "binding": "PORTFOLIO_BILLING_SERVICE",
+      "service": "riskfreetrial",
+      "entrypoint": "PortfolioBillingService",
+      "remote": true
     }
   ],
   "assets": {

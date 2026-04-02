@@ -106,6 +106,7 @@ type WorkerEnv = {
   OPEN_API_KEY_NEW?: string;
   OPENAI_ORG_ID?: string;
   PORTFOLIO_AI_SERVICE?: PortfolioAiServiceBinding;
+  PORTFOLIO_BILLING_SERVICE?: PortfolioBillingServiceBinding;
   Google_Document_AI_Processor_Prediction_Endpoint: string;
   "Google-Service-Account-FINAL": string;
   GROWTH_HASH_SALT?: string;
@@ -180,6 +181,52 @@ type PortfolioAiServiceBinding = {
     status?: number;
     data?: ChatCompletionResponse;
     error?: string;
+  }>;
+};
+
+type PortfolioBillingServiceBinding = {
+  getBalance: (input: { email?: string; walletId?: string }) => Promise<{
+    ok: boolean;
+    exists: boolean;
+    creditsBalance?: number;
+  }>;
+  consumeCredits: (input: {
+    domain: string;
+    credits: number;
+    email?: string;
+    walletId?: string;
+    actionType?: string;
+    referenceId?: string;
+  }) => Promise<{ ok: boolean; creditsBalance?: number; error?: string }>;
+  grantCredits: (input: {
+    domain: string;
+    credits: number;
+    email?: string;
+    walletId?: string;
+    actionType?: string;
+    referenceId?: string;
+  }) => Promise<{ ok: boolean; creditsBalance?: number }>;
+  createCheckout: (input: {
+    domain: string;
+    packId?: string;
+    offeringId?: string;
+    email?: string;
+    walletId?: string;
+    successUrl: string;
+    cancelUrl: string;
+    sourceDomain?: string;
+  }) => Promise<{ ok: boolean; id?: string; url?: string; error?: string }>;
+  getOfferings: (input: { domain: string }) => Promise<{
+    ok: boolean;
+    offerings?: Array<{
+      id: string;
+      label: string;
+      credits: number;
+      bonusCredits: number;
+      priceCents: number;
+      description: string;
+      type: "pack" | "subscription";
+    }>;
   }>;
 };
 
@@ -4156,52 +4203,154 @@ async function resolveLocationHtml(
   return htmlResult;
 }
 
-app.post("/api/credits/checkout", async (c) => {
-  const env = c.env as WorkerEnv & { STRIPE_API_KEY?: string };
-  const stripeApiKey = env.STRIPE_API_KEY;
-
-  if (!stripeApiKey) {
-    return c.json({ error: "Stripe is not configured" }, 500);
+app.get("/api/credits/offerings", async (c) => {
+  const billingService = (c.env as WorkerEnv).PORTFOLIO_BILLING_SERVICE;
+  if (!billingService) {
+    return c.json({ error: "Billing service not available" }, 503);
   }
+  try {
+    const result = await billingService.getOfferings({ domain: "watershortcut.com" });
+    return c.json(result);
+  } catch (error) {
+    console.error("Offerings fetch failed:", error);
+    return c.json({ error: "Unable to load credit packs" }, 502);
+  }
+});
+
+app.post("/api/credits/checkout", async (c) => {
+  const billingService = (c.env as WorkerEnv).PORTFOLIO_BILLING_SERVICE;
+  if (!billingService) {
+    // Fallback to direct Stripe if billing service unavailable
+    const env = c.env as WorkerEnv & { STRIPE_API_KEY?: string };
+    const stripeApiKey = env.STRIPE_API_KEY;
+    if (!stripeApiKey) {
+      return c.json({ error: "Payments are not configured" }, 500);
+    }
+    const originHeader = c.req.header("origin");
+    const hostHeader = c.req.header("host");
+    const origin = originHeader ?? (hostHeader ? `https://${hostHeader}` : DOMAIN);
+    const body = new URLSearchParams({
+      mode: "payment",
+      success_url: `${origin}/?redirect_status=succeeded&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/?redirect_status=canceled`,
+      "line_items[0][quantity]": "1",
+      "line_items[0][price_data][currency]": "usd",
+      "line_items[0][price_data][unit_amount]": "1000",
+      "line_items[0][price_data][product_data][name]": "WaterShortcut credits (5 pack)",
+      "line_items[0][price_data][product_data][description]":
+        "Add 5 credits for water tools and AI insights.",
+    });
+    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stripeApiKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    if (!stripeResponse.ok) {
+      return c.json({ error: "Checkout creation failed" }, 502);
+    }
+    const session = (await stripeResponse.json()) as { id?: string; url?: string };
+    return c.json({ id: session.id, url: session.url ?? null });
+  }
+
+  // Use riskfreetrial billing service
+  let payload: { packId?: string; offeringId?: string } = {};
+  try {
+    payload = (await c.req.json()) as { packId?: string; offeringId?: string };
+  } catch {
+    payload = {};
+  }
+
+  const { sessionId, session, needsCookie } = await ensureSession(c);
+  setSessionCookieIfNeeded(c, sessionId, needsCookie);
 
   const originHeader = c.req.header("origin");
   const hostHeader = c.req.header("host");
   const origin = originHeader ?? (hostHeader ? `https://${hostHeader}` : DOMAIN);
 
-  const successUrl = `${origin}/?redirect_status=succeeded&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${origin}/?redirect_status=canceled`;
+  try {
+    const result = await billingService.createCheckout({
+      domain: "watershortcut.com",
+      packId: payload.packId ?? payload.offeringId,
+      walletId: sessionId,
+      email: session.userId ? undefined : undefined,
+      successUrl: `${origin}/#/credits?checkout=success`,
+      cancelUrl: `${origin}/#/credits?checkout=canceled`,
+      sourceDomain: "watershortcut.com",
+    });
 
-  const body = new URLSearchParams({
-    mode: "payment",
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    "line_items[0][quantity]": "1",
-    "line_items[0][price_data][currency]": "usd",
-    "line_items[0][price_data][unit_amount]": "1000",
-    "line_items[0][price_data][product_data][name]": "WaterShortcut credits (5 pack)",
-    "line_items[0][price_data][product_data][description]":
-      "Add 5 credits for water tools and AI insights.",
-  });
+    if (!result.ok) {
+      return c.json({ error: result.error ?? "Checkout creation failed" }, 502);
+    }
 
-  const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${stripeApiKey}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+    return c.json({ id: result.id, url: result.url ?? null });
+  } catch (error) {
+    console.error("Billing checkout failed:", error);
+    return c.json({ error: "Checkout creation failed" }, 502);
+  }
+});
 
-  if (!stripeResponse.ok) {
-    const errorText = await stripeResponse.text();
-    return c.json(
-      { error: "Stripe checkout creation failed", details: errorText },
-      502,
-    );
+app.post("/api/credits/callback", async (c) => {
+  let payload: {
+    walletId?: string;
+    credits?: number;
+    stripeSessionId?: string;
+    offeringId?: string;
+  } = {};
+  try {
+    payload = (await c.req.json()) as typeof payload;
+  } catch {
+    return c.json({ error: "Invalid callback payload" }, 400);
   }
 
-  const session = (await stripeResponse.json()) as { id?: string; url?: string };
-  return c.json({ id: session.id, url: session.url ?? null });
+  const { walletId, credits, stripeSessionId } = payload;
+  if (!walletId || typeof credits !== "number" || !stripeSessionId) {
+    return c.json({ error: "Missing required callback fields" }, 400);
+  }
+
+  // Idempotency: check if this Stripe session was already processed
+  const kv = getUserSessionsKv(c.env);
+  const processedKey = `ws:stripe_processed:${stripeSessionId}`;
+  const alreadyProcessed = await kv.get(processedKey);
+  if (alreadyProcessed) {
+    return c.json({ ok: true, duplicate: true });
+  }
+
+  // The walletId from riskfreetrial maps to our sessionId
+  const session = await readSessionRecord(c.env, walletId);
+  if (!session) {
+    return c.json({ error: "Session not found" }, 404);
+  }
+
+  const nextCredits = (session.credits ?? DEFAULT_CREDITS) + credits;
+  const updatedSession: SessionRecord = {
+    userId: session.userId,
+    credits: nextCredits,
+    createdAt: session.createdAt,
+  };
+  await persistSessionRecord(c.env, walletId, updatedSession);
+
+  // Also update D1 if user is authenticated
+  if (session.userId) {
+    await c.env.UsersAcrossAllDomains
+      .prepare("UPDATE users SET credits = ?1 WHERE id = ?2")
+      .bind(nextCredits, session.userId)
+      .run();
+  }
+
+  // Mark as processed (90-day TTL)
+  await kv.put(processedKey, JSON.stringify({
+    credits,
+    offeringId: payload.offeringId,
+    processedAt: new Date().toISOString(),
+  }), { expirationTtl: 7776000 });
+
+  // Track impact
+  c.executionCtx.waitUntil(incrementImpact(c.env, "credits_purchased", credits));
+
+  return c.json({ ok: true, credits: nextCredits });
 });
 
 app.post("/api/credits/topup", async (c) => {

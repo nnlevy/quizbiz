@@ -111,9 +111,13 @@ export const useCreditsCheckout = ({ onNotice, onPulse }: CreditsCheckoutOptions
     return client;
   }, []);
 
-  const startCheckout = useCallback(async () => {
+  const startCheckout = useCallback(async (packId?: string) => {
     try {
-      const response = await fetch("/api/credits/checkout", { method: "POST" });
+      const response = await fetch("/api/credits/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packId }),
+      });
       const payload = (await response
         .json()
         .catch(() => null)) as
