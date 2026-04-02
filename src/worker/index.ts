@@ -4333,6 +4333,17 @@ const handleAnalyzeBill = async (c: any) => {
       ANALYSIS_CREDIT_COST,
       creditCheck.needsCookie,
     );
+    // Fire-and-forget impact tracking
+    const hasLeakAlert = analysis?.alerts?.some(
+      (a: { title: string }) => /leak/i.test(a.title),
+    );
+    c.executionCtx.waitUntil(
+      Promise.all([
+        incrementImpact(c.env, "bills_analyzed"),
+        hasLeakAlert ? incrementImpact(c.env, "leaks_flagged") : Promise.resolve(),
+      ]),
+    );
+
     const acceptsJson = (c.req.header("accept") || "")
       .toLowerCase()
       .includes("application/json");
@@ -4451,6 +4462,17 @@ const handleManualAnalyze = async (c: Context<{ Bindings: WorkerEnv }>) => {
       creditCheck.session,
       ANALYSIS_CREDIT_COST,
       creditCheck.needsCookie,
+    );
+
+    // Fire-and-forget impact tracking
+    const hasLeakAlert = analysis?.alerts?.some(
+      (a: { title: string }) => /leak/i.test(a.title),
+    );
+    c.executionCtx.waitUntil(
+      Promise.all([
+        incrementImpact(c.env, "bills_analyzed"),
+        hasLeakAlert ? incrementImpact(c.env, "leaks_flagged") : Promise.resolve(),
+      ]),
     );
 
     return c.json({
@@ -5496,6 +5518,61 @@ const handleLeakTriage = async (c: Context<{ Bindings: WorkerEnv }>) => {
     warning,
   });
 };
+
+/* ── Impact tracking ─────────────────────────────────────────── */
+
+const ensureImpactTable = async (db: D1Database): Promise<void> => {
+  await db.prepare(
+    `CREATE TABLE IF NOT EXISTS ws_impact (
+       metric TEXT NOT NULL,
+       domain TEXT NOT NULL DEFAULT 'watershortcut.com',
+       value INTEGER NOT NULL DEFAULT 0,
+       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+       PRIMARY KEY (metric, domain)
+     )`
+  ).run();
+};
+
+const incrementImpact = async (
+  env: WorkerEnv,
+  metric: string,
+  amount = 1,
+): Promise<void> => {
+  try {
+    const db = getDomainsDb(env);
+    await ensureImpactTable(db);
+    await db.prepare(
+      `INSERT INTO ws_impact (metric, domain, value, updated_at)
+       VALUES (?, 'watershortcut.com', ?, datetime('now'))
+       ON CONFLICT(metric, domain) DO UPDATE SET
+         value = value + ?,
+         updated_at = datetime('now')`
+    ).bind(metric, amount, amount).run();
+  } catch (error) {
+    console.error("Impact tracking error:", error);
+  }
+};
+
+const handleImpactStats = async (c: Context<{ Bindings: WorkerEnv }>): Promise<Response> => {
+  try {
+    const db = getDomainsDb(c.env);
+    await ensureImpactTable(db);
+    const rows = await db.prepare(
+      `SELECT metric, value, updated_at FROM ws_impact WHERE domain = 'watershortcut.com'`
+    ).all();
+    const stats: Record<string, { value: number; updatedAt: string }> = {};
+    for (const row of rows.results ?? []) {
+      const r = row as { metric: string; value: number; updated_at: string };
+      stats[r.metric] = { value: r.value, updatedAt: r.updated_at };
+    }
+    return c.json({ stats });
+  } catch (error) {
+    console.error("Impact stats error:", error);
+    return c.json({ stats: {} });
+  }
+};
+
+app.get("/api/impact", handleImpactStats);
 
 app.post("/api/analyze-bill", handleAnalyzeBill);
 app.post("/api/upload", handleAnalyzeBill);

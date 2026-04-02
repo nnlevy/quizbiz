@@ -4,7 +4,6 @@ import Hero from "../components/Hero";
 import EarnCreditsCard from "../components/EarnCreditsCard";
 import QuickCheck from "../components/QuickCheck";
 import TrustPrivacy from "../components/TrustPrivacy";
-import DropletCheckIcon from "../components/DropletCheckIcon";
 import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
 
@@ -20,153 +19,172 @@ const Home = () => {
     <section className="ws-page ws-home" aria-labelledby="home-title">
       <Hero
         eyebrow="Water care, reimagined"
-        title="The easiest way to cut your water bill and flex your impact."
-        description="Upload a bill, get instant next steps, and turn daily water habits into a game you actually want to win."
+        title="Stop Overpaying for Water."
+        description="Upload your bill, get AI-powered insights, and start saving in under 60 seconds."
         titleId="home-title"
       >
         <div className="ws-cta-card ws-home-hero-card">
-          <h2>Start in under 60 seconds</h2>
-          <p className="ws-home-hero-card__subtitle">No install. No utility jargon. Just your smartest next move.</p>
+          <div className="ws-home-hero-card__preview">
+            <span className="ws-home-hero-card__badge">
+              <span className="material-symbols-outlined" aria-hidden="true">verified</span>
+              AI-powered analysis
+            </span>
+            <p className="ws-home-hero-card__savings">
+              <span className="ws-data">Your bill</span>
+              <span className="ws-home-hero-card__savings-label">, decoded in plain English</span>
+            </p>
+          </div>
           <div className="ws-hero-actions">
-            <RouterLink className="ws-button" to="/water-iq">
-              Take my Water IQ challenge
+            <RouterLink className="ws-button" to="/analyze-water-bill">
+              <span className="material-symbols-outlined" aria-hidden="true">document_scanner</span>
+              Scan my bill now
             </RouterLink>
-            <RouterLink className="ws-button-secondary" to="/analyze-water-bill">
-              Scan my latest water bill
+            <RouterLink className="ws-button-secondary" to="/calculators">
+              Explore calculators
             </RouterLink>
           </div>
-          <ul className="ws-home-proof-list" aria-label="Core value points">
-            <li>
-              <DropletCheckIcon className="ws-home-proof-list__icon" aria-hidden="true" />
-              Personalized savings plan
-            </li>
-            <li>
-              <DropletCheckIcon className="ws-home-proof-list__icon" aria-hidden="true" />
-              Leak and spike detection
-            </li>
-            <li>
-              <DropletCheckIcon className="ws-home-proof-list__icon" aria-hidden="true" />
-              Renter-safe action ideas
-            </li>
-          </ul>
+          <p className="ws-home-hero-card__subtitle">3 free credits, no card required.</p>
         </div>
       </Hero>
 
-      <section className="ws-section ws-home-value-band" aria-labelledby="rail-title">
-        <div className="ws-section-header">
-          <p className="eyebrow">Why people switch to WaterShortcut</p>
-          <h2 id="rail-title" className="ws-section-title">Built for real life, not perfect routines</h2>
+      {/* EPA Facts Ticker */}
+      <div className="ws-social-proof-ticker" aria-label="Water facts from the EPA">
+        <div className="ws-social-proof-ticker__track">
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">water_drop</span>
+            EPA: Average U.S. household uses 300 gallons/day
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">plumbing</span>
+            EPA: Household leaks waste 1 trillion gallons nationally per year
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">savings</span>
+            EPA WaterSense: Efficient fixtures cut use by up to 30%
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">warning</span>
+            EPA: 10%+ of homes have leaks wasting 90+ gallons/day
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">water_drop</span>
+            EPA: Average U.S. household uses 300 gallons/day
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">plumbing</span>
+            EPA: Household leaks waste 1 trillion gallons nationally per year
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">savings</span>
+            EPA WaterSense: Efficient fixtures cut use by up to 30%
+          </span>
+          <span>
+            <span className="material-symbols-outlined" aria-hidden="true">warning</span>
+            EPA: 10%+ of homes have leaks wasting 90+ gallons/day
+          </span>
         </div>
-        <div className="ws-rails-grid" role="list">
-          <article className="ws-rail-card" role="listitem">
-            <DropletCheckIcon className="ws-rail-card__icon" />
-            <h3>See what changed this month</h3>
-            <p>We translate your bill into plain English so you can spot costly spikes fast.</p>
-            <RouterLink to="/analyze-water-bill" className="ws-hero-link">Analyze my bill</RouterLink>
+      </div>
+
+      {/* How It Works */}
+      <section className="ws-section" aria-labelledby="how-title">
+        <div className="ws-section-header">
+          <p className="eyebrow">Savings in 3 simple steps</p>
+          <h2 id="how-title" className="ws-section-title">How Water Shortcut Works</h2>
+        </div>
+        <div className="ws-how-grid" role="list">
+          <article className="ws-how-card" role="listitem">
+            <div className="ws-how-card__icon ws-how-card__icon--primary">
+              <span className="material-symbols-outlined" aria-hidden="true">upload_file</span>
+            </div>
+            <h3>1. Upload Your Bill</h3>
+            <p>Snap a photo or upload a PDF. Our AI reads it instantly.</p>
           </article>
-          <article className="ws-rail-card" role="listitem">
-            <DropletCheckIcon className="ws-rail-card__icon" />
-            <h3>Get a game-ready score</h3>
-            <p>Our Water IQ challenge gives you a personalized score and your best first win.</p>
-            <RouterLink to="/water-iq" className="ws-hero-link">Get my score</RouterLink>
+          <article className="ws-how-card" role="listitem">
+            <div className="ws-how-card__icon ws-how-card__icon--secondary">
+              <span className="material-symbols-outlined" aria-hidden="true">analytics</span>
+            </div>
+            <h3>2. AI Analyzes It</h3>
+            <p>We decode tiers, spot leaks, and find hidden overcharges.</p>
           </article>
-          <article className="ws-rail-card" role="listitem">
-            <DropletCheckIcon className="ws-rail-card__icon" />
-            <h3>Save water wherever you live</h3>
-            <p>Choose renter-safe, family-friendly, or advanced upgrades by effort level.</p>
-            <RouterLink to="/tools" className="ws-hero-link">Explore all tools</RouterLink>
+          <article className="ws-how-card" role="listitem">
+            <div className="ws-how-card__icon ws-how-card__icon--tertiary">
+              <span className="material-symbols-outlined" aria-hidden="true">savings</span>
+            </div>
+            <h3>3. Claim Savings</h3>
+            <p>Get a personalized plan with dollar amounts and next steps.</p>
           </article>
         </div>
       </section>
 
-      <section className="ws-section" aria-labelledby="contract-title">
+      {/* Why Save Water — IMB motivation layer */}
+      <section className="ws-section ws-why-section" aria-labelledby="why-title">
         <div className="ws-section-header">
-          <p className="eyebrow">Designed like your favorite apps</p>
-          <h2 id="contract-title" className="ws-section-title">Clarity, momentum, and a little dopamine</h2>
-          <p className="ws-section-lede">
-            WaterShortcut blends calm clarity, playful momentum, and instant feedback.
-          </p>
+          <p className="eyebrow">Information + motivation</p>
+          <h2 id="why-title" className="ws-section-title">Why save water?</h2>
         </div>
-        <div className="ws-rails-grid" role="list">
-          <article className="ws-rail-card" role="listitem">
-            <h3>1) Instant understanding</h3>
-            <p>Know where costs jumped, why it happened, and what to tackle first.</p>
+        <div className="ws-why-grid" role="list">
+          <article className="ws-why-card" role="listitem">
+            <span className="material-symbols-outlined ws-why-card__icon" aria-hidden="true">
+              savings
+            </span>
+            <div>
+              <h3>Save money and protect resources</h3>
+              <p>
+                On average, U.S. households waste hundreds of gallons of water each month. Cutting
+                waste reduces your bill and helps conserve a precious resource.
+              </p>
+            </div>
           </article>
-          <article className="ws-rail-card" role="listitem">
-            <h3>2) Action in one tap</h3>
-            <p>Every recommendation includes effort level, expected impact, and the next click.</p>
+          <article className="ws-why-card" role="listitem">
+            <span className="material-symbols-outlined ws-why-card__icon" aria-hidden="true">
+              plumbing
+            </span>
+            <div>
+              <h3>Identify leaks early</h3>
+              <p>
+                Hidden leaks can waste thousands of gallons per year. Early detection prevents costly
+                repairs and water damage before they start.
+              </p>
+            </div>
           </article>
-          <article className="ws-rail-card" role="listitem">
-            <h3>3) Progress you can feel</h3>
-            <p>Earn credits, track streaks, and share your savings milestones with friends.</p>
+          <article className="ws-why-card" role="listitem">
+            <span className="material-symbols-outlined ws-why-card__icon" aria-hidden="true">
+              groups
+            </span>
+            <div>
+              <h3>Be part of the solution</h3>
+              <p>
+                Households that track and act on their usage reduce water use by 509 gallons per
+                month on average. Join the movement.
+              </p>
+            </div>
           </article>
         </div>
       </section>
 
-      <section className="ws-section ws-home-start-steps" aria-labelledby="start-options-title">
-        <div className="ws-section-header">
-          <p className="eyebrow">Easy start options</p>
-          <h2 id="start-options-title" className="ws-section-title">Choose the easiest first step</h2>
-        </div>
-        <div className="ws-start-step-grid" role="list">
-          <article className="ws-start-step-card" role="listitem">
-            <p className="ws-start-step-card__eyebrow">Fastest context</p>
-            <h3>Bill scan</h3>
-            <p>Perfect when your latest statement looks higher than expected.</p>
-            <RouterLink to="/analyze-water-bill" className="ws-button-secondary ws-start-step-card__cta">Analyze my bill</RouterLink>
-          </article>
-          <article className="ws-start-step-card" role="listitem">
-            <p className="ws-start-step-card__eyebrow">Most popular</p>
-            <h3>Quick score</h3>
-            <p>Ideal when you want your fastest personalized roadmap.</p>
-            <RouterLink to="/water-iq" className="ws-button ws-start-step-card__cta">Get my score</RouterLink>
-          </article>
-          <article className="ws-start-step-card" role="listitem">
-            <p className="ws-start-step-card__eyebrow">Deep dive</p>
-            <h3>Smart calculators</h3>
-            <p>Great for pressure-testing ideas before you buy tools or upgrades.</p>
-            <RouterLink to="/calculators" className="ws-button-secondary ws-start-step-card__cta">Open calculators</RouterLink>
-          </article>
-        </div>
-      </section>
-
-      <EarnCreditsCard />
-
+      {/* Feature Bento Grid */}
       <section className="ws-section" aria-labelledby="feature-grid-title">
         <div className="ws-section-header">
           <p className="eyebrow">Powered by AI &amp; EPA Data</p>
-          <h2 id="feature-grid-title" className="ws-section-title">The fastest way to spot savings</h2>
-          <p className="ws-section-lede">
-            Start with a quick check or jump straight into the calculators most customers use.
-          </p>
+          <h2 id="feature-grid-title" className="ws-section-title">Your water savings toolkit</h2>
         </div>
         <FeatureGrid />
       </section>
 
       <QuickCheck />
-      <section className="ws-section" aria-labelledby="reassurance-title">
-        <div className="ws-section-header">
-          <p className="eyebrow">Risk-free start</p>
-          <h2 id="reassurance-title" className="ws-section-title">Start free, save faster, keep full control</h2>
-          <p className="ws-section-lede">
-            No credit card. No setup headache. <a href="/tools">Browse the tool library</a> and begin wherever you are.
-          </p>
-        </div>
-      </section>
-      <section className="ws-section" aria-labelledby="off-ramp-title">
-        <div className="ws-section-header">
-          <p className="eyebrow">Need a lighter start?</p>
-          <h2 id="off-ramp-title" className="ws-section-title">Try one calculator before committing to a full analysis</h2>
-          <p className="ws-section-lede">
-            Start with one calculator and come back when you have your bill handy.
-          </p>
-          <RouterLink className="ws-button-secondary" to="/calculators">
-            Start with calculators only
-          </RouterLink>
-        </div>
-      </section>
+      <EarnCreditsCard />
       <TrustPrivacy />
       <ExploreTools />
+
+      {/* Final CTA */}
+      <section className="ws-section ws-final-cta" aria-labelledby="final-cta-title">
+        <h2 id="final-cta-title" className="ws-section-title">Ready to stop guessing?</h2>
+        <p className="ws-section-lede">Start free, save faster, keep full control. No credit card required.</p>
+        <RouterLink className="ws-button ws-button--full" to="/analyze-water-bill">
+          <span className="material-symbols-outlined" aria-hidden="true">document_scanner</span>
+          Analyze my bill free
+        </RouterLink>
+      </section>
     </section>
   );
 };

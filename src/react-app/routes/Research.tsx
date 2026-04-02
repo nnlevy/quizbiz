@@ -142,20 +142,24 @@ const Research = () => {
       </form>
 
       {selected && resolvedLinks && (
-        <div className="ws-progress" aria-live="polite">
+        <div className="ws-info-card" aria-live="polite">
           <h2>Recommended checklist for {selected}</h2>
           <ul className="ws-checklist">
             <li>
+              <span className="material-symbols-outlined" aria-hidden="true">account_balance</span>{" "}
               Find your local <a href={resolvedLinks.conservationOffice}>water conservation office</a>{" "}
               and ask about appliance rebates.
             </li>
             <li>
+              <span className="material-symbols-outlined" aria-hidden="true">payments</span>{" "}
               Review available <a href={resolvedLinks.rebates}>water-saving rebates</a> for {selected}.
             </li>
             <li>
+              <span className="material-symbols-outlined" aria-hidden="true">notifications_active</span>{" "}
               Sign up for <a href={resolvedLinks.outageAlerts}>outage alerts</a> from your provider.
             </li>
             <li>
+              <span className="material-symbols-outlined" aria-hidden="true">description</span>{" "}
               Read the <a href={resolvedLinks.leakAdjustmentPolicy}>leak adjustment policy</a> and
               record any required documentation.
             </li>

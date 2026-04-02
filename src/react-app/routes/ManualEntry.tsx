@@ -362,7 +362,7 @@ const ManualEntry = () => {
         </p>
       </div>
 
-      <div className="ws-progress" aria-live="polite">
+      <div className="ws-info-card" aria-live="polite">
         <h2>Next steps</h2>
         <p className="ws-subtitle">
           You&apos;ll be redirected to your results page after analysis completes.

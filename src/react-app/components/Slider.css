@@ -1,5 +1,5 @@
 .ws-ui-slider {
-  height: var(--ws-slider-height, 3rem);
+  height: 3rem;
   width: 100%;
-  accent-color: var(--ws-slider-accent, var(--ws-color-sky-600));
+  accent-color: var(--ws-color-primary);
 }

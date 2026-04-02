@@ -171,7 +171,7 @@ const Dashboard = () => {
 
       {!user && (
         <div className="ws-info-card">
-          <h2>See everything you&apos;ll unlock with an account</h2>
+          <h2>Your dashboard is personal</h2>
           <p className="ws-subtitle">
             Your dashboard becomes a living history of bill insights, goals, and alerts once you
             sign in.

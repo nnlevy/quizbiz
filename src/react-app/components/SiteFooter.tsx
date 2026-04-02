@@ -50,6 +50,7 @@ const SiteFooter = ({ hideAds = false }: SiteFooterProps) => {
         <a href="/sitemap">Site Map</a>
         <a href="/terms">Terms</a>
         <a href="/privacy">Privacy</a>
+        <a href="/accessibility">Accessibility Statement</a>
         {showPrivacyControls ? (
           <button
             type="button"

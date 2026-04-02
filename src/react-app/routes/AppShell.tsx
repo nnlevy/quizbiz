@@ -24,14 +24,16 @@ type AppShellProps = {
 type PrimaryNavItem = {
   to: string;
   label: string;
+  icon: string;
   reloadDocument?: boolean;
 };
 
 const primaryNavItems: PrimaryNavItem[] = [
-  { to: "/", label: "Home" },
-  { to: "/analyze-water-bill", label: "Analyze Bill" },
-  { to: "/water-iq", label: "Water Savings Score" },
-  { to: "/tools", label: "Tools" },
+  { to: "/", label: "Home", icon: "home" },
+  { to: "/analyze-water-bill", label: "Analyze", icon: "document_scanner" },
+  { to: "/tools", label: "Tools", icon: "build" },
+  { to: "/water-iq", label: "Water IQ", icon: "quiz" },
+  { to: "/credits", label: "Credits", icon: "toll" },
 ];
 
 const AppShell = ({ children }: AppShellProps) => {

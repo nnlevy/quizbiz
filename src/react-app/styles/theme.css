@@ -1,96 +1,193 @@
+/* ============================================================
+   WaterShortcut.com — Aqueduct Warmth Design Tokens
+   Design System: "The Hydro-Editorial"
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,600;0,700;0,800;1,600;1,700&family=Be+Vietnam+Pro:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
+
 :root {
-  /* Typography scale */
-  --ws-font-family: "Open Sans", sans-serif;
-  --ws-font-size-1: 0.7rem;
-  --ws-font-size-2: 0.85rem;
-  --ws-font-size-3: 1rem;
-  --ws-font-size-4: 1.25rem;
-  --ws-font-size-5: 1.6rem;
-  --ws-font-size-6: 2.25rem;
+  /* ── Typography ─────────────────────────────────────────── */
+  --ws-font-headline: "Plus Jakarta Sans", sans-serif;
+  --ws-font-body: "Be Vietnam Pro", sans-serif;
+  --ws-font-data: "Space Grotesk", sans-serif;
 
-  /* Primary palette */
-  --ws-color-ink-950: #0f172a;
-  --ws-color-ink-900: #102a43;
-  --ws-color-ink-800: #0b4f4a;
-  --ws-color-slate-700: #52606d;
-  --ws-color-slate-800: #334155;
-  --ws-color-slate-600: #94a3b8;
-  --ws-color-slate-500: #cbd5f5;
-  --ws-color-slate-400: #d9e2ec;
-  --ws-color-slate-300: #e2e8f0;
-  --ws-color-slate-200: #f1f5f9;
-  --ws-color-slate-100: #f8fafc;
-  --ws-color-slate-50: #f0f4f8;
-  --ws-color-surface: #ffffff;
-  --ws-color-shell-top: #f9fbff;
-  --ws-color-shell-bottom: #eef4fb;
+  --ws-display-lg: 3.5rem;
+  --ws-display-md: 2.5rem;
+  --ws-headline-lg: 2rem;
+  --ws-headline-md: 1.5rem;
+  --ws-title-lg: 1.25rem;
+  --ws-title-md: 1.1rem;
+  --ws-body-lg: 1rem;
+  --ws-body-md: 0.875rem;
+  --ws-label-lg: 0.875rem;
+  --ws-label-md: 0.75rem;
 
-  /* Accents */
-  --ws-color-teal-700: #0f6f63;
-  --ws-color-teal-600: #0f766e;
-  --ws-color-teal-500: #0b4f4a;
-  --ws-color-sky-700: #075985;
-  --ws-color-sky-600: #0ea5e9;
-  --ws-color-sky-500: #38bdf8;
-  --ws-color-sky-650: #0284c7;
-  --ws-color-sky-300: #bae6fd;
-  --ws-color-sky-100: #e0f2fe;
-  --ws-color-sky-50: #f0f9ff;
-  --ws-color-emerald-600: #059669;
-  --ws-color-emerald-500: #10b981;
-  --ws-color-emerald-100: #d1fae5;
-  --ws-color-rose-600: #b91c1c;
-  --ws-color-rose-500: #b42318;
+  /* Legacy aliases (consumed by existing components) */
+  --ws-font-family: var(--ws-font-body);
+  --ws-font-size-1: var(--ws-label-md);
+  --ws-font-size-2: var(--ws-body-md);
+  --ws-font-size-3: var(--ws-body-lg);
+  --ws-font-size-4: var(--ws-title-lg);
+  --ws-font-size-5: var(--ws-headline-md);
+  --ws-font-size-6: var(--ws-display-md);
 
-  /* Translucent accents */
-  --ws-color-surface-98: rgba(249, 251, 255, 0.98);
-  --ws-color-surface-90: rgba(255, 255, 255, 0.9);
-  --ws-color-surface-85: rgba(255, 255, 255, 0.85);
-  --ws-color-surface-75: rgba(255, 255, 255, 0.75);
-  --ws-color-teal-12: rgba(14, 116, 144, 0.12);
-  --ws-color-teal-15: rgba(14, 116, 144, 0.15);
-  --ws-color-teal-25: rgba(14, 116, 144, 0.25);
-  --ws-color-teal-35: rgba(14, 116, 144, 0.35);
-  --ws-color-teal-40: rgba(14, 116, 144, 0.4);
-  --ws-color-teal-20-strong: rgba(15, 118, 110, 0.2);
-  --ws-color-teal-12-strong: rgba(15, 118, 110, 0.12);
-  --ws-color-sky-15: rgba(14, 165, 233, 0.15);
-  --ws-color-emerald-15: rgba(16, 185, 129, 0.15);
-  --ws-color-emerald-40: rgba(16, 185, 129, 0.4);
-  --ws-color-emerald-20: rgba(16, 185, 129, 0.2);
-  --ws-color-slate-12: rgba(100, 116, 139, 0.15);
-  --ws-color-slate-40: rgba(148, 163, 184, 0.4);
-  --ws-color-slate-30: rgba(148, 163, 184, 0.3);
-  --ws-color-slate-20: rgba(148, 163, 184, 0.2);
-  --ws-color-slate-50-translucent: rgba(248, 250, 252, 0.5);
-  --ws-color-slate-08: rgba(12, 33, 68, 0.08);
+  /* ── Color: Surfaces ────────────────────────────────────── */
+  --ws-color-surface: #f8f6f2;
+  --ws-color-surface-container-lowest: #ffffff;
+  --ws-color-surface-container-low: #f2f1ec;
+  --ws-color-surface-container: #ece9e3;
+  --ws-color-surface-container-high: #e6e3dd;
+  --ws-color-surface-container-highest: #dfdcd6;
+  --ws-color-inverse-surface: #313130;
 
-  /* Shadows and overlays */
-  --ws-shadow-08: rgba(15, 23, 42, 0.08);
-  --ws-shadow-12: rgba(15, 23, 42, 0.12);
-  --ws-shadow-15: rgba(15, 23, 42, 0.15);
-  --ws-shadow-20: rgba(15, 23, 42, 0.2);
-  --ws-shadow-35: rgba(15, 23, 42, 0.35);
-  --ws-shadow-08-alt: rgba(15, 35, 95, 0.08);
-  --ws-shadow-25-dark: rgba(0, 0, 0, 0.25);
-  --ws-overlay-65: rgba(15, 23, 42, 0.65);
+  /* ── Color: Primary (deep teal) ─────────────────────────── */
+  --ws-color-primary: #006479;
+  --ws-color-primary-container: #51d9fe;
+  --ws-color-primary-fixed-dim: #81d8ee;
+  --ws-color-on-primary: #ffffff;
+  --ws-color-on-primary-container: #001f28;
 
-  /* Special surfaces */
-  --ws-color-highlight: rgba(254, 215, 170, 0.8);
+  /* ── Color: Secondary (warm amber) ──────────────────────── */
+  --ws-color-secondary: #844f0f;
+  --ws-color-secondary-container: #ffc793;
+  --ws-color-on-secondary: #ffffff;
+  --ws-color-on-secondary-container: #2c1700;
+
+  /* ── Color: Tertiary (forest green) ─────────────────────── */
+  --ws-color-tertiary: #006a3a;
+  --ws-color-tertiary-container: #7ff8b4;
+  --ws-color-on-tertiary: #ffffff;
+  --ws-color-on-tertiary-container: #00210e;
+
+  /* ── Color: Error ───────────────────────────────────────── */
+  --ws-color-error: #b31b25;
+  --ws-color-error-container: #ffdad6;
+  --ws-color-on-error: #ffffff;
+
+  /* ── Color: Text & outline ──────────────────────────────── */
+  --ws-color-on-surface: #2e2f2d;
+  --ws-color-on-surface-variant: #575852;
+  --ws-color-outline: #87877f;
+  --ws-color-outline-variant: rgba(46, 47, 45, 0.15);
+
+  /* Legacy aliases (consumed throughout the codebase) */
+  --ws-color-ink-950: var(--ws-color-on-surface);
+  --ws-color-ink-900: var(--ws-color-on-surface);
+  --ws-color-ink-800: var(--ws-color-primary);
+  --ws-color-slate-800: var(--ws-color-on-surface-variant);
+  --ws-color-slate-700: var(--ws-color-on-surface-variant);
+  --ws-color-slate-600: var(--ws-color-outline);
+  --ws-color-slate-500: var(--ws-color-surface-container-highest);
+  --ws-color-slate-400: var(--ws-color-outline-variant);
+  --ws-color-slate-300: var(--ws-color-outline-variant);
+  --ws-color-slate-200: var(--ws-color-surface-container-low);
+  --ws-color-slate-100: var(--ws-color-surface-container-low);
+  --ws-color-slate-50: var(--ws-color-surface);
+  --ws-color-shell-top: var(--ws-color-surface);
+  --ws-color-shell-bottom: var(--ws-color-surface-container-low);
+
+  --ws-color-teal-700: var(--ws-color-primary);
+  --ws-color-teal-600: var(--ws-color-primary);
+  --ws-color-teal-500: var(--ws-color-primary);
+  --ws-color-sky-700: var(--ws-color-primary);
+  --ws-color-sky-650: var(--ws-color-primary);
+  --ws-color-sky-600: var(--ws-color-primary);
+  --ws-color-sky-500: var(--ws-color-primary-container);
+  --ws-color-sky-300: var(--ws-color-primary-fixed-dim);
+  --ws-color-sky-100: color-mix(in srgb, var(--ws-color-primary-container) 15%, var(--ws-color-surface));
+  --ws-color-sky-50: color-mix(in srgb, var(--ws-color-primary-container) 8%, var(--ws-color-surface));
+  --ws-color-emerald-600: var(--ws-color-tertiary);
+  --ws-color-emerald-500: var(--ws-color-tertiary);
+  --ws-color-emerald-100: var(--ws-color-tertiary-container);
+  --ws-color-rose-600: var(--ws-color-error);
+  --ws-color-rose-500: var(--ws-color-error);
+  --ws-color-slate-900: var(--ws-color-inverse-surface);
+
+  /* ── Translucent accents ────────────────────────────────── */
+  --ws-color-surface-98: rgba(248, 246, 242, 0.98);
+  --ws-color-surface-90: rgba(248, 246, 242, 0.9);
+  --ws-color-surface-85: rgba(248, 246, 242, 0.85);
+  --ws-color-surface-75: rgba(248, 246, 242, 0.75);
+  --ws-color-teal-12: color-mix(in srgb, var(--ws-color-primary) 12%, transparent);
+  --ws-color-teal-15: color-mix(in srgb, var(--ws-color-primary) 15%, transparent);
+  --ws-color-teal-25: color-mix(in srgb, var(--ws-color-primary) 25%, transparent);
+  --ws-color-teal-35: color-mix(in srgb, var(--ws-color-primary) 35%, transparent);
+  --ws-color-teal-40: color-mix(in srgb, var(--ws-color-primary) 40%, transparent);
+  --ws-color-teal-20-strong: color-mix(in srgb, var(--ws-color-primary) 20%, transparent);
+  --ws-color-teal-12-strong: color-mix(in srgb, var(--ws-color-primary) 12%, transparent);
+  --ws-color-sky-15: color-mix(in srgb, var(--ws-color-primary-container) 15%, transparent);
+  --ws-color-emerald-15: color-mix(in srgb, var(--ws-color-tertiary) 15%, transparent);
+  --ws-color-emerald-40: color-mix(in srgb, var(--ws-color-tertiary) 40%, transparent);
+  --ws-color-emerald-20: color-mix(in srgb, var(--ws-color-tertiary) 20%, transparent);
+  --ws-color-slate-12: rgba(87, 88, 82, 0.15);
+  --ws-color-slate-40: rgba(135, 135, 127, 0.4);
+  --ws-color-slate-30: rgba(135, 135, 127, 0.3);
+  --ws-color-slate-20: rgba(135, 135, 127, 0.2);
+  --ws-color-slate-50-translucent: rgba(248, 246, 242, 0.5);
+  --ws-color-slate-08: rgba(46, 47, 45, 0.08);
+  --ws-color-highlight: rgba(255, 199, 147, 0.6);
   --ws-color-info-panel: rgba(255, 255, 255, 0.85);
-  --ws-color-tag: rgba(14, 116, 144, 0.15);
-  --ws-color-tooltip: rgba(14, 116, 144, 0.12);
-  --ws-color-sky-60: rgba(224, 242, 254, 0.6);
+  --ws-color-tag: color-mix(in srgb, var(--ws-color-primary) 12%, transparent);
+  --ws-color-tooltip: color-mix(in srgb, var(--ws-color-primary) 10%, transparent);
+  --ws-color-sky-60: color-mix(in srgb, var(--ws-color-primary-container) 25%, transparent);
 
-  /* Gradients */
-  --ws-gradient-shell: linear-gradient(180deg, #f9fbff 0%, #eef4fb 100%);
-  --ws-gradient-quick-check: linear-gradient(135deg, #f0f9ff 0%, #ffffff 65%);
-  --ws-gradient-ai-insight: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(255, 255, 255, 0.9) 55%, rgba(16, 185, 129, 0.2));
+  /* ── Shadows (warm base, never pure black) ──────────────── */
+  --ws-shadow-ambient: 0px 24px 48px rgba(46, 47, 45, 0.06);
+  --ws-shadow-08: rgba(46, 47, 45, 0.08);
+  --ws-shadow-12: rgba(46, 47, 45, 0.12);
+  --ws-shadow-15: rgba(46, 47, 45, 0.15);
+  --ws-shadow-20: rgba(46, 47, 45, 0.2);
+  --ws-shadow-35: rgba(46, 47, 45, 0.35);
+  --ws-shadow-08-alt: rgba(46, 47, 45, 0.08);
+  --ws-shadow-25-dark: rgba(46, 47, 45, 0.25);
+  --ws-overlay-65: rgba(46, 47, 45, 0.65);
 
-  /* Platform tokens */
-  --ws-ink-accent: var(--ws-color-ink-900);
-  --ws-aqua-accent: var(--ws-color-sky-600);
-  --ws-ui-border: var(--ws-color-slate-400);
-  --ws-ui-shadow: 0 12px 30px var(--ws-shadow-08);
-  --ws-ui-radius: 1rem;
+  /* ── Radii ──────────────────────────────────────────────── */
+  --ws-radius-full: 999px;
+  --ws-radius-xl: 1.5rem;
+  --ws-radius-lg: 1rem;
+  --ws-radius-md: 0.75rem;
+  --ws-radius-sm: 0.5rem;
+
+  /* Legacy aliases */
+  --ws-ui-radius: var(--ws-radius-lg);
+
+  /* ── Spacing (breathable) ───────────────────────────────── */
+  --ws-space-section: 3.5rem;
+  --ws-space-group: 2.75rem;
+  --ws-space-card-gap: clamp(1rem, 1vw + 0.65rem, 1.65rem);
+  --ws-space-card-padding: clamp(1.25rem, 1vw + 1.1rem, 1.85rem);
+  --ws-space-page-gutter: clamp(1.25rem, 2vw + 1rem, 2.25rem);
+
+  /* ── Gradients ──────────────────────────────────────────── */
+  --ws-gradient-primary-cta: linear-gradient(135deg, var(--ws-color-primary), var(--ws-color-primary-container));
+  --ws-gradient-shell: linear-gradient(180deg, var(--ws-color-surface) 0%, var(--ws-color-surface-container-low) 100%);
+  --ws-gradient-hero: linear-gradient(160deg,
+    color-mix(in srgb, var(--ws-color-primary-container) 12%, var(--ws-color-surface)),
+    var(--ws-color-surface) 45%,
+    color-mix(in srgb, var(--ws-color-secondary-container) 8%, var(--ws-color-surface)));
+  --ws-gradient-quick-check: linear-gradient(135deg,
+    color-mix(in srgb, var(--ws-color-primary-container) 10%, var(--ws-color-surface)),
+    var(--ws-color-surface-container-lowest) 65%);
+  --ws-gradient-ai-insight: linear-gradient(135deg,
+    color-mix(in srgb, var(--ws-color-primary-container) 20%, transparent),
+    rgba(255, 255, 255, 0.9) 55%,
+    color-mix(in srgb, var(--ws-color-tertiary) 15%, transparent));
+
+  /* ── Transitions ────────────────────────────────────────── */
+  --ws-ease-swell: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ws-transition-swell: transform 250ms var(--ws-ease-swell);
+  --ws-transition-base: 200ms ease;
+
+  /* ── Platform tokens ────────────────────────────────────── */
+  --ws-ink-accent: var(--ws-color-on-surface);
+  --ws-aqua-accent: var(--ws-color-primary);
+  --ws-ui-border: var(--ws-color-outline-variant);
+  --ws-ui-shadow: var(--ws-shadow-ambient);
+
+  /* ── Glass ──────────────────────────────────────────────── */
+  --ws-glass-bg: rgba(248, 246, 242, 0.8);
+  --ws-glass-blur: blur(20px);
+  --ws-glass-border: rgba(255, 255, 255, 0.4);
 }

@@ -1,25 +1,55 @@
 .ws-ui-button {
-  min-height: var(--ws-control-height, 44px);
-  border-radius: var(--ws-control-radius, 999px);
-  border: 1px solid var(--ws-button-border, transparent);
-  background: var(--ws-button-bg, var(--ws-color-slate-900));
-  color: var(--ws-button-color, var(--ws-color-surface));
-  padding: var(--ws-button-padding, 0.5rem 1.25rem);
-  font-size: var(--ws-control-font-size, var(--font-size-2));
-  font-weight: 600;
+  min-height: 48px;
+  border-radius: var(--ws-radius-xl);
+  border: none;
+  background: var(--ws-gradient-primary-cta);
+  color: var(--ws-color-on-primary);
+  padding: 0.6rem 1.25rem;
+  font-size: var(--ws-body-md);
+  font-weight: 700;
+  font-family: var(--ws-font-headline);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+  transition: var(--ws-transition-swell), box-shadow 250ms ease;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ws-color-primary) 25%, transparent);
 }
 
 .ws-ui-button:hover {
-  background: var(--ws-button-hover-bg, var(--ws-button-bg, var(--ws-color-slate-900)));
+  transform: scale(1.02);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--ws-color-primary) 35%, transparent);
+}
+
+.ws-ui-button:active {
+  transform: scale(0.98);
 }
 
 .ws-ui-button:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
+.ws-ui-button--secondary {
+  background: var(--ws-color-secondary-container);
+  color: var(--ws-color-on-secondary-container);
+  box-shadow: none;
+}
+
+.ws-ui-button--secondary:hover {
+  box-shadow: var(--ws-shadow-ambient);
+}
+
+.ws-ui-button--ghost {
+  background: transparent;
+  color: var(--ws-color-primary);
+  box-shadow: none;
+}
+
+.ws-ui-button--ghost:hover {
+  background: color-mix(in srgb, var(--ws-color-primary) 8%, transparent);
+  box-shadow: none;
 }

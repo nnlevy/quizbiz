@@ -24,7 +24,7 @@ const Credits = () => {
         <p>Open the Credits modal to review balances, benefits, and account options.</p>
       </div>
 
-      <div className="ws-cta-card" aria-label="Open credits modal">
+      <div className="ws-info-card" aria-label="Open credits modal">
         <div>
           <h2>Review credits & sign up</h2>
           <p className="ws-subtitle">

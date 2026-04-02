@@ -85,7 +85,7 @@ const EarnCreditsCard = () => {
   };
 
   const socialProof = useMemo(() => {
-    return "💧 Join thousands saving water this month";
+    return "Every analysis helps you use less and pay less.";
   }, []);
 
   return (
