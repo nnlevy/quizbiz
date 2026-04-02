@@ -42,7 +42,7 @@ const CostBreakdownChart = ({ tiers }: CostBreakdownChartProps) => {
           {
             label: "Cost by tier ($)",
             data: tiers.map((tier) => tier.cost),
-            backgroundColor: ["#14b8a6", "#38bdf8", "#f97316"],
+            backgroundColor: ["#006479", "#51d9fe", "#844f0f"],
             borderRadius: 12,
           },
         ],

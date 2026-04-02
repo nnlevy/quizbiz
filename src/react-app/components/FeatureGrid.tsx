@@ -1,5 +1,3 @@
-import { ReactNode } from "react";
-
 import { RouterLink } from "../routes/router";
 
 type FeatureCard = {
@@ -7,58 +5,33 @@ type FeatureCard = {
   description: string;
   href: string;
   tone: "sky" | "emerald" | "slate";
-  icon: ReactNode;
+  icon: string;
 };
 
 const featureCards: FeatureCard[] = [
   {
     title: "Leak Detector",
-    description: "Spot hidden drips fast.",
+    description:
+      "Enter meter readings to estimate hidden leaks. We'll alert you if your usage suggests a possible leak so you can fix it quickly.",
     href: "/calculators#leak-estimator",
     tone: "sky",
-    icon: (
-      <>
-        <path
-          fill="currentColor"
-          d="M12 2.5c2.9 2.7 4.5 5.6 4.5 8.3 0 2.6-2 4.7-4.5 4.7S7.5 13.4 7.5 10.8c0-2.7 1.6-5.6 4.5-8.3Z"
-        />
-        <path fill="currentColor" d="M6 17h12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z" />
-      </>
-    ),
+    icon: "water_damage",
   },
   {
     title: "Shower vs Bath",
-    description: "See where you stand.",
+    description:
+      "Compare the water and cost of showers versus baths based on your habits.",
     href: "/calculators#shower-bath",
     tone: "emerald",
-    icon: (
-      <>
-        <path
-          fill="currentColor"
-          d="M6 3h12a1 1 0 0 1 1 1v2H5V4a1 1 0 0 1 1-1Z"
-        />
-        <path
-          fill="currentColor"
-          d="M4 8h16v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z"
-        />
-        <path fill="currentColor" d="M9 11h6v2H9z" />
-      </>
-    ),
+    icon: "shower",
   },
   {
     title: "Bill Audit",
-    description: "Project your savings.",
+    description:
+      "Estimate how much you should be paying based on local rates, so you can check for billing errors.",
     href: "/calculators#bill-savings",
     tone: "slate",
-    icon: (
-      <>
-        <path
-          fill="currentColor"
-          d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12H4V6Z"
-        />
-        <path fill="currentColor" d="M7 9h10v2H7zm0 4h6v2H7z" />
-      </>
-    ),
+    icon: "receipt_long",
   },
 ];
 
@@ -72,17 +45,15 @@ const FeatureGrid = () => (
         role="listitem"
         aria-label={`${tool.title}: ${tool.description}`}
       >
-        <span className="ws-tool-card__icon" aria-hidden>
-          <svg viewBox="0 0 24 24" className="ws-tool-card__svg">
-            {tool.icon}
-          </svg>
+        <span className="ws-tool-card__icon" aria-hidden="true">
+          <span className="material-symbols-outlined">{tool.icon}</span>
         </span>
         <span className="ws-tool-card__body">
           <span className="ws-tool-card__title">{tool.title}</span>
           <span className="ws-tool-card__description">{tool.description}</span>
         </span>
         <span className="ws-tool-card__cta">
-          Open <span aria-hidden>→</span>
+          Open <span aria-hidden="true">&rarr;</span>
         </span>
       </RouterLink>
     ))}

@@ -135,7 +135,7 @@ const Analyze = () => {
       </div>
 
       {!hasMode ? (
-        <div className="ws-progress" role="status" aria-live="polite">
+        <div className="ws-info-card" role="status" aria-live="polite">
           <h2>Start your analysis</h2>
           <p>Upload a bill, try the demo bill, or use manual entry to generate insights.</p>
           <div className="ws-tool-grid">
@@ -159,36 +159,36 @@ const Analyze = () => {
           </div>
         </div>
       ) : !complete ? (
-        <div className="ws-progress" role="status" aria-live="polite">
+        <div className="ws-info-card" role="status" aria-live="polite">
           <p>Analyzing usage tiers, spikes, and leak signals…</p>
           <progress value={progress} max={100} aria-label="Analysis progress" />
           <p>{progress}% complete</p>
         </div>
       ) : (
         <>
-          <div className="ws-progress" role="status" aria-live="polite">
-            <h2>Insights checklist</h2>
+          <div className="ws-info-card" role="status" aria-live="polite">
+            <h2>What we checked</h2>
             <ul className="ws-checklist">
               <li>
-                <strong>Detected leaks:</strong> No active leaks detected, but bathroom faucets show
-                above-average flow. Confirm overnight meter stability.
+                <span className="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                Scanning for usage tiers and rate structure...
               </li>
               <li>
-                <strong>Tier-jump warning:</strong> Your next billing tier triggers at +9% usage—set
-                a daily target to avoid the jump.
+                <span className="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                Checking for leak indicators and flow anomalies...
               </li>
               <li>
-                <strong>Potential savings:</strong> Trim 1.8k gallons/month by tightening irrigation
-                windows and swapping to a low-flow showerhead.
+                <span className="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                Comparing against EPA household benchmarks...
               </li>
               <li>
-                <strong>Next actions:</strong> Schedule a 15-minute leak patrol, request a free
-                utility audit, and monitor weekend usage.
+                <span className="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                Building your personalized savings plan...
               </li>
             </ul>
           </div>
 
-          <div className="ws-progress" aria-label="Deeper tools">
+          <div className="ws-info-card" aria-label="Deeper tools">
             <h2>Go deeper</h2>
             <div className="ws-tool-grid">
               <a href="#usage-insights">Usage insights</a>
@@ -197,7 +197,7 @@ const Analyze = () => {
             </div>
           </div>
 
-          <div id="usage-insights" className="ws-progress">
+          <div id="usage-insights" className="ws-info-card">
             <h3>Usage insights</h3>
             {latestAnalysis ? (
               <>
@@ -220,7 +220,7 @@ const Analyze = () => {
               </p>
             )}
           </div>
-          <div id="abnormality-alerts" className="ws-progress">
+          <div id="abnormality-alerts" className="ws-info-card">
             <h3>Abnormality alerts</h3>
             {latestAnalysis ? (
               <div className="ws-alert-grid">
@@ -255,7 +255,7 @@ const Analyze = () => {
               </p>
             )}
           </div>
-          <div id="community-tips" className="ws-progress">
+          <div id="community-tips" className="ws-info-card">
             <h3>Community tips</h3>
             <p className="ws-subtitle">
               Tips crowdsourced from neighbors, plumbers, and utility experts.
@@ -302,12 +302,11 @@ const Analyze = () => {
             </RouterLink>
           </div>
 
-          <div id="more-tools" className="ws-progress">
+          <div id="more-tools" className="ws-info-card">
             <h2>More tools</h2>
             <p>Keep exploring while your insights are fresh.</p>
             <div className="ws-tool-grid">
               <RouterLink to="/water-iq">Take the Water IQ Challenge</RouterLink>
-              <RouterLink to="/water-iq">Water IQ Challenge</RouterLink>
               <RouterLink to="/research">Build a research plan</RouterLink>
               <RouterLink to="/eject-water">Open Eject Water</RouterLink>
             </div>
@@ -315,7 +314,7 @@ const Analyze = () => {
         </>
       )}
 
-      <div className="ws-progress" aria-label="Next steps">
+      <div className="ws-info-card" aria-label="Next steps">
         <h2>Keep exploring</h2>
         <div className="ws-tool-grid">
           <button className="ws-button" type="button" onClick={() => navigate("/research")}>

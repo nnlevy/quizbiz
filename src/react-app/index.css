@@ -1,7 +1,7 @@
 @import "./styles/theme.css";
 
 :root {
-  --font-family: var(--ws-font-family);
+  --font-family: var(--ws-font-body);
   --font-size-1: var(--ws-font-size-1);
   --font-size-2: var(--ws-font-size-2);
   --font-size-3: var(--ws-font-size-3);
@@ -9,9 +9,10 @@
   --font-size-5: var(--ws-font-size-5);
   --font-size-6: var(--ws-font-size-6);
 
-  font-family: var(--font-family);
-  line-height: 1.5;
+  font-family: var(--ws-font-body);
+  line-height: 1.6;
   font-weight: 400;
+  color: var(--ws-color-on-surface);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -20,7 +21,13 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--ws-color-slate-50);
+  background-color: var(--ws-color-surface);
+}
+
+/* Headlines always use Plus Jakarta Sans */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ws-font-headline);
+  color: var(--ws-color-on-surface);
 }
 
 a {
@@ -32,7 +39,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--ws-color-sky-600);
+  outline: 3px solid var(--ws-color-primary);
   outline-offset: 2px;
 }
 
@@ -55,8 +62,33 @@ textarea:focus-visible {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  font-size: var(--font-size-1);
+  font-size: var(--ws-label-md);
   font-weight: 700;
-  color: var(--ws-color-slate-700);
+  font-family: var(--ws-font-headline);
+  color: var(--ws-color-primary);
   margin: 0;
+}
+
+/* Material Symbols sizing */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300,
+    'GRAD' 0,
+    'opsz' 24;
+  vertical-align: middle;
+}
+
+/* Data/label font utility */
+.ws-data {
+  font-family: var(--ws-font-data);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,23 +1,23 @@
 
 :root {
-  /* Keep legacy tokens, but map to the active WaterShortcut theme for brand consistency. */
+  /* Legacy tokens mapped to Aqueduct Warmth design system */
   --bg-gradient: var(--ws-gradient-shell);
-  --text-color: var(--ws-color-ink-900);
-  --muted-text: var(--ws-color-slate-700);
-  --accent: var(--ws-color-teal-600);
-  --accent-strong: var(--ws-color-teal-700);
-  --accent-secondary: var(--ws-color-sky-700);
+  --text-color: var(--ws-color-on-surface);
+  --muted-text: var(--ws-color-on-surface-variant);
+  --accent: var(--ws-color-primary);
+  --accent-strong: var(--ws-color-primary);
+  --accent-secondary: var(--ws-color-primary);
   --surface: var(--ws-color-surface-85);
   --surface-strong: var(--ws-color-surface-98);
-  --shadow-soft: 0 24px 48px var(--ws-shadow-12);
-  --radius-lg: 28px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
-  --page-gutter: clamp(1.25rem, 2vw + 1rem, 2.25rem);
-  --card-gap: clamp(1rem, 1vw + 0.65rem, 1.65rem);
-  --card-padding: clamp(1.25rem, 1vw + 1.1rem, 1.85rem);
-  --font-primary: var(--ws-font-family);
-  --font-accent: "Playfair Display", serif;
+  --shadow-soft: var(--ws-shadow-ambient);
+  --radius-lg: var(--ws-radius-xl);
+  --radius-md: var(--ws-radius-lg);
+  --radius-sm: var(--ws-radius-md);
+  --page-gutter: var(--ws-space-page-gutter);
+  --card-gap: var(--ws-space-card-gap);
+  --card-padding: var(--ws-space-card-padding);
+  --font-primary: var(--ws-font-body);
+  --font-accent: var(--ws-font-headline);
   --header-height: 72px;
   --header-offset: calc(var(--header-height) + env(safe-area-inset-top));
 }

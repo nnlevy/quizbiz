@@ -45,11 +45,11 @@ if weather.freezeRisk:
 return: immediate_action, secondary_action, context_note, warning`;
 
 const defaultChecklist = [
-  { id: "toilet-dye", label: "Toilet dye test (check flapper leaks)." },
-  { id: "meter-movement", label: "Meter movement check with all fixtures off." },
-  { id: "irrigation", label: "Irrigation walk-through (look for pooling or misting)." },
-  { id: "faucet-drip", label: "Faucet & under-sink drip scan." },
-  { id: "showerhead", label: "Showerhead drip and cartridge check." },
+  { id: "toilet-dye", label: "Toilet dye test (check flapper leaks).", icon: "science" },
+  { id: "meter-movement", label: "Meter movement check with all fixtures off.", icon: "speed" },
+  { id: "irrigation", label: "Irrigation walk-through (look for pooling or misting).", icon: "grass" },
+  { id: "faucet-drip", label: "Faucet & under-sink drip scan.", icon: "faucet" },
+  { id: "showerhead", label: "Showerhead drip and cartridge check.", icon: "shower" },
 ];
 
 const fetchWeatherSnapshot = async (lat: number, lng: number): Promise<WeatherData> => {
@@ -262,7 +262,7 @@ const LeakCheckHub = () => {
 
       {mode === "emergency" ? (
         <>
-          <section className="ws-progress" aria-labelledby="triage-title">
+          <section className="ws-info-card" aria-labelledby="triage-title">
             <h2 id="triage-title">Emergency triage flow</h2>
             <p className="ws-subtitle">Follow each step. The AI will prioritize safety before repairs.</p>
 
@@ -303,7 +303,7 @@ const LeakCheckHub = () => {
             </div>
           </section>
 
-          <section className="ws-progress" aria-labelledby="triage-photo-title">
+          <section className="ws-info-card" aria-labelledby="triage-photo-title">
             <h2 id="triage-photo-title">2) Add a photo (optional)</h2>
             <p className="ws-subtitle">Useful for documenting the source while you work the checklist.</p>
             <label className="ws-field">
@@ -326,7 +326,7 @@ const LeakCheckHub = () => {
             ) : null}
           </section>
 
-          <section className="ws-progress" aria-labelledby="triage-run-title">
+          <section className="ws-info-card" aria-labelledby="triage-run-title">
             <h2 id="triage-run-title">3) Run AI triage</h2>
             <p className="ws-subtitle">
               You'll get an immediate action list, a secondary action, and a safety warning.
@@ -345,7 +345,7 @@ const LeakCheckHub = () => {
             </button>
           </section>
 
-          <section className="ws-progress" aria-labelledby="triage-output-title">
+          <section className="ws-info-card" aria-labelledby="triage-output-title">
             <h2 id="triage-output-title">Immediate action checklist</h2>
             <p className="ws-subtitle">
               AI guidance is advisory. If the leak is severe, or water is near electrical outlets, stop and call a licensed professional.
@@ -393,7 +393,7 @@ const LeakCheckHub = () => {
             </button>
           </section>
 
-          <details className="ws-progress">
+          <details className="ws-info-card">
             <summary style={{ cursor: "pointer", fontWeight: 700 }}>
               AI transparency (system prompt + async flow)
             </summary>
@@ -408,7 +408,7 @@ const LeakCheckHub = () => {
           </details>
         </>
       ) : (
-        <section className="ws-progress" aria-labelledby="proactive-title">
+        <section className="ws-info-card" aria-labelledby="proactive-title">
           <h2 id="proactive-title">Standard leak audit</h2>
           <p className="ws-subtitle">Not in crisis? Follow the checklist and log your checks.</p>
           <ul className="ws-checklist">
@@ -422,6 +422,7 @@ const LeakCheckHub = () => {
                     onChange={() => toggleChecklist(item.id)}
                     style={{ marginTop: "0.15rem", accentColor: "var(--ws-color-teal-600)" }}
                   />
+                  <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: "1.25rem", marginTop: "0.1rem" }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </label>
               </li>
@@ -455,7 +456,7 @@ const LeakCheckHub = () => {
         </div>
       </section>
 
-      <section className="ws-progress" aria-labelledby="post-crisis-title">
+      <section className="ws-info-card" aria-labelledby="post-crisis-title">
         <h2 id="post-crisis-title">Post-crisis value</h2>
         <p className="ws-subtitle">After the leak stops, quantify the impact and prevent the next one.</p>
         <RouterLink className="ws-button-secondary ws-button--full" to="/analyze-water-bill">

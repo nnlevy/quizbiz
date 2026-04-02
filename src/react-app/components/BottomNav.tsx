@@ -3,6 +3,7 @@ import { RouterLink } from "../routes/router";
 type BottomNavItem = {
   to: string;
   label: string;
+  icon: string;
   reloadDocument?: boolean;
 };
 
@@ -25,6 +26,9 @@ const BottomNav = ({ items, currentPath }: BottomNavProps) => {
                 reloadDocument={item.reloadDocument}
                 aria-current={isActive ? "page" : undefined}
               >
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  {item.icon}
+                </span>
                 {item.label}
               </RouterLink>
             </li>
