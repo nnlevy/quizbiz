@@ -274,7 +274,7 @@ const Dashboard = () => {
                 Top up {CREDIT_TOPUP_AMOUNT} credits for ${CREDIT_TOPUP_PRICE} to keep analyzing
                 bills.
               </p>
-              <button className="ws-button" type="button" onClick={startCheckout}>
+              <button className="ws-button" type="button" onClick={() => startCheckout()}>
                 Purchase credits
               </button>
               {notice ? <p className="ws-subtitle">{notice}</p> : null}

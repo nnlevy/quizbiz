@@ -44,17 +44,17 @@
 }
 
 .badge {
-  background: rgba(79, 155, 255, 0.12);
+  background: var(--ws-color-teal-12);
   color: var(--accent-strong);
   padding: 0.35rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 700;
   font-size: 0.95rem;
-  box-shadow: 0 6px 16px rgba(79, 155, 255, 0.15);
+  box-shadow: 0 6px 16px var(--ws-color-teal-15);
 }
 
 .badge.muted {
-  background: rgba(12, 36, 92, 0.05);
+  background: var(--ws-color-surface-container-low);
   color: var(--text-color);
 }
 
@@ -87,24 +87,24 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(79, 155, 255, 0.2), rgba(122, 92, 255, 0.2));
+  background: var(--ws-color-teal-20-strong);
   display: grid;
   place-items: center;
   font-size: 1.6rem;
   color: var(--accent-strong);
-  box-shadow: inset 0 2px 6px rgba(13, 50, 99, 0.08);
+  box-shadow: inset 0 2px 6px var(--ws-shadow-08);
 }
 
 .timer-bar {
   height: 10px;
   border-radius: 999px;
-  background: rgba(79, 155, 255, 0.1);
+  background: var(--ws-color-teal-12);
   overflow: hidden;
 }
 
 .timer-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4f9bff, #7a5cff);
+  background: var(--ws-color-primary);
   transition: width 0.1s linear;
 }
 
@@ -121,19 +121,20 @@
   font-size: 1rem;
   font-weight: 700;
   color: white;
-  background: linear-gradient(135deg, #4f9bff, #2d6bff);
-  box-shadow: 0 10px 24px rgba(79, 155, 255, 0.25);
+  background: var(--ws-color-primary);
+  box-shadow: 0 10px 24px var(--ws-shadow-20);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
 
 .action-button.secondary {
-  background: linear-gradient(135deg, #7a5cff, #5d49d6);
+  background: var(--ws-color-secondary);
+  color: var(--ws-color-on-secondary);
 }
 
 .action-button:active {
   transform: translateY(1px) scale(0.99);
-  box-shadow: 0 6px 16px rgba(13, 50, 99, 0.2);
+  box-shadow: 0 6px 16px var(--ws-shadow-20);
   filter: saturate(1.1);
 }
 
@@ -150,7 +151,7 @@
 }
 
 .score-box {
-  background: rgba(12, 36, 92, 0.04);
+  background: var(--ws-color-surface-container-low);
   border-radius: var(--radius-md);
   padding: 1rem;
   display: flex;
@@ -182,7 +183,7 @@
 }
 
 .water-tank {
-  background: linear-gradient(180deg, rgba(79, 155, 255, 0.1), rgba(122, 92, 255, 0.1));
+  background: var(--ws-color-surface-container);
   border-radius: var(--radius-md);
   padding: 1rem;
   display: flex;
@@ -194,7 +195,7 @@
   width: 52px;
   height: 120px;
   border-radius: 12px;
-  background: rgba(12, 36, 92, 0.06);
+  background: var(--ws-color-surface-container);
   overflow: hidden;
   position: relative;
 }
@@ -204,7 +205,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, #4f9bff, #7a5cff);
+  background: var(--ws-color-primary);
   transition: height 0.4s ease;
 }
 
@@ -236,29 +237,29 @@
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(79, 155, 255, 0.18);
+  box-shadow: 0 10px 24px var(--ws-shadow-15);
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
 
 .primary-button {
-  background: linear-gradient(135deg, #4f9bff, #2d6bff);
-  color: #fff;
+  background: var(--ws-color-primary);
+  color: var(--ws-color-on-primary);
 }
 
 .secondary-button {
   background: #fff;
   color: var(--text-color);
-  border: 1px solid rgba(12, 36, 92, 0.08);
+  border: 1px solid var(--ws-color-outline-variant);
 }
 
 .primary-button:active,
 .secondary-button:active {
   transform: translateY(1px) scale(0.99);
-  box-shadow: 0 6px 12px rgba(13, 50, 99, 0.15);
+  box-shadow: 0 6px 12px var(--ws-shadow-15);
 }
 
 .tip-card {
-  background: rgba(79, 155, 255, 0.06);
+  background: var(--ws-color-teal-12);
   border-left: 4px solid var(--accent-strong);
   padding: 0.9rem 1rem;
   border-radius: var(--radius-md);
@@ -269,7 +270,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(79, 155, 255, 0.16);
+  background: var(--ws-color-teal-15);
   color: var(--accent-strong);
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
@@ -283,7 +284,7 @@
 }
 
 .stat-card {
-  background: rgba(12, 36, 92, 0.05);
+  background: var(--ws-color-surface-container-low);
   border-radius: var(--radius-md);
   padding: 0.9rem 1rem;
   text-align: center;

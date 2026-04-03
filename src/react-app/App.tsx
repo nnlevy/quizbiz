@@ -377,6 +377,8 @@ function App({ focusUpload = false }: AppProps) {
   const topMovesRef = useRef<HTMLDivElement | null>(null);
   const slideTouchStartX = useRef<number | null>(null);
   const slideTouchStartY = useRef<number | null>(null);
+  const locationFormStartedRef = useRef(false);
+  const uploadFormStartedRef = useRef(false);
 
   const initialIsMobile =
     typeof window !== "undefined" &&
@@ -1940,6 +1942,10 @@ function App({ focusUpload = false }: AppProps) {
     setResponseMessage("");
     setSelectedFile(file);
     setUploadPreview(file.name);
+    if (!uploadFormStartedRef.current) {
+      uploadFormStartedRef.current = true;
+      logEvent("form_start", { type: "upload" });
+    }
   };
 
   const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
@@ -2359,6 +2365,12 @@ function App({ focusUpload = false }: AppProps) {
                 aria-describedby="location-help"
                 value={locationInput}
                 onChange={(event) => setLocationInput(event.target.value)}
+                onFocus={() => {
+                  if (!locationFormStartedRef.current) {
+                    locationFormStartedRef.current = true;
+                    logEvent("form_start", { type: "location" });
+                  }
+                }}
               />
               <datalist id="location-suggestions">
                 {locationSuggestions.map((suggestion) => (
@@ -2605,6 +2617,12 @@ function App({ focusUpload = false }: AppProps) {
                       placeholder="Enter your U.S. city or utility district"
                       value={locationInput}
                       onChange={(event) => setLocationInput(event.target.value)}
+                      onFocus={() => {
+                        if (!locationFormStartedRef.current) {
+                          locationFormStartedRef.current = true;
+                          logEvent("form_start", { type: "location" });
+                        }
+                      }}
                     />
                     <div className="location-inline-actions">
                       <button

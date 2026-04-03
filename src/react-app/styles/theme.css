@@ -161,19 +161,15 @@
   --ws-space-page-gutter: clamp(1.25rem, 2vw + 1rem, 2.25rem);
 
   /* ── Gradients ──────────────────────────────────────────── */
-  --ws-gradient-primary-cta: linear-gradient(135deg, var(--ws-color-primary), var(--ws-color-primary-container));
+  --ws-gradient-primary-cta: var(--ws-color-primary);
   --ws-gradient-shell: linear-gradient(180deg, var(--ws-color-surface) 0%, var(--ws-color-surface-container-low) 100%);
-  --ws-gradient-hero: linear-gradient(160deg,
-    color-mix(in srgb, var(--ws-color-primary-container) 12%, var(--ws-color-surface)),
-    var(--ws-color-surface) 45%,
-    color-mix(in srgb, var(--ws-color-secondary-container) 8%, var(--ws-color-surface)));
+  --ws-gradient-hero: linear-gradient(180deg,
+    color-mix(in srgb, var(--ws-color-primary-container) 6%, var(--ws-color-surface)),
+    var(--ws-color-surface) 60%);
   --ws-gradient-quick-check: linear-gradient(135deg,
     color-mix(in srgb, var(--ws-color-primary-container) 10%, var(--ws-color-surface)),
     var(--ws-color-surface-container-lowest) 65%);
-  --ws-gradient-ai-insight: linear-gradient(135deg,
-    color-mix(in srgb, var(--ws-color-primary-container) 20%, transparent),
-    rgba(255, 255, 255, 0.9) 55%,
-    color-mix(in srgb, var(--ws-color-tertiary) 15%, transparent));
+  --ws-gradient-ai-insight: var(--ws-color-surface-container-lowest);
 
   /* ── Transitions ────────────────────────────────────────── */
   --ws-ease-swell: cubic-bezier(0.34, 1.56, 0.64, 1);

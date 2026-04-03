@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "watershortcut-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "8901"],
+      "port": 8901
+    }
+  ]
+}

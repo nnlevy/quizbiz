@@ -9,15 +9,7 @@
 }
 
 .ws-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.35;
-  background:
-    radial-gradient(ellipse at 15% 5%, color-mix(in srgb, var(--ws-color-primary-container) 12%, transparent), transparent 50%),
-    radial-gradient(ellipse at 85% 20%, color-mix(in srgb, var(--ws-color-secondary-container) 8%, transparent), transparent 45%);
+  display: none;
 }
 
 .ws-shell::after {
@@ -157,17 +149,9 @@
   transition: transform var(--ws-transition-base);
 }
 
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .ws-logo__text {
-    color: transparent;
-    background-image:
-      radial-gradient(circle at calc(var(--ws-logo-x, 0.45) * 100%) calc(var(--ws-logo-y, 0.4) * 100%), rgba(255, 255, 255, 0.7), transparent 45%),
-      linear-gradient(135deg, var(--ws-color-primary), var(--ws-color-primary-container));
-    background-size: 180% 180%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: ws-logo-shimmer 9s linear infinite;
-  }
+/* Logo: solid primary color, no gradient shimmer */
+.ws-logo__text {
+  color: var(--ws-color-primary);
 }
 
 .ws-logo:hover .ws-logo__text,
@@ -449,14 +433,7 @@
 }
 
 .ws-home-hero-card::after {
-  content: "";
-  position: absolute;
-  inset: auto -14% -35% auto;
-  width: 13rem;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--ws-color-teal-600) 35%, transparent), transparent 68%);
-  pointer-events: none;
+  display: none;
 }
 
 .ws-home-hero-card__subtitle {
@@ -1628,7 +1605,7 @@ details.ws-info-card summary {
   bottom: 1.5rem;
   left: 1.5rem;
   right: 1.5rem;
-  z-index: 50;
+  z-index: 2147483647; /* above AdSense vignette overlays */
   background: var(--ws-color-inverse-surface);
   color: var(--ws-color-surface);
   border-radius: var(--ws-radius-xl);
