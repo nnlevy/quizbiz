@@ -85,6 +85,8 @@ Build artifacts land in `dist/` via `npm run build`. Deployment relies on `wrang
 - `OAUTH_DOMAIN` (optional cookie domain to share sessions across domains)
 - optional `domains-db` D1 binding if needed later
 
+Because WaterShortcut enforces HTTPS and the canonical `www` host inside the Worker, the asset pipeline uses selective `run_worker_first` rules for document routes. Without that, Cloudflare can serve prerendered HTML directly from the asset layer and bypass the redirect middleware for apex-page requests.
+
 ### Auth + credits persistence
 The Worker expects these bindings in `wrangler.json` (or equivalent Wrangler config):
 - `UsersAcrossAllDomains` — D1 database for `users`, `auth_sessions`, and `oauth_states` (use the D1 database ID).

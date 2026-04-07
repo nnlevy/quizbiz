@@ -54,6 +54,18 @@
   ],
   "assets": {
     "directory": "./dist/client",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/*",
+      "!/assets/*",
+      "!/brand/*",
+      "!/og/*",
+      "!/landing-new/*",
+      "!/apple-touch-icon.png",
+      "!/critical-css-loader.js",
+      "!/favicon*",
+      "!/referral-linker.js",
+      "!/vite.svg"
+    ]
   }
 }
