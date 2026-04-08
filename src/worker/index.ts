@@ -1470,41 +1470,6 @@ app.use("*", async (c, next) => {
 });
 
 app.use("*", async (c, next) => {
-  await next();
-  const res = c.res;
-  if (!res.body) return;
-
-  // Avoid compressing API responses at the Worker layer. Cloudflare will handle
-  // response compression correctly, and double/incorrect compression can break
-  // JSON fetch() clients.
-  const pathname = new URL(c.req.url).pathname;
-  if (pathname.startsWith("/api/")) return;
-
-  if (res.headers.get("Content-Encoding")) return;
-  const acceptEncoding = c.req.header("accept-encoding") || "";
-  const preferredEncoding = acceptsEncoding(acceptEncoding, "br")
-    ? "br"
-    : acceptsEncoding(acceptEncoding, "gzip")
-      ? "gzip"
-      : null;
-  if (!preferredEncoding) return;
-  const contentType = res.headers.get("Content-Type") || "";
-  if (!/(text|json|javascript|xml|svg)/i.test(contentType)) return;
-  const compression = createCompressionStream(preferredEncoding, acceptEncoding);
-  if (!compression) return;
-  const compressedBody = res.body.pipeThrough(compression.stream);
-  const headers = new Headers(res.headers);
-  headers.set("Content-Encoding", compression.actualEncoding);
-  appendVary(headers, "Accept-Encoding");
-  headers.delete("Content-Length");
-  c.res = new Response(compressedBody, {
-    status: res.status,
-    statusText: res.statusText,
-    headers,
-  });
-});
-
-app.use("*", async (c, next) => {
   const cspNonce = crypto.randomUUID().replace(/-/g, "");
   c.set("cspNonce", cspNonce);
   await next();
