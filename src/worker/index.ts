@@ -40,7 +40,6 @@ import {
   storeSubmit,
 } from "../lib/waterIqStore";
 import { runWaterIqAudit } from "../lib/waterIqAudit";
-import { appendVary } from "../shared/httpHeaders";
 import { REFERRAL_TOKEN_TTL_SECONDS } from "../shared/referral";
 import {
   SHARE_AWARD_WINDOW_MS,
@@ -1388,43 +1387,6 @@ app.get("/api/health", (c) =>
     },
   }),
 );
-
-type SupportedContentEncoding = "br" | "gzip";
-
-const acceptsEncoding = (header: string, encoding: SupportedContentEncoding): boolean =>
-  new RegExp(`\\b${encoding}\\b`, "i").test(header);
-
-const createCompressionStream = (
-  encoding: SupportedContentEncoding,
-  acceptEncodingHeader: string,
-): { stream: CompressionStream; actualEncoding: SupportedContentEncoding } | null => {
-  const tryCreate = (candidate: SupportedContentEncoding) => {
-    try {
-      // Runtime supports brotli even when lib.dom CompressionFormat omits "br".
-      return new CompressionStream(candidate as unknown as CompressionFormat);
-    } catch {
-      return null;
-    }
-  };
-
-  if (encoding === "br") {
-    const brotliStream = tryCreate("br");
-    if (brotliStream) {
-      return { stream: brotliStream, actualEncoding: "br" };
-    }
-    if (!acceptsEncoding(acceptEncodingHeader, "gzip")) {
-      return null;
-    }
-    const gzipStream = tryCreate("gzip");
-    return gzipStream ? { stream: gzipStream, actualEncoding: "gzip" } : null;
-  }
-
-  if (!acceptsEncoding(acceptEncodingHeader, "gzip")) {
-    return null;
-  }
-  const gzipStream = tryCreate("gzip");
-  return gzipStream ? { stream: gzipStream, actualEncoding: "gzip" } : null;
-};
 
 app.use("*", async (c, next) => {
   const proto = c.req.header("x-forwarded-proto");
