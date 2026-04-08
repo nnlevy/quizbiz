@@ -1755,14 +1755,14 @@ app.get("/me", async (c) => {
   return c.json({ user, credits });
 });
 
-app.get("/assets/styles.css", (c) =>
+app.get("/ws/styles.css", (c) =>
   c.text(stylesCss, 200, {
     "Content-Type": "text/css; charset=utf-8",
     "Cache-Control": "public, max-age=31536000, immutable",
   }),
 );
 
-app.get("/assets/app.js", (c) =>
+app.get("/ws/app.js", (c) =>
   c.text(appJs, 200, {
     "Content-Type": "application/javascript; charset=utf-8",
     "Cache-Control": "public, max-age=31536000, immutable",
@@ -2248,9 +2248,9 @@ function layout(options: {
         body { margin: 0; font-family: "Inter", system-ui, -apple-system, sans-serif; background: #f7fbff; }
         .site-header { position: sticky; top: 0; z-index: 10; }
       </style>
-      <link rel="preload" href="/assets/styles.css" as="style" />
-      <link rel="stylesheet" href="/assets/styles.css" media="print" data-ws-preload="style" />
-      <noscript><link rel="stylesheet" href="/assets/styles.css" /></noscript>
+      <link rel="preload" href="/ws/styles.css" as="style" />
+      <link rel="stylesheet" href="/ws/styles.css" media="print" data-ws-preload="style" />
+      <noscript><link rel="stylesheet" href="/ws/styles.css" /></noscript>
       <script src="/critical-css-loader.js" defer></script>
       <script src="/referral-linker.js" defer></script>
       <script nonce="${cspNonce}" type="application/ld+json">${JSON.stringify(combinedJsonLd)}</script>
@@ -2322,7 +2322,7 @@ function layout(options: {
           });
         });
       </script>
-      <script defer src="/assets/app.js" data-ws-app data-loaded="false"></script>
+      <script defer src="/ws/app.js" data-ws-app data-loaded="false"></script>
       ${inlineScriptTags}
     </head>
     <body class="${pageCssClass ? escapeHtml(pageCssClass) : ""}" data-ads-disabled="${adsEnabled ? "false" : "true"}">
