@@ -291,6 +291,33 @@ export function clientScript(defaultAdsenseClient: string) {
     });
   }
 
+  function initHomeLanding() {
+    const revealNodes = Array.from(document.querySelectorAll<HTMLElement>('.home-reveal'));
+    if (!revealNodes.length) return;
+
+    if (prefersReducedMotion || typeof IntersectionObserver === 'undefined') {
+      revealNodes.forEach((node) => node.classList.add('is-visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const target = entry.target as HTMLElement;
+          target.classList.add('is-visible');
+          observer.unobserve(target);
+        });
+      },
+      { threshold: 0.18, rootMargin: '0px 0px -8% 0px' },
+    );
+
+    revealNodes.forEach((node, index) => {
+      node.style.transitionDelay = `${Math.min(index * 70, 280)}ms`;
+      observer.observe(node);
+    });
+  }
+
   function showStep(wizard: HTMLElement, target: string) {
     wizard.querySelectorAll<HTMLElement>('.wizard-step').forEach((step) => {
       const active = step.dataset.step === target;
@@ -2657,6 +2684,7 @@ export function clientScript(defaultAdsenseClient: string) {
     if (booted) return;
     booted = true;
     initFaq();
+    initHomeLanding();
     initWizards();
     initCalculators();
     initProviderLookup();

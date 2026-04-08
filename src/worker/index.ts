@@ -2514,65 +2514,314 @@ function sourcesList(items: string[]): string {
 
 function renderHome(): string {
   return `
-    <section class="hero">
-      <div>
-        <p class="badge">${escapeHtml(copy.brand.tagline)}</p>
-        <h1>${escapeHtml(copy.home.title)}</h1>
-        <p>${escapeHtml(copy.home.subtitle)}</p>
-        <div class="actions">
-          <a class="btn primary" href="/water-iq">Homeowner or renter? Get my quick score</a>
-          <a class="btn secondary" href="/analyze-water-bill">Upload my latest bill</a>
-          <a class="btn secondary" href="/tools">Explore tools</a>
+    <style>
+      .home main{background:
+        radial-gradient(circle at top left, rgba(67,197,255,.18), transparent 28%),
+        radial-gradient(circle at 85% 18%, rgba(22,163,74,.12), transparent 22%),
+        linear-gradient(180deg, #f5fbff 0%, #eef8ff 40%, #f7fbff 100%);}
+      .home-flow{position:relative;overflow:hidden;padding:0 0 4rem;}
+      .home-flow::before,.home-flow::after{content:"";position:absolute;inset:auto;pointer-events:none;}
+      .home-flow::before{top:-8rem;left:-6rem;width:24rem;height:24rem;border-radius:999px;background:radial-gradient(circle, rgba(56,189,248,.25), transparent 68%);filter:blur(12px);}
+      .home-flow::after{right:-10rem;top:10rem;width:28rem;height:28rem;border-radius:999px;background:radial-gradient(circle, rgba(14,165,233,.16), transparent 68%);}
+      .home-hero{position:relative;max-width:none;margin:0;padding:clamp(1rem,2vw,1.5rem) 0 2rem;}
+      .home-hero__frame{max-width:1240px;margin:0 auto;padding:clamp(2rem,5vw,4.5rem) 1.25rem clamp(2rem,4vw,3.5rem);display:grid;gap:2rem;align-items:end;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);}
+      .home-hero__copy{max-width:42rem;position:relative;z-index:1;}
+      .home-kicker{display:inline-flex;align-items:center;gap:.65rem;padding:.45rem .85rem;border-radius:999px;background:rgba(255,255,255,.78);backdrop-filter:blur(10px);border:1px solid rgba(125,211,252,.55);box-shadow:0 14px 34px rgba(14,165,233,.12);font-size:.82rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0c4a6e;}
+      .home-kicker::before{content:"";width:.6rem;height:.6rem;border-radius:999px;background:#0ea5e9;box-shadow:0 0 0 .3rem rgba(14,165,233,.18);}
+      .home-hero h1{margin:.9rem 0 0;font-size:clamp(3rem,7vw,6rem);line-height:.92;letter-spacing:-.06em;max-width:11ch;color:#082f49;}
+      .home-hero__lede{margin:1.1rem 0 0;max-width:38rem;font-size:clamp(1.05rem,2.2vw,1.32rem);line-height:1.55;color:#164e63;}
+      .home-hero__actions{display:flex;flex-wrap:wrap;gap:.85rem;margin-top:1.5rem;}
+      .home-hero__actions .btn{min-height:50px;padding:.95rem 1.2rem;border-radius:999px;}
+      .home-hero__trust{display:flex;flex-wrap:wrap;gap:.7rem;margin:1.4rem 0 0;padding:0;list-style:none;}
+      .home-hero__trust li{display:inline-flex;align-items:center;gap:.45rem;padding:.52rem .8rem;border-radius:999px;background:rgba(255,255,255,.82);border:1px solid rgba(186,230,253,.95);font-size:.93rem;color:#155e75;}
+      .home-hero__trust li::before{content:"";width:.48rem;height:.48rem;border-radius:999px;background:#10b981;}
+      .home-hero__visual{position:relative;min-height:34rem;display:grid;align-items:end;}
+      .home-hero__visual::before{content:"";position:absolute;inset:1rem 8% auto auto;width:72%;height:72%;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(224,242,254,.72) 48%, rgba(186,230,253,.1) 78%, transparent 100%);filter:blur(2px);}
+      .water-orbit{position:absolute;inset:2rem auto auto 10%;width:8rem;height:8rem;border-radius:50%;border:1px dashed rgba(14,165,233,.25);animation:ws-float-slow 8s ease-in-out infinite;}
+      .water-orbit::before,.water-orbit::after{content:"";position:absolute;border-radius:999px;background:linear-gradient(180deg,#38bdf8,#0ea5e9);}
+      .water-orbit::before{width:1.1rem;height:1.1rem;top:.3rem;left:50%;transform:translateX(-50%);}
+      .water-orbit::after{width:.8rem;height:.8rem;bottom:.8rem;right:1rem;opacity:.8;}
+      .water-dashboard{position:relative;z-index:1;padding:1.45rem;border-radius:2rem;background:rgba(6,23,38,.84);color:#e0f2fe;border:1px solid rgba(125,211,252,.18);box-shadow:0 28px 80px rgba(8,47,73,.22);backdrop-filter:blur(18px);overflow:hidden;}
+      .water-dashboard::before{content:"";position:absolute;inset:0;background:linear-gradient(160deg, rgba(56,189,248,.17), transparent 42%, rgba(34,197,94,.12) 100%);}
+      .water-dashboard > *{position:relative;z-index:1;}
+      .water-dashboard__top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;}
+      .water-dashboard__eyebrow{font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:#7dd3fc;font-weight:700;}
+      .water-dashboard__value{margin-top:.55rem;font-size:clamp(2.4rem,5vw,4.2rem);line-height:.9;letter-spacing:-.06em;color:#f0f9ff;}
+      .water-dashboard__value span{font-size:.9rem;letter-spacing:.08em;color:#bae6fd;text-transform:uppercase;}
+      .water-dashboard__delta{padding:.55rem .8rem;border-radius:999px;background:rgba(16,185,129,.18);color:#bbf7d0;font-weight:700;}
+      .water-meter{margin-top:1.25rem;display:grid;gap:.7rem;}
+      .water-meter__row{display:grid;grid-template-columns:6.5rem 1fr auto;gap:.75rem;align-items:center;font-size:.92rem;color:#bae6fd;}
+      .water-meter__track{position:relative;height:.75rem;border-radius:999px;background:rgba(186,230,253,.12);overflow:hidden;}
+      .water-meter__fill{position:absolute;left:0;top:0;bottom:0;width:var(--fill);border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);box-shadow:0 0 24px rgba(34,197,94,.2);transform-origin:left center;animation:ws-fill 1.25s ease both;}
+      .water-dashboard__moves{margin-top:1.25rem;display:grid;gap:.7rem;}
+      .water-move{display:flex;justify-content:space-between;gap:1rem;padding:.95rem 1rem;border-radius:1rem;background:rgba(14,116,144,.18);border:1px solid rgba(125,211,252,.16);}
+      .water-move strong{display:block;color:#f0f9ff;font-size:1rem;}
+      .water-move span{display:block;color:#bae6fd;font-size:.92rem;margin-top:.2rem;}
+      .water-move em{font-style:normal;color:#bbf7d0;font-weight:700;white-space:nowrap;}
+      .home-proof{max-width:1240px;margin:0 auto;padding:0 1.25rem;}
+      .home-proof__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;}
+      .home-proof__item{padding:1.1rem 1.2rem;border-radius:1.4rem;background:rgba(255,255,255,.74);border:1px solid rgba(186,230,253,.8);backdrop-filter:blur(10px);}
+      .home-proof__item strong{display:block;font-size:2rem;letter-spacing:-.05em;color:#082f49;}
+      .home-proof__item span{display:block;margin-top:.35rem;color:#155e75;}
+      .home-section{max-width:1240px;margin:0 auto;padding:1.25rem 1.25rem 0;}
+      .home-section__header{max-width:42rem;margin-bottom:1.4rem;}
+      .home-section__eyebrow{margin:0;color:#0891b2;font-size:.82rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;}
+      .home-section__header h2{margin:.45rem 0 0;font-size:clamp(2rem,4vw,3.35rem);letter-spacing:-.05em;line-height:.96;color:#082f49;}
+      .home-section__header p{margin:.85rem 0 0;color:#155e75;font-size:1.03rem;line-height:1.6;}
+      .pathways{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;}
+      .pathway{position:relative;display:grid;gap:1rem;padding:1.35rem;border-radius:1.6rem;background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.7));border:1px solid rgba(186,230,253,.8);box-shadow:0 18px 40px rgba(14,165,233,.08);color:inherit;text-decoration:none;overflow:hidden;transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease;}
+      .pathway::before{content:"";position:absolute;inset:-35% auto auto -10%;width:9rem;height:9rem;border-radius:50%;background:radial-gradient(circle, rgba(56,189,248,.18), transparent 68%);}
+      .pathway:hover,.pathway:focus-visible{transform:translateY(-6px);box-shadow:0 28px 64px rgba(14,165,233,.16);border-color:rgba(56,189,248,.55);outline:none;}
+      .pathway__index{display:inline-flex;width:2.4rem;height:2.4rem;align-items:center;justify-content:center;border-radius:999px;background:#082f49;color:#e0f2fe;font-weight:800;}
+      .pathway h3{margin:0;font-size:1.45rem;color:#082f49;}
+      .pathway p{margin:0;color:#155e75;line-height:1.55;}
+      .pathway ul{list-style:none;padding:0;margin:0;display:grid;gap:.5rem;color:#164e63;}
+      .pathway li{display:flex;gap:.55rem;align-items:flex-start;}
+      .pathway li::before{content:"";flex:0 0 .55rem;height:.55rem;border-radius:999px;background:#22c55e;margin-top:.42rem;}
+      .pathway__footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;color:#0c4a6e;font-weight:800;}
+      .story-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:1rem;align-items:stretch;}
+      .story-panel,.story-steps{padding:1.45rem;border-radius:1.6rem;background:rgba(255,255,255,.8);border:1px solid rgba(186,230,253,.82);box-shadow:0 18px 40px rgba(14,165,233,.08);}
+      .story-panel{background:linear-gradient(160deg, rgba(8,47,73,.94), rgba(8,47,73,.78));color:#dff6ff;position:relative;overflow:hidden;}
+      .story-panel::after{content:"";position:absolute;inset:auto -10% -25% auto;width:18rem;height:18rem;border-radius:50%;background:radial-gradient(circle, rgba(56,189,248,.28), transparent 62%);}
+      .story-panel h3{margin:0;font-size:1.8rem;letter-spacing:-.04em;color:#f0f9ff;}
+      .story-panel p{margin:.8rem 0 0;color:#bae6fd;line-height:1.6;max-width:28rem;}
+      .story-panel__list{list-style:none;padding:0;margin:1.3rem 0 0;display:grid;gap:.9rem;}
+      .story-panel__list li{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:start;}
+      .story-panel__list strong{display:inline-flex;width:1.8rem;height:1.8rem;align-items:center;justify-content:center;border-radius:999px;background:rgba(125,211,252,.16);color:#e0f2fe;font-size:.85rem;}
+      .story-steps{display:grid;gap:.9rem;}
+      .story-step{display:grid;grid-template-columns:auto 1fr;gap:1rem;padding:1rem 0;border-top:1px solid rgba(125,211,252,.5);}
+      .story-step:first-child{border-top:none;padding-top:0;}
+      .story-step__num{display:inline-flex;width:2rem;height:2rem;align-items:center;justify-content:center;border-radius:999px;background:#e0f2fe;color:#0369a1;font-weight:800;}
+      .story-step h3{margin:0;color:#082f49;font-size:1.1rem;}
+      .story-step p{margin:.35rem 0 0;color:#155e75;line-height:1.55;}
+      .home-split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
+      .home-split__panel{padding:1.45rem;border-radius:1.6rem;background:rgba(255,255,255,.8);border:1px solid rgba(186,230,253,.82);box-shadow:0 18px 40px rgba(14,165,233,.08);}
+      .home-split__label{display:inline-flex;padding:.45rem .7rem;border-radius:999px;background:#e0f2fe;color:#075985;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+      .home-split__panel h3{margin:.9rem 0 0;font-size:1.65rem;color:#082f49;letter-spacing:-.04em;}
+      .home-split__panel p{margin:.7rem 0 0;color:#155e75;line-height:1.6;}
+      .home-split__panel ul{list-style:none;padding:0;margin:1rem 0 0;display:grid;gap:.65rem;}
+      .home-split__panel li{display:flex;gap:.6rem;align-items:flex-start;color:#164e63;}
+      .home-split__panel li::before{content:"";flex:0 0 .55rem;height:.55rem;border-radius:999px;background:#0ea5e9;margin-top:.45rem;}
+      .home-cta{max-width:1240px;margin:1.5rem auto 0;padding:0 1.25rem 2.8rem;}
+      .home-cta__panel{position:relative;overflow:hidden;padding:1.7rem;border-radius:1.8rem;background:linear-gradient(135deg, #082f49 0%, #0c4a6e 55%, #115e59 100%);color:#f0f9ff;display:grid;grid-template-columns:minmax(0,1.15fr) auto;gap:1.25rem;align-items:end;box-shadow:0 30px 80px rgba(8,47,73,.24);}
+      .home-cta__panel::before{content:"";position:absolute;inset:auto auto -35% -8%;width:18rem;height:18rem;border-radius:50%;background:radial-gradient(circle, rgba(125,211,252,.3), transparent 68%);}
+      .home-cta__copy,.home-cta__actions{position:relative;z-index:1;}
+      .home-cta__copy h2{margin:0;font-size:clamp(2rem,4vw,3.2rem);line-height:.95;letter-spacing:-.05em;}
+      .home-cta__copy p{margin:.8rem 0 0;max-width:34rem;color:#bae6fd;line-height:1.6;}
+      .home-cta__actions{display:flex;flex-wrap:wrap;gap:.85rem;justify-content:flex-end;}
+      .home-cta__actions .btn{min-height:50px;border-color:rgba(255,255,255,.24);}
+      .home-cta__actions .btn.secondary{background:rgba(255,255,255,.08);color:#f0f9ff;}
+      .home-reveal{opacity:0;transform:translateY(24px) scale(.985);transition:opacity .7s ease, transform .7s ease;}
+      .home-reveal.is-visible{opacity:1;transform:none;}
+      .home-float{animation:ws-float-slow 8s ease-in-out infinite;}
+      @keyframes ws-float-slow{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+      @keyframes ws-fill{from{transform:scaleX(.2);opacity:.35;}to{transform:scaleX(1);opacity:1;}}
+      @media (max-width:980px){
+        .home-hero__frame,.story-grid,.home-split,.home-cta__panel{grid-template-columns:1fr;}
+        .pathways,.home-proof__grid{grid-template-columns:1fr;}
+        .home-hero__visual{min-height:27rem;}
+        .home-cta__actions{justify-content:flex-start;}
+      }
+      @media (max-width:640px){
+        .home-hero h1{max-width:12ch;}
+        .home-kicker{font-size:.74rem;}
+        .home-hero__trust{display:grid;}
+        .home-hero__actions,.home-cta__actions{display:grid;}
+        .home-hero__actions .btn,.home-cta__actions .btn{width:100%;text-align:center;}
+        .water-dashboard__top,.water-meter__row{grid-template-columns:1fr;display:grid;}
+        .water-meter__row{gap:.35rem;}
+      }
+    </style>
+    <section class="home-flow">
+      <section class="hero home-hero">
+        <div class="home-hero__frame">
+          <div class="home-hero__copy home-reveal">
+            <p class="home-kicker">Water bills, decoded before they spike again</p>
+            <h1>${escapeHtml(copy.home.title)}</h1>
+            <p class="home-hero__lede">${escapeHtml(copy.home.subtitle)} WaterShortcut turns confusing usage, leaks, and tier jumps into one clean action plan you can actually follow.</p>
+            <div class="home-hero__actions">
+              <a class="btn primary" href="/analyze-water-bill">Upload my latest bill</a>
+              <a class="btn secondary" href="/water-iq">Get my quick score</a>
+              <a class="btn secondary" href="/calculators">Try calculators first</a>
+            </div>
+            <ul class="home-hero__trust">
+              ${copy.home.trustRow.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+            </ul>
+          </div>
+          <div class="home-hero__visual home-reveal">
+            <div class="water-orbit" aria-hidden="true"></div>
+            <div class="water-dashboard home-float" aria-label="Sample savings dashboard preview">
+              <div class="water-dashboard__top">
+                <div>
+                  <div class="water-dashboard__eyebrow">Sample household snapshot</div>
+                  <div class="water-dashboard__value">$148 <span>annual savings potential</span></div>
+                </div>
+                <div class="water-dashboard__delta">Top 3 moves ready</div>
+              </div>
+              <div class="water-meter">
+                <div class="water-meter__row">
+                  <span>Leak risk</span>
+                  <div class="water-meter__track"><div class="water-meter__fill" style="--fill:78%"></div></div>
+                  <strong>High</strong>
+                </div>
+                <div class="water-meter__row">
+                  <span>Tier pressure</span>
+                  <div class="water-meter__track"><div class="water-meter__fill" style="--fill:64%"></div></div>
+                  <strong>Medium</strong>
+                </div>
+                <div class="water-meter__row">
+                  <span>Easy wins</span>
+                  <div class="water-meter__track"><div class="water-meter__fill" style="--fill:91%"></div></div>
+                  <strong>Ready now</strong>
+                </div>
+              </div>
+              <div class="water-dashboard__moves">
+                <div class="water-move">
+                  <div><strong>Fix overnight flow</strong><span>Check toilet flapper + irrigation timer</span></div>
+                  <em>Save first</em>
+                </div>
+                <div class="water-move">
+                  <div><strong>Shorten shower cycle</strong><span>Low effort, visible monthly impact</span></div>
+                  <em>10 min setup</em>
+                </div>
+                <div class="water-move">
+                  <div><strong>Catch rate-tier creep</strong><span>See where one spike pushed you higher</span></div>
+                  <em>Bill-specific</em>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="layout-slab">
-        <ul class="bullet-list">
-          ${copy.home.trustRow.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-        </ul>
-      </div>
+      </section>
+
+      <section class="home-proof home-reveal">
+        <div class="home-proof__grid">
+          <div class="home-proof__item"><strong>3 paths</strong><span>Upload a bill, answer a quick score, or estimate with calculators.</span></div>
+          <div class="home-proof__item"><strong>Minutes</strong><span>Start with no account, then go deeper only if the numbers justify it.</span></div>
+          <div class="home-proof__item"><strong>Plain English</strong><span>Usage clues, leak hints, and next actions without utility jargon.</span></div>
+        </div>
+      </section>
+
+      <section class="home-section home-reveal">
+        <div class="home-section__header">
+          <p class="home-section__eyebrow">Start where you are</p>
+          <h2>One clear first step, not a maze of tools.</h2>
+          <p>Each entry point has one job: diagnose a real bill, orient you fast, or estimate savings before you upload anything.</p>
+        </div>
+        <div class="pathways">
+          <a class="pathway" href="/analyze-water-bill">
+            <span class="pathway__index">01</span>
+            <div>
+              <h3>Upload a bill</h3>
+              <p>Best when you already have a PDF and want the shortest route to bill-specific guidance.</p>
+            </div>
+            <ul>
+              <li>Spot unusual usage patterns and tier jumps</li>
+              <li>Get the top 3 moves ranked by effort and impact</li>
+              <li>See what changed before the next bill lands</li>
+            </ul>
+            <div class="pathway__footer"><span>Use the real bill</span><span>Analyze now</span></div>
+          </a>
+          <a class="pathway" href="/water-iq">
+            <span class="pathway__index">02</span>
+            <div>
+              <h3>Get a quick score</h3>
+              <p>Best when you need direction first and want a fast, playful read on your habits.</p>
+            </div>
+            <ul>
+              <li>Tailored for homeowners and renters</li>
+              <li>Instant priorities, no document needed</li>
+              <li>Great warm-up before a full bill analysis</li>
+            </ul>
+            <div class="pathway__footer"><span>2 minute route</span><span>Get my score</span></div>
+          </a>
+          <a class="pathway" href="/calculators">
+            <span class="pathway__index">03</span>
+            <div>
+              <h3>Run calculators</h3>
+              <p>Best when you want a quick estimate for showers, toilets, laundry, and leaks.</p>
+            </div>
+            <ul>
+              <li>Pressure-test upgrade ideas before buying</li>
+              <li>Compare habits to likely monthly waste</li>
+              <li>Use without creating an account</li>
+            </ul>
+            <div class="pathway__footer"><span>Fast estimates</span><span>Open calculators</span></div>
+          </a>
+        </div>
+      </section>
+
+      <section class="home-section home-reveal">
+        <div class="story-grid">
+          <div class="story-panel">
+            <p class="home-section__eyebrow" style="color:#7dd3fc">Why it feels easier</p>
+            <h3>WaterShortcut is designed for the moment you realize the bill looks wrong.</h3>
+            <p>You should not need to decode rate tables, compare twelve months manually, or guess whether the problem is a leak, irrigation, or a one-off spike.</p>
+            <ul class="story-panel__list">
+              <li><strong>1</strong><div><strong>Find the signal</strong><p>We highlight the strange part first: overnight flow, rate-tier creep, or sudden jumps.</p></div></li>
+              <li><strong>2</strong><div><strong>Translate the bill</strong><p>You get a plain-language explanation instead of utility shorthand.</p></div></li>
+              <li><strong>3</strong><div><strong>Take the next move</strong><p>Every result points to one practical action you can do this week.</p></div></li>
+            </ul>
+          </div>
+          <div class="story-steps">
+            <div class="story-step">
+              <span class="story-step__num">1</span>
+              <div><h3>Bring the bill or start lightweight</h3><p>Upload a PDF if you have it. If not, start with the quick score or calculators.</p></div>
+            </div>
+            <div class="story-step">
+              <span class="story-step__num">2</span>
+              <div><h3>See the biggest waste first</h3><p>The experience prioritizes the moves most likely to lower your next bill instead of dumping generic tips.</p></div>
+            </div>
+            <div class="story-step">
+              <span class="story-step__num">3</span>
+              <div><h3>Leave with a real plan</h3><p>Use the tools, save the shortlist, and decide whether the next action is DIY, landlord-safe, or worth escalating.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-section home-reveal">
+        <div class="home-section__header">
+          <p class="home-section__eyebrow">Built for real households</p>
+          <h2>Different constraints. Same goal: stop wasting water and money.</h2>
+        </div>
+        <div class="home-split">
+          <div class="home-split__panel">
+            <span class="home-split__label">Homeowners</span>
+            <h3>Trace the spike before it becomes a season-long problem.</h3>
+            <p>Use bill analysis, leak checks, and rebate paths to decide whether the issue is behavioral, mechanical, or worth replacing.</p>
+            <ul>
+              <li>Prioritize repairs with the best savings-to-effort ratio</li>
+              <li>Catch irrigation or toilet issues that run quietly</li>
+              <li>Use calculators to estimate upgrade payoff</li>
+            </ul>
+          </div>
+          <div class="home-split__panel">
+            <span class="home-split__label">Renters</span>
+            <h3>Find the low-friction wins before calling the landlord.</h3>
+            <p>Start with moves you control, document suspicious usage, and bring cleaner evidence when you need maintenance involved.</p>
+            <ul>
+              <li>Spot signs that point to a hidden leak or fixture issue</li>
+              <li>Separate habit changes from building-level problems</li>
+              <li>Bring landlord-safe talking points to the next conversation</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-cta home-reveal">
+        <div class="home-cta__panel">
+          <div class="home-cta__copy">
+            <h2>Make the next bill less surprising.</h2>
+            <p>Start with the route that matches your confidence level: real bill, quick score, or simple calculators. You can go deeper later.</p>
+          </div>
+          <div class="home-cta__actions">
+            <a class="btn primary" href="/analyze-water-bill">Upload a bill</a>
+            <a class="btn secondary" href="/water-iq">Get my score</a>
+          </div>
+        </div>
+      </section>
     </section>
-    ${section(
-      "Does this sound familiar?",
-      `<div class="cards">
-        <div class="card"><h3>My usage looks random</h3><p>Unsure if it is seasonal, a leak, or a billing mismatch.</p><a class="btn secondary" href="/analyze-water-bill">Check my bill</a></div>
-        <div class="card"><h3>I want plain-English steps</h3><p>No jargon, just what to do this week.</p><a class="btn secondary" href="/water-iq">Get my plan</a></div>
-        <div class="card"><h3>I rent and need low-friction options</h3><p>Tenant-safe actions without major upgrades.</p><a class="btn secondary" href="/tools">See renter-safe options</a></div>
-      </div>`,
-    )}
-    ${section(
-      "About Us",
-      `<ul class="bullet-list">
-        <li>Our mission is to make it fast and easy to understand changes in your water consumption.</li>
-        <li>Water conservation should be a fun way to save money.</li>
-        <li>Our goal is to provide you with:</li>
-        <li>Bill clarity: what changed and why it matters.</li>
-        <li>Priority actions ranked by likely savings and effort.</li>
-        <li>Pure joy: earn credits and compete with friends for the highest water savings score.</li>
-      </ul>`,
-    )}
-    ${section(
-      "Choose the easiest first step",
-      `<div class="cards">
-        <div class="card"><h3>Upload a bill</h3><p>Best when you want bill-specific guidance now.</p><a class="btn secondary" href="/analyze-water-bill">Analyze my bill</a></div>
-        <div class="card"><h3>Quick score</h3><p>Best when you need direction before line-item details.</p><a class="btn secondary" href="/water-iq">Get my score</a></div>
-        <div class="card"><h3>Calculators</h3><p>Best when you want fast leak and usage estimates.</p><a class="btn secondary" href="/calculators">Open calculators</a></div>
-      </div>`,
-    )}
-    ${section(
-      "What are you waiting for?",
-      `<div class="grid">
-        <a class="inline-list" href="/tools">No login required. Click here to explore our tools</a>
-        <a class="inline-list" href="/trust">You stay in control</a>
-        <a class="inline-list" href="/sources">Sources you can verify</a>
-      </div>`,
-    )}
-    ${section(
-      "Try our AI calculators to compare your water usage to average consumption",
-      `<div class="grid">
-        <a class="inline-list" href="/calculators">Start with calculators only</a>
-        <a class="inline-list" href="/tools">Browse renter-safe and homeowner-safe tools</a>
-      </div>`,
-    )}
     <section class="section faq">
       <h2>FAQ</h2>
       <div class="faq-item">
