@@ -7,6 +7,9 @@ export default defineConfig(({ command }) => {
     process.env.WS_ENABLE_CLOUDFLARE === "true" || command === "build";
 
   return {
+    define: {
+      __name: 'watershortcut'
+    },
     plugins: [react(), ...(cloudflareEnabled ? [cloudflare()] : [])],
     build: {
       minify: "esbuild",
