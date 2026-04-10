@@ -1,6 +1,6 @@
 const site = {
-  brandName: "WaterShortcut",
-  canonicalHost: "www.watershortcut.com",
+  brandName: "Quizbiz",
+  canonicalHost: "quizbiz.org",
   defaultOgImage: "https://www.watershortcut.com/og/watershortcut-og.png",
   twitterHandle: "@watershortcut",
   locale: "en_US",
@@ -8,13 +8,13 @@ const site = {
 
 const pages = {
   "/": {
-    title: "WaterShortcut | Save water. Save money.",
+    title: "Quizbiz.org: AI-Powered Domain Studio",
     description:
-      "Upload a water bill for a clear breakdown and a savings plan. Or use fast calculators for showers, toilets, leaks, laundry, and outdoor watering.",
+      "AI domain studio for autonomous digital businesses—buy, build, scale with purpose.",
     canonicalPath: "/",
-    h1: "Stop guessing what's driving your water bill.",
+    h1: "Quizbiz.org: AI-Powered Domain Studio",
     intro:
-      "WaterShortcut turns confusing water bills into a clear checklist. Upload a PDF to find leaks, avoid tier jumps, and lower costs without guesswork.",
+      "Build sustainable income engines with AI; buy/sell domains, first-principles delight for underserved needs.",
     bodyHtml:
       '<section class="seo-section"><h2>Why it works</h2><ul><li>AI highlights suspicious usage patterns before they become costly.</li><li>Plain-English explanations replace jargon-heavy bill sections.</li><li>Step-by-step fixes are prioritized for impact and effort.</li></ul></section><section class="seo-section"><h2>What to expect</h2><p>Upload a bill to get a 200-level breakdown, savings checklist, and shareable summary you can act on immediately.</p></section>',
     structuredData: [

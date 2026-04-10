@@ -2344,6 +2344,16 @@ function App({ focusUpload = false }: AppProps) {
           </div>
         </section>
 
+        <section className="services" id="services">
+          <h2>Services</h2>
+          <p>Our AI services help you find and manage domains.</p>
+        </section>
+
+        <section className="lease" id="lease">
+          <h2>Lease</h2>
+          <p>Lease domains for short-term use.</p>
+        </section>
+
         <section className="utility-overlay" id="location-intel">
           <div className="utility-card-grid">
             <article className="utility-card">

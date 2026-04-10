@@ -1,71 +1,15 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "watershortcut",
-  "main": "./src/worker/index.ts",
-  "compatibility_date": "2025-04-01",
-  "compatibility_flags": [
-    "nodejs_compat"
+  "name": "quizbiz-worker",
+  "main": "src/react-app/main.tsx",
+  "compatibility_date": "2024-01-01",
+  "routes": [
+    {
+      "pattern": "quizbiz.org/*"
+    }
   ],
-  "observability": {
-    "enabled": true
-  },
-  "upload_source_maps": true,
   "vars": {
-    "Google_Document_AI_Processor_Prediction_Endpoint": "https://us-documentai.googleapis.com/v1/projects/32766728438/locations/us/processors/dc3fed4aeef15611:process",
-    "ADSENSE_CLIENT": "ca-pub-1860356577073395",
-    "GA_MEASUREMENT_ID": "G-98170RDCDD",
-    "OPENAI_ORG_ID": "org-3Kw3ohdIQc6cIpSonBIgKdf9"
+    "GA_MEASUREMENT_ID": "@GA_MEASUREMENT_ID"
   },
-  "d1_databases": [
-    {
-      "binding": "UsersAcrossAllDomains",
-      "database_name": "domains-db",
-      "database_id": "b41e909b-ad01-4fd5-84ca-d8d014706942"
-    },
-    {
-      "binding": "DOMAINS_DB_ID",
-      "database_name": "domains-db",
-      "database_id": "b41e909b-ad01-4fd5-84ca-d8d014706942"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "User_Sessions_Across_Domains",
-      "id": "ce39949d2f244c78b3e19967288f44fb"
-    },
-    {
-      "binding": "KV_GROWTH",
-      "id": "7746d8e39dff4c9f80ebc1ff7b2716f4"
-    }
-  ],
-  "services": [
-    {
-      "binding": "PORTFOLIO_AI_SERVICE",
-      "service": "riskfreetrial",
-      "entrypoint": "PortfolioAIService",
-      "remote": true
-    },
-    {
-      "binding": "PORTFOLIO_BILLING_SERVICE",
-      "service": "riskfreetrial",
-      "entrypoint": "PortfolioBillingService",
-      "remote": true
-    }
-  ],
-  "assets": {
-    "directory": "./dist/client",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": [
-      "/*",
-      "!/assets/*",
-      "!/brand/*",
-      "!/og/*",
-      "!/landing-new/*",
-      "!/apple-touch-icon.png",
-      "!/critical-css-loader.js",
-      "!/favicon*",
-      "!/referral-linker.js",
-      "!/vite.svg"
-    ]
-  }
+  "kv_namespaces": [],
+  "d1_databases": []
 }

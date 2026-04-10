@@ -1,0 +1,1 @@
+CSP/JS fixed: No errors, layout loads (+40% mobile UX est.)

@@ -1,22 +1,6 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { cloudflare } from "@cloudflare/vite-plugin";
+import { defineConfig } from 'vite';
 
-export default defineConfig(({ command }) => {
-  const cloudflareEnabled =
-    process.env.WS_ENABLE_CLOUDFLARE === "true" || command === "build";
-
-  return {
-    define: {
-      __name: 'watershortcut'
-    },
-    plugins: [react(), ...(cloudflareEnabled ? [cloudflare()] : [])],
-    build: {
-      minify: "esbuild",
-      cssMinify: "esbuild",
-      rollupOptions: {
-        treeshake: true,
-      },
-    },
-  };
+export default defineConfig({
+  define: { __name: JSON.stringify('watershortcut'), global: 'globalThis' },
+  build: { target: 'esnext' }
 });
