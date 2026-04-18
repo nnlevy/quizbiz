@@ -4,51 +4,22 @@ export type AdType = "footer" | "inline" | "sticky";
 
 export type AdVisibility = Record<AdType, boolean>;
 
-type AdPageRule = {
-  description: string;
-  match: (pathname: string) => boolean;
-  visibility: Partial<AdVisibility>;
-};
-
 const DEFAULT_AD_VISIBILITY: AdVisibility = {
   footer: true,
   inline: true,
-  sticky: true,
+  sticky: false,
 };
-
-const AD_PAGE_RULES: AdPageRule[] = [
-  {
-    description: "Homepage suppresses inline and sticky ads",
-    match: (pathname) => pathname === "/",
-    visibility: {
-      inline: false,
-      sticky: false,
-    },
-  },
-  {
-    description: "Critical funnel routes suppress inline and sticky ads",
-    match: (pathname) =>
-      pathname.startsWith("/analysis-results") ||
-      pathname === "/analyze-water-bill" ||
-      pathname === "/manual-entry" ||
-      pathname === "/dashboard" ||
-      pathname === "/find-water-provider",
-    visibility: {
-      inline: false,
-      sticky: false,
-    },
-  },
-];
 
 export const getAdVisibilityForPath = (pathname: string): AdVisibility => {
   const normalizedPath = normalizePathname(pathname);
-  let visibility = { ...DEFAULT_AD_VISIBILITY };
-  AD_PAGE_RULES.forEach((rule) => {
-    if (rule.match(normalizedPath)) {
-      visibility = { ...visibility, ...rule.visibility };
-    }
-  });
-  return visibility;
+  if (normalizedPath === "/privacy" || normalizedPath === "/terms") {
+    return {
+      footer: true,
+      inline: false,
+      sticky: false,
+    };
+  }
+  return DEFAULT_AD_VISIBILITY;
 };
 
 export const isAdTypeEnabled = (pathname: string, adType: AdType): boolean =>

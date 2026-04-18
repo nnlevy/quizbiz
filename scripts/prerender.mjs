@@ -5,14 +5,26 @@ import { buildTitle, canonicalUrl, clampDescription, pages, site } from "../src/
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
-const distDir = path.join(projectRoot, "dist", "client");
+const resolveDistDir = async () => {
+  const candidates = [
+    path.join(projectRoot, "dist", "client"),
+    path.join(projectRoot, "dist"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // Try the next candidate.
+    }
+  }
+
+  throw new Error("dist directory not found. Run `npm run build` first.");
+};
 
 async function ensureDist() {
-  try {
-    await fs.access(distDir);
-  } catch (error) {
-    throw new Error("dist directory not found. Run `npm run build` first.");
-  }
+  return resolveDistDir();
 }
 
 function stripExistingSeo(head) {
@@ -78,6 +90,7 @@ function buildBody(pagePath) {
 }
 
 async function loadTemplate() {
+  const distDir = await ensureDist();
   const html = await fs.readFile(path.join(distDir, "index.html"), "utf8");
   const headMatch = html.match(/<head>([\s\S]*?)<\/head>/i);
   if (!headMatch) {
@@ -88,6 +101,7 @@ async function loadTemplate() {
 }
 
 async function writeHtml(pagePath, headShell) {
+  const distDir = await ensureDist();
   const head = buildHead(pagePath, headShell);
   const body = buildBody(pagePath);
   const html = `<!doctype html>\n<html lang="en">\n${head}\n${body}\n</html>`;
@@ -106,11 +120,13 @@ function buildSitemap() {
 }
 
 async function writeRobots() {
+  const distDir = await ensureDist();
   const robots = `User-agent: *\nAllow: /\nSitemap: https://${site.canonicalHost}/sitemap.xml`;
   await fs.writeFile(path.join(distDir, "robots.txt"), robots, "utf8");
 }
 
 async function writeSitemap() {
+  const distDir = await ensureDist();
   const xml = buildSitemap();
   await fs.writeFile(path.join(distDir, "sitemap.xml"), xml, "utf8");
 }

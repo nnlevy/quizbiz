@@ -4,9 +4,26 @@ import { fileURLToPath } from "node:url";
 import { canonicalUrl, pages } from "../src/seo/seoConfig.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const distDir = path.resolve(__dirname, "..", "dist", "client");
+const resolveDistDir = async () => {
+  const candidates = [
+    path.resolve(__dirname, "..", "dist", "client"),
+    path.resolve(__dirname, "..", "dist"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // Try the next candidate.
+    }
+  }
+
+  throw new Error("dist directory not found. Run `npm run build` before seo:check.");
+};
 
 async function readHtml(route) {
+  const distDir = await resolveDistDir();
   const filePath = route === "/" ? path.join(distDir, "index.html") : path.join(distDir, route.slice(1), "index.html");
   return fs.readFile(filePath, "utf8");
 }
@@ -35,7 +52,7 @@ async function checkRoute(route, failures) {
 
 async function main() {
   try {
-    await fs.access(distDir);
+    await resolveDistDir();
   } catch {
     throw new Error("dist directory not found. Run `npm run build` before seo:check.");
   }

@@ -5,16 +5,29 @@ import Critters from "critters";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
-const distDir = path.join(projectRoot, "dist", "client");
+
+const resolveDistDir = async () => {
+  const candidates = [
+    path.join(projectRoot, "dist", "client"),
+    path.join(projectRoot, "dist"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // Try the next candidate.
+    }
+  }
+
+  throw new Error("dist directory not found. Run `npm run build` first.");
+};
 
 const CRITICAL_SCRIPT_TAG = '<script src="/critical-css-loader.js" defer></script>';
 
 const ensureDist = async () => {
-  try {
-    await fs.access(distDir);
-  } catch (error) {
-    throw new Error("dist directory not found. Run `npm run build` first.");
-  }
+  return resolveDistDir();
 };
 
 const listHtmlFiles = async (dir) => {
@@ -72,7 +85,7 @@ const inlineCriticalCss = async (htmlPath, critters) => {
 };
 
 const main = async () => {
-  await ensureDist();
+  const distDir = await ensureDist();
   const critters = new Critters({
     path: distDir,
     publicPath: "/",
