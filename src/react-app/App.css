@@ -609,6 +609,27 @@ li,
   padding: 12px;
 }
 
+.qb-readiness {
+  margin: 4px 0 0;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 8px 10px;
+}
+
+.qb-readiness.is-ready {
+  border: 1px solid rgba(0, 166, 166, 0.3);
+  background: rgba(0, 166, 166, 0.1);
+  color: #006f6f;
+}
+
+.qb-readiness.is-warn {
+  border: 1px solid rgba(255, 107, 74, 0.3);
+  background: rgba(255, 107, 74, 0.09);
+  color: #7a2d19;
+}
+
 .qb-result {
   position: sticky;
   top: 12px;

@@ -654,6 +654,13 @@ function HomeView() {
   );
   const readyCount = programReadiness.filter(([, ready]) => ready).length;
   const selectedDraft = programDrafts.find((draft) => draft.id === selectedDraftId) ?? null;
+  const leadHasContact = Boolean(lead.email.trim() || lead.phone.trim());
+  const leadCanSubmit = leadHasContact && Boolean(lead.need.trim());
+  const leadMissing = [
+    !leadHasContact ? "email or phone" : "",
+    !lead.need.trim() ? "request details" : "",
+  ].filter(Boolean);
+  const programCanSubmit = readyCount >= 5 && Boolean(program.eventName.trim());
 
   useEffect(() => {
     window.localStorage.setItem(storageKeys.lead, JSON.stringify(lead));
@@ -764,6 +771,10 @@ function HomeView() {
   }
 
   async function submitLead() {
+    if (!leadCanSubmit) {
+      setStatus(`Before submitting, add ${leadMissing.join(" and ")}.`);
+      return;
+    }
     setIsSubmitting(true);
     setStatus("");
     try {
@@ -792,6 +803,10 @@ function HomeView() {
   }
 
   async function submitProgram() {
+    if (!programCanSubmit) {
+      setProgramStatus("Complete at least 5 of 6 readiness checks before saving approval evidence.");
+      return;
+    }
     setIsSavingProgram(true);
     setProgramStatus("");
     try {
@@ -1045,13 +1060,18 @@ function HomeView() {
                 <li key={label}>{ready ? "Ready" : "Needs detail"}: {label}</li>
               ))}
             </ul>
+            <p className={`qb-readiness ${programCanSubmit ? "is-ready" : "is-warn"}`}>
+              {programCanSubmit
+                ? "Ready to save approval evidence."
+                : `Not ready yet. ${5 - Math.min(readyCount, 5)} more check${5 - Math.min(readyCount, 5) === 1 ? "" : "s"} needed.`}
+            </p>
             <h4>Sample compliant message</h4>
             <p>
               Quizbiz LLC: Reminder for {program.eventName}. Reply YES to confirm, STOP to unsubscribe, or HELP for
               help. Msg frequency varies. Msg & data rates may apply.
             </p>
             <div className="qb-actions">
-              <button className="qb-button qb-button--primary" disabled={isSavingProgram} onClick={submitProgram} type="button">
+              <button className="qb-button qb-button--primary" disabled={isSavingProgram || !programCanSubmit} onClick={submitProgram} type="button">
                 {isSavingProgram ? "Saving..." : "Save and prepare approval evidence"}
               </button>
               <a className="qb-button qb-button--secondary" href="/sms">
@@ -1160,6 +1180,9 @@ function HomeView() {
             </label>
             <p className="qb-fine">SMS is used only if this box is checked. Mobile opt-in data and consent are not shared or sold.</p>
             <p className="qb-fine">To submit, include at least one contact method: email or mobile phone.</p>
+            <p className={`qb-readiness ${leadCanSubmit ? "is-ready" : "is-warn"}`}>
+              {leadCanSubmit ? "Ready to submit for routing." : `Missing: ${leadMissing.join(" and ")}.`}
+            </p>
           </form>
 
           <article className="qb-result" aria-live="polite">
@@ -1181,7 +1204,7 @@ function HomeView() {
               </>
             ) : null}
             <div className="qb-actions">
-              <button className="qb-button qb-button--primary" disabled={isSubmitting} onClick={submitLead} type="button">
+              <button className="qb-button qb-button--primary" disabled={isSubmitting || !leadCanSubmit} onClick={submitLead} type="button">
                 {isSubmitting ? "Submitting..." : "Get recommended domain plan"}
               </button>
               {bestMatch ? (
