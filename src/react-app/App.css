@@ -1265,6 +1265,27 @@ h2 {
   margin-bottom: 16px;
 }
 
+.qb-conversion-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(16, 26, 63, 0.16);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(16, 26, 63, 0.16);
+}
+
+.qb-conversion-strip span {
+  display: block;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--qb-ink);
+  font-size: 0.82rem;
+  font-weight: 780;
+  line-height: 1.35;
+  padding: 10px 12px;
+}
+
 .qb-quick-presets .qb-button {
   min-height: 38px;
   font-size: 0.82rem;
@@ -1512,5 +1533,9 @@ h2 {
 
   .qb-quick-presets .qb-button {
     width: 100%;
+  }
+
+  .qb-conversion-strip {
+    grid-template-columns: 1fr;
   }
 }

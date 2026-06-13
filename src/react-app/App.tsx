@@ -842,7 +842,7 @@ function HomeView() {
           </p>
           <div className="qb-actions">
             <a className="qb-button qb-button--primary" href="#cohort-control">
-              Build a program
+              Start 2-minute setup
             </a>
             <a className="qb-button qb-button--secondary" href="#directory">
               Search the directory
@@ -1052,7 +1052,7 @@ function HomeView() {
             </p>
             <div className="qb-actions">
               <button className="qb-button qb-button--primary" disabled={isSavingProgram} onClick={submitProgram} type="button">
-                {isSavingProgram ? "Saving..." : "Save program plan"}
+                {isSavingProgram ? "Saving..." : "Save and prepare approval evidence"}
               </button>
               <a className="qb-button qb-button--secondary" href="/sms">
                 SMS details
@@ -1071,6 +1071,11 @@ function HomeView() {
             Route inbound needs by audience, challenge, and desired outcome, then hand off into the cohort builder for
             implementation and follow-up.
           </p>
+        </div>
+        <div className="qb-conversion-strip" aria-label="Routing workflow">
+          <span>1) Describe the audience and challenge</span>
+          <span>2) Get domain routing guidance</span>
+          <span>3) Save a cohort program and approval evidence</span>
         </div>
         <div className="qb-quick-presets" aria-label="Directory search presets">
           {[
@@ -1154,6 +1159,7 @@ function HomeView() {
               </span>
             </label>
             <p className="qb-fine">SMS is used only if this box is checked. Mobile opt-in data and consent are not shared or sold.</p>
+            <p className="qb-fine">To submit, include at least one contact method: email or mobile phone.</p>
           </form>
 
           <article className="qb-result" aria-live="polite">
@@ -1176,7 +1182,7 @@ function HomeView() {
             ) : null}
             <div className="qb-actions">
               <button className="qb-button qb-button--primary" disabled={isSubmitting} onClick={submitLead} type="button">
-                {isSubmitting ? "Submitting..." : "Submit lead"}
+                {isSubmitting ? "Submitting..." : "Get recommended domain plan"}
               </button>
               {bestMatch ? (
                 <a className="qb-button qb-button--secondary" href={`https://${bestMatch.domain}`}>
@@ -1279,7 +1285,7 @@ function HomeView() {
           <p>Show purpose, audience, consent collection, suppression controls, and reporting from one system of record.</p>
         </div>
         <a className="qb-button qb-button--primary" href="#cohort-control">
-          Build a program
+          Start 2-minute setup
         </a>
       </section>
     </main>
