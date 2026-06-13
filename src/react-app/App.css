@@ -432,14 +432,15 @@ li,
 }
 
 .qb-section__header {
-  max-width: 780px;
+  max-width: 860px;
   margin-bottom: 24px;
 }
 
 .qb-section__header p:not(.qb-eyebrow) {
-  max-width: 68ch;
+  max-width: 72ch;
   margin: 16px 0 0;
-  font-size: 1.02rem;
+  font-size: 1.05rem;
+  line-height: 1.62;
 }
 
 .qb-outcomes,
@@ -1092,8 +1093,8 @@ h1 {
 }
 
 h2 {
-  max-width: 13ch;
-  font-size: clamp(2.35rem, 4.8vw, 4.75rem);
+  max-width: 16ch;
+  font-size: clamp(2.15rem, 4.2vw, 4rem);
   line-height: 0.94;
   text-wrap: balance;
 }

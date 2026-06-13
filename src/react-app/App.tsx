@@ -837,8 +837,8 @@ function HomeView() {
           <p className="qb-eyebrow">Quizbiz LLC</p>
           <h1 id="home-title">Domain specific customer messaging with cohort specific controls and automations</h1>
           <p>
-            Quizbiz.org is becoming the control surface for domain-specific SMS programs: define the sender, load the
-            cohort, prove consent, automate event reminders, and reconcile engagement from RSVP and attendance systems.
+            Quizbiz.org is the operating workspace for compliant cohort messaging: configure sender identity, import
+            roster segments, sync RSVP and attendance signals, and run automated reminders with auditable consent.
           </p>
           <div className="qb-actions">
             <a className="qb-button qb-button--primary" href="#cohort-control">
@@ -896,11 +896,11 @@ function HomeView() {
 
       <section className="qb-section" id="platform">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">What Quizbiz does</p>
-          <h2>Each domain becomes a compliant messaging workspace for a specific audience.</h2>
+          <p className="qb-eyebrow">Platform model</p>
+          <h2>Run segmented messaging programs with consent, suppression rules, and reporting.</h2>
           <p>
-            The process is built for real operating use: choose the domain and message purpose, load a permissioned
-            roster, map engagement sources, send only where consent is documented, and produce an audit trail for review.
+            This is structured for operations teams, not a landing demo: pick a domain use case, apply audience rules,
+            verify eligibility, execute reminders, and keep records ready for provider review.
           </p>
         </div>
         <div className="qb-outcomes">
@@ -920,11 +920,11 @@ function HomeView() {
 
       <section className="qb-section qb-brief" id="cohort-control" aria-labelledby="cohort-title">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Dogfood workspace</p>
+          <p className="qb-eyebrow">Program builder</p>
           <h2 id="cohort-title">Plan event reminders for board and donor cohorts before any SMS goes out.</h2>
           <p>
-            This workspace models the actual operating need: AJC-style program reminders for board members, donors, and
-            donor recognition society cohorts, with RSVP and attendance evidence reconciled back to the roster.
+            Build the same workflow you intend to run in production: roster filters, consent gating, reminder cadence,
+            and post-event reconciliation against Microsoft Forms, Outlook, Zoom, and check-in exports.
           </p>
         </div>
 
@@ -1065,11 +1065,11 @@ function HomeView() {
 
       <section className="qb-section qb-brief" id="capture" aria-labelledby="capture-title">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Domain routing remains built in</p>
+          <p className="qb-eyebrow">Directory router</p>
           <h2 id="capture-title">Match any business need to the right domain workspace.</h2>
           <p>
-            The portfolio directory still routes broad requests to the right domain, but the primary operating layer is
-            now cohort messaging with consent, automation, and engagement reporting.
+            Route inbound needs by audience, challenge, and desired outcome, then hand off into the cohort builder for
+            implementation and follow-up.
           </p>
         </div>
         <div className="qb-quick-presets" aria-label="Directory search presets">
@@ -1241,8 +1241,8 @@ function HomeView() {
           <p className="qb-eyebrow">Trust and messaging</p>
           <h2>Quizbiz LLC is the brand and the responsible business.</h2>
           <p>
-            Quizbiz.org presents the business identity, privacy terms, opt-in language, cohort controls, and consent
-            evidence needed before any customer messaging program should be submitted for carrier review.
+            Quizbiz.org documents business identity, message purpose, opt-in language, and data handling so reviewers,
+            partners, and customers can verify how messaging is governed.
           </p>
         </div>
         <div className="qb-trust__grid">
@@ -1274,9 +1274,9 @@ function HomeView() {
 
       <section className="qb-final">
         <div>
-          <p className="qb-eyebrow">Next step</p>
-          <h2>Prepare the Twilio approval packet from the same workflow used to run the program.</h2>
-          <p>Use the cohort workspace to prove message purpose, audience, consent, suppression rules, and reporting.</p>
+          <p className="qb-eyebrow">Launch readiness</p>
+          <h2>Submit for Twilio approval with evidence generated from the live operating workflow.</h2>
+          <p>Show purpose, audience, consent collection, suppression controls, and reporting from one system of record.</p>
         </div>
         <a className="qb-button qb-button--primary" href="#cohort-control">
           Build a program
