@@ -539,16 +539,16 @@ const defaultLead: LeadState = {
 };
 
 const defaultProgram: CohortProgramState = {
-  organization: "American Jewish Committee pilot workspace",
+  organization: "",
   domain: "quizbiz.org",
-  eventName: "Board and donor recognition society program reminder",
-  cohort: "Board members, donors, and recognition society members with documented SMS opt-in",
-  rosterSource: "Cohort roster CSV with name, mobile, email, society, board role, city, and consent source",
-  rsvpSource: "Microsoft Forms RSVP export or share link",
-  calendarSource: "Outlook event ID, attendee response export, or organizer calendar link",
-  attendanceSource: "Zoom participant report plus in-room check-in list",
-  reminderCadence: "Invitation confirmation, RSVP nudge, day-before reminder, post-event thank-you, missed-you follow-up",
-  consentBasis: "Send only to contacts with explicit SMS opt-in; exclude unsubscribed, missing consent, and unknown mobile records.",
+  eventName: "",
+  cohort: "",
+  rosterSource: "",
+  rsvpSource: "",
+  calendarSource: "",
+  attendanceSource: "",
+  reminderCadence: "",
+  consentBasis: "",
 };
 
 const storageKeys = {
@@ -768,6 +768,26 @@ function HomeView() {
   function applySearchPreset(preset: string) {
     setLead((previous) => ({ ...previous, need: preset }));
     setQuery(preset);
+  }
+
+  function exportProgramPayload() {
+    const payload = {
+      program,
+      readiness: programReadiness,
+      readyCount,
+      exportedAt: new Date().toISOString(),
+      source: "quizbiz.org",
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = `quizbiz-program-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(href);
+    setProgramStatus("Exported current program payload (JSON).");
   }
 
   async function submitLead() {
@@ -1049,7 +1069,7 @@ function HomeView() {
               <strong>Approval packet checks</strong>
             </div>
             <p className="qb-eyebrow">Program preview</p>
-            <h3>{program.eventName}</h3>
+            <h3>{program.eventName || "Enter an event or program name"}</h3>
             <p>
               Quizbiz will treat the roster as the source of truth, suppress contacts without documented opt-in, and
               reconcile RSVP and attendance signals before each follow-up.
@@ -1065,14 +1085,17 @@ function HomeView() {
                 ? "Ready to save approval evidence."
                 : `Not ready yet. ${5 - Math.min(readyCount, 5)} more check${5 - Math.min(readyCount, 5) === 1 ? "" : "s"} needed.`}
             </p>
-            <h4>Sample compliant message</h4>
+            <h4>Draft message preview from current inputs</h4>
             <p>
-              Quizbiz LLC: Reminder for {program.eventName}. Reply YES to confirm, STOP to unsubscribe, or HELP for
+              Quizbiz LLC: Reminder for {program.eventName || "your event"}. Reply YES to confirm, STOP to unsubscribe, or HELP for
               help. Msg frequency varies. Msg & data rates may apply.
             </p>
             <div className="qb-actions">
               <button className="qb-button qb-button--primary" disabled={isSavingProgram || !programCanSubmit} onClick={submitProgram} type="button">
                 {isSavingProgram ? "Saving..." : "Save and prepare approval evidence"}
+              </button>
+              <button className="qb-button qb-button--secondary" onClick={exportProgramPayload} type="button">
+                Export program JSON
               </button>
               <a className="qb-button qb-button--secondary" href="/sms">
                 SMS details
