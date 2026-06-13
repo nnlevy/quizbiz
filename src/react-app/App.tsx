@@ -533,22 +533,22 @@ const defaultLead: LeadState = {
   email: "",
   phone: "",
   company: "",
-  need: "",
+  need: "Text reminders for events and programs with cohort-based attendance tracking and reporting",
   urgency: "week",
   smsOptIn: false,
 };
 
 const defaultProgram: CohortProgramState = {
-  organization: "",
+  organization: "Quizbiz LLC",
   domain: "quizbiz.org",
-  eventName: "",
-  cohort: "",
-  rosterSource: "",
-  rsvpSource: "",
-  calendarSource: "",
-  attendanceSource: "",
-  reminderCadence: "",
-  consentBasis: "",
+  eventName: "AJC board and donor program reminders",
+  cohort: "Board members, donors, and recognition society cohorts with documented SMS consent",
+  rosterSource: "Cohort roster with role, recognition tier, phone, consent source, and suppression flags",
+  rsvpSource: "Microsoft Forms RSVP responses mapped by email/phone",
+  calendarSource: "Outlook event responses and attendee updates",
+  attendanceSource: "Zoom attendance exports plus manual check-in reconciliation",
+  reminderCadence: "Confirmation, 72-hour reminder, day-before reminder, day-of reminder, follow-up attendance acknowledgment",
+  consentBasis: "Send only to contacts with explicit SMS opt-in; suppress unsubscribed and missing-consent contacts.",
 };
 
 const storageKeys = {
