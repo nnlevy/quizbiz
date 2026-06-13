@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { usePageMeta } from "./hooks/usePageMeta";
 import "./App.css";
@@ -35,6 +35,13 @@ type CohortProgramState = {
   attendanceSource: string;
   reminderCadence: string;
   consentBasis: string;
+};
+
+type ProgramDraft = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  program: CohortProgramState;
 };
 
 type LegalSection = {
@@ -544,6 +551,33 @@ const defaultProgram: CohortProgramState = {
   consentBasis: "Send only to contacts with explicit SMS opt-in; exclude unsubscribed, missing consent, and unknown mobile records.",
 };
 
+const storageKeys = {
+  lead: "quizbiz:lead-form:v1",
+  query: "quizbiz:directory-query:v1",
+  program: "quizbiz:program-form:v1",
+  programDrafts: "quizbiz:program-drafts:v1",
+  selectedDraft: "quizbiz:selected-program-draft:v1",
+} as const;
+
+function loadStored<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function draftNameFor(program: CohortProgramState) {
+  const organization = program.organization.trim();
+  const eventName = program.eventName.trim();
+  if (organization && eventName) return `${organization} · ${eventName}`;
+  if (eventName) return eventName;
+  if (organization) return organization;
+  return "Untitled working list";
+}
+
 function scoreDomain(entry: DomainEntry, query: string) {
   const normalized = query.toLowerCase().trim();
   if (!normalized) return entry.domain === "quizbiz.org" ? 4 : 0;
@@ -594,9 +628,12 @@ function LegalView({ page }: { page: LegalPage }) {
 }
 
 function HomeView() {
-  const [lead, setLead] = useState(defaultLead);
-  const [query, setQuery] = useState(defaultLead.need);
-  const [program, setProgram] = useState(defaultProgram);
+  const [lead, setLead] = useState<LeadState>(() => loadStored(storageKeys.lead, defaultLead));
+  const [query, setQuery] = useState<string>(() => loadStored(storageKeys.query, defaultLead.need));
+  const [program, setProgram] = useState<CohortProgramState>(() => loadStored(storageKeys.program, defaultProgram));
+  const [programDrafts, setProgramDrafts] = useState<ProgramDraft[]>(() => loadStored(storageKeys.programDrafts, []));
+  const [selectedDraftId, setSelectedDraftId] = useState<string>(() => loadStored(storageKeys.selectedDraft, ""));
+  const [draftName, setDraftName] = useState("");
   const [programStatus, setProgramStatus] = useState("");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -615,6 +652,81 @@ function HomeView() {
     [program],
   );
   const readyCount = programReadiness.filter(([, ready]) => ready).length;
+  const selectedDraft = programDrafts.find((draft) => draft.id === selectedDraftId) ?? null;
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKeys.lead, JSON.stringify(lead));
+  }, [lead]);
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKeys.query, JSON.stringify(query));
+  }, [query]);
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKeys.program, JSON.stringify(program));
+  }, [program]);
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKeys.programDrafts, JSON.stringify(programDrafts));
+  }, [programDrafts]);
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKeys.selectedDraft, JSON.stringify(selectedDraftId));
+  }, [selectedDraftId]);
+
+  useEffect(() => {
+    setDraftName(selectedDraft?.name ?? draftNameFor(program));
+    // Keep draft label stable while editing fields unless draft selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDraftId]);
+
+  function saveNewDraft() {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const draft: ProgramDraft = {
+      id,
+      name: draftName.trim() || draftNameFor(program),
+      updatedAt: now,
+      program,
+    };
+    setProgramDrafts((previous) => [draft, ...previous].slice(0, 100));
+    setSelectedDraftId(id);
+    setProgramStatus(`Saved browser draft "${draft.name}".`);
+  }
+
+  function updateSelectedDraft() {
+    if (!selectedDraftId) {
+      saveNewDraft();
+      return;
+    }
+    const now = new Date().toISOString();
+    let updatedName = "";
+    setProgramDrafts((previous) =>
+      previous.map((draft) => {
+        if (draft.id !== selectedDraftId) return draft;
+        updatedName = draftName.trim() || draft.name;
+        return { ...draft, name: updatedName, updatedAt: now, program };
+      }),
+    );
+    setProgramStatus(`Updated draft "${updatedName || "working list"}".`);
+  }
+
+  function loadSelectedDraft(nextId: string) {
+    setSelectedDraftId(nextId);
+    const draft = programDrafts.find((item) => item.id === nextId);
+    if (draft) {
+      setProgram(draft.program);
+      setProgramStatus(`Loaded draft "${draft.name}".`);
+    }
+  }
+
+  function deleteSelectedDraft() {
+    if (!selectedDraftId) return;
+    const deleting = selectedDraft?.name ?? "working draft";
+    setProgramDrafts((previous) => previous.filter((draft) => draft.id !== selectedDraftId));
+    setSelectedDraftId("");
+    setProgramStatus(`Deleted draft "${deleting}".`);
+  }
 
   async function submitLead() {
     setIsSubmitting(true);
@@ -654,6 +766,12 @@ function HomeView() {
         body: JSON.stringify({
           ...program,
           readiness: programReadiness,
+          syncSource: {
+            draftId: selectedDraftId || null,
+            draftName: draftName.trim() || null,
+            savedAt: new Date().toISOString(),
+            storage: "browser-local",
+          },
           pageUrl: window.location.href,
         }),
       });
@@ -831,6 +949,36 @@ function HomeView() {
                 onChange={(event) => setProgram({ ...program, consentBasis: event.target.value })}
               />
             </label>
+            <fieldset>
+              <legend>Working list management</legend>
+              <label>
+                Saved working list
+                <select value={selectedDraftId} onChange={(event) => loadSelectedDraft(event.target.value)}>
+                  <option value="">None selected</option>
+                  {programDrafts.map((draft) => (
+                    <option key={draft.id} value={draft.id}>
+                      {draft.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Working list label
+                <input value={draftName} onChange={(event) => setDraftName(event.target.value)} />
+              </label>
+              <div className="qb-actions">
+                <button className="qb-button qb-button--secondary" onClick={saveNewDraft} type="button">
+                  Save New
+                </button>
+                <button className="qb-button qb-button--secondary" onClick={updateSelectedDraft} type="button">
+                  Update Selected
+                </button>
+                <button className="qb-button qb-button--secondary" onClick={deleteSelectedDraft} type="button">
+                  Delete Selected
+                </button>
+              </div>
+              <p className="qb-fine">Inputs autosave in this browser and can be loaded into a working list before sync.</p>
+            </fieldset>
           </form>
 
           <article className="qb-result qb-program-result" aria-live="polite">

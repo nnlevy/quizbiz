@@ -59,10 +59,169 @@ const trustRows = [
   ['Data sharing', 'Mobile opt-in data and consent are not shared or sold to third parties.'],
 ];
 
+const storageEnhancementScript = `
+(function () {
+  const keys = {
+    lead: 'quizbiz:lead-form:v1',
+    query: 'quizbiz:directory-query:v1',
+    program: 'quizbiz:program-form:v1',
+    drafts: 'quizbiz:program-drafts:v1',
+    selected: 'quizbiz:selected-program-draft:v1'
+  };
+  const leadFields = ['name', 'email', 'phone', 'company', 'need', 'smsOptIn'];
+  const programFields = ['programOrg', 'programDomain', 'programEvent', 'programCohort', 'programRoster', 'programForms', 'programOutlook', 'programZoom', 'programCadence', 'programConsent'];
+  const q = (selector) => document.querySelector(selector);
+  const byId = (id) => document.getElementById(id);
+
+  function readJson(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  function writeJson(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  }
+  function status(message) {
+    const el = byId('programStatus');
+    if (!el) return;
+    el.className = 'status show';
+    el.textContent = message;
+  }
+  function collect(fields) {
+    const result = {};
+    for (const id of fields) {
+      const element = byId(id);
+      if (!element) continue;
+      result[id] = element.type === 'checkbox' ? element.checked : element.value;
+    }
+    return result;
+  }
+  function applyValues(values) {
+    if (!values || typeof values !== 'object') return;
+    for (const [id, value] of Object.entries(values)) {
+      const element = byId(id);
+      if (!element) continue;
+      if (element.type === 'checkbox') element.checked = Boolean(value);
+      else element.value = String(value ?? '');
+    }
+  }
+  function draftName(program) {
+    const org = String(program.programOrg || '').trim();
+    const event = String(program.programEvent || '').trim();
+    return org && event ? org + ' · ' + event : (event || org || 'Untitled working list');
+  }
+  function optionLabel(draft) {
+    const date = new Date(draft.updatedAt || Date.now());
+    return (draft.name || 'Untitled') + ' (' + date.toLocaleDateString() + ')';
+  }
+  function renderDraftSelect() {
+    const select = byId('programDraftSelect');
+    if (!select) return;
+    const drafts = readJson(keys.drafts, []);
+    const selected = readJson(keys.selected, '');
+    select.innerHTML = '<option value="">None selected</option>' + drafts.map((draft) => '<option value="' + draft.id + '">' + optionLabel(draft) + '</option>').join('');
+    select.value = drafts.some((draft) => draft.id === selected) ? selected : '';
+  }
+
+  applyValues(readJson(keys.lead, {}));
+  applyValues(readJson(keys.program, {}));
+  const storedQuery = readJson(keys.query, '');
+  if (storedQuery && byId('query')) byId('query').value = storedQuery;
+  renderDraftSelect();
+  const selectedDraft = readJson(keys.selected, '');
+  const drafts = readJson(keys.drafts, []);
+  if (selectedDraft) {
+    const draft = drafts.find((item) => item.id === selectedDraft);
+    if (draft && draft.program) {
+      applyValues(draft.program);
+      if (byId('programDraftName')) byId('programDraftName').value = draft.name || draftName(draft.program);
+      status('Loaded browser draft "' + (draft.name || 'working list') + '".');
+    }
+  }
+
+  leadFields.forEach((id) => {
+    const element = byId(id);
+    if (!element) return;
+    element.addEventListener('input', () => writeJson(keys.lead, collect(leadFields)));
+    element.addEventListener('change', () => writeJson(keys.lead, collect(leadFields)));
+  });
+  programFields.forEach((id) => {
+    const element = byId(id);
+    if (!element) return;
+    element.addEventListener('input', () => writeJson(keys.program, collect(programFields)));
+    element.addEventListener('change', () => writeJson(keys.program, collect(programFields)));
+  });
+  if (byId('query')) {
+    byId('query').addEventListener('input', () => writeJson(keys.query, byId('query').value));
+  }
+
+  byId('programSaveNew')?.addEventListener('click', () => {
+    const drafts = readJson(keys.drafts, []);
+    const program = collect(programFields);
+    const labelInput = byId('programDraftName');
+    const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    const name = (labelInput?.value || '').trim() || draftName(program);
+    drafts.unshift({ id, name, updatedAt: new Date().toISOString(), program });
+    writeJson(keys.drafts, drafts.slice(0, 100));
+    writeJson(keys.selected, id);
+    renderDraftSelect();
+    if (labelInput) labelInput.value = name;
+    status('Saved new browser draft "' + name + '".');
+  });
+
+  byId('programSaveSelected')?.addEventListener('click', () => {
+    const selected = readJson(keys.selected, '');
+    if (!selected) return byId('programSaveNew')?.click();
+    const drafts = readJson(keys.drafts, []);
+    const labelInput = byId('programDraftName');
+    const nameFromInput = (labelInput?.value || '').trim();
+    const program = collect(programFields);
+    let updatedName = '';
+    const next = drafts.map((draft) => {
+      if (draft.id !== selected) return draft;
+      updatedName = nameFromInput || draft.name || draftName(program);
+      return { ...draft, name: updatedName, updatedAt: new Date().toISOString(), program };
+    });
+    writeJson(keys.drafts, next);
+    renderDraftSelect();
+    if (labelInput) labelInput.value = updatedName;
+    status('Updated browser draft "' + (updatedName || 'working list') + '".');
+  });
+
+  byId('programDeleteSelected')?.addEventListener('click', () => {
+    const selected = readJson(keys.selected, '');
+    if (!selected) return;
+    const drafts = readJson(keys.drafts, []);
+    const current = drafts.find((draft) => draft.id === selected);
+    writeJson(keys.drafts, drafts.filter((draft) => draft.id !== selected));
+    writeJson(keys.selected, '');
+    renderDraftSelect();
+    status('Deleted browser draft "' + ((current && current.name) || 'working list') + '".');
+  });
+
+  byId('programDraftSelect')?.addEventListener('change', (event) => {
+    const id = event.target.value;
+    writeJson(keys.selected, id);
+    const drafts = readJson(keys.drafts, []);
+    const draft = drafts.find((item) => item.id === id);
+    if (!draft) return;
+    applyValues(draft.program);
+    if (byId('programDraftName')) byId('programDraftName').value = draft.name || draftName(draft.program);
+    writeJson(keys.program, collect(programFields));
+    if (typeof window.renderProgram === 'function') window.renderProgram();
+    if (typeof window.render === 'function') window.render();
+    status('Loaded browser draft "' + (draft.name || 'working list') + '".');
+  });
+})();
+`;
+
 function home() {
   const rows = trustRows.map(([label, value]) => `<div class="row"><strong>${label}</strong><span>${value}</span></div>`).join('');
   return page('Quizbiz LLC | Domain-Specific Customer Messaging', 'Quizbiz LLC powers domain-specific customer messaging with cohort-specific controls, automations, consent evidence, and engagement reporting.', `
-<main class="wrap"><section class="hero"><div class="panel hero-copy"><p class="eyebrow">Quizbiz LLC</p><h1>Domain specific customer messaging with cohort specific controls and automations</h1><p>Quizbiz.org is becoming the control surface for domain-specific SMS programs: define the sender, load the cohort, prove consent, automate event reminders, and reconcile engagement from RSVP and attendance systems.</p><div class="actions"><a class="button primary" href="#cohort-control">Build a program</a><a class="button" href="#directory">Search the directory</a></div></div><div class="product"><div class="product-top"><span>Messaging control plane</span><strong id="hero-domain">quizbiz.org</strong></div><div class="flow"><div class="flow-step"><span>1</span><strong>Define the domain</strong></div><div class="flow-step"><span>2</span><strong>Load the cohort</strong></div><div class="flow-step"><span>3</span><strong>Sync engagement</strong></div><div class="flow-step"><span>4</span><strong>Automate follow-up</strong></div></div><div class="command"><span></span><p id="command">Board and donor recognition society program reminder.</p></div><div class="metrics"><div><strong>${DOMAIN_DIRECTORY.length}</strong><span>indexed domains</span></div><div><strong id="programReadyHero">6/6</strong><span>ready checks</span></div><div><strong>KV</strong><span>audit storage</span></div></div></div></section><div class="proof"><span>Domain sender</span><span>Cohort roster</span><span>RSVP sync</span><span>Attendance report</span></div><section id="platform"><div class="section-head"><p class="eyebrow">What Quizbiz does</p><h2>Each domain becomes a compliant messaging workspace for a specific audience.</h2><p>The process is built for real operating use: choose the domain and message purpose, load a permissioned roster, map engagement sources, send only where consent is documented, and produce an audit trail for review.</p></div><div class="grid"><article class="card"><h3>Control</h3><p>Configure the domain, sender identity, message category, and public opt-in path before launch.</p></article><article class="card"><h3>Segment</h3><p>Filter board members, donors, recognition society members, and other cohorts by eligibility and consent.</p></article><article class="card"><h3>Reconcile</h3><p>Pull RSVP and attendance evidence from Microsoft Forms, Outlook, Zoom, and manual check-in exports.</p></article><article class="card"><h3>Report</h3><p>Store the program plan, readiness checks, consent rules, and engagement summary for review/export.</p></article></div></section><section id="cohort-control"><div class="section-head"><p class="eyebrow">Dogfood workspace</p><h2>Plan event reminders for board and donor cohorts before any SMS goes out.</h2><p>This workspace models the actual operating need: AJC-style program reminders for board members, donors, and donor recognition society cohorts, with RSVP and attendance evidence reconciled back to the roster.</p></div><div class="capture-grid"><form class="builder"><label>Organization or pilot workspace<input id="programOrg" value="American Jewish Committee pilot workspace"></label><label>Domain and sender surface<input id="programDomain" value="quizbiz.org"></label><label>Event or program<input id="programEvent" value="Board and donor recognition society program reminder"></label><label>Cohort rule<textarea id="programCohort">Board members, donors, and recognition society members with documented SMS opt-in</textarea></label><label>Roster source<textarea id="programRoster">Cohort roster CSV with name, mobile, email, society, board role, city, and consent source</textarea></label><label>Microsoft Forms RSVP source<input id="programForms" value="Microsoft Forms RSVP export or share link"></label><label>Outlook event source<input id="programOutlook" value="Outlook event ID, attendee response export, or organizer calendar link"></label><label>Zoom or attendance source<input id="programZoom" value="Zoom participant report plus in-room check-in list"></label><label>Reminder automation cadence<textarea id="programCadence">Invitation confirmation, RSVP nudge, day-before reminder, post-event thank-you, missed-you follow-up</textarea></label><label>Consent and exclusion rule<textarea id="programConsent">Send only to contacts with explicit SMS opt-in; exclude unsubscribed, missing consent, and unknown mobile records.</textarea></label></form><article class="result"><div class="score"><span id="programReady">6</span><strong>Approval packet checks</strong></div><p class="eyebrow">Program preview</p><h3>Board and donor recognition society program reminder</h3><p>Quizbiz treats the roster as the source of truth, suppresses contacts without documented opt-in, and reconciles RSVP and attendance signals before each follow-up.</p><h4>Readiness checklist</h4><ul id="programChecklist"></ul><h4>Sample compliant message</h4><p id="programSample">Quizbiz LLC: Reminder for your program. Reply YES to confirm, STOP to unsubscribe, or HELP for help. Msg frequency varies. Msg & data rates may apply.</p><div class="actions"><button class="primary" id="saveProgram" type="button">Save program plan</button><a class="button" href="/sms">SMS details</a></div><p id="programStatus" class="status" role="status"></p></article></div></section><section id="capture"><div class="section-head"><p class="eyebrow">Domain routing remains built in</p><h2>Match any business need to the right domain workspace.</h2><p>The portfolio directory still routes broad requests to the right domain, but the primary operating layer is now cohort messaging with consent, automation, and engagement reporting.</p></div><div class="capture-grid"><form class="builder"><label>Name<input id="name" name="name" autocomplete="name" placeholder="Jane Smith"></label><label>Email<input id="email" name="email" type="email" autocomplete="email" placeholder="jane@example.com"></label><label>Mobile phone, optional<input id="phone" name="tel" type="tel" autocomplete="tel" placeholder="+1 404 555 0100"></label><label>Company or context<input id="company" name="organization" autocomplete="organization" placeholder="Atlanta roofing company, law firm, utility customer"></label><label>What do they need?<textarea id="need" name="message">board donor event reminder RSVP attendance tracking</textarea></label><fieldset><legend>Urgency</legend><div class="segmented"><button class="active" type="button" data-urgency="today">Today</button><button type="button" data-urgency="this week">This week</button><button type="button" data-urgency="this month">This month</button></div></fieldset><label class="sms-consent"><input id="smsOptIn" type="checkbox"><span id="smsText">I agree to receive text messages from Quizbiz LLC about this request, including project updates, onboarding reminders, support follow-ups, and service notifications. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe and HELP for help. Consent is optional and is not a condition of purchase or service. See the <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms</a>.</span></label><p class="fine">SMS is used only if you explicitly check the box. Mobile opt-in data and consent are not shared or sold.</p></form><article class="result"><div class="score"><span id="match-count-card">0</span><strong>Portfolio matches</strong></div><p class="eyebrow">Best match</p><h3 id="best-domain">quizbiz.org</h3><p id="best-impact"></p><h4>Why this fits</h4><ul id="best-list"></ul><div class="actions"><button class="primary" id="submitLead" type="button">Submit lead</button><a class="button" id="open-domain" href="#">Open domain</a></div><p id="status" class="status" role="status"></p></article></div></section><section id="directory"><div class="section-head"><p class="eyebrow">Domain portfolio router</p><h2>Route the use case before configuring the messaging program.</h2><p>Try searches like board donor event reminder, CRM for a law firm, water bill savings, recruiting intake, patio heater, or terms of service.</p></div><div class="search"><label>Search the Quizbiz LLC portfolio<input id="query" value="board donor event reminder RSVP attendance tracking"></label></div><div id="results" class="results"></div></section><section><div class="section-head"><p class="eyebrow">Operating model</p><h2>One roster becomes reminders, confirmations, attendance, and reporting.</h2></div><div class="timeline"><article><span>1</span><h3>Define the domain</h3><p>Select the sender profile, message category, public policy links, and approval evidence.</p></article><article><span>2</span><h3>Load the cohort</h3><p>Import roster rows, membership labels, board roles, mobile numbers, and consent status.</p></article><article><span>3</span><h3>Sync engagement</h3><p>Map Forms RSVPs, Outlook responses, Zoom participants, and check-ins back to contacts.</p></article><article><span>4</span><h3>Automate follow-up</h3><p>Queue reminders, confirmations, thank-you notes, missed-you messages, and reports.</p></article></div></section><section id="trust"><div class="section-head"><p class="eyebrow">Trust and messaging</p><h2>Quizbiz LLC is the brand and responsible business.</h2><p>Quizbiz.org presents the business identity, privacy terms, opt-in language, cohort controls, and consent evidence needed before any customer messaging program should be submitted for carrier review.</p></div><div class="trust-grid"><div class="table">${rows}</div><aside class="consent"><p class="eyebrow">Sample opt-in language</p><p>By submitting a request and checking the SMS box, you agree to receive text messages from Quizbiz LLC about your project or service request. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP for help.</p><div class="actions"><a class="button primary" href="/sms">SMS details</a><a class="button" href="/privacy">Privacy</a><a class="button" href="/terms">Terms</a></div></aside></div></section><section class="final"><div><p class="eyebrow">Next step</p><h2>Prepare the Twilio approval packet from the same workflow used to run the program.</h2><p>Use the cohort workspace to prove message purpose, audience, consent, suppression rules, and reporting.</p></div><a class="button primary" href="#cohort-control">Build a program</a></section></main><script>${clientScript}</script>`);
+<main class="wrap"><section class="hero"><div class="panel hero-copy"><p class="eyebrow">Quizbiz LLC</p><h1>Domain specific customer messaging with cohort specific controls and automations</h1><p>Quizbiz.org is becoming the control surface for domain-specific SMS programs: define the sender, load the cohort, prove consent, automate event reminders, and reconcile engagement from RSVP and attendance systems.</p><div class="actions"><a class="button primary" href="#cohort-control">Build a program</a><a class="button" href="#directory">Search the directory</a></div></div><div class="product"><div class="product-top"><span>Messaging control plane</span><strong id="hero-domain">quizbiz.org</strong></div><div class="flow"><div class="flow-step"><span>1</span><strong>Define the domain</strong></div><div class="flow-step"><span>2</span><strong>Load the cohort</strong></div><div class="flow-step"><span>3</span><strong>Sync engagement</strong></div><div class="flow-step"><span>4</span><strong>Automate follow-up</strong></div></div><div class="command"><span></span><p id="command">Board and donor recognition society program reminder.</p></div><div class="metrics"><div><strong>${DOMAIN_DIRECTORY.length}</strong><span>indexed domains</span></div><div><strong id="programReadyHero">6/6</strong><span>ready checks</span></div><div><strong>KV</strong><span>audit storage</span></div></div></div></section><div class="proof"><span>Domain sender</span><span>Cohort roster</span><span>RSVP sync</span><span>Attendance report</span></div><section id="platform"><div class="section-head"><p class="eyebrow">What Quizbiz does</p><h2>Each domain becomes a compliant messaging workspace for a specific audience.</h2><p>The process is built for real operating use: choose the domain and message purpose, load a permissioned roster, map engagement sources, send only where consent is documented, and produce an audit trail for review.</p></div><div class="grid"><article class="card"><h3>Control</h3><p>Configure the domain, sender identity, message category, and public opt-in path before launch.</p></article><article class="card"><h3>Segment</h3><p>Filter board members, donors, recognition society members, and other cohorts by eligibility and consent.</p></article><article class="card"><h3>Reconcile</h3><p>Pull RSVP and attendance evidence from Microsoft Forms, Outlook, Zoom, and manual check-in exports.</p></article><article class="card"><h3>Report</h3><p>Store the program plan, readiness checks, consent rules, and engagement summary for review/export.</p></article></div></section><section id="cohort-control"><div class="section-head"><p class="eyebrow">Dogfood workspace</p><h2>Plan event reminders for board and donor cohorts before any SMS goes out.</h2><p>This workspace models the actual operating need: AJC-style program reminders for board members, donors, and donor recognition society cohorts, with RSVP and attendance evidence reconciled back to the roster.</p></div><div class="capture-grid"><form class="builder"><label>Organization or pilot workspace<input id="programOrg" value="American Jewish Committee pilot workspace"></label><label>Domain and sender surface<input id="programDomain" value="quizbiz.org"></label><label>Event or program<input id="programEvent" value="Board and donor recognition society program reminder"></label><label>Cohort rule<textarea id="programCohort">Board members, donors, and recognition society members with documented SMS opt-in</textarea></label><label>Roster source<textarea id="programRoster">Cohort roster CSV with name, mobile, email, society, board role, city, and consent source</textarea></label><label>Microsoft Forms RSVP source<input id="programForms" value="Microsoft Forms RSVP export or share link"></label><label>Outlook event source<input id="programOutlook" value="Outlook event ID, attendee response export, or organizer calendar link"></label><label>Zoom or attendance source<input id="programZoom" value="Zoom participant report plus in-room check-in list"></label><label>Reminder automation cadence<textarea id="programCadence">Invitation confirmation, RSVP nudge, day-before reminder, post-event thank-you, missed-you follow-up</textarea></label><label>Consent and exclusion rule<textarea id="programConsent">Send only to contacts with explicit SMS opt-in; exclude unsubscribed, missing consent, and unknown mobile records.</textarea></label><fieldset><legend>Working list management</legend><label>Saved working list<select id="programDraftSelect"><option value="">None selected</option></select></label><label>Working list label<input id="programDraftName" placeholder="Board reminder cohort"></label><div class="actions"><button class="button" id="programSaveNew" type="button">Save new</button><button class="button" id="programSaveSelected" type="button">Update selected</button><button class="button" id="programDeleteSelected" type="button">Delete selected</button></div><p class="fine">Program and lead inputs autosave in this browser and can be loaded as working lists before sync.</p></fieldset></form><article class="result"><div class="score"><span id="programReady">6</span><strong>Approval packet checks</strong></div><p class="eyebrow">Program preview</p><h3>Board and donor recognition society program reminder</h3><p>Quizbiz treats the roster as the source of truth, suppresses contacts without documented opt-in, and reconciles RSVP and attendance signals before each follow-up.</p><h4>Readiness checklist</h4><ul id="programChecklist"></ul><h4>Sample compliant message</h4><p id="programSample">Quizbiz LLC: Reminder for your program. Reply YES to confirm, STOP to unsubscribe, or HELP for help. Msg frequency varies. Msg & data rates may apply.</p><div class="actions"><button class="primary" id="saveProgram" type="button">Save program plan</button><a class="button" href="/sms">SMS details</a></div><p id="programStatus" class="status" role="status"></p></article></div></section><section id="capture"><div class="section-head"><p class="eyebrow">Domain routing remains built in</p><h2>Match any business need to the right domain workspace.</h2><p>The portfolio directory still routes broad requests to the right domain, but the primary operating layer is now cohort messaging with consent, automation, and engagement reporting.</p></div><div class="capture-grid"><form class="builder"><label>Name<input id="name" name="name" autocomplete="name" placeholder="Jane Smith"></label><label>Email<input id="email" name="email" type="email" autocomplete="email" placeholder="jane@example.com"></label><label>Mobile phone, optional<input id="phone" name="tel" type="tel" autocomplete="tel" placeholder="+1 404 555 0100"></label><label>Company or context<input id="company" name="organization" autocomplete="organization" placeholder="Atlanta roofing company, law firm, utility customer"></label><label>What do they need?<textarea id="need" name="message">board donor event reminder RSVP attendance tracking</textarea></label><fieldset><legend>Urgency</legend><div class="segmented"><button class="active" type="button" data-urgency="today">Today</button><button type="button" data-urgency="this week">This week</button><button type="button" data-urgency="this month">This month</button></div></fieldset><label class="sms-consent"><input id="smsOptIn" type="checkbox"><span id="smsText">I agree to receive text messages from Quizbiz LLC about this request, including project updates, onboarding reminders, support follow-ups, and service notifications. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe and HELP for help. Consent is optional and is not a condition of purchase or service. See the <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms</a>.</span></label><p class="fine">SMS is used only if you explicitly check the box. Mobile opt-in data and consent are not shared or sold.</p></form><article class="result"><div class="score"><span id="match-count-card">0</span><strong>Portfolio matches</strong></div><p class="eyebrow">Best match</p><h3 id="best-domain">quizbiz.org</h3><p id="best-impact"></p><h4>Why this fits</h4><ul id="best-list"></ul><div class="actions"><button class="primary" id="submitLead" type="button">Submit lead</button><a class="button" id="open-domain" href="#">Open domain</a></div><p id="status" class="status" role="status"></p></article></div></section><section id="directory"><div class="section-head"><p class="eyebrow">Domain portfolio router</p><h2>Route the use case before configuring the messaging program.</h2><p>Try searches like board donor event reminder, CRM for a law firm, water bill savings, recruiting intake, patio heater, or terms of service.</p></div><div class="search"><label>Search the Quizbiz LLC portfolio<input id="query" value="board donor event reminder RSVP attendance tracking"></label></div><div id="results" class="results"></div></section><section><div class="section-head"><p class="eyebrow">Operating model</p><h2>One roster becomes reminders, confirmations, attendance, and reporting.</h2></div><div class="timeline"><article><span>1</span><h3>Define the domain</h3><p>Select the sender profile, message category, public policy links, and approval evidence.</p></article><article><span>2</span><h3>Load the cohort</h3><p>Import roster rows, membership labels, board roles, mobile numbers, and consent status.</p></article><article><span>3</span><h3>Sync engagement</h3><p>Map Forms RSVPs, Outlook responses, Zoom participants, and check-ins back to contacts.</p></article><article><span>4</span><h3>Automate follow-up</h3><p>Queue reminders, confirmations, thank-you notes, missed-you messages, and reports.</p></article></div></section><section id="trust"><div class="section-head"><p class="eyebrow">Trust and messaging</p><h2>Quizbiz LLC is the brand and responsible business.</h2><p>Quizbiz.org presents the business identity, privacy terms, opt-in language, cohort controls, and consent evidence needed before any customer messaging program should be submitted for carrier review.</p></div><div class="trust-grid"><div class="table">${rows}</div><aside class="consent"><p class="eyebrow">Sample opt-in language</p><p>By submitting a request and checking the SMS box, you agree to receive text messages from Quizbiz LLC about your project or service request. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP for help.</p><div class="actions"><a class="button primary" href="/sms">SMS details</a><a class="button" href="/privacy">Privacy</a><a class="button" href="/terms">Terms</a></div></aside></div></section><section class="final"><div><p class="eyebrow">Next step</p><h2>Prepare the Twilio approval packet from the same workflow used to run the program.</h2><p>Use the cohort workspace to prove message purpose, audience, consent, suppression rules, and reporting.</p></div><a class="button primary" href="#cohort-control">Build a program</a></section></main><script>${clientScript}</script><script>${storageEnhancementScript}</script>`);
 }
 
 function smsPage() {
