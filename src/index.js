@@ -253,6 +253,78 @@ function termsPage() {
   return page('Terms and Messaging Terms | Quizbiz LLC', 'Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, and related domains.', `<main class="legal"><p class="eyebrow">Quizbiz LLC</p><h1>Terms and Messaging Terms</h1><p>These terms govern Quizbiz.org, Quizbiz LLC cohort controls, domain directory routing, related business initiatives, and optional text messaging programs.</p><section><h2>Use of the Site</h2><p>Quizbiz.org provides company information, business policies, domain directory routing, lead capture, cohort messaging planning, and educational material about Quizbiz LLC initiatives.</p><p>The site is not legal, tax, financial, medical, or compliance advice. You are responsible for decisions you make based on the content.</p></section><section><h2>Mobile Messaging Terms</h2><p>By opting in, you agree to receive text messages from Quizbiz LLC about requested event reminders, RSVP nudges, attendance confirmations, project updates, onboarding reminders, support follow-ups, and service notifications.</p><p>Message frequency varies based on your request or active project. Message and data rates may apply.</p><p>Reply STOP to unsubscribe. Reply HELP for help.</p><p>Text consent is optional and is not a condition of purchase or service.</p></section><section><h2>Lead Capture and Directory Results</h2><p>Directory matches are generated from local portfolio descriptions, tags, and the search terms you provide. A match is a routing suggestion, not a guarantee that a service is available or appropriate for every situation.</p><p>Do not submit information that you do not have permission to share.</p></section><section><h2>No Guaranteed Outcomes</h2><p>Quizbiz LLC workflows can help organize requests, generate recommendations, and improve follow-up, but Quizbiz LLC does not guarantee business growth, revenue, ranking, deliverability, or approval by any third-party platform.</p></section><section><h2>Contact</h2><p>Questions about these terms can be sent to ${CONTACT_EMAIL}.</p></section></main>`, '/terms');
 }
 
+function adminPage() {
+  const adminScript = String.raw`(() => {
+  const keyInput = document.getElementById('adminKey');
+  const loadBtn = document.getElementById('loadData');
+  const leadsEl = document.getElementById('leadsRows');
+  const programsEl = document.getElementById('programRows');
+  const statusEl = document.getElementById('adminStatus');
+  const summaryEl = document.getElementById('adminSummary');
+  const exportBtn = document.getElementById('exportJson');
+  const state = { leads: [], programs: [] };
+
+  function esc(v){ return String(v ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  function showStatus(message, ok = false) {
+    statusEl.textContent = message;
+    statusEl.className = ok ? 'status show readiness is-ready' : 'status show readiness is-warn';
+  }
+  function row(cells){ return '<tr>' + cells.map((cell) => '<td>' + esc(cell) + '</td>').join('') + '</tr>'; }
+  function render() {
+    leadsEl.innerHTML = state.leads.map((lead) => row([lead.createdAt, lead.name, lead.email || '-', lead.phone || '-', lead.matchedDomain || '-', lead.smsOptIn ? 'yes' : 'no'])).join('');
+    programsEl.innerHTML = state.programs.map((program) => row([program.createdAt, program.organization, program.eventName, program.domain, program.readyCount + '/6'])).join('');
+    summaryEl.textContent = 'Loaded ' + state.leads.length + ' leads and ' + state.programs.length + ' programs.';
+  }
+  async function load() {
+    const key = keyInput.value.trim();
+    if (!key) return showStatus('Enter admin key first.');
+    showStatus('Loading data...');
+    try {
+      const headers = { 'x-admin-key': key };
+      const [leadsRes, programsRes] = await Promise.all([
+        fetch('/api/leads/recent', { headers }),
+        fetch('/api/cohort-programs/recent', { headers }),
+      ]);
+      if (!leadsRes.ok || !programsRes.ok) throw new Error('Unauthorized or unavailable.');
+      const leadsData = await leadsRes.json();
+      const programsData = await programsRes.json();
+      state.leads = Array.isArray(leadsData.leads) ? leadsData.leads : [];
+      state.programs = Array.isArray(programsData.programs) ? programsData.programs : [];
+      render();
+      showStatus('Loaded admin data.', true);
+    } catch (error) {
+      showStatus(error?.message || 'Could not load admin data.');
+    }
+  }
+  function exportJson() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: 'quizbiz.org/admin',
+      leads: state.leads,
+      programs: state.programs,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = 'quizbiz-admin-export-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(href);
+  }
+  loadBtn.addEventListener('click', load);
+  exportBtn.addEventListener('click', exportJson);
+})();`;
+
+  return page(
+    'Admin Review | Quizbiz LLC',
+    'Authenticated admin review for real lead and cohort program records captured by Quizbiz LLC.',
+    `<main class="legal"><p class="eyebrow">Quizbiz LLC Admin</p><h1>Operational Review</h1><p>Use your admin key to view actual captured leads and cohort programs from KV storage.</p><section><h2>Access</h2><div class="search"><label>Admin key<input id="adminKey" type="password" placeholder="Enter x-admin-key"></label></div><div class="actions"><button id="loadData" class="button primary" type="button">Load records</button><button id="exportJson" class="button" type="button">Export JSON</button></div><p id="adminStatus" class="status"></p><p id="adminSummary" class="fine"></p></section><section><h2>Lead Records</h2><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Created</th><th align="left">Name</th><th align="left">Email</th><th align="left">Phone</th><th align="left">Domain</th><th align="left">SMS</th></tr></thead><tbody id="leadsRows"></tbody></table></div></section><section><h2>Program Records</h2><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Created</th><th align="left">Organization</th><th align="left">Event</th><th align="left">Domain</th><th align="left">Readiness</th></tr></thead><tbody id="programRows"></tbody></table></div></section></main><script>${adminScript}</script>`,
+    '/admin',
+  );
+}
+
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'content-security-policy': csp, 'x-content-type-options': 'nosniff' } });
 }
@@ -405,6 +477,7 @@ export default {
     if (pathname === '/sms') return textResponse(smsPage());
     if (pathname === '/privacy') return textResponse(privacyPage());
     if (pathname === '/terms') return textResponse(termsPage());
+    if (pathname === '/admin') return textResponse(adminPage());
     return textResponse(home());
   },
 };
