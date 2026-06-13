@@ -533,7 +533,7 @@ const defaultLead: LeadState = {
   email: "",
   phone: "",
   company: "",
-  need: "I need more qualified leads and faster follow-up for a local service business",
+  need: "",
   urgency: "week",
   smsOptIn: false,
 };
@@ -741,28 +741,6 @@ function HomeView() {
     setProgramDrafts((previous) => previous.filter((draft) => draft.id !== selectedDraftId));
     setSelectedDraftId("");
     setProgramStatus(`Deleted draft "${deleting}".`);
-  }
-
-  function applyProgramTemplate(template: "board" | "donor" | "hybrid") {
-    const templates: Record<"board" | "donor" | "hybrid", Partial<CohortProgramState>> = {
-      board: {
-        eventName: "Board meeting reminder workflow",
-        cohort: "Board members with active role and documented SMS opt-in",
-        reminderCadence: "Meeting invite confirmation, 48-hour reminder, 2-hour reminder, attendance confirmation",
-      },
-      donor: {
-        eventName: "Donor recognition society reminder workflow",
-        cohort: "Recognition society donors segmented by tier and consent status",
-        reminderCadence: "RSVP confirmation, 72-hour reminder, day-of reminder, post-event thank-you",
-      },
-      hybrid: {
-        eventName: "Board + donor program reminder workflow",
-        cohort: "Board and donor cohorts with consent, attendance history, and role tags",
-        reminderCadence: "RSVP nudge, day-before reminder, check-in reminder, follow-up report",
-      },
-    };
-    setProgram((previous) => ({ ...previous, ...templates[template] }));
-    setProgramStatus("Template applied to working list.");
   }
 
   function applySearchPreset(preset: string) {
@@ -1023,14 +1001,6 @@ function HomeView() {
                 onChange={(event) => setProgram({ ...program, consentBasis: event.target.value })}
               />
             </label>
-            <fieldset>
-              <legend>Program templates</legend>
-              <div className="qb-segmented qb-segmented--three">
-                <button onClick={() => applyProgramTemplate("board")} type="button">Board</button>
-                <button onClick={() => applyProgramTemplate("donor")} type="button">Donor</button>
-                <button onClick={() => applyProgramTemplate("hybrid")} type="button">Hybrid</button>
-              </div>
-            </fieldset>
             <fieldset>
               <legend>Working list management</legend>
               <label>
@@ -1307,7 +1277,7 @@ function HomeView() {
             ))}
           </div>
           <aside className="qb-consent">
-            <p className="qb-eyebrow">Sample opt-in language</p>
+            <p className="qb-eyebrow">Current opt-in language</p>
             <p>{SMS_CONSENT_TEXT}</p>
             <div className="qb-actions">
               <a className="qb-button qb-button--primary" href="/sms">
