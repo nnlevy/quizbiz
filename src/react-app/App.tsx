@@ -638,6 +638,7 @@ function HomeView() {
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingProgram, setIsSavingProgram] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
   const matches = useMemo(() => getMatches(`${query} ${lead.company}`), [lead.company, query]);
   const bestMatch = matches[0]?.entry;
   const programReadiness = useMemo<Array<[string, boolean]>>(
@@ -673,6 +674,13 @@ function HomeView() {
   useEffect(() => {
     window.localStorage.setItem(storageKeys.selectedDraft, JSON.stringify(selectedDraftId));
   }, [selectedDraftId]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveStep((step) => (step + 1) % processSteps.length);
+    }, 2600);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     setDraftName(selectedDraft?.name ?? draftNameFor(program));
@@ -726,6 +734,33 @@ function HomeView() {
     setProgramDrafts((previous) => previous.filter((draft) => draft.id !== selectedDraftId));
     setSelectedDraftId("");
     setProgramStatus(`Deleted draft "${deleting}".`);
+  }
+
+  function applyProgramTemplate(template: "board" | "donor" | "hybrid") {
+    const templates: Record<"board" | "donor" | "hybrid", Partial<CohortProgramState>> = {
+      board: {
+        eventName: "Board meeting reminder workflow",
+        cohort: "Board members with active role and documented SMS opt-in",
+        reminderCadence: "Meeting invite confirmation, 48-hour reminder, 2-hour reminder, attendance confirmation",
+      },
+      donor: {
+        eventName: "Donor recognition society reminder workflow",
+        cohort: "Recognition society donors segmented by tier and consent status",
+        reminderCadence: "RSVP confirmation, 72-hour reminder, day-of reminder, post-event thank-you",
+      },
+      hybrid: {
+        eventName: "Board + donor program reminder workflow",
+        cohort: "Board and donor cohorts with consent, attendance history, and role tags",
+        reminderCadence: "RSVP nudge, day-before reminder, check-in reminder, follow-up report",
+      },
+    };
+    setProgram((previous) => ({ ...previous, ...templates[template] }));
+    setProgramStatus("Template applied to working list.");
+  }
+
+  function applySearchPreset(preset: string) {
+    setLead((previous) => ({ ...previous, need: preset }));
+    setQuery(preset);
   }
 
   async function submitLead() {
@@ -821,8 +856,12 @@ function HomeView() {
             <strong>{program.domain}</strong>
           </div>
           <div className="qb-flow">
-            {processSteps.map(([step, title]) => (
-              <div className="qb-flow__step" key={title}>
+            {processSteps.map(([step, title], index) => (
+              <div
+                className={`qb-flow__step ${activeStep === index ? "is-active" : ""}`}
+                key={title}
+                onMouseEnter={() => setActiveStep(index)}
+              >
                 <span>{step}</span>
                 <strong>{title}</strong>
               </div>
@@ -830,7 +869,7 @@ function HomeView() {
           </div>
           <div className="qb-command">
             <span />
-            <p>{program.eventName}: {program.cohort}</p>
+            <p>{processSteps[activeStep][1]}: {processSteps[activeStep][2]}</p>
           </div>
           <div className="qb-metrics" aria-label="Directory metrics">
             <div>
@@ -950,6 +989,14 @@ function HomeView() {
               />
             </label>
             <fieldset>
+              <legend>Program templates</legend>
+              <div className="qb-segmented qb-segmented--three">
+                <button onClick={() => applyProgramTemplate("board")} type="button">Board</button>
+                <button onClick={() => applyProgramTemplate("donor")} type="button">Donor</button>
+                <button onClick={() => applyProgramTemplate("hybrid")} type="button">Hybrid</button>
+              </div>
+            </fieldset>
+            <fieldset>
               <legend>Working list management</legend>
               <label>
                 Saved working list
@@ -1024,6 +1071,18 @@ function HomeView() {
             The portfolio directory still routes broad requests to the right domain, but the primary operating layer is
             now cohort messaging with consent, automation, and engagement reporting.
           </p>
+        </div>
+        <div className="qb-quick-presets" aria-label="Directory search presets">
+          {[
+            "board donor event reminder RSVP attendance tracking",
+            "law firm client intake follow-up sms",
+            "water bill leak detection savings help",
+            "recruiting candidate screening workflow",
+          ].map((preset) => (
+            <button className="qb-button qb-button--secondary" key={preset} onClick={() => applySearchPreset(preset)} type="button">
+              {preset}
+            </button>
+          ))}
         </div>
 
         <div className="qb-brief__grid">
