@@ -5,7 +5,7 @@ const site = {
   locale: "en_US",
 };
 
-const contactEmail = "hello@growth.business";
+const contactEmail = "hello@quizbiz.org";
 
 function canonicalUrl(pathname) {
   const normalized = pathname.startsWith("/") ? pathname : `/${pathname}`;
@@ -18,13 +18,7 @@ const organizationSchema = {
   name: "Quizbiz LLC",
   url: canonicalUrl("/"),
   email: contactEmail,
-  brand: [
-    {
-      "@type": "Brand",
-      name: "Growth.business",
-      url: "https://growth.business/",
-    },
-  ],
+  brand: "Quizbiz LLC",
 };
 
 const pages = {
@@ -51,25 +45,37 @@ const pages = {
   "/privacy": {
     title: "Privacy Policy | Quizbiz LLC",
     description:
-      "Privacy policy for Quizbiz LLC, Quizbiz.org, Growth.business, lead capture, and optional text messaging services.",
+      "Privacy policy for Quizbiz LLC, Quizbiz.org, lead capture, and optional text messaging services.",
     canonicalPath: "/privacy",
     h1: "Privacy Policy",
     intro:
       "Quizbiz LLC operates Quizbiz.org as the public company, lead capture, domain directory, and policy home for its business initiatives.",
     bodyHtml:
-      "<section class=\"seo-section\"><h2>Text messaging privacy</h2><p>If you opt in to text messages, we use your phone number and consent record only for the messages you requested. No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. Text messaging originator opt-in data and consent will not be shared with any third parties.</p></section><section class=\"seo-section\"><h2>Contact</h2><p>Questions can be sent to hello@growth.business.</p></section>",
+      "<section class=\"seo-section\"><h2>Text messaging privacy</h2><p>If you opt in to text messages, we use your phone number and consent record only for the messages you requested. No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. Text messaging originator opt-in data and consent will not be shared with any third parties.</p></section><section class=\"seo-section\"><h2>Contact</h2><p>Questions can be sent to hello@quizbiz.org.</p></section>",
     structuredData: [organizationSchema],
   },
   "/terms": {
     title: "Terms and Messaging Terms | Quizbiz LLC",
     description:
-      "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, Growth.business, and related domains.",
+      "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, and related domains.",
     canonicalPath: "/terms",
     h1: "Terms and Messaging Terms",
     intro:
       "These terms govern Quizbiz.org, Quizbiz LLC lead capture, domain directory routing, related business initiatives, and optional text messaging programs.",
     bodyHtml:
-      "<section class=\"seo-section\"><h2>Mobile messaging terms</h2><p>By opting in, you agree to receive text messages from Quizbiz LLC / Growth.business about requested project updates, onboarding reminders, support follow-ups, and portfolio service notifications. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP for help. Text consent is optional and is not a condition of purchase or service.</p></section>",
+      "<section class=\"seo-section\"><h2>Mobile messaging terms</h2><p>By opting in, you agree to receive text messages from Quizbiz LLC about requested project updates, onboarding reminders, support follow-ups, and service notifications. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP for help. Text consent is optional and is not a condition of purchase or service.</p></section>",
+    structuredData: [organizationSchema],
+  },
+  "/sms": {
+    title: "SMS Program Details | Quizbiz LLC",
+    description:
+      "SMS opt-in, STOP, HELP, message frequency, rates, privacy, and contact details for Quizbiz LLC messaging.",
+    canonicalPath: "/sms",
+    h1: "SMS Program Details",
+    intro:
+      "Quizbiz LLC sends text messages only to people who explicitly request SMS updates or otherwise provide consent for a specific business request.",
+    bodyHtml:
+      "<section class=\"seo-section\"><h2>Opt in</h2><p>SMS opt-in is collected through an unchecked checkbox next to the mobile phone field. Consent is optional and is not a condition of purchase or service.</p></section><section class=\"seo-section\"><h2>STOP and HELP</h2><p>Reply STOP to unsubscribe. Reply HELP for help. Message frequency varies. Message and data rates may apply.</p></section><section class=\"seo-section\"><h2>Privacy</h2><p>Mobile opt-in data and consent are not shared or sold to third parties.</p></section>",
     structuredData: [organizationSchema],
   },
 };

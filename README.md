@@ -6,7 +6,7 @@ Quizbiz.org is the public company, lead capture, and domain directory home for Q
 
 The live Cloudflare Worker config in `wrangler.json` points at `src/index.js`. That file is a self-contained static Worker with:
 
-- `/` Quizbiz LLC landing page with process preview, working lead capture form, instant domain directory search, prefilled lead handoff email, and text messaging disclosures.
+- `/` Quizbiz LLC landing page with process preview, working lead capture form, instant domain directory search, stored lead records, and text messaging disclosures.
 - `/privacy` privacy policy with mobile opt-in data non-sharing language.
 - `/terms` terms and mobile messaging terms.
 - `/robots.txt`, `/sitemap.xml`, and `/security.txt`.
@@ -33,7 +33,7 @@ npm run build
 
 The site intentionally makes these points public:
 
-- Business identity: Quizbiz LLC. Growth.business is a related Quizbiz LLC initiative, not the primary website brand.
+- Business identity: Quizbiz LLC is the operator of Quizbiz.org and the responsible business for the lead capture and messaging program.
 - Messaging purpose: requested project updates, onboarding reminders, support follow-ups, and service notifications.
 - Consent: optional, explicit, separate from required terms, and not a condition of purchase or service.
 - Frequency/cost: message frequency varies; message and data rates may apply.

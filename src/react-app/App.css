@@ -38,7 +38,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -578,6 +579,33 @@ li,
 .qb-toggle {
   grid-template-columns: 20px minmax(0, 1fr) !important;
   align-items: center;
+}
+
+.qb-sms-consent {
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  align-items: start;
+  font-weight: 650 !important;
+  line-height: 1.45;
+}
+
+.qb-sms-consent input {
+  width: 18px;
+  min-height: 18px;
+  margin-top: 3px;
+}
+
+.qb-fine,
+.qb-status {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.qb-status {
+  margin-top: 14px;
+  border-left: 4px solid var(--qb-teal);
+  background: #eef8f8;
+  color: var(--qb-ink);
+  padding: 12px;
 }
 
 .qb-result {

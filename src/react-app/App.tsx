@@ -17,9 +17,11 @@ type DomainEntry = {
 type LeadState = {
   name: string;
   email: string;
+  phone: string;
   company: string;
   need: string;
   urgency: "today" | "week" | "month";
+  smsOptIn: boolean;
 };
 
 type LegalSection = {
@@ -35,7 +37,9 @@ type LegalPage = {
   sections: LegalSection[];
 };
 
-const CONTACT_EMAIL = "hello@growth.business";
+const CONTACT_EMAIL = "hello@quizbiz.org";
+const SMS_CONSENT_TEXT =
+  "I agree to receive text messages from Quizbiz LLC about this request, including project updates, onboarding reminders, support follow-ups, and service notifications. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe and HELP for help. Consent is optional and is not a condition of purchase or service.";
 
 const domainDirectory: DomainEntry[] = [
   {
@@ -368,12 +372,12 @@ const processSteps = [
   ["1", "Capture the request", "Collect the buyer's need, source, urgency, contact details, and consent status."],
   ["2", "Match the domain", "Search the portfolio by audience, problem, solution, and related language."],
   ["3", "Return a useful result", "Show the best domain, why it fits, and the next action for the visitor."],
-  ["4", "Create a lead package", "Prepare a clear email handoff with the request, matched domain, and follow-up context."],
+  ["4", "Create a lead record", "Store the request, route, source, and any explicit SMS consent evidence."],
 ];
 
 const trustRows = [
-  ["Business identity", "Quizbiz LLC. Growth.business is a related Quizbiz LLC initiative, not the primary website brand."],
-  ["Lead capture purpose", "Collect business inquiries, match them to the right domain initiative, and prepare requested follow-up."],
+  ["Business identity", "Quizbiz LLC is the operator of Quizbiz.org and the responsible business for the lead capture and messaging program."],
+  ["Lead capture purpose", "Collect business inquiries, match them to the right domain initiative, store consent evidence, and prepare requested follow-up."],
   ["Messaging purpose", "Requested project updates, onboarding reminders, support follow-ups, and service notifications."],
   ["Audience", "Customers, leads, and collaborators who explicitly ask to receive text messages."],
   ["Frequency", "Message frequency varies by request; recurring programs disclose expected frequency at opt-in."],
@@ -386,22 +390,22 @@ const trustRows = [
 const legalPages: Record<string, LegalPage> = {
   "/privacy": {
     title: "Privacy Policy | Quizbiz LLC",
-    description: "Privacy policy for Quizbiz LLC, Quizbiz.org, Growth.business, lead capture, and optional text messaging services.",
+    description: "Privacy policy for Quizbiz LLC, Quizbiz.org, lead capture, and optional text messaging services.",
     heading: "Privacy Policy",
     intro: "Quizbiz LLC operates Quizbiz.org as the public company, lead capture, domain directory, and policy home for its business initiatives.",
     sections: [
       {
         heading: "Who Operates This Site",
         body: [
-          "Quizbiz LLC operates Quizbiz.org. Growth.business and the other listed domains are related Quizbiz LLC business initiatives.",
+          "Quizbiz LLC operates Quizbiz.org and the listed domain initiatives.",
           `Questions about privacy can be sent to ${CONTACT_EMAIL}.`,
         ],
       },
       {
         heading: "Information We Collect",
         body: [
-          "We may collect information you choose to send, such as your name, email address, business details, message, search terms, domain match, and phone number when you request a follow-up.",
-          "The directory search and lead capture preview can run in your browser. The public directory does not require account creation.",
+          "We may collect information you choose to send, such as your name, email address, phone number, business details, message, search terms, domain match, urgency, source page, timestamp, and consent choice when you request a follow-up.",
+          "The directory search can run in your browser. Submitted leads are stored by Quizbiz LLC for follow-up and compliance records.",
         ],
       },
       {
@@ -427,7 +431,7 @@ const legalPages: Record<string, LegalPage> = {
   },
   "/terms": {
     title: "Terms and Messaging Terms | Quizbiz LLC",
-    description: "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, Growth.business, and related domains.",
+    description: "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, and related domains.",
     heading: "Terms and Messaging Terms",
     intro: "These terms govern Quizbiz.org, Quizbiz LLC lead capture, domain directory routing, related business initiatives, and optional text messaging programs.",
     sections: [
@@ -466,14 +470,51 @@ const legalPages: Record<string, LegalPage> = {
       },
     ],
   },
+  "/sms": {
+    title: "SMS Program Details | Quizbiz LLC",
+    description: "SMS opt-in, STOP, HELP, frequency, rates, and privacy details for Quizbiz LLC messaging.",
+    heading: "SMS Program Details",
+    intro: "Quizbiz LLC sends text messages only to people who explicitly request SMS updates or otherwise provide consent for a specific business request.",
+    sections: [
+      {
+        heading: "How to Opt In",
+        body: [
+          "On Quizbiz.org, SMS opt-in is collected through an unchecked checkbox next to the mobile phone field. The checkbox states the messaging purpose, message frequency, rates notice, STOP and HELP instructions, and links to the Privacy Policy and Terms.",
+          "Consent is optional and is not a condition of purchase or service.",
+        ],
+      },
+      {
+        heading: "Message Types",
+        body: [
+          "Messages may include requested project updates, onboarding reminders, support follow-ups, and service notifications related to a submitted inquiry or active project.",
+        ],
+      },
+      {
+        heading: "Frequency and Charges",
+        body: ["Message frequency varies based on the request or active project. Message and data rates may apply."],
+      },
+      {
+        heading: "Opt Out and Help",
+        body: [`Reply STOP to unsubscribe. Reply HELP for help. You can also contact ${CONTACT_EMAIL}.`],
+      },
+      {
+        heading: "Privacy",
+        body: [
+          "Mobile opt-in data and consent are not shared or sold to third parties. No mobile information will be shared with third parties/affiliates for marketing/promotional purposes.",
+        ],
+      },
+    ],
+  },
 };
 
 const defaultLead: LeadState = {
   name: "",
   email: "",
+  phone: "",
   company: "",
   need: "I need more qualified leads and faster follow-up for a local service business",
   urgency: "week",
+  smsOptIn: false,
 };
 
 function scoreDomain(entry: DomainEntry, query: string) {
@@ -505,30 +546,6 @@ function getMatches(query: string) {
     .slice(0, 6);
 }
 
-function buildLeadPackage(lead: LeadState, bestMatch: DomainEntry | undefined) {
-  const urgencyLabel = {
-    today: "today",
-    week: "this week",
-    month: "this month",
-  }[lead.urgency];
-  return {
-    subject: `Quizbiz LLC inquiry: ${bestMatch?.domain ?? "domain match request"}`,
-    body: [
-      "New Quizbiz LLC website inquiry",
-      "",
-      `Name: ${lead.name || "[not provided]"}`,
-      `Email: ${lead.email || "[not provided]"}`,
-      `Company: ${lead.company || "[not provided]"}`,
-      `Need: ${lead.need}`,
-      `Urgency: ${urgencyLabel}`,
-      `Suggested domain: ${bestMatch?.domain ?? "No match selected"}`,
-      `Suggested next step: ${bestMatch?.solution ?? "Review the request and route manually."}`,
-      "",
-      "Text messaging consent should be collected separately before SMS follow-up.",
-    ].join("\n"),
-  };
-}
-
 function LegalView({ page }: { page: LegalPage }) {
   usePageMeta({ title: page.title, description: page.description });
 
@@ -552,10 +569,38 @@ function LegalView({ page }: { page: LegalPage }) {
 function HomeView() {
   const [lead, setLead] = useState(defaultLead);
   const [query, setQuery] = useState(defaultLead.need);
+  const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const matches = useMemo(() => getMatches(`${query} ${lead.company}`), [lead.company, query]);
   const bestMatch = matches[0]?.entry;
-  const leadPackage = useMemo(() => buildLeadPackage(lead, bestMatch), [bestMatch, lead]);
-  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(leadPackage.subject)}&body=${encodeURIComponent(leadPackage.body)}`;
+
+  async function submitLead() {
+    setIsSubmitting(true);
+    setStatus("");
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...lead,
+          query,
+          matchedDomain: bestMatch?.domain ?? "",
+          matchedTitle: bestMatch?.title ?? "",
+          consentText: lead.smsOptIn ? SMS_CONSENT_TEXT : "",
+          pageUrl: window.location.href,
+        }),
+      });
+      const result = (await response.json()) as { ok?: boolean; error?: string; id?: string };
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Lead could not be submitted.");
+      }
+      setStatus(`Lead stored for ${bestMatch?.domain ?? "manual routing"} (${result.id}).`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Lead could not be submitted.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   usePageMeta({
     title: "Quizbiz LLC | Lead Capture and Domain Directory",
@@ -573,7 +618,7 @@ function HomeView() {
           <h1 id="home-title">Find the right domain for the customer need.</h1>
           <p>
             Quizbiz LLC operates a portfolio of practical web properties. This site captures the request, searches the
-            directory by audience and problem, and routes the visitor to the best next step.
+            directory by audience and problem, records consent evidence, and routes the visitor to the best next step.
           </p>
           <div className="qb-actions">
             <a className="qb-button qb-button--primary" href="#capture">
@@ -612,15 +657,15 @@ function HomeView() {
               <span>current matches</span>
             </div>
             <div>
-              <strong>4</strong>
-              <span>handoff steps</span>
+              <strong>KV</strong>
+              <span>lead storage</span>
             </div>
           </div>
         </div>
       </section>
 
       <section className="qb-proof" aria-label="Quizbiz process">
-        {["Lead capture", "Directory match", "Instant result", "Follow-up package"].map((item) => (
+        {["Lead capture", "Directory match", "Consent evidence", "Stored follow-up"].map((item) => (
           <span key={item}>{item}</span>
         ))}
       </section>
@@ -631,15 +676,15 @@ function HomeView() {
           <h2>Each domain is a front door for a specific audience, problem, and solution.</h2>
           <p>
             The homepage now shows the operating process directly. A visitor describes what they need, the directory
-            searches across the portfolio, and the lead package gives Quizbiz LLC enough context to respond.
+            searches across the portfolio, and the stored lead gives Quizbiz LLC enough context to respond.
           </p>
         </div>
         <div className="qb-outcomes">
           {[
-            ["Capture", "Collect the contact, company, need, urgency, and source in one clean record."],
+            ["Capture", "Collect contact, company, need, urgency, phone, SMS consent, and source in one clean record."],
             ["Search", "Match broad language like “roof leak,” “law firm CRM,” or “water bill help” to the right domain."],
             ["Route", "Show the best domain, why it fits, and what the domain is meant to solve."],
-            ["Follow up", "Open a pre-filled email lead package while keeping SMS consent separate."],
+            ["Store", "POST the lead to the Worker and save evidence in Cloudflare KV for review/export."],
           ].map(([title, copy]) => (
             <article className="qb-card qb-reveal" key={title}>
               <h3>{title}</h3>
@@ -654,7 +699,7 @@ function HomeView() {
           <p className="qb-eyebrow">Functional lead capture</p>
           <h2 id="capture-title">Turn a vague inquiry into a routed lead.</h2>
           <p>
-            This working intake preview creates an instant domain recommendation and a ready-to-send handoff email.
+            This intake form creates an instant domain recommendation and stores the lead after submission.
           </p>
         </div>
 
@@ -671,6 +716,15 @@ function HomeView() {
                 value={lead.email}
                 onChange={(event) => setLead({ ...lead, email: event.target.value })}
                 placeholder="jane@example.com"
+              />
+            </label>
+            <label>
+              Mobile phone, optional
+              <input
+                type="tel"
+                value={lead.phone}
+                onChange={(event) => setLead({ ...lead, phone: event.target.value })}
+                placeholder="+1 404 555 0100"
               />
             </label>
             <label>
@@ -707,6 +761,17 @@ function HomeView() {
                 ))}
               </div>
             </fieldset>
+            <label className="qb-sms-consent">
+              <input
+                checked={lead.smsOptIn}
+                onChange={(event) => setLead({ ...lead, smsOptIn: event.target.checked })}
+                type="checkbox"
+              />
+              <span>
+                {SMS_CONSENT_TEXT} See the <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms</a>.
+              </span>
+            </label>
+            <p className="qb-fine">SMS is used only if this box is checked. Mobile opt-in data and consent are not shared or sold.</p>
           </form>
 
           <article className="qb-result" aria-live="polite">
@@ -728,15 +793,16 @@ function HomeView() {
               </>
             ) : null}
             <div className="qb-actions">
-              <a className="qb-button qb-button--primary" href={mailto}>
-                Send lead package
-              </a>
+              <button className="qb-button qb-button--primary" disabled={isSubmitting} onClick={submitLead} type="button">
+                {isSubmitting ? "Submitting..." : "Submit lead"}
+              </button>
               {bestMatch ? (
                 <a className="qb-button qb-button--secondary" href={`https://${bestMatch.domain}`}>
                   Open domain
                 </a>
               ) : null}
             </div>
+            {status ? <p className="qb-status">{status}</p> : null}
           </article>
         </div>
       </section>
@@ -792,8 +858,8 @@ function HomeView() {
           <p className="qb-eyebrow">Trust and messaging</p>
           <h2>Quizbiz LLC is the brand and the responsible business.</h2>
           <p>
-            Growth.business remains a related initiative, but Quizbiz.org now presents Quizbiz LLC as the company
-            operating the portfolio, lead capture, and optional customer messaging.
+            Quizbiz.org presents Quizbiz LLC as the company operating the portfolio, lead capture, and optional customer
+            messaging.
           </p>
         </div>
         <div className="qb-trust__grid">
@@ -807,13 +873,12 @@ function HomeView() {
           </div>
           <aside className="qb-consent">
             <p className="qb-eyebrow">Sample opt-in language</p>
-            <p>
-              By submitting a request, you agree to receive text messages from Quizbiz LLC about your project or service
-              request. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP
-              for help.
-            </p>
+            <p>{SMS_CONSENT_TEXT}</p>
             <div className="qb-actions">
-              <a className="qb-button qb-button--primary" href="/privacy">
+              <a className="qb-button qb-button--primary" href="/sms">
+                SMS details
+              </a>
+              <a className="qb-button qb-button--secondary" href="/privacy">
                 Privacy
               </a>
               <a className="qb-button qb-button--secondary" href="/terms">
@@ -858,6 +923,7 @@ function App() {
           <a href="/#capture">Capture</a>
           <a href="/#directory">Directory</a>
           <a href="/#trust">Trust</a>
+          <a href="/sms">SMS</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
         </nav>
@@ -876,6 +942,7 @@ function App() {
         <nav aria-label="Footer">
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
+          <a href="/sms">SMS</a>
           <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         </nav>
       </footer>
