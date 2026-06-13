@@ -24,6 +24,19 @@ type LeadState = {
   smsOptIn: boolean;
 };
 
+type CohortProgramState = {
+  organization: string;
+  domain: string;
+  eventName: string;
+  cohort: string;
+  rosterSource: string;
+  rsvpSource: string;
+  calendarSource: string;
+  attendanceSource: string;
+  reminderCadence: string;
+  consentBasis: string;
+};
+
 type LegalSection = {
   heading: string;
   body: string[];
@@ -369,17 +382,18 @@ const domainDirectory: DomainEntry[] = [
 ];
 
 const processSteps = [
-  ["1", "Capture the request", "Collect the buyer's need, source, urgency, contact details, and consent status."],
-  ["2", "Match the domain", "Search the portfolio by audience, problem, solution, and related language."],
-  ["3", "Return a useful result", "Show the best domain, why it fits, and the next action for the visitor."],
-  ["4", "Create a lead record", "Store the request, route, source, and any explicit SMS consent evidence."],
+  ["1", "Define the domain", "Select the domain, sender profile, message category, and public compliance surface."],
+  ["2", "Load the cohort", "Import roster lists, recognition society membership, board segments, and consent status."],
+  ["3", "Sync engagement", "Map Microsoft Forms RSVPs, Outlook attendee status, and Zoom attendance back to each cohort."],
+  ["4", "Automate follow-up", "Queue reminders, confirmations, thank-you notes, and engagement reports with audit evidence."],
 ];
 
 const trustRows = [
   ["Business identity", "Quizbiz LLC is the operator of Quizbiz.org and the responsible business for the lead capture and messaging program."],
-  ["Lead capture purpose", "Collect business inquiries, match them to the right domain initiative, store consent evidence, and prepare requested follow-up."],
-  ["Messaging purpose", "Requested project updates, onboarding reminders, support follow-ups, and service notifications."],
-  ["Audience", "Customers, leads, and collaborators who explicitly ask to receive text messages."],
+  ["Messaging purpose", "Domain-specific event reminders, RSVP nudges, attendance confirmations, support follow-ups, and service notifications."],
+  ["Cohort controls", "Rosters can be segmented by board role, donor recognition society membership, program, geography, attendance status, and opt-in evidence."],
+  ["Engagement sources", "Microsoft Forms exports, Outlook event responses, Zoom participant reports, and manual check-in lists can be reconciled against cohort rosters."],
+  ["Audience", "Customers, leads, members, donors, board members, and collaborators who explicitly ask to receive text messages."],
   ["Frequency", "Message frequency varies by request; recurring programs disclose expected frequency at opt-in."],
   ["Costs", "Message and data rates may apply."],
   ["Opt-out", "Reply STOP to unsubscribe. Reply HELP for help."],
@@ -392,7 +406,7 @@ const legalPages: Record<string, LegalPage> = {
     title: "Privacy Policy | Quizbiz LLC",
     description: "Privacy policy for Quizbiz LLC, Quizbiz.org, lead capture, and optional text messaging services.",
     heading: "Privacy Policy",
-    intro: "Quizbiz LLC operates Quizbiz.org as the public company, lead capture, domain directory, and policy home for its business initiatives.",
+    intro: "Quizbiz LLC operates Quizbiz.org as the public company, cohort messaging, domain directory, and policy home for its business initiatives.",
     sections: [
       {
         heading: "Who Operates This Site",
@@ -404,8 +418,8 @@ const legalPages: Record<string, LegalPage> = {
       {
         heading: "Information We Collect",
         body: [
-          "We may collect information you choose to send, such as your name, email address, phone number, business details, message, search terms, domain match, urgency, source page, timestamp, and consent choice when you request a follow-up.",
-          "The directory search can run in your browser. Submitted leads are stored by Quizbiz LLC for follow-up and compliance records.",
+          "We may collect information you choose to send, such as your name, email address, phone number, business details, cohort roster notes, event or program details, RSVP sources, attendance sources, message, search terms, domain match, urgency, source page, timestamp, and consent choice when you request a follow-up or configure a messaging program.",
+          "The directory search can run in your browser. Submitted leads and program plans are stored by Quizbiz LLC for follow-up, implementation planning, and compliance records.",
         ],
       },
       {
@@ -433,19 +447,19 @@ const legalPages: Record<string, LegalPage> = {
     title: "Terms and Messaging Terms | Quizbiz LLC",
     description: "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, and related domains.",
     heading: "Terms and Messaging Terms",
-    intro: "These terms govern Quizbiz.org, Quizbiz LLC lead capture, domain directory routing, related business initiatives, and optional text messaging programs.",
+    intro: "These terms govern Quizbiz.org, Quizbiz LLC cohort controls, domain directory routing, related business initiatives, and optional text messaging programs.",
     sections: [
       {
         heading: "Use of the Site",
         body: [
-          "Quizbiz.org provides company information, business policies, domain directory routing, lead capture previews, and educational material about Quizbiz LLC initiatives.",
+          "Quizbiz.org provides company information, business policies, domain directory routing, lead capture previews, cohort messaging planning, and educational material about Quizbiz LLC initiatives.",
           "The site is not legal, tax, financial, medical, or compliance advice. You are responsible for decisions you make based on the content.",
         ],
       },
       {
         heading: "Mobile Messaging Terms",
         body: [
-          "By opting in, you agree to receive text messages from Quizbiz LLC about requested project updates, onboarding reminders, support follow-ups, and service notifications.",
+          "By opting in, you agree to receive text messages from Quizbiz LLC about requested event reminders, RSVP nudges, attendance confirmations, project updates, onboarding reminders, support follow-ups, and service notifications.",
           "Message frequency varies based on your request or active project. Message and data rates may apply.",
           "Reply STOP to unsubscribe. Reply HELP for help.",
           "Text consent is optional and is not a condition of purchase or service.",
@@ -474,7 +488,7 @@ const legalPages: Record<string, LegalPage> = {
     title: "SMS Program Details | Quizbiz LLC",
     description: "SMS opt-in, STOP, HELP, frequency, rates, and privacy details for Quizbiz LLC messaging.",
     heading: "SMS Program Details",
-    intro: "Quizbiz LLC sends text messages only to people who explicitly request SMS updates or otherwise provide consent for a specific business request.",
+    intro: "Quizbiz LLC sends text messages only to people who explicitly request SMS updates or otherwise provide consent for a specific cohort messaging program.",
     sections: [
       {
         heading: "How to Opt In",
@@ -486,7 +500,7 @@ const legalPages: Record<string, LegalPage> = {
       {
         heading: "Message Types",
         body: [
-          "Messages may include requested project updates, onboarding reminders, support follow-ups, and service notifications related to a submitted inquiry or active project.",
+          "Messages may include requested event reminders, RSVP nudges, attendance confirmations, project updates, onboarding reminders, support follow-ups, and service notifications related to a submitted inquiry, cohort program, or active project.",
         ],
       },
       {
@@ -515,6 +529,19 @@ const defaultLead: LeadState = {
   need: "I need more qualified leads and faster follow-up for a local service business",
   urgency: "week",
   smsOptIn: false,
+};
+
+const defaultProgram: CohortProgramState = {
+  organization: "American Jewish Committee pilot workspace",
+  domain: "quizbiz.org",
+  eventName: "Board and donor recognition society program reminder",
+  cohort: "Board members, donors, and recognition society members with documented SMS opt-in",
+  rosterSource: "Cohort roster CSV with name, mobile, email, society, board role, city, and consent source",
+  rsvpSource: "Microsoft Forms RSVP export or share link",
+  calendarSource: "Outlook event ID, attendee response export, or organizer calendar link",
+  attendanceSource: "Zoom participant report plus in-room check-in list",
+  reminderCadence: "Invitation confirmation, RSVP nudge, day-before reminder, post-event thank-you, missed-you follow-up",
+  consentBasis: "Send only to contacts with explicit SMS opt-in; exclude unsubscribed, missing consent, and unknown mobile records.",
 };
 
 function scoreDomain(entry: DomainEntry, query: string) {
@@ -569,10 +596,25 @@ function LegalView({ page }: { page: LegalPage }) {
 function HomeView() {
   const [lead, setLead] = useState(defaultLead);
   const [query, setQuery] = useState(defaultLead.need);
+  const [program, setProgram] = useState(defaultProgram);
+  const [programStatus, setProgramStatus] = useState("");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingProgram, setIsSavingProgram] = useState(false);
   const matches = useMemo(() => getMatches(`${query} ${lead.company}`), [lead.company, query]);
   const bestMatch = matches[0]?.entry;
+  const programReadiness = useMemo<Array<[string, boolean]>>(
+    () => [
+      ["Domain profile", Boolean(program.domain && program.organization)],
+      ["Cohort roster", Boolean(program.cohort && program.rosterSource)],
+      ["RSVP source", Boolean(program.rsvpSource)],
+      ["Calendar source", Boolean(program.calendarSource)],
+      ["Attendance source", Boolean(program.attendanceSource)],
+      ["Consent rules", program.consentBasis.toLowerCase().includes("opt-in")],
+    ],
+    [program],
+  );
+  const readyCount = programReadiness.filter(([, ready]) => ready).length;
 
   async function submitLead() {
     setIsSubmitting(true);
@@ -602,10 +644,35 @@ function HomeView() {
     }
   }
 
+  async function submitProgram() {
+    setIsSavingProgram(true);
+    setProgramStatus("");
+    try {
+      const response = await fetch("/api/cohort-programs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...program,
+          readiness: programReadiness,
+          pageUrl: window.location.href,
+        }),
+      });
+      const result = (await response.json()) as { ok?: boolean; error?: string; id?: string; readyCount?: number };
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Program plan could not be saved.");
+      }
+      setProgramStatus(`Program plan saved (${result.id}). Readiness checks passed: ${result.readyCount ?? readyCount}/6.`);
+    } catch (error) {
+      setProgramStatus(error instanceof Error ? error.message : "Program plan could not be saved.");
+    } finally {
+      setIsSavingProgram(false);
+    }
+  }
+
   usePageMeta({
-    title: "Quizbiz LLC | Lead Capture and Domain Directory",
+    title: "Quizbiz LLC | Domain-Specific Customer Messaging",
     description:
-      "Quizbiz LLC operates Quizbiz.org, a lead capture and domain directory for matching business needs to the right Quizbiz domain initiative.",
+      "Quizbiz LLC powers domain-specific customer messaging with cohort-specific controls, automations, consent evidence, and engagement reporting.",
     canonicalPath: "/",
     ogImage: "https://quizbiz.org/og/quizbiz-og.png",
   });
@@ -615,14 +682,14 @@ function HomeView() {
       <section className="qb-hero" aria-labelledby="home-title">
         <div className="qb-hero__copy qb-reveal">
           <p className="qb-eyebrow">Quizbiz LLC</p>
-          <h1 id="home-title">Find the right domain for the customer need.</h1>
+          <h1 id="home-title">Domain specific customer messaging with cohort specific controls and automations</h1>
           <p>
-            Quizbiz LLC operates a portfolio of practical web properties. This site captures the request, searches the
-            directory by audience and problem, records consent evidence, and routes the visitor to the best next step.
+            Quizbiz.org is becoming the control surface for domain-specific SMS programs: define the sender, load the
+            cohort, prove consent, automate event reminders, and reconcile engagement from RSVP and attendance systems.
           </p>
           <div className="qb-actions">
-            <a className="qb-button qb-button--primary" href="#capture">
-              Capture a lead
+            <a className="qb-button qb-button--primary" href="#cohort-control">
+              Build a program
             </a>
             <a className="qb-button qb-button--secondary" href="#directory">
               Search the directory
@@ -632,8 +699,8 @@ function HomeView() {
 
         <div className="qb-product qb-reveal" aria-label="Quizbiz process preview">
           <div className="qb-product__top">
-            <span>Process preview</span>
-            <strong>{bestMatch?.domain ?? "quizbiz.org"}</strong>
+            <span>Messaging control plane</span>
+            <strong>{program.domain}</strong>
           </div>
           <div className="qb-flow">
             {processSteps.map(([step, title]) => (
@@ -645,7 +712,7 @@ function HomeView() {
           </div>
           <div className="qb-command">
             <span />
-            <p>{bestMatch ? `${bestMatch.domain}: ${bestMatch.solution}` : "Enter a need to route the request."}</p>
+            <p>{program.eventName}: {program.cohort}</p>
           </div>
           <div className="qb-metrics" aria-label="Directory metrics">
             <div>
@@ -653,19 +720,19 @@ function HomeView() {
               <span>indexed domains</span>
             </div>
             <div>
-              <strong>{matches.length}</strong>
-              <span>current matches</span>
+              <strong>{readyCount}/6</strong>
+              <span>ready checks</span>
             </div>
             <div>
               <strong>KV</strong>
-              <span>lead storage</span>
+              <span>audit storage</span>
             </div>
           </div>
         </div>
       </section>
 
       <section className="qb-proof" aria-label="Quizbiz process">
-        {["Lead capture", "Directory match", "Consent evidence", "Stored follow-up"].map((item) => (
+        {["Domain sender", "Cohort roster", "RSVP sync", "Attendance report"].map((item) => (
           <span key={item}>{item}</span>
         ))}
       </section>
@@ -673,18 +740,18 @@ function HomeView() {
       <section className="qb-section" id="platform">
         <div className="qb-section__header">
           <p className="qb-eyebrow">What Quizbiz does</p>
-          <h2>Each domain is a front door for a specific audience, problem, and solution.</h2>
+          <h2>Each domain becomes a compliant messaging workspace for a specific audience.</h2>
           <p>
-            The homepage now shows the operating process directly. A visitor describes what they need, the directory
-            searches across the portfolio, and the stored lead gives Quizbiz LLC enough context to respond.
+            The process is built for real operating use: choose the domain and message purpose, load a permissioned
+            roster, map engagement sources, send only where consent is documented, and produce an audit trail for review.
           </p>
         </div>
         <div className="qb-outcomes">
           {[
-            ["Capture", "Collect contact, company, need, urgency, phone, SMS consent, and source in one clean record."],
-            ["Search", "Match broad language like “roof leak,” “law firm CRM,” or “water bill help” to the right domain."],
-            ["Route", "Show the best domain, why it fits, and what the domain is meant to solve."],
-            ["Store", "POST the lead to the Worker and save evidence in Cloudflare KV for review/export."],
+            ["Control", "Configure the domain, sender identity, message category, and public opt-in path before launch."],
+            ["Segment", "Filter board members, donors, recognition society members, and other cohorts by eligibility and consent."],
+            ["Reconcile", "Pull RSVP and attendance evidence from Microsoft Forms, Outlook, Zoom, and manual check-in exports."],
+            ["Report", "Store the program plan, readiness checks, consent rules, and engagement summary for review/export."],
           ].map(([title, copy]) => (
             <article className="qb-card qb-reveal" key={title}>
               <h3>{title}</h3>
@@ -694,12 +761,120 @@ function HomeView() {
         </div>
       </section>
 
+      <section className="qb-section qb-brief" id="cohort-control" aria-labelledby="cohort-title">
+        <div className="qb-section__header">
+          <p className="qb-eyebrow">Dogfood workspace</p>
+          <h2 id="cohort-title">Plan event reminders for board and donor cohorts before any SMS goes out.</h2>
+          <p>
+            This workspace models the actual operating need: AJC-style program reminders for board members, donors, and
+            donor recognition society cohorts, with RSVP and attendance evidence reconciled back to the roster.
+          </p>
+        </div>
+
+        <div className="qb-brief__grid">
+          <form className="qb-builder qb-program-builder" onSubmit={(event) => event.preventDefault()}>
+            <label>
+              Organization or pilot workspace
+              <input
+                value={program.organization}
+                onChange={(event) => setProgram({ ...program, organization: event.target.value })}
+              />
+            </label>
+            <label>
+              Domain and sender surface
+              <input value={program.domain} onChange={(event) => setProgram({ ...program, domain: event.target.value })} />
+            </label>
+            <label>
+              Event or program
+              <input value={program.eventName} onChange={(event) => setProgram({ ...program, eventName: event.target.value })} />
+            </label>
+            <label>
+              Cohort rule
+              <textarea value={program.cohort} onChange={(event) => setProgram({ ...program, cohort: event.target.value })} />
+            </label>
+            <label>
+              Roster source
+              <textarea
+                value={program.rosterSource}
+                onChange={(event) => setProgram({ ...program, rosterSource: event.target.value })}
+              />
+            </label>
+            <label>
+              Microsoft Forms RSVP source
+              <input value={program.rsvpSource} onChange={(event) => setProgram({ ...program, rsvpSource: event.target.value })} />
+            </label>
+            <label>
+              Outlook event source
+              <input
+                value={program.calendarSource}
+                onChange={(event) => setProgram({ ...program, calendarSource: event.target.value })}
+              />
+            </label>
+            <label>
+              Zoom or attendance source
+              <input
+                value={program.attendanceSource}
+                onChange={(event) => setProgram({ ...program, attendanceSource: event.target.value })}
+              />
+            </label>
+            <label>
+              Reminder automation cadence
+              <textarea
+                value={program.reminderCadence}
+                onChange={(event) => setProgram({ ...program, reminderCadence: event.target.value })}
+              />
+            </label>
+            <label>
+              Consent and exclusion rule
+              <textarea
+                value={program.consentBasis}
+                onChange={(event) => setProgram({ ...program, consentBasis: event.target.value })}
+              />
+            </label>
+          </form>
+
+          <article className="qb-result qb-program-result" aria-live="polite">
+            <div className="qb-score qb-score--domain">
+              <span>{readyCount}</span>
+              <strong>Approval packet checks</strong>
+            </div>
+            <p className="qb-eyebrow">Program preview</p>
+            <h3>{program.eventName}</h3>
+            <p>
+              Quizbiz will treat the roster as the source of truth, suppress contacts without documented opt-in, and
+              reconcile RSVP and attendance signals before each follow-up.
+            </p>
+            <h4>Readiness checklist</h4>
+            <ul>
+              {programReadiness.map(([label, ready]) => (
+                <li key={label}>{ready ? "Ready" : "Needs detail"}: {label}</li>
+              ))}
+            </ul>
+            <h4>Sample compliant message</h4>
+            <p>
+              Quizbiz LLC: Reminder for {program.eventName}. Reply YES to confirm, STOP to unsubscribe, or HELP for
+              help. Msg frequency varies. Msg & data rates may apply.
+            </p>
+            <div className="qb-actions">
+              <button className="qb-button qb-button--primary" disabled={isSavingProgram} onClick={submitProgram} type="button">
+                {isSavingProgram ? "Saving..." : "Save program plan"}
+              </button>
+              <a className="qb-button qb-button--secondary" href="/sms">
+                SMS details
+              </a>
+            </div>
+            {programStatus ? <p className="qb-status">{programStatus}</p> : null}
+          </article>
+        </div>
+      </section>
+
       <section className="qb-section qb-brief" id="capture" aria-labelledby="capture-title">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Functional lead capture</p>
-          <h2 id="capture-title">Turn a vague inquiry into a routed lead.</h2>
+          <p className="qb-eyebrow">Domain routing remains built in</p>
+          <h2 id="capture-title">Match any business need to the right domain workspace.</h2>
           <p>
-            This intake form creates an instant domain recommendation and stores the lead after submission.
+            The portfolio directory still routes broad requests to the right domain, but the primary operating layer is
+            now cohort messaging with consent, automation, and engagement reporting.
           </p>
         </div>
 
@@ -809,11 +984,12 @@ function HomeView() {
 
       <section className="qb-section qb-directory" id="directory" aria-labelledby="directory-title">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Instant result directory</p>
-          <h2 id="directory-title">Search by problem, buyer, solution, or domain.</h2>
+          <p className="qb-eyebrow">Domain portfolio router</p>
+          <h2 id="directory-title">Route the use case before configuring the messaging program.</h2>
           <p>
-            Try searches like “roof leak in Atlanta,” “CRM for a law firm,” “water bill savings,” “recruiting intake,”
-            “patio heater,” or “terms of service.”
+            Try searches like “board donor event reminder,” “CRM for a law firm,” “water bill savings,” “recruiting
+            intake,” “patio heater,” or “terms of service.” The directory helps choose the right workspace before the
+            cohort controls take over.
           </p>
         </div>
         <div className="qb-search">
@@ -839,8 +1015,8 @@ function HomeView() {
 
       <section className="qb-section qb-workflow" aria-labelledby="workflow-title">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Impact</p>
-          <h2 id="workflow-title">The visitor gets an answer. Quizbiz LLC gets context.</h2>
+          <p className="qb-eyebrow">Operating model</p>
+          <h2 id="workflow-title">One roster becomes reminders, confirmations, attendance, and reporting.</h2>
         </div>
         <div className="qb-timeline">
           {processSteps.map(([step, title, copy]) => (
@@ -858,8 +1034,8 @@ function HomeView() {
           <p className="qb-eyebrow">Trust and messaging</p>
           <h2>Quizbiz LLC is the brand and the responsible business.</h2>
           <p>
-            Quizbiz.org presents Quizbiz LLC as the company operating the portfolio, lead capture, and optional customer
-            messaging.
+            Quizbiz.org presents the business identity, privacy terms, opt-in language, cohort controls, and consent
+            evidence needed before any customer messaging program should be submitted for carrier review.
           </p>
         </div>
         <div className="qb-trust__grid">
@@ -892,11 +1068,11 @@ function HomeView() {
       <section className="qb-final">
         <div>
           <p className="qb-eyebrow">Next step</p>
-          <h2>Route the next real inquiry through Quizbiz LLC.</h2>
-          <p>Use the capture form and directory search to turn broad intent into a concrete domain match.</p>
+          <h2>Prepare the Twilio approval packet from the same workflow used to run the program.</h2>
+          <p>Use the cohort workspace to prove message purpose, audience, consent, suppression rules, and reporting.</p>
         </div>
-        <a className="qb-button qb-button--primary" href="#capture">
-          Capture a lead
+        <a className="qb-button qb-button--primary" href="#cohort-control">
+          Build a program
         </a>
       </section>
     </main>
@@ -921,6 +1097,7 @@ function App() {
         </a>
         <nav className="qb-nav" aria-label="Primary">
           <a href="/#capture">Capture</a>
+          <a href="/#cohort-control">Cohorts</a>
           <a href="/#directory">Directory</a>
           <a href="/#trust">Trust</a>
           <a href="/sms">SMS</a>
