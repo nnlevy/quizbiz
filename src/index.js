@@ -255,6 +255,7 @@ function termsPage() {
 
 function adminPage() {
   const adminScript = String.raw`(() => {
+  const KEY_STORAGE = 'quizbiz:admin-key:v1';
   const keyInput = document.getElementById('adminKey');
   const loadBtn = document.getElementById('loadData');
   const leadsEl = document.getElementById('leadsRows');
@@ -262,6 +263,10 @@ function adminPage() {
   const statusEl = document.getElementById('adminStatus');
   const summaryEl = document.getElementById('adminSummary');
   const exportBtn = document.getElementById('exportJson');
+  const exportCsvBtn = document.getElementById('exportCsv');
+  const searchInput = document.getElementById('adminSearch');
+  const onlySmsOptIn = document.getElementById('onlySmsOptIn');
+  const minReadyCount = document.getElementById('minReadyCount');
   const state = { leads: [], programs: [] };
 
   function esc(v){ return String(v ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
@@ -270,10 +275,30 @@ function adminPage() {
     statusEl.className = ok ? 'status show readiness is-ready' : 'status show readiness is-warn';
   }
   function row(cells){ return '<tr>' + cells.map((cell) => '<td>' + esc(cell) + '</td>').join('') + '</tr>'; }
+  function normalized(value){ return String(value ?? '').toLowerCase(); }
+  function filterRows() {
+    const q = normalized(searchInput.value.trim());
+    const smsOnly = onlySmsOptIn.checked;
+    const minReady = Number(minReadyCount.value || 0);
+    const leads = state.leads.filter((lead) => {
+      if (smsOnly && !lead.smsOptIn) return false;
+      if (!q) return true;
+      const hay = normalized([lead.name, lead.email, lead.phone, lead.company, lead.need, lead.matchedDomain].join(' '));
+      return hay.includes(q);
+    });
+    const programs = state.programs.filter((program) => {
+      if ((program.readyCount || 0) < minReady) return false;
+      if (!q) return true;
+      const hay = normalized([program.organization, program.eventName, program.domain, program.cohort].join(' '));
+      return hay.includes(q);
+    });
+    return { leads, programs };
+  }
   function render() {
-    leadsEl.innerHTML = state.leads.map((lead) => row([lead.createdAt, lead.name, lead.email || '-', lead.phone || '-', lead.matchedDomain || '-', lead.smsOptIn ? 'yes' : 'no'])).join('');
-    programsEl.innerHTML = state.programs.map((program) => row([program.createdAt, program.organization, program.eventName, program.domain, program.readyCount + '/6'])).join('');
-    summaryEl.textContent = 'Loaded ' + state.leads.length + ' leads and ' + state.programs.length + ' programs.';
+    const filtered = filterRows();
+    leadsEl.innerHTML = filtered.leads.map((lead) => row([lead.createdAt, lead.name, lead.email || '-', lead.phone || '-', lead.matchedDomain || '-', lead.smsOptIn ? 'yes' : 'no'])).join('');
+    programsEl.innerHTML = filtered.programs.map((program) => row([program.createdAt, program.organization, program.eventName, program.domain, (program.readyCount || 0) + '/6'])).join('');
+    summaryEl.textContent = 'Showing ' + filtered.leads.length + '/' + state.leads.length + ' leads and ' + filtered.programs.length + '/' + state.programs.length + ' programs.';
   }
   async function load() {
     const key = keyInput.value.trim();
@@ -290,18 +315,20 @@ function adminPage() {
       const programsData = await programsRes.json();
       state.leads = Array.isArray(leadsData.leads) ? leadsData.leads : [];
       state.programs = Array.isArray(programsData.programs) ? programsData.programs : [];
+      localStorage.setItem(KEY_STORAGE, key);
       render();
       showStatus('Loaded admin data.', true);
     } catch (error) {
       showStatus(error?.message || 'Could not load admin data.');
     }
   }
-  function exportJson() {
+  function exportJson(rows = null) {
+    const filtered = rows || filterRows();
     const payload = {
       exportedAt: new Date().toISOString(),
       source: 'quizbiz.org/admin',
-      leads: state.leads,
-      programs: state.programs,
+      leads: filtered.leads,
+      programs: filtered.programs,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const href = URL.createObjectURL(blob);
@@ -313,14 +340,38 @@ function adminPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(href);
   }
+  function toCsv() {
+    const filtered = filterRows();
+    const leadHeader = ['type','createdAt','name','email','phone','domain','smsOptIn'];
+    const programHeader = ['type','createdAt','organization','eventName','domain','readyCount'];
+    const rows = [leadHeader.join(',')];
+    filtered.leads.forEach((lead) => rows.push(['lead', lead.createdAt, lead.name, lead.email, lead.phone, lead.matchedDomain, lead.smsOptIn ? 'yes' : 'no'].map((cell) => '"' + String(cell ?? '').replace(/"/g, '""') + '"').join(',')));
+    rows.push(programHeader.join(','));
+    filtered.programs.forEach((program) => rows.push(['program', program.createdAt, program.organization, program.eventName, program.domain, program.readyCount].map((cell) => '"' + String(cell ?? '').replace(/"/g, '""') + '"').join(',')));
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = 'quizbiz-admin-export-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(href);
+  }
+  const savedKey = localStorage.getItem(KEY_STORAGE);
+  if (savedKey) keyInput.value = savedKey;
   loadBtn.addEventListener('click', load);
   exportBtn.addEventListener('click', exportJson);
+  exportCsvBtn.addEventListener('click', toCsv);
+  searchInput.addEventListener('input', render);
+  onlySmsOptIn.addEventListener('change', render);
+  minReadyCount.addEventListener('change', render);
 })();`;
 
   return page(
     'Admin Review | Quizbiz LLC',
     'Authenticated admin review for real lead and cohort program records captured by Quizbiz LLC.',
-    `<main class="legal"><p class="eyebrow">Quizbiz LLC Admin</p><h1>Operational Review</h1><p>Use your admin key to view actual captured leads and cohort programs from KV storage.</p><section><h2>Access</h2><div class="search"><label>Admin key<input id="adminKey" type="password" placeholder="Enter x-admin-key"></label></div><div class="actions"><button id="loadData" class="button primary" type="button">Load records</button><button id="exportJson" class="button" type="button">Export JSON</button></div><p id="adminStatus" class="status"></p><p id="adminSummary" class="fine"></p></section><section><h2>Lead Records</h2><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Created</th><th align="left">Name</th><th align="left">Email</th><th align="left">Phone</th><th align="left">Domain</th><th align="left">SMS</th></tr></thead><tbody id="leadsRows"></tbody></table></div></section><section><h2>Program Records</h2><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Created</th><th align="left">Organization</th><th align="left">Event</th><th align="left">Domain</th><th align="left">Readiness</th></tr></thead><tbody id="programRows"></tbody></table></div></section></main><script>${adminScript}</script>`,
+    `<main class="legal"><p class="eyebrow">Quizbiz LLC Admin</p><h1>Operational Review</h1><p>Use your admin key to view actual captured leads and cohort programs from KV storage.</p><section><h2>Access</h2><div class="search"><label>Admin key<input id="adminKey" type="password" placeholder="Enter x-admin-key"></label><label>Search<input id="adminSearch" placeholder="Search leads and programs"></label></div><div class="search"><label><input id="onlySmsOptIn" type="checkbox"> Leads with SMS opt-in only</label><label>Minimum readiness<select id="minReadyCount"><option value="0">0/6</option><option value="1">1/6</option><option value="2">2/6</option><option value="3">3/6</option><option value="4">4/6</option><option value="5">5/6</option><option value="6">6/6</option></select></label></div><div class="actions"><button id="loadData" class="button primary" type="button">Load records</button><button id="exportJson" class="button" type="button">Export JSON</button><button id="exportCsv" class="button" type="button">Export CSV</button></div><p id="adminStatus" class="status"></p><p id="adminSummary" class="fine"></p></section><section><h2>Lead Records</h2><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Created</th><th align="left">Name</th><th align="left">Email</th><th align="left">Phone</th><th align="left">Domain</th><th align="left">SMS</th></tr></thead><tbody id="leadsRows"></tbody></table></div></section><section><h2>Program Records</h2><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Created</th><th align="left">Organization</th><th align="left">Event</th><th align="left">Domain</th><th align="left">Readiness</th></tr></thead><tbody id="programRows"></tbody></table></div></section></main><script>${adminScript}</script>`,
     '/admin',
   );
 }
