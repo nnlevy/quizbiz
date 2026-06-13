@@ -4,17 +4,22 @@ import { usePageMeta } from "./hooks/usePageMeta";
 import "./App.css";
 import { normalizePathname } from "./utils/pathname";
 
-type Priority = "capture" | "followup" | "pipeline" | "content";
-type Volume = "low" | "medium" | "high";
-type Speed = "instant" | "same-day" | "weekly";
+type DomainEntry = {
+  domain: string;
+  title: string;
+  audience: string;
+  challenge: string;
+  solution: string;
+  impact: string;
+  tags: string[];
+};
 
-type BriefState = {
+type LeadState = {
+  name: string;
+  email: string;
   company: string;
-  market: string;
-  priority: Priority;
-  volume: Volume;
-  speed: Speed;
-  sms: boolean;
+  need: string;
+  urgency: "today" | "week" | "month";
 };
 
 type LegalSection = {
@@ -32,80 +37,343 @@ type LegalPage = {
 
 const CONTACT_EMAIL = "hello@growth.business";
 
-const defaultBrief: BriefState = {
-  company: "Service business",
-  market: "Local and B2B buyers",
-  priority: "capture",
-  volume: "medium",
-  speed: "same-day",
-  sms: true,
-};
-
-const priorityLabels: Record<Priority, string> = {
-  capture: "Lead capture",
-  followup: "Follow-up",
-  pipeline: "Pipeline routing",
-  content: "Content ops",
-};
-
-const volumeLabels: Record<Volume, string> = {
-  low: "Under 50 leads/mo",
-  medium: "50-250 leads/mo",
-  high: "250+ leads/mo",
-};
-
-const speedLabels: Record<Speed, string> = {
-  instant: "Instant response",
-  "same-day": "Same-day response",
-  weekly: "Weekly operating rhythm",
-};
-
-const outcomes = [
+const domainDirectory: DomainEntry[] = [
   {
-    title: "Capture demand",
-    copy: "Convert calls, forms, email, and campaign clicks into structured intake that a team can act on.",
+    domain: "quizbiz.org",
+    title: "Quizbiz LLC",
+    audience: "Business buyers, partners, reviewers, and messaging providers",
+    challenge: "Verify who operates the service and how customer communication works",
+    solution: "Public company home, intake demo, domain directory, privacy policy, and messaging terms",
+    impact: "Shortens trust review and gives every visitor a clear next step",
+    tags: ["quizbiz", "company", "trust", "compliance", "twilio", "sms", "privacy", "terms", "business identity"],
   },
   {
-    title: "Respond fast",
-    copy: "Generate useful first replies, reminders, and status updates while customer intent is still warm.",
+    domain: "growth.business",
+    title: "Growth workflow hub",
+    audience: "B2B teams that need more qualified leads and faster follow-up",
+    challenge: "Leads arrive from multiple places and no one knows which next step fits",
+    solution: "Lead capture, qualification, routing, and follow-up workflow design",
+    impact: "Turns scattered demand into a prioritized sales queue",
+    tags: ["growth", "leads", "sales", "follow up", "crm", "pipeline", "booking", "revenue", "b2b"],
   },
   {
-    title: "Route work",
-    copy: "Match the request to the right offer, domain property, owner, or next step without manual sorting.",
+    domain: "contentasaservice.co",
+    title: "Content as a Service",
+    audience: "Experts, agencies, and operators with knowledge that should become buyer-facing content",
+    challenge: "Useful expertise is trapped in calls, notes, and internal docs",
+    solution: "Content systems for service pages, explainers, comparison pages, and authority assets",
+    impact: "Creates pages that answer buyer questions before a sales conversation",
+    tags: ["content", "seo", "authority", "articles", "agency", "blog", "service pages", "education"],
   },
   {
-    title: "Keep consent clear",
-    copy: "Make opt-in, opt-out, privacy, and messaging expectations visible before any text program scales.",
+    domain: "searchfirm.co",
+    title: "Search firm intake",
+    audience: "Recruiters, search firms, candidates, and hiring teams",
+    challenge: "Candidate and client requests are vague, urgent, and hard to compare",
+    solution: "Structured intake and routing for roles, searches, candidate fit, and hiring priorities",
+    impact: "Makes search work easier to qualify and faster to act on",
+    tags: ["recruiting", "search", "staffing", "candidate", "hiring", "jobs", "talent", "placement"],
+  },
+  {
+    domain: "smallbusinessholder.com",
+    title: "Small business help",
+    audience: "Owners who need plain-English next steps",
+    challenge: "Business advice is too abstract when the owner needs action today",
+    solution: "Practical checklists and decision support for local and small business operators",
+    impact: "Gives owners a starting point they can use without learning a platform first",
+    tags: ["small business", "owner", "local", "operations", "startup", "plan", "cash flow", "marketing"],
+  },
+  {
+    domain: "earn.software",
+    title: "Software that earns",
+    audience: "Software builders and operators",
+    challenge: "Tools exist, but the workflow does not produce measurable business value",
+    solution: "Productized operating workflows, evaluation notes, and utility software",
+    impact: "Connects software effort to revenue, savings, or throughput",
+    tags: ["software", "saas", "automation", "tools", "roi", "product", "workflow", "ops"],
+  },
+  {
+    domain: "affordablehome.us",
+    title: "Affordable home eligibility",
+    audience: "Homeowners, renters, housing programs, and property operators",
+    challenge: "People need to understand housing options, affordability, and address-specific eligibility",
+    solution: "Address-aware intake and clear next-step routing for housing opportunities",
+    impact: "Captures high-intent housing demand with a useful first answer",
+    tags: ["home", "housing", "affordable", "real estate", "address", "rent", "property", "eligibility"],
+  },
+  {
+    domain: "watershortcut.com",
+    title: "Water bill help",
+    audience: "Homeowners, renters, property managers, and utility-adjacent programs",
+    challenge: "Water bills are confusing and people do not know which fix matters",
+    solution: "Bill analysis, provider lookup, leak checks, and plain-English savings steps",
+    impact: "Turns a bill question into a concrete conservation or savings action",
+    tags: ["water", "utility", "bill", "leak", "savings", "homeowner", "renter", "rebate"],
+  },
+  {
+    domain: "doting.co",
+    title: "Relationship follow-through",
+    audience: "People, coaches, creators, and communities focused on stronger relationships",
+    challenge: "Good intentions do not reliably become thoughtful follow-through",
+    solution: "AI-guided prompts, gestures, reminders, and relationship habit support",
+    impact: "Makes personal follow-through easier to start and sustain",
+    tags: ["relationship", "gift", "care", "coach", "community", "reminder", "personal", "habit"],
+  },
+  {
+    domain: "communityinternet.co",
+    title: "Community internet",
+    audience: "Neighborhoods, property groups, and community connectivity buyers",
+    challenge: "Connectivity options are hard to compare and explain locally",
+    solution: "Education and intake for community internet needs and provider conversations",
+    impact: "Turns connectivity interest into a clearer request",
+    tags: ["internet", "broadband", "community", "wifi", "connectivity", "neighborhood", "provider"],
+  },
+  {
+    domain: "roofleakatlanta.com",
+    title: "Atlanta roof leak intake",
+    audience: "Atlanta homeowners and property managers with urgent roof issues",
+    challenge: "Leaks need fast triage before damage spreads",
+    solution: "Local issue intake, urgency routing, and repair-request capture",
+    impact: "Gets the right details into a contractor-ready request",
+    tags: ["roof", "leak", "atlanta", "repair", "contractor", "storm", "home", "emergency"],
+  },
+  {
+    domain: "fixac.co",
+    title: "AC repair routing",
+    audience: "Homeowners and businesses with cooling problems",
+    challenge: "AC issues need quick triage and local service routing",
+    solution: "Symptom intake and repair request capture for HVAC service",
+    impact: "Collects the details a service team needs before the first call",
+    tags: ["ac", "hvac", "air conditioning", "repair", "cooling", "service", "contractor"],
+  },
+  {
+    domain: "checkinforwork.com",
+    title: "Work check-in",
+    audience: "Teams that need simple attendance, jobsite, or shift confirmation",
+    challenge: "Manual check-ins create gaps in accountability and scheduling",
+    solution: "Lightweight check-in flows for workers, locations, and operational status",
+    impact: "Improves visibility without forcing a heavy workforce platform",
+    tags: ["work", "check in", "attendance", "shift", "jobsite", "field", "team", "operations"],
+  },
+  {
+    domain: "cloudgpo.com",
+    title: "Cloud purchasing groups",
+    audience: "Organizations comparing SaaS, cloud, and group purchasing options",
+    challenge: "Cloud buying is fragmented and hard to benchmark",
+    solution: "GPO-style intake for cloud needs, categories, and purchasing opportunities",
+    impact: "Finds shared demand and buying leverage",
+    tags: ["cloud", "gpo", "procurement", "saas", "purchasing", "vendor", "discount", "it"],
+  },
+  {
+    domain: "crmforlaw.com",
+    title: "CRM for law firms",
+    audience: "Law firms and legal operators",
+    challenge: "Client intake and follow-up often fall between email, calls, and case systems",
+    solution: "Legal CRM evaluation and intake workflow guidance",
+    impact: "Helps firms capture inquiries and manage client communication more consistently",
+    tags: ["law", "legal", "crm", "client intake", "attorney", "case", "firm", "lead"],
+  },
+  {
+    domain: "staffing.how",
+    title: "Staffing playbooks",
+    audience: "Staffing teams, recruiters, and operators",
+    challenge: "Staffing workflows need repeatable intake, screening, and placement steps",
+    solution: "Practical staffing process guidance and workflow routing",
+    impact: "Makes staffing operations easier to explain and improve",
+    tags: ["staffing", "recruiting", "hiring", "screening", "placement", "workforce"],
+  },
+  {
+    domain: "firmwebsite.com",
+    title: "Firm website conversion",
+    audience: "Professional services firms",
+    challenge: "A firm website describes services but does not turn interest into qualified conversations",
+    solution: "Website positioning, intake, proof, and conversion-path guidance",
+    impact: "Makes service websites clearer and more useful to prospective clients",
+    tags: ["firm", "website", "professional services", "agency", "law", "consulting", "conversion"],
+  },
+  {
+    domain: "voicesearch.cc",
+    title: "Voice search utility",
+    audience: "Teams exploring voice search, audio input, and query interfaces",
+    challenge: "Search experiences miss natural-language and spoken intent",
+    solution: "Voice-first search and query workflow experiments",
+    impact: "Turns spoken questions into actionable search results",
+    tags: ["voice", "search", "audio", "query", "natural language", "accessibility"],
+  },
+  {
+    domain: "estimatemarketshare.com",
+    title: "Market share estimates",
+    audience: "Founders, operators, and analysts sizing markets",
+    challenge: "Market sizing is slow when assumptions are scattered",
+    solution: "Estimate workflows for market share, category demand, and opportunity framing",
+    impact: "Produces a starting estimate and the assumptions behind it",
+    tags: ["market", "share", "tam", "forecast", "analysis", "estimate", "research"],
+  },
+  {
+    domain: "riskfreetrial.org",
+    title: "Trial and offer trust",
+    audience: "Buyers comparing subscriptions, trials, and service offers",
+    challenge: "Trial terms can feel risky or unclear",
+    solution: "Plain-English offer analysis and trust-oriented conversion support",
+    impact: "Helps buyers understand what they are agreeing to",
+    tags: ["trial", "offer", "subscription", "billing", "risk", "trust", "pricing"],
+  },
+  {
+    domain: "visualtos.com",
+    title: "Visual terms of service",
+    audience: "Customers and teams that need clearer policy experiences",
+    challenge: "Legal terms are hard to scan and understand",
+    solution: "Visual summaries and structured policy reading aids",
+    impact: "Makes terms easier to review without replacing legal advice",
+    tags: ["terms", "tos", "legal", "policy", "privacy", "visual", "contract"],
+  },
+  {
+    domain: "startbusiness.us",
+    title: "Start business guidance",
+    audience: "New founders and small business starters",
+    challenge: "Starting a business creates too many disconnected tasks",
+    solution: "Plain steps for entity, offer, website, lead capture, and launch basics",
+    impact: "Turns startup confusion into a practical first-week plan",
+    tags: ["start business", "founder", "llc", "startup", "launch", "formation", "plan"],
+  },
+  {
+    domain: "cascadeave.com",
+    title: "Cascade Avenue local guide",
+    audience: "Residents, visitors, and local businesses around Cascade",
+    challenge: "Local discovery is fragmented across maps, social posts, and word of mouth",
+    solution: "Neighborhood guide and local-intent capture",
+    impact: "Connects local demand to places, events, and everyday services",
+    tags: ["local", "cascade", "atlanta", "neighborhood", "events", "restaurants", "guide"],
+  },
+  {
+    domain: "deadtreeatlanta.com",
+    title: "Dead tree Atlanta",
+    audience: "Atlanta property owners with hazardous trees",
+    challenge: "Tree risk needs fast local triage and service routing",
+    solution: "Issue intake for tree removal, storm risk, and property safety requests",
+    impact: "Captures urgent local service demand with the right context",
+    tags: ["tree", "atlanta", "dead tree", "removal", "storm", "hazard", "property"],
+  },
+  {
+    domain: "buypatioheater.com",
+    title: "Patio heater recommendations",
+    audience: "Shoppers comparing outdoor heating options",
+    challenge: "Patio heaters vary by space, fuel, safety, and budget",
+    solution: "Recommendation flow for heater type, use case, and product fit",
+    impact: "Turns product confusion into a short list",
+    tags: ["patio", "heater", "outdoor", "shopping", "recommendation", "home", "product"],
+  },
+  {
+    domain: "grocerydelivered.org",
+    title: "Grocery delivery help",
+    audience: "Households comparing grocery delivery options",
+    challenge: "Delivery choices vary by location, budget, and urgency",
+    solution: "Simple routing for grocery delivery needs and service comparison",
+    impact: "Helps users find a practical delivery path",
+    tags: ["grocery", "delivery", "food", "shopping", "household", "local"],
+  },
+  {
+    domain: "makelife.org",
+    title: "Make Life",
+    audience: "People looking for practical life improvement workflows",
+    challenge: "Personal goals need small repeatable actions",
+    solution: "Guided prompts and simple action plans for everyday improvement",
+    impact: "Makes broad goals easier to start",
+    tags: ["life", "goals", "habits", "personal", "planning", "wellbeing"],
+  },
+  {
+    domain: "chatulah.com",
+    title: "Neighborhood cat quest",
+    audience: "Neighborhood communities and playful local groups",
+    challenge: "Local sightings and community moments disappear quickly",
+    solution: "A playful shared experience for sightings, check-ins, and neighborhood discovery",
+    impact: "Creates lightweight community engagement",
+    tags: ["community", "neighborhood", "game", "local", "sightings", "quest"],
+  },
+  {
+    domain: "10-7.org",
+    title: "Learn, act, and advocate",
+    audience: "People seeking civic, educational, or advocacy resources",
+    challenge: "Sensitive topics need clear resources and responsible next steps",
+    solution: "Structured resource hub and action-oriented education",
+    impact: "Helps visitors move from awareness to responsible action",
+    tags: ["education", "advocacy", "resources", "civic", "learn", "act"],
+  },
+  {
+    domain: "freestock.tips",
+    title: "Stock research tips",
+    audience: "Individual investors and research-minded readers",
+    challenge: "Market ideas need filtering, caution, and source-aware research",
+    solution: "Research prompts and stock-screening education",
+    impact: "Encourages more disciplined investing research",
+    tags: ["stocks", "investing", "market", "research", "screen", "finance"],
+  },
+  {
+    domain: "valuestockscreen.com",
+    title: "Value stock screen",
+    audience: "Investors screening for value opportunities",
+    challenge: "Finding potential value stocks requires repeatable criteria",
+    solution: "Screening workflow and research framing for value-oriented ideas",
+    impact: "Makes a research process easier to repeat",
+    tags: ["value", "stocks", "screen", "investing", "finance", "research"],
+  },
+  {
+    domain: "makeyourownbitcoin.com",
+    title: "Bitcoin learning",
+    audience: "People trying to understand Bitcoin concepts",
+    challenge: "Crypto explanations are often hype-heavy or too technical",
+    solution: "Educational framing for Bitcoin mechanics, custody, and experiments",
+    impact: "Supports safer learning before action",
+    tags: ["bitcoin", "crypto", "education", "wallet", "mining", "blockchain"],
+  },
+  {
+    domain: "investyourlifeinsurance.com",
+    title: "Life insurance education",
+    audience: "Consumers comparing life insurance and financial options",
+    challenge: "Insurance decisions mix protection, cost, and investment language",
+    solution: "Plain-English education and question routing",
+    impact: "Helps visitors prepare better questions before buying",
+    tags: ["life insurance", "insurance", "finance", "investment", "policy", "consumer"],
+  },
+  {
+    domain: "debtsettlements.co",
+    title: "Debt settlement education",
+    audience: "Consumers researching debt options",
+    challenge: "Debt settlement has tradeoffs that need careful review",
+    solution: "Educational intake and plain-language comparison prompts",
+    impact: "Helps visitors understand options before contacting a provider",
+    tags: ["debt", "settlement", "credit", "finance", "consumer", "relief"],
+  },
+  {
+    domain: "industrialrefurbisher.com",
+    title: "Industrial refurbishment",
+    audience: "Industrial buyers and equipment operators",
+    challenge: "Repair, refurbish, or replace decisions require context",
+    solution: "Equipment-intake and vendor-routing workflow",
+    impact: "Captures industrial service demand in a structured way",
+    tags: ["industrial", "equipment", "refurbish", "repair", "manufacturing", "vendor"],
+  },
+  {
+    domain: "nirlevy.org",
+    title: "Nir Levy public profile",
+    audience: "People looking for background, projects, and contact context",
+    challenge: "Personal project context is scattered across domains",
+    solution: "Public profile and project context hub",
+    impact: "Gives human context when appropriate without making Quizbiz founder-centered",
+    tags: ["profile", "founder", "projects", "contact", "background"],
   },
 ];
 
-const platformSteps = [
-  ["1", "Intent capture", "Forms, calls, landing pages, and campaign responses become one clean intake stream."],
-  ["2", "AI brief", "Each inquiry is summarized with fit, urgency, missing context, and recommended next action."],
-  ["3", "Human review", "Teams approve customer-facing language, offers, and edge-case handling before escalation."],
-  ["4", "Follow-up loop", "Email and optional SMS updates keep buyers informed with clear consent records."],
-];
-
-const useCases = [
-  {
-    label: "Service teams",
-    title: "From inquiry to booked work",
-    copy: "Qualify requests, explain the next step, and reduce missed follow-up across high-intent leads.",
-  },
-  {
-    label: "Recruiting and search",
-    title: "Cleaner candidate and client intake",
-    copy: "Turn vague messages into structured briefs that make specialization, urgency, and fit easier to see.",
-  },
-  {
-    label: "Content operations",
-    title: "Authority pages with a reason to exist",
-    copy: "Convert operational knowledge into useful explainers, comparison pages, and buyer guidance.",
-  },
+const processSteps = [
+  ["1", "Capture the request", "Collect the buyer's need, source, urgency, contact details, and consent status."],
+  ["2", "Match the domain", "Search the portfolio by audience, problem, solution, and related language."],
+  ["3", "Return a useful result", "Show the best domain, why it fits, and the next action for the visitor."],
+  ["4", "Create a lead package", "Prepare a clear email handoff with the request, matched domain, and follow-up context."],
 ];
 
 const trustRows = [
-  ["Business identity", "Quizbiz LLC, doing business as Growth.business."],
+  ["Business identity", "Quizbiz LLC. Growth.business is a related Quizbiz LLC initiative, not the primary website brand."],
+  ["Lead capture purpose", "Collect business inquiries, match them to the right domain initiative, and prepare requested follow-up."],
   ["Messaging purpose", "Requested project updates, onboarding reminders, support follow-ups, and service notifications."],
   ["Audience", "Customers, leads, and collaborators who explicitly ask to receive text messages."],
   ["Frequency", "Message frequency varies by request; recurring programs disclose expected frequency at opt-in."],
@@ -118,24 +386,22 @@ const trustRows = [
 const legalPages: Record<string, LegalPage> = {
   "/privacy": {
     title: "Privacy Policy | Quizbiz LLC",
-    description:
-      "Privacy policy for Quizbiz LLC, Growth.business, Quizbiz.org, and optional text messaging services.",
+    description: "Privacy policy for Quizbiz LLC, Quizbiz.org, Growth.business, lead capture, and optional text messaging services.",
     heading: "Privacy Policy",
-    intro:
-      "Quizbiz LLC operates Quizbiz.org as the public trust and policy home for Growth.business services and related business initiatives.",
+    intro: "Quizbiz LLC operates Quizbiz.org as the public company, lead capture, domain directory, and policy home for its business initiatives.",
     sections: [
       {
         heading: "Who Operates This Site",
         body: [
-          "Quizbiz LLC operates Quizbiz.org and does business as Growth.business for AI-assisted growth systems, intake workflows, and related business services.",
+          "Quizbiz LLC operates Quizbiz.org. Growth.business and the other listed domains are related Quizbiz LLC business initiatives.",
           `Questions about privacy can be sent to ${CONTACT_EMAIL}.`,
         ],
       },
       {
         heading: "Information We Collect",
         body: [
-          "We may collect information you choose to send, such as your name, email address, business details, message, and phone number when you request a follow-up.",
-          "Interactive tools on this site can run in your browser to generate a recommendation. Submitting a tool is not required to browse the site.",
+          "We may collect information you choose to send, such as your name, email address, business details, message, search terms, domain match, and phone number when you request a follow-up.",
+          "The directory search and lead capture preview can run in your browser. The public directory does not require account creation.",
         ],
       },
       {
@@ -161,39 +427,37 @@ const legalPages: Record<string, LegalPage> = {
   },
   "/terms": {
     title: "Terms and Messaging Terms | Quizbiz LLC",
-    description:
-      "Terms of service and mobile messaging terms for Quizbiz LLC, Growth.business, and Quizbiz.org.",
+    description: "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, Growth.business, and related domains.",
     heading: "Terms and Messaging Terms",
-    intro:
-      "These terms govern Quizbiz.org, Growth.business services, and optional text messaging programs operated by Quizbiz LLC.",
+    intro: "These terms govern Quizbiz.org, Quizbiz LLC lead capture, domain directory routing, related business initiatives, and optional text messaging programs.",
     sections: [
       {
         heading: "Use of the Site",
         body: [
-          "Quizbiz.org provides service information, business policies, and educational material about AI-assisted growth systems.",
-          "The site is not legal, tax, financial, or compliance advice. You are responsible for decisions you make based on the content.",
+          "Quizbiz.org provides company information, business policies, domain directory routing, lead capture previews, and educational material about Quizbiz LLC initiatives.",
+          "The site is not legal, tax, financial, medical, or compliance advice. You are responsible for decisions you make based on the content.",
         ],
       },
       {
         heading: "Mobile Messaging Terms",
         body: [
-          "By opting in, you agree to receive text messages from Quizbiz LLC / Growth.business about requested project updates, onboarding reminders, support follow-ups, and service notifications.",
+          "By opting in, you agree to receive text messages from Quizbiz LLC about requested project updates, onboarding reminders, support follow-ups, and service notifications.",
           "Message frequency varies based on your request or active project. Message and data rates may apply.",
           "Reply STOP to unsubscribe. Reply HELP for help.",
           "Text consent is optional and is not a condition of purchase or service.",
         ],
       },
       {
-        heading: "Acceptable Use",
+        heading: "Lead Capture and Directory Results",
         body: [
-          "Do not use the site or messaging channels for unlawful, abusive, misleading, or harmful activity.",
+          "Directory matches are generated from local portfolio descriptions, tags, and the search terms you provide. A match is a routing suggestion, not a guarantee that a service is available or appropriate for every situation.",
           "Do not submit information that you do not have permission to share.",
         ],
       },
       {
         heading: "No Guaranteed Outcomes",
         body: [
-          "AI-assisted workflows can help organize work, generate recommendations, and improve follow-up, but Quizbiz LLC does not guarantee business growth, revenue, ranking, deliverability, or approval by any third-party platform.",
+          "Quizbiz LLC workflows can help organize requests, generate recommendations, and improve follow-up, but Quizbiz LLC does not guarantee business growth, revenue, ranking, deliverability, or approval by any third-party platform.",
         ],
       },
       {
@@ -204,50 +468,64 @@ const legalPages: Record<string, LegalPage> = {
   },
 };
 
-function buildBrief(state: BriefState) {
-  const priorityScore = state.priority === "capture" || state.priority === "followup" ? 28 : 22;
-  const volumeScore = state.volume === "high" ? 26 : state.volume === "medium" ? 21 : 16;
-  const speedScore = state.speed === "instant" ? 24 : state.speed === "same-day" ? 19 : 13;
-  const consentScore = state.sms ? 12 : 8;
-  const score = Math.min(97, priorityScore + volumeScore + speedScore + consentScore);
+const defaultLead: LeadState = {
+  name: "",
+  email: "",
+  company: "",
+  need: "I need more qualified leads and faster follow-up for a local service business",
+  urgency: "week",
+};
 
-  const title =
-    state.priority === "capture"
-      ? "AI intake and booking workflow"
-      : state.priority === "followup"
-        ? "AI follow-up and status workflow"
-        : state.priority === "pipeline"
-          ? "AI routing and pipeline workflow"
-          : "AI content operations workflow";
+function scoreDomain(entry: DomainEntry, query: string) {
+  const normalized = query.toLowerCase().trim();
+  if (!normalized) return entry.domain === "quizbiz.org" ? 4 : 0;
+  const haystack = [
+    entry.domain,
+    entry.title,
+    entry.audience,
+    entry.challenge,
+    entry.solution,
+    entry.impact,
+    ...entry.tags,
+  ].join(" ").toLowerCase();
+  const terms = normalized.split(/[^a-z0-9.]+/).filter((term) => term.length > 1);
+  return terms.reduce((total, term) => {
+    if (entry.domain.includes(term)) return total + 10;
+    if (entry.tags.some((tag) => tag.toLowerCase().includes(term))) return total + 7;
+    if (haystack.includes(term)) return total + 3;
+    return total;
+  }, 0);
+}
 
-  const automation =
-    state.priority === "content"
-      ? "Convert qualified questions into concise pages, reply drafts, and sales enablement notes."
-      : state.priority === "pipeline"
-        ? "Classify each inquiry by offer fit, urgency, source, and owner before a human reviews it."
-        : state.priority === "followup"
-          ? "Draft next-step replies, reminders, and status updates from the intake record."
-          : "Capture the request, identify missing fields, and recommend the fastest booking path.";
+function getMatches(query: string) {
+  return domainDirectory
+    .map((entry) => ({ entry, score: scoreDomain(entry, query) }))
+    .filter((match) => match.score > 0)
+    .sort((a, b) => b.score - a.score || a.entry.domain.localeCompare(b.entry.domain))
+    .slice(0, 6);
+}
 
-  const firstSteps = [
-    `Map the top 3 ${state.company || "business"} inquiry types and the exact next step each one deserves.`,
-    "Create a single intake record with source, urgency, offer fit, consent status, and owner.",
-    state.sms
-      ? "Add optional SMS language with STOP/HELP instructions and a consent timestamp."
-      : "Keep email as the primary follow-up channel until SMS consent is explicitly collected.",
-  ];
-
+function buildLeadPackage(lead: LeadState, bestMatch: DomainEntry | undefined) {
+  const urgencyLabel = {
+    today: "today",
+    week: "this week",
+    month: "this month",
+  }[lead.urgency];
   return {
-    score,
-    title,
-    automation,
-    summary: `${state.market || "Your audience"} should receive a faster, clearer response path built around ${priorityLabels[state.priority].toLowerCase()}, ${volumeLabels[state.volume].toLowerCase()}, and a ${speedLabels[state.speed].toLowerCase()} expectation.`,
-    firstSteps,
-    checks: [
-      "Publish privacy and messaging terms before launching outbound text updates.",
-      "Keep human review on offer terms, pricing, sensitive requests, and unclear consent.",
-      "Track response time, qualified rate, booked rate, opt-out rate, and unresolved requests.",
-    ],
+    subject: `Quizbiz LLC inquiry: ${bestMatch?.domain ?? "domain match request"}`,
+    body: [
+      "New Quizbiz LLC website inquiry",
+      "",
+      `Name: ${lead.name || "[not provided]"}`,
+      `Email: ${lead.email || "[not provided]"}`,
+      `Company: ${lead.company || "[not provided]"}`,
+      `Need: ${lead.need}`,
+      `Urgency: ${urgencyLabel}`,
+      `Suggested domain: ${bestMatch?.domain ?? "No match selected"}`,
+      `Suggested next step: ${bestMatch?.solution ?? "Review the request and route manually."}`,
+      "",
+      "Text messaging consent should be collected separately before SMS follow-up.",
+    ].join("\n"),
   };
 }
 
@@ -272,13 +550,17 @@ function LegalView({ page }: { page: LegalPage }) {
 }
 
 function HomeView() {
-  const [brief, setBrief] = useState(defaultBrief);
-  const result = useMemo(() => buildBrief(brief), [brief]);
+  const [lead, setLead] = useState(defaultLead);
+  const [query, setQuery] = useState(defaultLead.need);
+  const matches = useMemo(() => getMatches(`${query} ${lead.company}`), [lead.company, query]);
+  const bestMatch = matches[0]?.entry;
+  const leadPackage = useMemo(() => buildLeadPackage(lead, bestMatch), [bestMatch, lead]);
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(leadPackage.subject)}&body=${encodeURIComponent(leadPackage.body)}`;
 
   usePageMeta({
-    title: "Growth.business by Quizbiz LLC | AI Growth Workflows",
+    title: "Quizbiz LLC | Lead Capture and Domain Directory",
     description:
-      "B2B AI-assisted intake, follow-up, and customer messaging workflows from Quizbiz LLC doing business as Growth.business.",
+      "Quizbiz LLC operates Quizbiz.org, a lead capture and domain directory for matching business needs to the right Quizbiz domain initiative.",
     canonicalPath: "/",
     ogImage: "https://quizbiz.org/og/quizbiz-og.png",
   });
@@ -287,29 +569,29 @@ function HomeView() {
     <main>
       <section className="qb-hero" aria-labelledby="home-title">
         <div className="qb-hero__copy qb-reveal">
-          <p className="qb-eyebrow">Growth.business by Quizbiz LLC</p>
-          <h1 id="home-title">Turn missed demand into booked work.</h1>
+          <p className="qb-eyebrow">Quizbiz LLC</p>
+          <h1 id="home-title">Find the right domain for the customer need.</h1>
           <p>
-            A B2B growth workflow studio for teams that need faster intake, clearer follow-up, and compliant customer
-            messaging without adding operational drag.
+            Quizbiz LLC operates a portfolio of practical web properties. This site captures the request, searches the
+            directory by audience and problem, and routes the visitor to the best next step.
           </p>
           <div className="qb-actions">
-            <a className="qb-button qb-button--primary" href="#brief">
-              Generate a growth brief
+            <a className="qb-button qb-button--primary" href="#capture">
+              Capture a lead
             </a>
-            <a className="qb-button qb-button--secondary" href="#trust">
-              Review messaging terms
+            <a className="qb-button qb-button--secondary" href="#directory">
+              Search the directory
             </a>
           </div>
         </div>
 
-        <div className="qb-product qb-reveal" aria-label="Growth workflow preview">
+        <div className="qb-product qb-reveal" aria-label="Quizbiz process preview">
           <div className="qb-product__top">
-            <span>Live workflow</span>
-            <strong>{result.score}% ready</strong>
+            <span>Process preview</span>
+            <strong>{bestMatch?.domain ?? "quizbiz.org"}</strong>
           </div>
           <div className="qb-flow">
-            {platformSteps.map(([step, title]) => (
+            {processSteps.map(([step, title]) => (
               <div className="qb-flow__step" key={title}>
                 <span>{step}</span>
                 <strong>{title}</strong>
@@ -318,45 +600,172 @@ function HomeView() {
           </div>
           <div className="qb-command">
             <span />
-            <p>{result.automation}</p>
+            <p>{bestMatch ? `${bestMatch.domain}: ${bestMatch.solution}` : "Enter a need to route the request."}</p>
           </div>
-          <div className="qb-metrics" aria-label="Operating metrics">
+          <div className="qb-metrics" aria-label="Directory metrics">
             <div>
-              <strong>8 min</strong>
-              <span>target first response</span>
+              <strong>{domainDirectory.length}</strong>
+              <span>indexed domains</span>
+            </div>
+            <div>
+              <strong>{matches.length}</strong>
+              <span>current matches</span>
             </div>
             <div>
               <strong>4</strong>
-              <span>review checkpoints</span>
-            </div>
-            <div>
-              <strong>0</strong>
-              <span>shared opt-in lists</span>
+              <span>handoff steps</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="qb-proof" aria-label="Quizbiz service promises">
-        {["Lead intake", "AI brief generation", "Human review", "Optional SMS"].map((item) => (
+      <section className="qb-proof" aria-label="Quizbiz process">
+        {["Lead capture", "Directory match", "Instant result", "Follow-up package"].map((item) => (
           <span key={item}>{item}</span>
         ))}
       </section>
 
       <section className="qb-section" id="platform">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Platform</p>
-          <h2>Built for revenue teams that need useful follow-up, not more software theater.</h2>
+          <p className="qb-eyebrow">What Quizbiz does</p>
+          <h2>Each domain is a front door for a specific audience, problem, and solution.</h2>
           <p>
-            Quizbiz LLC packages Growth.business workflows around a simple operating loop: capture demand, generate a
-            useful brief, review the next action, and keep the customer informed.
+            The homepage now shows the operating process directly. A visitor describes what they need, the directory
+            searches across the portfolio, and the lead package gives Quizbiz LLC enough context to respond.
           </p>
         </div>
         <div className="qb-outcomes">
-          {outcomes.map((outcome) => (
-            <article className="qb-card qb-reveal" key={outcome.title}>
-              <h3>{outcome.title}</h3>
-              <p>{outcome.copy}</p>
+          {[
+            ["Capture", "Collect the contact, company, need, urgency, and source in one clean record."],
+            ["Search", "Match broad language like “roof leak,” “law firm CRM,” or “water bill help” to the right domain."],
+            ["Route", "Show the best domain, why it fits, and what the domain is meant to solve."],
+            ["Follow up", "Open a pre-filled email lead package while keeping SMS consent separate."],
+          ].map(([title, copy]) => (
+            <article className="qb-card qb-reveal" key={title}>
+              <h3>{title}</h3>
+              <p>{copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="qb-section qb-brief" id="capture" aria-labelledby="capture-title">
+        <div className="qb-section__header">
+          <p className="qb-eyebrow">Functional lead capture</p>
+          <h2 id="capture-title">Turn a vague inquiry into a routed lead.</h2>
+          <p>
+            This working intake preview creates an instant domain recommendation and a ready-to-send handoff email.
+          </p>
+        </div>
+
+        <div className="qb-brief__grid">
+          <form className="qb-builder" onSubmit={(event) => event.preventDefault()}>
+            <label>
+              Name
+              <input value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} placeholder="Jane Smith" />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={lead.email}
+                onChange={(event) => setLead({ ...lead, email: event.target.value })}
+                placeholder="jane@example.com"
+              />
+            </label>
+            <label>
+              Company or context
+              <input
+                value={lead.company}
+                onChange={(event) => setLead({ ...lead, company: event.target.value })}
+                placeholder="Atlanta roofing company, law firm, utility customer"
+              />
+            </label>
+            <label>
+              What do they need?
+              <textarea
+                value={lead.need}
+                onChange={(event) => {
+                  setLead({ ...lead, need: event.target.value });
+                  setQuery(event.target.value);
+                }}
+                placeholder="Describe the audience, challenge, or solution they are looking for"
+              />
+            </label>
+            <fieldset>
+              <legend>Urgency</legend>
+              <div className="qb-segmented qb-segmented--three">
+                {(["today", "week", "month"] as LeadState["urgency"][]).map((urgency) => (
+                  <button
+                    className={lead.urgency === urgency ? "is-active" : ""}
+                    key={urgency}
+                    onClick={() => setLead({ ...lead, urgency })}
+                    type="button"
+                  >
+                    {urgency === "today" ? "Today" : urgency === "week" ? "This week" : "This month"}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </form>
+
+          <article className="qb-result" aria-live="polite">
+            <div className="qb-score qb-score--domain">
+              <span>{matches.length}</span>
+              <strong>Portfolio matches</strong>
+            </div>
+            <p className="qb-eyebrow">Best match</p>
+            <h3>{bestMatch?.domain ?? "Enter a need to search"}</h3>
+            <p>{bestMatch?.impact ?? "Search by audience, challenge, desired outcome, service type, or domain name."}</p>
+            {bestMatch ? (
+              <>
+                <h4>Why this fits</h4>
+                <ul>
+                  <li>{bestMatch.audience}</li>
+                  <li>{bestMatch.challenge}</li>
+                  <li>{bestMatch.solution}</li>
+                </ul>
+              </>
+            ) : null}
+            <div className="qb-actions">
+              <a className="qb-button qb-button--primary" href={mailto}>
+                Send lead package
+              </a>
+              {bestMatch ? (
+                <a className="qb-button qb-button--secondary" href={`https://${bestMatch.domain}`}>
+                  Open domain
+                </a>
+              ) : null}
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="qb-section qb-directory" id="directory" aria-labelledby="directory-title">
+        <div className="qb-section__header">
+          <p className="qb-eyebrow">Instant result directory</p>
+          <h2 id="directory-title">Search by problem, buyer, solution, or domain.</h2>
+          <p>
+            Try searches like “roof leak in Atlanta,” “CRM for a law firm,” “water bill savings,” “recruiting intake,”
+            “patio heater,” or “terms of service.”
+          </p>
+        </div>
+        <div className="qb-search">
+          <label>
+            Search the Quizbiz LLC portfolio
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="What does the visitor need?" />
+          </label>
+        </div>
+        <div className="qb-results-grid">
+          {matches.map(({ entry, score }) => (
+            <article className="qb-domain-card" key={entry.domain}>
+              <div>
+                <span>{score} match score</span>
+                <h3>{entry.domain}</h3>
+                <p>{entry.title}</p>
+              </div>
+              <p>{entry.solution}</p>
+              <a href={`https://${entry.domain}`}>Open {entry.domain}</a>
             </article>
           ))}
         </div>
@@ -364,11 +773,11 @@ function HomeView() {
 
       <section className="qb-section qb-workflow" aria-labelledby="workflow-title">
         <div className="qb-section__header">
-          <p className="qb-eyebrow">Operating model</p>
-          <h2 id="workflow-title">Every workflow is designed to be auditable before it scales.</h2>
+          <p className="qb-eyebrow">Impact</p>
+          <h2 id="workflow-title">The visitor gets an answer. Quizbiz LLC gets context.</h2>
         </div>
         <div className="qb-timeline">
-          {platformSteps.map(([step, title, copy]) => (
+          {processSteps.map(([step, title, copy]) => (
             <article key={title}>
               <span>{step}</span>
               <h3>{title}</h3>
@@ -378,131 +787,13 @@ function HomeView() {
         </div>
       </section>
 
-      <section className="qb-section qb-brief" id="brief" aria-labelledby="brief-title">
-        <div className="qb-section__header">
-          <p className="qb-eyebrow">AI growth brief</p>
-          <h2 id="brief-title">Generate a practical starting point in under a minute.</h2>
-          <p>
-            This interactive brief builder turns a business situation into a recommended workflow, launch checklist,
-            and risk notes. It runs client-side and does not require an account.
-          </p>
-        </div>
-
-        <div className="qb-brief__grid">
-          <form className="qb-builder" onSubmit={(event) => event.preventDefault()}>
-            <label>
-              Business type
-              <input
-                value={brief.company}
-                onChange={(event) => setBrief({ ...brief, company: event.target.value })}
-                placeholder="e.g. HVAC company, search firm, SaaS agency"
-              />
-            </label>
-            <label>
-              Audience
-              <input
-                value={brief.market}
-                onChange={(event) => setBrief({ ...brief, market: event.target.value })}
-                placeholder="e.g. local homeowners, B2B buyers"
-              />
-            </label>
-            <fieldset>
-              <legend>Priority</legend>
-              <div className="qb-segmented">
-                {(Object.keys(priorityLabels) as Priority[]).map((key) => (
-                  <button
-                    className={brief.priority === key ? "is-active" : ""}
-                    key={key}
-                    onClick={() => setBrief({ ...brief, priority: key })}
-                    type="button"
-                  >
-                    {priorityLabels[key]}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>Monthly volume</legend>
-              <div className="qb-segmented">
-                {(Object.keys(volumeLabels) as Volume[]).map((key) => (
-                  <button
-                    className={brief.volume === key ? "is-active" : ""}
-                    key={key}
-                    onClick={() => setBrief({ ...brief, volume: key })}
-                    type="button"
-                  >
-                    {volumeLabels[key]}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <label>
-              Response expectation
-              <select value={brief.speed} onChange={(event) => setBrief({ ...brief, speed: event.target.value as Speed })}>
-                {(Object.keys(speedLabels) as Speed[]).map((key) => (
-                  <option key={key} value={key}>
-                    {speedLabels[key]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="qb-toggle">
-              <input
-                checked={brief.sms}
-                onChange={(event) => setBrief({ ...brief, sms: event.target.checked })}
-                type="checkbox"
-              />
-              Include optional SMS readiness
-            </label>
-          </form>
-
-          <article className="qb-result" aria-live="polite">
-            <div className="qb-score">
-              <span>{result.score}</span>
-              <strong>Readiness score</strong>
-            </div>
-            <p className="qb-eyebrow">Recommended workflow</p>
-            <h3>{result.title}</h3>
-            <p>{result.summary}</p>
-            <h4>First 7 days</h4>
-            <ol>
-              {result.firstSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-            <h4>Launch checks</h4>
-            <ul>
-              {result.checks.map((check) => (
-                <li key={check}>{check}</li>
-              ))}
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section className="qb-section" id="use-cases">
-        <div className="qb-section__header">
-          <p className="qb-eyebrow">Use cases</p>
-          <h2>Focused workflows for service, search, and content-led growth.</h2>
-        </div>
-        <div className="qb-use-cases">
-          {useCases.map((useCase) => (
-            <article className="qb-card qb-reveal" key={useCase.title}>
-              <span>{useCase.label}</span>
-              <h3>{useCase.title}</h3>
-              <p>{useCase.copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="qb-section qb-trust" id="trust">
         <div className="qb-section__header">
           <p className="qb-eyebrow">Trust and messaging</p>
-          <h2>Clear public disclosures for customer communication programs.</h2>
+          <h2>Quizbiz LLC is the brand and the responsible business.</h2>
           <p>
-            Quizbiz.org is the public policy surface for Quizbiz LLC and Growth.business. Text messaging is used only
-            for requested updates and service communication.
+            Growth.business remains a related initiative, but Quizbiz.org now presents Quizbiz LLC as the company
+            operating the portfolio, lead capture, and optional customer messaging.
           </p>
         </div>
         <div className="qb-trust__grid">
@@ -517,9 +808,9 @@ function HomeView() {
           <aside className="qb-consent">
             <p className="qb-eyebrow">Sample opt-in language</p>
             <p>
-              By submitting a request, you agree to receive text messages from Quizbiz LLC / Growth.business about your
-              project or service request. Message frequency varies. Message and data rates may apply. Reply STOP to
-              unsubscribe or HELP for help.
+              By submitting a request, you agree to receive text messages from Quizbiz LLC about your project or service
+              request. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP
+              for help.
             </p>
             <div className="qb-actions">
               <a className="qb-button qb-button--primary" href="/privacy">
@@ -536,13 +827,11 @@ function HomeView() {
       <section className="qb-final">
         <div>
           <p className="qb-eyebrow">Next step</p>
-          <h2>Launch a workflow customers can understand.</h2>
-          <p>
-            Start with one painful follow-up moment, one clear consent path, and one measurable operating loop.
-          </p>
+          <h2>Route the next real inquiry through Quizbiz LLC.</h2>
+          <p>Use the capture form and directory search to turn broad intent into a concrete domain match.</p>
         </div>
-        <a className="qb-button qb-button--primary" href={`mailto:${CONTACT_EMAIL}?subject=Growth.business workflow request`}>
-          Start a workflow
+        <a className="qb-button qb-button--primary" href="#capture">
+          Capture a lead
         </a>
       </section>
     </main>
@@ -561,13 +850,13 @@ function App() {
             Q
           </span>
           <span>
-            <strong>Growth.business</strong>
-            <small>by Quizbiz LLC</small>
+            <strong>Quizbiz LLC</strong>
+            <small>Lead capture and domain routing</small>
           </span>
         </a>
         <nav className="qb-nav" aria-label="Primary">
-          <a href="/#platform">Platform</a>
-          <a href="/#brief">Brief</a>
+          <a href="/#capture">Capture</a>
+          <a href="/#directory">Directory</a>
           <a href="/#trust">Trust</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
@@ -580,7 +869,7 @@ function App() {
         <div>
           <strong>Quizbiz LLC</strong>
           <p>
-            Public trust home for Growth.business, customer messaging disclosures, and AI-assisted business workflow
+            Company home, lead capture surface, domain directory, privacy policy, and messaging terms for Quizbiz LLC
             initiatives.
           </p>
         </div>

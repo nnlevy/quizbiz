@@ -531,7 +531,9 @@ li,
 }
 
 .qb-builder input,
-.qb-builder select {
+.qb-builder select,
+.qb-builder textarea,
+.qb-search input {
   width: 100%;
   min-height: 46px;
   border: 1px solid var(--qb-line);
@@ -541,10 +543,19 @@ li,
   padding: 10px 12px;
 }
 
+.qb-builder textarea {
+  min-height: 132px;
+  resize: vertical;
+}
+
 .qb-segmented {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.qb-segmented--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .qb-segmented button {
@@ -603,12 +614,73 @@ li,
   font-size: 1.2rem;
 }
 
+.qb-score--domain span {
+  background:
+    conic-gradient(var(--qb-teal) 0 66%, #e6e9df 66% 100%);
+}
+
 .qb-result ol,
 .qb-result ul {
   display: grid;
   gap: 8px;
   margin: 10px 0 0;
   padding-left: 20px;
+}
+
+.qb-search {
+  margin-bottom: 16px;
+}
+
+.qb-search label {
+  display: grid;
+  gap: 8px;
+  color: var(--qb-ink);
+  font-weight: 850;
+}
+
+.qb-results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.qb-domain-card {
+  min-height: 250px;
+  display: grid;
+  align-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--qb-line);
+  border-radius: var(--qb-radius);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--qb-shadow);
+  padding: 18px;
+}
+
+.qb-domain-card span {
+  display: block;
+  margin-bottom: 10px;
+  color: #536014;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.qb-domain-card h3 {
+  overflow-wrap: anywhere;
+}
+
+.qb-domain-card a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--qb-line);
+  border-radius: var(--qb-radius);
+  color: var(--qb-navy);
+  font-weight: 850;
+  padding: 8px 10px;
+  text-decoration: none;
 }
 
 .qb-table {
@@ -764,7 +836,8 @@ li,
   }
 
   .qb-outcomes,
-  .qb-timeline {
+  .qb-timeline,
+  .qb-results-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -802,7 +875,9 @@ li,
   .qb-use-cases,
   .qb-timeline,
   .qb-metrics,
-  .qb-segmented {
+  .qb-segmented,
+  .qb-segmented--three,
+  .qb-results-grid {
     grid-template-columns: 1fr;
   }
 

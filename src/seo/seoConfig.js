@@ -29,15 +29,15 @@ const organizationSchema = {
 
 const pages = {
   "/": {
-    title: "Growth.business by Quizbiz LLC | AI Growth Workflows",
+    title: "Quizbiz LLC | Lead Capture and Domain Directory",
     description:
-      "B2B AI-assisted intake, follow-up, and customer messaging workflows from Quizbiz LLC doing business as Growth.business.",
+      "Quizbiz LLC operates Quizbiz.org, a lead capture and domain directory for matching business needs to the right Quizbiz domain initiative.",
     canonicalPath: "/",
-    h1: "Turn missed demand into booked work",
+    h1: "Find the right domain for the customer need",
     intro:
-      "Growth.business by Quizbiz LLC helps teams capture demand, generate useful briefs, review customer follow-up, and keep messaging consent clear.",
+      "Quizbiz.org captures a request, searches the Quizbiz LLC domain directory by audience and problem, and routes the visitor to the best next step.",
     bodyHtml:
-      "<section class=\"seo-section\"><h2>AI growth workflows</h2><p>Quizbiz LLC does business as Growth.business to provide AI-assisted intake, follow-up, routing, and customer messaging workflows for B2B and service teams.</p></section><section class=\"seo-section\"><h2>Text messaging program</h2><p>Customers can opt in to requested project updates, onboarding reminders, support follow-ups, and service notifications. Consent is optional, message frequency varies, message and data rates may apply, and users can reply STOP to unsubscribe or HELP for help.</p></section><section class=\"seo-section\"><h2>Public trust surface</h2><p>Quizbiz.org publishes business identity, privacy, messaging, and terms information for Quizbiz LLC and Growth.business.</p></section>",
+      "<section class=\"seo-section\"><h2>Lead capture and domain routing</h2><p>Quizbiz LLC operates a portfolio of practical web properties. Quizbiz.org captures business needs and routes visitors to the matching domain initiative.</p></section><section class=\"seo-section\"><h2>Text messaging program</h2><p>Customers can opt in to requested project updates, onboarding reminders, support follow-ups, and service notifications. Consent is optional, message frequency varies, message and data rates may apply, and users can reply STOP to unsubscribe or HELP for help.</p></section><section class=\"seo-section\"><h2>Public trust surface</h2><p>Quizbiz.org publishes business identity, privacy, messaging, and terms information for Quizbiz LLC.</p></section>",
     structuredData: [
       organizationSchema,
       {
@@ -51,11 +51,11 @@ const pages = {
   "/privacy": {
     title: "Privacy Policy | Quizbiz LLC",
     description:
-      "Privacy policy for Quizbiz LLC, Growth.business, Quizbiz.org, and optional text messaging services.",
+      "Privacy policy for Quizbiz LLC, Quizbiz.org, Growth.business, lead capture, and optional text messaging services.",
     canonicalPath: "/privacy",
     h1: "Privacy Policy",
     intro:
-      "Quizbiz LLC operates Quizbiz.org as the public trust and policy home for Growth.business services and related business initiatives.",
+      "Quizbiz LLC operates Quizbiz.org as the public company, lead capture, domain directory, and policy home for its business initiatives.",
     bodyHtml:
       "<section class=\"seo-section\"><h2>Text messaging privacy</h2><p>If you opt in to text messages, we use your phone number and consent record only for the messages you requested. No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. Text messaging originator opt-in data and consent will not be shared with any third parties.</p></section><section class=\"seo-section\"><h2>Contact</h2><p>Questions can be sent to hello@growth.business.</p></section>",
     structuredData: [organizationSchema],
@@ -63,11 +63,11 @@ const pages = {
   "/terms": {
     title: "Terms and Messaging Terms | Quizbiz LLC",
     description:
-      "Terms of service and mobile messaging terms for Quizbiz LLC, Growth.business, and Quizbiz.org.",
+      "Terms of service and mobile messaging terms for Quizbiz LLC, Quizbiz.org, Growth.business, and related domains.",
     canonicalPath: "/terms",
     h1: "Terms and Messaging Terms",
     intro:
-      "These terms govern Quizbiz.org, Growth.business services, and optional text messaging programs operated by Quizbiz LLC.",
+      "These terms govern Quizbiz.org, Quizbiz LLC lead capture, domain directory routing, related business initiatives, and optional text messaging programs.",
     bodyHtml:
       "<section class=\"seo-section\"><h2>Mobile messaging terms</h2><p>By opting in, you agree to receive text messages from Quizbiz LLC / Growth.business about requested project updates, onboarding reminders, support follow-ups, and portfolio service notifications. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP for help. Text consent is optional and is not a condition of purchase or service.</p></section>",
     structuredData: [organizationSchema],

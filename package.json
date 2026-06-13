@@ -1,6 +1,6 @@
 {
   "name": "quizbiz",
-  "description": "Growth.business by Quizbiz LLC AI-assisted intake, follow-up, and messaging workflow site",
+  "description": "Quizbiz LLC lead capture, domain directory, and messaging terms site",
   "private": true,
   "dependencies": {
     "chart.js": "4.4.9",
