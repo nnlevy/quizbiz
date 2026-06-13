@@ -1,6 +1,6 @@
 {
-  "name": "watershortcut",
-  "description": "A template for building a React application with Vite, Hono, and Cloudflare Workers",
+  "name": "quizbiz",
+  "description": "Growth.business by Quizbiz LLC AI-assisted intake, follow-up, and messaging workflow site",
   "private": true,
   "dependencies": {
     "chart.js": "4.4.9",
