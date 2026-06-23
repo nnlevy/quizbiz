@@ -946,109 +946,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/$/, '') || '/';
-
-    // Early handlers for our cloud dashboard / voice / portfolio APIs to ensure JSON returns (before marketing HTML fallthroughs)
     if (pathname === '/api/portfolio-domains' || pathname === '/portfolio-domains') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || {};
-      const doms = Array.isArray(r.domains) ? r.domains.slice(0,30).map(d => typeof d === 'string' ? {domain: d} : d) : Object.keys(r.domains || {}).slice(0,30).map(k=>({domain:k}));
-      return jsonResponse({ ok: true, domains: doms, total: Array.isArray(r.domains) ? r.domains.length : Object.keys(r.domains || {}).length || 76, summary: (r.summary || 'portfolio state').slice(0,200) });
-    }
-    if (pathname === '/api/content-queue' || pathname === '/content-queue') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const cq = await env.QUIZBIZ_LEADS.get('attention:content_queue', 'json') || [];
-      if (request.method === 'POST') {
-        try {
-          const body = await request.json();
-          if (body.action === 'approve' && body.id) {
-            const item = cq.find(i => i.id === body.id);
-            if (item) { item.status = 'approved'; item.approved_at = new Date().toISOString(); }
-          }
-          await env.QUIZBIZ_LEADS.put('attention:content_queue', JSON.stringify(cq));
-          return jsonResponse({ ok: true, updated: body.id });
-        } catch(e) { return jsonResponse({ok:false, error:String(e)},400); }
-      }
-      const statusParam = url.searchParams.get('status') || 'pending_approval';
-      let filteredQueue = cq;
-      if (statusParam !== 'all') {
-        filteredQueue = cq.filter(i => i.status === statusParam);
-      }
-      return jsonResponse({ ok: true, queue: filteredQueue.slice(0,20), total: cq.length, status: statusParam });
-    }
-    if (pathname === '/api/voice-command-log') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const log = await env.QUIZBIZ_LEADS.get('voice:command_log', 'json') || [];
-      return jsonResponse({ ok: true, log, count: log.length });
-    }
-    if (pathname === '/api/sync-meta') {
-      const meta = {
-        last_updated: await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text'),
-        last_principles_update: await env.QUIZBIZ_LEADS.get('dashboard:last_principles_update', 'text'),
-        last_queue_update: await env.QUIZBIZ_LEADS.get('dashboard:last_queue_update', 'text'),
-      };
-      return jsonResponse(meta);
-    }
-    if (pathname === '/api/portfolio-learnings') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const l = await env.QUIZBIZ_LEADS.get('dashboard:learnings', 'json') || {};
-      return jsonResponse(l);
-    }
-    if (pathname === '/cloud-health') {
-      const hasKV = !!env.QUIZBIZ_LEADS;
-      const last = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');
-      return jsonResponse({ ok: true, service: 'quizbiz-cloud-center', kv: hasKV, last_snapshot: last, features: ['voice-log', 'pending-actions', 'session-persistence', 'autopilot-stub', 'bidir-sync', 'content-factory', 'portfolio-scale'] });
-    }
-    if (pathname === '/api/voice-session') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const sess = await env.QUIZBIZ_LEADS.get('voice:current_session', 'json') || {turns: []};
-      return jsonResponse({ ok: true, session: sess });
-    }
-    if (pathname === '/api/cloud-health') {
-      const hasKV = !!env.QUIZBIZ_LEADS;
-      const last = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');
-      return jsonResponse({ ok: true, service: 'quizbiz-cloud-center', kv: hasKV, last_snapshot: last, features: ['voice-log', 'pending-actions', 'session-persistence', 'autopilot-stub', 'bidir-sync', 'content-factory', 'portfolio-scale'] });
-    }
-    if (pathname === '/api/run-autopilot-review') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      try {
-        const principles = await env.QUIZBIZ_LEADS.get('dashboard:principles', 'json') || {};
-        const queue = await env.QUIZBIZ_LEADS.get('dashboard:queue', 'json') || {};
-        const log = await env.QUIZBIZ_LEADS.get('voice:command_log', 'json') || [];
-        const reviewPrompt = `Review the current queue against principles across the portfolio. State: ${JSON.stringify(principles.global_weights || {})} Queue sample: ${JSON.stringify((queue.queue||[]).slice(0,3))}. Recent voice: ${JSON.stringify(log.slice(0,3))}. Suggest 1-2 safe actions in ACTIONS: json array or generate content for opportunities.`;
-        let reviewReply = 'Autopilot review: no strong actions. Queue looks stable per principles.';
-        const key = env.XAI_API_KEY;
-        if (key) {
-          const r = await fetch('https://api.x.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'grok-3',
-              messages: [{role:'system', content:'You are an autonomous reviewer for domain portfolio ops. Output short spoken + ACTIONS json or generate_content.'}, {role:'user', content: reviewPrompt}],
-              max_tokens: 120
-            })
-          });
-          if (r.ok) reviewReply = (await r.json()).choices?.[0]?.message?.content || reviewReply;
-        }
-        const logKey = 'voice:command_log';
-        let clog = await env.QUIZBIZ_LEADS.get(logKey, 'json') || [];
-        clog.unshift({ts: new Date().toISOString(), transcript: '[AUTOPILOT REVIEW]', actions: [], reply: reviewReply});
-        await env.QUIZBIZ_LEADS.put(logKey, JSON.stringify(clog.slice(0,50)));
-        return jsonResponse({ ok: true, review: reviewReply, note: 'Extend with CF bindings for real deploys. Content gen via voice "generate for portfolio".' });
-      } catch(e) {
-        return jsonResponse({ ok: false, error: String(e) }, 500);
-      }
-    }
-
-    if (pathname === '/api/voice' || pathname === '/voice' || pathname === '/internal/voice-state') {
-      if (request.method === 'POST' && pathname === '/internal/voice-state') return handleVoiceStateUpdate(request, env || {});
-      if (request.method === 'POST' && pathname === '/api/voice') return handleVoiceApi(request, env || {});
-      // Portfolio-wide list from pushed readiness for full platform integration across ~76 domains (GET)
+      // Portfolio-wide list from pushed readiness for full platform integration across ~76 domains
       const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
       if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
       const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || {};
@@ -1060,19 +959,199 @@ export default {
       const last = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');
       return jsonResponse({ ok: true, service: 'quizbiz-cloud-center', kv: hasKV, last_snapshot: last, features: ['voice-log', 'pending-actions', 'session-persistence', 'autopilot-stub', 'bidir-sync'] });
     }
-    
-    if (pathname === '/cloud-center' || pathname === '/cloud') {
-      const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
-      if (url.searchParams.get('format') === 'json' || url.searchParams.get('json')) {
-        if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-        const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || {};
-        const cq = await env.QUIZBIZ_LEADS.get('attention:content_queue', 'json') || [];
-        const pend = await env.QUIZBIZ_LEADS.get('voice:pending_actions', 'json') || [];
-        const last = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');
-        const approvedContent = cq.filter(i => i.status === 'approved').slice(0,20);
-        const pendingContent = cq.filter(i => i.status === 'pending_approval').slice(0,10);
-        return jsonResponse({ ok: true, readiness: r, content_queue: pendingContent, approved_content: approvedContent, pending_actions: pend.slice(0,5), last_updated: last, note: 'Use for pusher pull. approved_content has post-approval items for local execution; content_queue has pending.' });
+    if (pathname === '/api/portfolio-domains') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || {};
+      const doms = Array.isArray(r.domains) ? r.domains.slice(0,20).map(d => typeof d === 'string' ? {domain: d} : d) : Object.keys(r.domains || {}).slice(0,20).map(k=>({domain:k}));
+      return jsonResponse({ ok: true, domains: doms, total: Array.isArray(r.domains) ? r.domains.length : Object.keys(r.domains || {}).length || 76, summary: r.summary || 'portfolio state' });
+    }
+    if (pathname === '/api/leads') return handleLead(request, env || {});
+    if (pathname === '/api/leads/recent') return handleAdminLeads(request, env || {});
+    if (pathname === '/api/cohort-programs') return handleCohortProgram(request, env || {});
+    if (pathname === '/api/cohort-programs/recent') return handleAdminPrograms(request, env || {});
+    if (pathname === '/api/health') return jsonResponse({ ok: true, service: 'quizbiz-worker', leadsKv: Boolean(env?.QUIZBIZ_LEADS) });
+    if (pathname === '/api/voice' || pathname === '/voice' || pathname === '/internal/voice-state') {
+      if (request.method === 'POST' && pathname === '/api/voice') return handleVoiceApi(request, env || {});
+      if (request.method === 'POST' && pathname === '/internal/voice-state') return handleVoiceStateUpdate(request, env || {});
+      if (pathname === '/voice') return textResponse(voiceUiHtml(), 'text/html; charset=utf-8');
+    }
+
+    // Cloud-hosted full dashboard (control-panel) for access even when Mac is off.
+    // Serves the pre-enhanced cloud-dashboard.html (baked status + command log panel).
+    // Powered by cloud APIs + bidirectional pusher (latest snapshot always).
+    if (pathname === '/dashboard' || pathname === '/control' || pathname === '/os' || pathname === '/domain-os' || pathname === '/dashboard.html' || pathname === '/cloud-dashboard') {
+      if (env.ASSETS) {
+        const target = (pathname === '/dashboard.html') ? '/dashboard.html' : '/cloud-dashboard-v1.html';
+        const assetReq = new Request(url.origin + target, { method: 'GET', headers: request.headers });
+        const resp = await env.ASSETS.fetch(assetReq);
+
+        const resp = await env.ASSETS.fetch(assetReq);
+        return new Response(await resp.text(), {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'X-Cloud-Dashboard': 'enhanced-with-log'
+          }
+        });
       }
+      return textResponse('Cloud dashboard asset not bound. Try https://quizbiz.org/voice for commands, or local tunnel when Mac available.', 'text/plain');
+    }
+
+    // (old injection removed for clean asset serve of the pre-patched cloud-dashboard.html)
+      if (env.ASSETS) {
+        const target = (pathname === "/dashboard.html") ? "/dashboard.html" : "/cloud-dashboard.html";
+        const assetReq = new Request(url.origin + target, { method: "GET", headers: request.headers });
+        const resp = await env.ASSETS.fetch(assetReq);
+        return new Response(await resp.text(), {
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "X-Cloud-Dashboard": "enhanced-with-log"
+          }
+        });
+      }
+      return textResponse("Cloud dashboard asset not bound. Try https://quizbiz.org/voice for commands, or local tunnel when Mac available.", "text/plain");
+    }
+`;
+        // Insert after <body> or near top for visibility, before main content
+        html = html.replace(/<body[^>]*>/i, m => m + cloudEnhancements);
+        return new Response(html, {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache'
+          }
+        });
+      }
+      return textResponse('Cloud dashboard asset not bound. Try https://quizbiz.org/voice for commands, or local tunnel when Mac available. Full UI + APIs at /dashboard.html', 'text/plain');
+    }
+
+    // Cloud APIs for the dashboard UI (and voice). Backed by KV (pushed from Mac + direct updates).
+    if (pathname === '/api/queue') {
+      if (!env.QUIZBIZ_LEADS) return jsonResponse({ queue: [] });
+      let q = await env.QUIZBIZ_LEADS.get('dashboard:queue', 'json');
+      if (!q) q = await env.QUIZBIZ_LEADS.get(VOICE_KV_PREFIX + 'queue', 'json') || { queue: [] };
+      return jsonResponse(q);
+    }
+    if (pathname === '/api/principles') {
+      if (request.method === 'POST') {
+        if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized (use voice token or local)' }, 401);
+        try {
+          const data = await request.json();
+          await env.QUIZBIZ_LEADS.put('dashboard:principles', JSON.stringify(data));
+          await env.QUIZBIZ_LEADS.put(VOICE_KV_PREFIX + 'principles', JSON.stringify(data));
+          await env.QUIZBIZ_LEADS.put('dashboard:last_principles_update', new Date().toISOString());
+          return jsonResponse({ status: "saved" });
+        } catch (e) { return jsonResponse({ error: String(e) }, 400); }
+      }
+      if (!env.QUIZBIZ_LEADS) return jsonResponse({ global_weights: {}, principles: [] });
+      let p = await env.QUIZBIZ_LEADS.get('dashboard:principles', 'json');
+      if (!p) p = await env.QUIZBIZ_LEADS.get(VOICE_KV_PREFIX + 'principles', 'json') || { global_weights: { delight: 35, revenue: 25 }, principles: [] };
+      return jsonResponse(p);
+    }
+    if (pathname === '/api/sync-meta') {
+      const meta = {
+        last_updated: await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text'),
+        last_principles_update: await env.QUIZBIZ_LEADS.get('dashboard:last_principles_update', 'text'),
+        last_queue_update: await env.QUIZBIZ_LEADS.get('dashboard:last_queue_update', 'text'),
+        last_snapshot: await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text'),
+      };
+      return jsonResponse(meta);
+    }
+    if (pathname === '/api/voice-command-log') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const log = await env.QUIZBIZ_LEADS.get('voice:command_log', 'json') || [];
+      return jsonResponse({ ok: true, log, count: log.length });
+    }
+    if (pathname === '/api/pending-actions') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const pending = await env.QUIZBIZ_LEADS.get('voice:pending_actions', 'json') || [];
+      return jsonResponse({ ok: true, pending, count: pending.length });
+    }
+    if (pathname === '/api/portfolio-learnings') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const l = await env.QUIZBIZ_LEADS.get('dashboard:learnings', 'json') || await env.QUIZBIZ_LEADS.get(VOICE_KV_PREFIX + 'learnings', 'json') || {};
+      return jsonResponse(l);
+    }
+    if (pathname === '/api/content-queue') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const cq = await env.QUIZBIZ_LEADS.get('attention:content_queue', 'json') || [];
+      if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          if (body.action === 'approve' && body.id) {
+            const item = cq.find(i => i.id === body.id);
+            if (item) {
+              item.status = 'approved';
+              item.approved_at = new Date().toISOString();
+              // Stub distribution: for SMS use quizbiz patterns; for now just mark + log. Extend with actual send.
+              if (item.channel && item.channel.includes('sms')) {
+                // Could call internal submit or queue SMS here using existing quizbiz lead/program logic.
+              }
+            }
+          }
+          await env.QUIZBIZ_LEADS.put('attention:content_queue', JSON.stringify(cq));
+          return jsonResponse({ ok: true, updated: body.id });
+        } catch(e) { return jsonResponse({ok:false, error:String(e)},400); }
+      }
+      return jsonResponse({ ok: true, queue: cq.filter(i=>i.status==='pending_approval').slice(0,20), total: cq.length });
+    }
+    if (pathname === '/api/portfolio-domains') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || {};
+      const doms = Array.isArray(r.domains) ? r.domains.slice(0,20).map(d => typeof d === 'string' ? {domain: d} : d) : Object.keys(r.domains || {}).slice(0,20).map(k=>({domain:k}));
+      return jsonResponse({ ok: true, domains: doms, total: Array.isArray(r.domains) ? r.domains.length : Object.keys(r.domains || {}).length || 76, summary: r.summary || 'portfolio state' });
+    }
+    if (pathname === '/api/voice-session') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      const sess = await env.QUIZBIZ_LEADS.get('voice:current_session', 'json') || {turns: []};
+      return jsonResponse({ ok: true, session: sess });
+    }
+    if (pathname === '/api/cloud-health') {
+      const hasKV = !!env.QUIZBIZ_LEADS;
+      const last = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');
+      return jsonResponse({ ok: true, service: 'quizbiz-cloud-center', kv: hasKV, last_snapshot: last, features: ['voice-log', 'pending-actions', 'session-persistence', 'autopilot-stub', 'bidir-sync'] });
+    }
+    if (pathname === '/api/run-autopilot-review') {
+      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+      // Stub for #4: loads state + recent log, runs a reviewer prompt, applies actions via the same path.
+      // Call this manually or wire to CF cron / DO for scheduled autonomy.
+      try {
+        const principles = await env.QUIZBIZ_LEADS.get('dashboard:principles', 'json') || {};
+        const queue = await env.QUIZBIZ_LEADS.get('dashboard:queue', 'json') || {};
+        const log = await env.QUIZBIZ_LEADS.get('voice:command_log', 'json') || [];
+        const reviewPrompt = `Review the current queue against principles. State: ${JSON.stringify(principles.global_weights || {})} Queue sample: ${JSON.stringify((queue.queue||[]).slice(0,3))}. Recent voice: ${JSON.stringify(log.slice(0,3))}. Suggest 1-2 safe actions in ACTIONS: json array.`;
+        // Reuse the LLM path (simplified here for stub; in full would call the handle logic)
+        let reviewReply = 'Autopilot review: no strong actions. Queue looks stable per principles.';
+        const key = env.XAI_API_KEY;
+        if (key) {
+          const r = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'grok-3',
+              messages: [{role:'system', content:'You are an autonomous reviewer for domain portfolio ops. Output short spoken + ACTIONS json.'}, {role:'user', content: reviewPrompt}],
+              max_tokens: 100
+            })
+          });
+          if (r.ok) reviewReply = (await r.json()).choices?.[0]?.message?.content || reviewReply;
+        }
+        // Apply any actions from the reviewReply (reuses parser logic conceptually)
+        // For stub, just log the review.
+        const logKey = 'voice:command_log';
+        let clog = await env.QUIZBIZ_LEADS.get(logKey, 'json') || [];
+        clog.unshift({ts: new Date().toISOString(), transcript: '[AUTOPILOT REVIEW]', actions: [], reply: reviewReply});
+        await env.QUIZBIZ_LEADS.put(logKey, JSON.stringify(clog.slice(0,50)));
+        return jsonResponse({ ok: true, review: reviewReply, note: 'Actions from review would be applied via the executor. Extend with CF bindings for real deploys.' });
+      } catch(e) {
+        return jsonResponse({ ok: false, error: String(e) }, 500);
+      }
+    }
+
+    // Simple self-contained Cloud Command Center page (bypasses asset cache issues, always fresh, uses our new APIs for #1-5)
+    if (pathname === '/cloud-center' || pathname === '/cloud') {
       const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cloud Command Center • Domain OS</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-slate-950 text-slate-200 p-6">
 <div class="max-w-3xl mx-auto">
   <div class="flex justify-between items-center mb-4">
@@ -1127,11 +1206,11 @@ async function refreshAll() {
   // log
   fetch(BASE + '/api/voice-command-log', {headers:{'x-voice-token':TOKEN}}).then(r=>r.json()).then(d => {
     const el = document.getElementById('log');
-    el.innerHTML = (d.log||[]).map(e => \`<div class="mb-1 border-b border-white/10 pb-1">\${new Date(e.ts).toLocaleTimeString()} <b>\${e.transcript||''}</b><br/>\${e.reply||''} \${e.actions?JSON.stringify(e.actions):''}</div>\`).join('') || 'no log';
+    el.innerHTML = (d.log||[]).map(e => `<div class="mb-1 border-b border-white/10 pb-1">${new Date(e.ts).toLocaleTimeString()} <b>${e.transcript||''}</b><br/>${e.reply||''} ${e.actions?JSON.stringify(e.actions):''}</div>`).join('') || 'no log';
   });
   // pending
   fetch(BASE + '/api/pending-actions', {headers:{'x-voice-token':TOKEN}}).then(r=>r.json()).then(d => {
-    document.getElementById('pending').innerHTML = (d.pending||[]).map(p => \`<div>\${p.ts} \${JSON.stringify(p.actions)}</div>\`).join('') || 'none';
+    document.getElementById('pending').innerHTML = (d.pending||[]).map(p => `<div>${p.ts} ${JSON.stringify(p.actions)}</div>`).join('') || 'none';
   });
   // content queue (new #1, portfolio)
   fetch(BASE + '/api/content-queue', {headers:{'x-voice-token':TOKEN}}).then(r=>r.json()).then(d => {
@@ -1139,10 +1218,10 @@ async function refreshAll() {
     if (!el) return;
     let h = '';
     (d.queue || []).forEach(item => {
-      h += \`<div class="mb-2 p-1 border-b border-white/10"> <b>\${item.domain}</b> / \${item.channel} <button onclick="approveContent('\${item.id}')" class="ml-2 text-[10px] bg-emerald-800 px-1 rounded">Approve</button><br/>
-      <span class="text-xs opacity-80">\${(item.text||'').slice(0,120)}...</span><br/>
-      <span class="text-[10px] text-emerald-400">\${item.why_attention || ''}</span>
-      </div>\`;
+      h += `<div class="mb-2 p-1 border-b border-white/10"> <b>${item.domain}</b> / ${item.channel} <button onclick="approveContent('${item.id}')" class="ml-2 text-[10px] bg-emerald-800 px-1 rounded">Approve</button><br/>
+      <span class="text-xs opacity-80">${(item.text||'').slice(0,120)}...</span><br/>
+      <span class="text-[10px] text-emerald-400">${item.why_attention || ''}</span>
+      </div>`;
     });
     el.innerHTML = h || 'No pending content. Use voice: "generate content for [domain] [goal]" or "portfolio"';
   });
@@ -1152,9 +1231,9 @@ async function refreshAll() {
     const el = document.getElementById('portfolio');
     if (!el) return;
     const doms = (d.domains || (d.readiness ? [] : [])).slice ? (d.domains || []).slice(0,15) : [];
-    let h = doms.map(dom => \`<div class="inline-block mr-2 mb-1 px-2 py-0.5 bg-white/10 rounded text-xs">\${typeof dom === 'string' ? dom : (dom.domain || JSON.stringify(dom).slice(0,20))}</div>\`).join('');
+    let h = doms.map(dom => `<div class="inline-block mr-2 mb-1 px-2 py-0.5 bg-white/10 rounded text-xs">${typeof dom === 'string' ? dom : (dom.domain || JSON.stringify(dom).slice(0,20))}</div>`).join('');
     const total = Array.isArray(d.domains) ? d.domains.length : (d.total || 76);
-    el.innerHTML = h + \`<div class="text-[10px] mt-1">Total ~\${total} active in readiness/portfolio. Synced live from local via bidirectional pusher. Use voice "generate for portfolio high-delight domains".</div>\`;
+    el.innerHTML = h + `<div class="text-[10px] mt-1">Total ~${total} active in readiness/portfolio. Synced live from local via bidirectional pusher. Use voice "generate for portfolio high-delight domains".</div>`;
   }).catch(() => {
     const el = document.getElementById('portfolio');
     if (el) el.innerHTML = 'Portfolio ~76 domains (readiness/queue synced). Voice commands work portfolio-wide.';
@@ -1162,7 +1241,7 @@ async function refreshAll() {
   // session
   fetch(BASE + '/api/voice-session', {headers:{'x-voice-token':TOKEN}}).then(r=>r.json()).then(d => {
     const el = document.getElementById('session');
-    el.innerHTML = (d.session && d.session.turns ? d.session.turns : []).map(t => \`<div class="mb-1">\${t.transcript} → \${t.reply}</div>\`).join('') || 'no session';
+    el.innerHTML = (d.session && d.session.turns ? d.session.turns : []).map(t => `<div class="mb-1">${t.transcript} → ${t.reply}</div>`).join('') || 'no session';
   });
 }
 
@@ -1177,139 +1256,6 @@ setInterval(refreshAll, 30000);
 </body></html>`;
       return new Response(html, {headers: {'Content-Type': 'text/html; charset=utf-8'}});
     }
-    if (pathname === '/api/leads') return handleLead(request, env || {});
-    if (pathname === '/api/leads/recent') return handleAdminLeads(request, env || {});
-    if (pathname === '/api/cohort-programs') return handleCohortProgram(request, env || {});
-    if (pathname === '/api/cohort-programs/recent') return handleAdminPrograms(request, env || {});
-    if (pathname === '/api/health') return jsonResponse({ ok: true, service: 'quizbiz-worker', leadsKv: Boolean(env?.QUIZBIZ_LEADS) });
-    if (pathname === '/api/voice' || pathname === '/voice' || pathname === '/internal/voice-state') {
-      if (request.method === 'POST' && pathname === '/api/voice') return handleVoiceApi(request, env || {});
-      if (request.method === 'POST' && pathname === '/internal/voice-state') return handleVoiceStateUpdate(request, env || {});
-      if (pathname === '/voice') return textResponse(voiceUiHtml(), 'text/html; charset=utf-8');
-    }
-
-    // Cloud-hosted full dashboard (control-panel) for access even when Mac is off.
-    // Serves the pre-enhanced cloud-dashboard.html (baked status + command log panel).
-    // Powered by cloud APIs + bidirectional pusher (latest snapshot always).
-    if (pathname === '/dashboard' || pathname === '/control' || pathname === '/os' || pathname === '/domain-os' || pathname === '/dashboard.html' || pathname === '/cloud-dashboard') {
-      if (env.ASSETS) {
-        const target = (pathname === '/dashboard.html') ? '/dashboard.html' : '/cloud-dashboard-v1.html';
-        const assetReq = new Request(url.origin + target, { method: 'GET', headers: request.headers });
-        const resp = await env.ASSETS.fetch(assetReq);
-
-        return new Response(await resp.text(), {
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma': 'no-cache',
-            'X-Cloud-Dashboard': 'enhanced-with-log'
-          }
-        });
-      }
-      return textResponse('Cloud dashboard asset not bound. Try https://quizbiz.org/voice for commands, or local tunnel when Mac available.', 'text/plain');
-    }
-
-    // Cloud APIs for the dashboard UI (and voice). Backed by KV (pushed from Mac + direct updates).
-    if (pathname === '/api/queue') {
-      if (!env.QUIZBIZ_LEADS) return jsonResponse({ queue: [] });
-      let q = await env.QUIZBIZ_LEADS.get('dashboard:queue', 'json');
-      if (!q) q = await env.QUIZBIZ_LEADS.get(VOICE_KV_PREFIX + 'queue', 'json') || { queue: [] };
-      return jsonResponse(q);
-    }
-    if (pathname === '/api/principles') {
-      if (request.method === 'POST') {
-        if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized (use voice token or local)' }, 401);
-        try {
-          const data = await request.json();
-          await env.QUIZBIZ_LEADS.put('dashboard:principles', JSON.stringify(data));
-          await env.QUIZBIZ_LEADS.put(VOICE_KV_PREFIX + 'principles', JSON.stringify(data));
-          await env.QUIZBIZ_LEADS.put('dashboard:last_principles_update', new Date().toISOString());
-          return jsonResponse({ status: "saved" });
-        } catch (e) { return jsonResponse({ error: String(e) }, 400); }
-      }
-      if (!env.QUIZBIZ_LEADS) return jsonResponse({ global_weights: {}, principles: [] });
-      let p = await env.QUIZBIZ_LEADS.get('dashboard:principles', 'json');
-      if (!p) p = await env.QUIZBIZ_LEADS.get(VOICE_KV_PREFIX + 'principles', 'json') || { global_weights: { delight: 35, revenue: 25 }, principles: [] };
-      return jsonResponse(p);
-    }
-    if (pathname === '/api/sync-meta') {
-      const meta = {
-        last_updated: await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text'),
-        last_principles_update: await env.QUIZBIZ_LEADS.get('dashboard:last_principles_update', 'text'),
-        last_queue_update: await env.QUIZBIZ_LEADS.get('dashboard:last_queue_update', 'text'),
-        last_snapshot: await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text'),
-      };
-      return jsonResponse(meta);
-    }
-    if (pathname === '/api/voice-command-log') {
-      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const log = await env.QUIZBIZ_LEADS.get('voice:command_log', 'json') || [];
-      return jsonResponse({ ok: true, log, count: log.length });
-    }
-    if (pathname === '/api/pending-actions') {
-      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const pending = await env.QUIZBIZ_LEADS.get('voice:pending_actions', 'json') || [];
-      return jsonResponse({ ok: true, pending, count: pending.length });
-    }
-    if (pathname === '/api/portfolio-learnings') {
-      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const l = await env.QUIZBIZ_LEADS.get('dashboard:learnings', 'json') || await env.QUIZBIZ_LEADS.get(VOICE_KV_PREFIX + 'learnings', 'json') || {};
-      return jsonResponse(l);
-    }
-    if (pathname === '/api/readiness') {
-      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || {};
-      const doms = Array.isArray(r.domains) ? r.domains.slice(0,20).map(d => typeof d === 'string' ? {domain: d} : d) : Object.keys(r.domains || {}).slice(0,20).map(k=>({domain:k}));
-      return jsonResponse({ ok: true, domains: doms, total: Array.isArray(r.domains) ? r.domains.length : Object.keys(r.domains || {}).length || 76, summary: r.summary || 'portfolio state' });
-    }
-    if (pathname === '/api/voice-session') {
-      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const sess = await env.QUIZBIZ_LEADS.get('voice:current_session', 'json') || {turns: []};
-      return jsonResponse({ ok: true, session: sess });
-    }
-    if (pathname === '/api/cloud-health') {
-      const hasKV = !!env.QUIZBIZ_LEADS;
-      const last = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');
-      return jsonResponse({ ok: true, service: 'quizbiz-cloud-center', kv: hasKV, last_snapshot: last, features: ['voice-log', 'pending-actions', 'session-persistence', 'autopilot-stub', 'bidir-sync'] });
-    }
-    if (pathname === '/api/run-autopilot-review') {
-      if (!isDashboardAuthed(request, env)) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      // Stub for #4: loads state + recent log, runs a reviewer prompt, applies actions via the same path.
-      // Call this manually or wire to CF cron / DO for scheduled autonomy.
-      try {
-        const principles = await env.QUIZBIZ_LEADS.get('dashboard:principles', 'json') || {};
-        const queue = await env.QUIZBIZ_LEADS.get('dashboard:queue', 'json') || {};
-        const log = await env.QUIZBIZ_LEADS.get('voice:command_log', 'json') || [];
-        const reviewPrompt = `Review the current queue against principles. State: ${JSON.stringify(principles.global_weights || {})} Queue sample: ${JSON.stringify((queue.queue||[]).slice(0,3))}. Recent voice: ${JSON.stringify(log.slice(0,3))}. Suggest 1-2 safe actions in ACTIONS: json array.`;
-        // Reuse the LLM path (simplified here for stub; in full would call the handle logic)
-        let reviewReply = 'Autopilot review: no strong actions. Queue looks stable per principles.';
-        const key = env.XAI_API_KEY;
-        if (key) {
-          const r = await fetch('https://api.x.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'grok-3',
-              messages: [{role:'system', content:'You are an autonomous reviewer for domain portfolio ops. Output short spoken + ACTIONS json.'}, {role:'user', content: reviewPrompt}],
-              max_tokens: 100
-            })
-          });
-          if (r.ok) reviewReply = (await r.json()).choices?.[0]?.message?.content || reviewReply;
-        }
-        // Apply any actions from the reviewReply (reuses parser logic conceptually)
-        // For stub, just log the review.
-        const logKey = 'voice:command_log';
-        let clog = await env.QUIZBIZ_LEADS.get(logKey, 'json') || [];
-        clog.unshift({ts: new Date().toISOString(), transcript: '[AUTOPILOT REVIEW]', actions: [], reply: reviewReply});
-        await env.QUIZBIZ_LEADS.put(logKey, JSON.stringify(clog.slice(0,50)));
-        return jsonResponse({ ok: true, review: reviewReply, note: 'Actions from review would be applied via the executor. Extend with CF bindings for real deploys.' });
-      } catch(e) {
-        return jsonResponse({ ok: false, error: String(e) }, 500);
-      }
-    }
-
-    // Simple self-contained Cloud Command Center page (bypasses asset cache issues, always fresh, uses our new APIs for #1-5)
-    
     if (pathname === '/api/readiness') {
       const r = await env.QUIZBIZ_LEADS.get('dashboard:readiness', 'json') || await env.QUIZBIZ_LEADS.get('voice:readiness', 'json') || { summary: "Cloud mode - last state pushed from Mac. Full logs/receipts require Mac online." };
       const snap = await env.QUIZBIZ_LEADS.get('dashboard:last_updated', 'text');

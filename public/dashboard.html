@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Domain OS • Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+    
+    :root {
+      --primary: #0f172a;
+    }
+    
+    body {
+      font-family: 'Inter', system_ui, sans-serif;
+    }
+    
+    .font-display {
+      font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+      font-weight: 600;
+    }
+
+    .mobile-container {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    .section {
+      background: #1e2937;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #334155;
+    }
+
+    .stat-card {
+      background: #1e2937;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #334155;
+    }
+
+    .big-stat {
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 700;
+      font-family: 'Space Grotesk', system_ui, sans-serif;
+    }
+
+    .post-card {
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .copy-btn {
+      background: #334155;
+      color: #cbd5e1;
+      transition: all 0.1s ease;
+    }
+    
+    .copy-btn:active {
+      background: #64748b;
+      transform: scale(0.97);
+    }
+
+    .nav-tab {
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    .nav-tab.active {
+      background: #64748b;
+      color: white;
+    }
+
+    .log-line {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .metric {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .domain-row {
+      padding: 10px 0;
+      border-bottom: 1px solid #334155;
+    }
+
+    .domain-row:last-child {
+      border-bottom: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #166534;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 13px;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+    }
+
+    .material-text {
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.4;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .header {
+      background: linear-gradient(to right, #0f172a, #1e2937);
+      border-bottom: 1px solid #334155;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: #64748b;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .mini-card {
+      background: #1e2937;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="bg-[#0f172a] text-slate-200">
+  <div class="mobile-container mx-auto shadow-2xl overflow-hidden">
+    
+    <!-- Header -->
+    <div class="header px-4 pt-3 pb-2 sticky top-0 z-50">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-x-3">
+          <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
+            <i class="fa-solid fa-globe text-white text-xl"></i>
+          </div>
+          <div>
+            <div class="font-display text-2xl tracking-tighter font-semibold">Domain OS</div>
+            <div class="text-[10px] text-emerald-400 -mt-1">Nir's Revenue Platform</div>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-x-2">
+          <div class="px-3 py-1 bg-emerald-900/60 text-emerald-400 text-xs font-medium rounded-full flex items-center gap-x-1">
+            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+            <span class="font-semibold">LIVE</span>
+          </div>
+          <button onclick="refreshData()" 
+                  class="flex items-center justify-center w-9 h-9 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-2xl text-slate-300 transition-colors">
+            <i class="fa-solid fa-sync text-base"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="mt-2 flex items-center justify-between text-xs">
+        <div class="text-slate-400">
+          <span class="font-medium text-white">Today:</span> Jun 19, 2026
+        </div>
+        <div class="text-emerald-400 text-[10px] font-medium">Last sync: 11:08 • Full 75 run</div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="px-4 pt-4">
+      <div class="grid grid-cols-4 gap-2">
+        <div class="stat-card text-center">
+          <div class="text-[10px] text-slate-400 font-medium tracking-wider">DOMAINS</div>
+          <div class="big-stat text-white mt-0.5">76</div>
+          <div class="text-[10px] text-emerald-400">+ full QA</div>
+        </div>
+        <div class="stat-card text-center">
+          <div class="text-[10px] text-slate-400 font-medium tracking-wider">HIGH DELIGHT</div>
+          <div class="big-stat text-emerald-400 mt-0.5">5</div>
+          <div class="text-[10px] text-emerald-300">↑ from 4</div>
+        </div>
+        <div class="stat-card text-center">
+          <div class="text-[10px] text-slate-400 font-medium tracking-wider">ADSENSE 7D</div>
+          <div class="big-stat text-amber-400 mt-0.5">$0</div>
+          <div class="text-[10px] text-amber-300">early stage</div>
+        </div>
+        <div class="stat-card text-center">
+          <div class="text-[10px] text-slate-400 font-medium tracking-wider">QUEUE</div>
+          <div class="big-stat text-white mt-0.5">18</div>
+          <div class="text-[10px] text-slate-300">1 presented</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="px-4 pt-4 pb-1">
+      <div class="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+        <button onclick="showTab('monitor')" class="nav-tab active bg-slate-700 text-white px-4" id="tab-monitor">
+          <i class="fa-solid fa-tachometer-alt mr-1.5"></i> Monitor
+        </button>
+        <button onclick="showTab('principles')" class="nav-tab bg-slate-800 hover:bg-slate-700 px-4" id="tab-principles">
+          <i class="fa-solid fa-project-diagram mr-1.5"></i> Principles Web
+        </button>
+        <button onclick="showTab('approvals')" class="nav-tab bg-slate-800 hover:bg-slate-700 px-4" id="tab-approvals">
+          <i class="fa-solid fa-tasks mr-1.5"></i> Approvals
+        </button>
+        <button onclick="showTab('materials')" class="nav-tab bg-slate-800 hover:bg-slate-700 px-4" id="tab-materials">
+          <i class="fa-solid fa-paper-plane mr-1.5"></i> Ready Posts
+        </button>
+        <button onclick="showTab('profiles')" class="nav-tab bg-slate-800 hover:bg-slate-700 px-4" id="tab-profiles">
+          <i class="fa-solid fa-user mr-1.5"></i> Profiles
+        </button>
+        <button onclick="openVoiceMode()" class="nav-tab bg-slate-800 hover:bg-slate-700 px-3" id="tab-voice" title="Persistent Voice Mode with OpenClaw">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Grok Build Quick Prompt (always accessible, one-tap launch icon) -->
+    <div class="px-4 pb-3">
+      <div class="flex items-center gap-2 bg-[#1e2937] border border-slate-600 rounded-2xl px-3 py-1.5">
+        <i onclick="focusGrokPrompt()" class="fa-solid fa-rocket text-emerald-400 cursor-pointer text-lg" title="Quick launch prompt to Grok Build"></i>
+        <input id="grok-prompt" placeholder="New prompt for Grok Build..." class="flex-1 bg-transparent text-sm placeholder-slate-500 focus:outline-none" onkeydown="if (event.key === 'Enter') launchGrokPrompt()">
+        <button onclick="launchGrokPrompt()" class="text-xs px-3 py-1 bg-emerald-700 active:bg-emerald-600 rounded-xl font-semibold">Launch</button>
+      </div>
+      <div class="text-[10px] text-slate-500 mt-0.5 px-1">Type instruction • Launch sends formatted prompt (copy + ready for grok-text)</div>
+    </div>
+
+    <!-- FirmWebsite Freemium quick access (credits + paid approach) -->
+    <div class="px-4 pb-2">
+      <a href="https://firmwebsite.com" target="_blank" class="block text-xs text-center bg-white/5 border border-slate-600 rounded-2xl py-2 hover:bg-white/10">
+        🚀 FirmWebsite: Free trial (1 credit, single photo) or paid (multi-file + full portfolio approach: weights, value-first, funnel tone). Credits via Stripe.
+      </a>
+    </div>
+
+    <!-- MONITOR TAB -->
+    <div id="monitor" class="tab-content px-4">
+      <div class="section p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-semibold text-lg">Recent Activity</div>
+          <div class="text-xs px-2 py-0.5 bg-emerald-900 text-emerald-300 rounded">Full 75 • 11:08</div>
+        </div>
+        
+        <div class="space-y-2 text-sm">
+          <div class="flex gap-3 bg-[#0f172a] p-2.5 rounded-xl">
+            <div class="w-5 text-emerald-400 mt-0.5"><i class="fa-solid fa-check-circle"></i></div>
+            <div class="flex-1">
+              <div class="font-medium">Full 76-domain re-run completed</div>
+              <div class="text-xs text-slate-400">High delight now at 5 (was 4). 1 marketing ready.</div>
+              <div class="text-[10px] text-emerald-300 mt-0.5">Auditor + browse light for every domain</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 bg-[#0f172a] p-2.5 rounded-xl">
+            <div class="w-5 text-sky-400 mt-0.5"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="flex-1">
+              <div class="font-medium">AdSense regular updates deployed</div>
+              <div class="text-xs text-slate-400">Mapped to watershortcut.com • Slots auto-loaded • $0 7d (early)</div>
+              <div class="text-[10px] text-sky-300 mt-0.5">Now runs on every 12h qa + watershortcut crons</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 bg-[#0f172a] p-2.5 rounded-xl">
+            <div class="w-5 text-violet-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>
+            <div class="flex-1">
+              <div class="font-medium">Progress share sent (ID 0708)</div>
+              <div class="text-xs text-slate-400">Informed via iMessage + working viewer link</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 bg-[#0f172a] p-2.5 rounded-xl">
+            <div class="w-5 text-amber-400 mt-0.5"><i class="fa-solid fa-search"></i></div>
+            <div class="flex-1">
+              <div class="font-medium">Chatulah.com vetted for AdSense</div>
+              <div class="text-xs text-slate-400">Publisher-grade confirmed via /browse. Receipt + submit plan ready.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Logs -->
+      <div class="section p-4">
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="font-semibold">Recent Log (Auditor)</div>
+          <button onclick="copyRecentLogs()" class="text-xs px-3 py-1 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 rounded-xl flex items-center gap-x-1 text-slate-300">
+            <i class="fa-solid fa-copy text-xs"></i> <span class="text-[10px]">Copy</span>
+          </button>
+        </div>
+        
+        <div class="bg-[#0f172a] rounded-xl p-3 text-[11px] log-line space-y-1 max-h-[210px] overflow-y-auto border border-slate-700">
+          <div class="text-emerald-300">[11:08] Audited 76 domains. High delight: 5, marketing_ready: 1</div>
+          <div>[11:08] [76/76] watershortcut.com: delight=52 load=False errs=158 issues=3</div>
+          <div>[11:08] Updated live_domains.txt + LATEST.md + health AdSense section</div>
+          <div class="text-amber-300">[11:08] Bottleneck instructor triggered → ID portfolio-20260619-0708</div>
+          <div>[11:08] Sent via openclaw • Adjusted 4 queue items</div>
+          <div class="text-emerald-300">[11:08] Viewer refreshed for health items</div>
+          <div class="text-slate-400">... (full 76 domain browse logs above in file)</div>
+        </div>
+        <div class="text-[10px] text-center text-slate-500 mt-1.5">Full log: /tmp/auditor-full-75-rerun-2026-06-19.log</div>
+      </div>
+    </div>
+
+    <!-- MATERIALS TAB -->
+    <div id="materials" class="tab-content px-4 hidden">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <div class="font-semibold text-lg">Ready to Post</div>
+          <div class="text-xs text-emerald-300">Generated today • Watershortcut focus • Copy-paste ready for phone</div>
+        </div>
+        <button onclick="openOutreachFunnel()" 
+                class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-2xl flex items-center gap-x-2">
+          <i class="fa-solid fa-list-ol"></i>
+          <span>GUIDED FUNNEL (1/5)</span>
+        </button>
+      </div>
+
+      <!-- Post 1 -->
+      <div class="post-card p-3">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-emerald-400 text-xs font-semibold">DURHAM • PRIMARY</span>
+            <div class="text-sm font-semibold">Durham Stage 2 Restrictions</div>
+          </div>
+          <div class="text-right">
+            <button onclick="copyPost(0, 'linkedin')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1 mb-1"><i class="fa-brands fa-linkedin text-sm"></i> <span class="text-xs">LI</span></button>
+            <button onclick="copyPost(0, 'x')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1"><i class="fa-brands fa-x-twitter text-sm"></i> <span class="text-xs">X</span></button>
+          </div>
+        </div>
+        <div class="material-text text-slate-300 text-sm" id="post-0">
+Durham just escalated to Stage 2 water restrictions. No more spray irrigation — only drip or hand watering with a shutoff nozzle.
+
+Lake Michie and Little River Reservoir are critically low.
+
+If you're in Durham, now's the time to find every leak and cut waste fast.
+
+WaterShortcut's free bill analyzer spots issues before your next statement hits: https://www.watershortcut.com/analyze-water-bill
+
+#DurhamNC #Stage2 #WaterRestrictions #Drought
+        </div>
+      </div>
+
+      <!-- Post 2 -->
+      <div class="post-card p-3">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-emerald-400 text-xs font-semibold">RALEIGH</span>
+            <div class="text-sm font-semibold">Raleigh Stage 1 Active</div>
+          </div>
+          <div class="text-right">
+            <button onclick="copyPost(1, 'linkedin')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1 mb-1"><i class="fa-brands fa-linkedin text-sm"></i> <span class="text-xs">LI</span></button>
+            <button onclick="copyPost(1, 'x')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1"><i class="fa-brands fa-x-twitter text-sm"></i> <span class="text-xs">X</span></button>
+          </div>
+        </div>
+        <div class="material-text text-slate-300 text-sm" id="post-1">
+Raleigh's Stage 1 restrictions are still in effect. Odd addresses water Tuesdays; even addresses Wednesdays — and only during allowed hours.
+
+Falls Lake levels remain under pressure.
+
+Don't wait for enforcement. Use WaterShortcut's free tools to audit your usage and find savings: https://www.watershortcut.com/
+
+#RaleighNC #WaterRestrictions #ConserveWater
+        </div>
+      </div>
+
+      <div class="post-card p-3">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-emerald-400 text-xs font-semibold">DENVER</span>
+            <div class="text-sm font-semibold">Denver Stage 1 Drought</div>
+          </div>
+          <div class="text-right">
+            <button onclick="copyPost(2, 'linkedin')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1 mb-1"><i class="fa-brands fa-linkedin text-sm"></i> <span class="text-xs">LI</span></button>
+            <button onclick="copyPost(2, 'x')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1"><i class="fa-brands fa-x-twitter text-sm"></i> <span class="text-xs">X</span></button>
+          </div>
+        </div>
+        <div class="material-text text-slate-300 text-sm" id="post-2">
+Denver Water's Stage 1 drought rules are mandatory: two assigned watering days per week, before 10am or after 6pm only.
+
+Even addresses: Sunday & Thursday. Odd addresses: Wednesday & Saturday.
+
+Temporary drought pricing is also in effect.
+
+Stay compliant and lower your bill with WaterShortcut's savings calculator: https://www.watershortcut.com/savings-plan
+
+#DenverWater #Stage1Drought #WaterConservation
+        </div>
+      </div>
+
+      <div class="post-card p-3">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-emerald-400 text-xs font-semibold">FLORIDA</span>
+            <div class="text-sm font-semibold">Florida SWFWMD Phase III Extreme</div>
+          </div>
+          <div class="text-right">
+            <button onclick="copyPost(3, 'linkedin')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1 mb-1"><i class="fa-brands fa-linkedin text-sm"></i> <span class="text-xs">LI</span></button>
+            <button onclick="copyPost(3, 'x')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1"><i class="fa-brands fa-x-twitter text-sm"></i> <span class="text-xs">X</span></button>
+          </div>
+        </div>
+        <div class="material-text text-slate-300 text-sm" id="post-3">
+Florida's Modified Phase III "Extreme" water shortage continues through July 1.
+
+One-day-per-week lawn watering only — with strict time windows.
+
+If you're in Hillsborough, Pinellas, Polk, or surrounding counties, every drop counts.
+
+WaterShortcut helps you track usage and cut waste before restrictions tighten further: https://www.watershortcut.com/leak-check
+
+#FloridaWater #SWFWMD #WaterShortage #PhaseIII
+        </div>
+      </div>
+
+      <div class="post-card p-3">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-emerald-400 text-xs font-semibold">NATIONAL</span>
+            <div class="text-sm font-semibold">46% of U.S. in Drought</div>
+          </div>
+          <div class="text-right">
+            <button onclick="copyPost(4, 'linkedin')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1 mb-1"><i class="fa-brands fa-linkedin text-sm"></i> <span class="text-xs">LI</span></button>
+            <button onclick="copyPost(4, 'x')" class="copy-btn text-xs px-3 py-1 rounded-xl flex items-center gap-x-1"><i class="fa-brands fa-x-twitter text-sm"></i> <span class="text-xs">X</span></button>
+          </div>
+        </div>
+        <div class="material-text text-slate-300 text-sm" id="post-4">
+46% of the U.S. is currently in drought. From Durham to Denver to Florida, communities are tightening restrictions.
+
+WaterShortcut is the simple tool homeowners are using to understand their bill and find real savings fast.
+
+Free analysis: https://www.watershortcut.com/
+
+#Drought #WaterConservation #SaveWater
+        </div>
+      </div>
+
+      <div class="text-center text-[10px] text-slate-400 mt-2">All posts include direct CTAs to https://www.watershortcut.com/ tools. Timely, local, actionable.</div>
+    </div>
+
+    <!-- PROFILES TAB -->
+    <div id="profiles" class="tab-content px-4 hidden">
+      <div class="section p-4 mb-3">
+        <div class="font-semibold mb-2">Watershortcut — Ready Profile Materials</div>
+        
+        <div class="mb-3">
+          <div class="text-xs text-slate-300 mb-1 font-medium">LinkedIn Company About (copy-paste)</div>
+          <div class="material-text text-xs" id="linkedin-about">WaterShortcut helps homeowners and renters turn confusing water bills into clear savings actions, leak clues, and next steps.
+
+Our free AI bill analyzer spots hidden leaks, tier pressure, and rebate opportunities — all tied to your actual usage and local providers.
+
+No plumbing knowledge required. Made for real people dealing with real bills.
+
+Currently serving users navigating drought restrictions across the U.S. (Durham NC, Raleigh, Denver, Florida, and beyond).
+
+Try it free: watershortcut.com</div>
+          <button onclick="copyToClipboard(document.getElementById('linkedin-about').innerText, 'LinkedIn About copied')" 
+                  class="mt-1.5 w-full py-2 text-xs bg-slate-700 active:bg-slate-600 rounded-2xl font-semibold flex items-center justify-center gap-x-2">
+            <i class="fa-solid fa-copy"></i> <span>COPY LINKEDIN ABOUT</span>
+          </button>
+        </div>
+
+        <div>
+          <div class="text-xs text-slate-300 mb-1 font-medium">X / Twitter Bio (copy-paste)</div>
+          <div class="material-text text-xs" id="twitter-bio">Turn water bills into savings. AI that finds leaks, rebates &amp; waste. Free tool for homeowners in drought areas. watershortcut.com</div>
+          <button onclick="copyToClipboard(document.getElementById('twitter-bio').innerText, 'Twitter bio copied')" 
+                  class="mt-1.5 w-full py-2 text-xs bg-slate-700 active:bg-slate-600 rounded-2xl font-semibold flex items-center justify-center gap-x-2">
+            <i class="fa-solid fa-copy"></i> <span>COPY X BIO</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="section p-4">
+        <div class="font-semibold mb-2 text-sm">Quick Profile Update Template (for any domain)</div>
+        <div class="text-xs bg-[#0f172a] p-3 rounded-xl border border-slate-700 text-slate-300">
+          "Just updated our [domain] offering with fresh tools after full QA pass. New [feature] live. Check it out: [url]"
+        </div>
+        <button onclick="copyToClipboard('Just updated our offering with fresh tools after full QA pass. New insights live. Check it out: https://watershortcut.com/', 'Template copied')" 
+                class="mt-2 w-full text-xs py-2 bg-slate-700 active:bg-slate-600 rounded-2xl font-semibold">COPY GENERIC UPDATE</button>
+      </div>
+    </div>
+
+    <!-- PROGRESS / EVIDENCE TAB -->
+    <div id="progress" class="tab-content px-4 hidden">
+      <div class="section p-4">
+        <div class="font-semibold mb-3">Today's Real Progress (Evidence)</div>
+        
+        <div class="space-y-2.5 text-sm">
+          <div class="flex gap-2">
+            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+            <div>
+              <div class="font-medium">Full 76-domain Browse QA re-run</div>
+              <div class="text-xs text-slate-300">Every domain tested for load + offered functionality. Delight improved. High delight now 5.</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-2">
+            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+            <div>
+              <div class="font-medium">AdSense regular reporting live</div>
+              <div class="text-xs text-slate-300">Pulls every audit run. Mapped to watershortcut.com with real slots. Data in all dashboards.</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-2">
+            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+            <div>
+              <div class="font-medium">Daily content iteration (Watershortcut)</div>
+              <div class="text-xs text-slate-300">5 timely posts generated from real news (Durham Stage 2, Denver, Florida Phase III, national drought). All with direct CTAs to tools. Formatted &amp; ready.</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-2">
+            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+            <div>
+              <div class="font-medium">Chatulah.com publisher-grade audit</div>
+              <div class="text-xs text-slate-300">Full /browse validation. Confirmed works + high-quality community offering. AdSense submit plan + receipt ready.</div>
+            </div>
+          </div>
+          
+          <div class="flex gap-2">
+            <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+            <div>
+              <div class="font-medium">Progress visibility sent</div>
+              <div class="text-xs text-slate-300">Structured text + viewer ID 0708 delivered. Queue adjusted 4 items based on delight data.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-1 text-xs text-slate-400">
+        Traffic note: AdSense currently $0 (portfolio in delight-first phase per manifesto). Current focus = high-quality content generation + tool iteration + QA hygiene before heavy paid acquisition. Posts above are the primary traffic prep mechanism right now.
+      </div>
+    </div>
+
+    <!-- PRINCIPLES WEB TAB (new visual weights & measures) -->
+    <div id="principles" class="tab-content px-4 hidden">
+      <div class="section p-4">
+        <div class="font-semibold text-lg mb-1">Principles Web</div>
+        <div class="text-xs text-slate-300 mb-3">Adjust weights &amp; add comments. "Apply Principles" re-ranks Approvals and highlights efforts based on your current platform principles. Changes persist locally and can influence future Grok runs/audits.</div>
+
+        <div class="grid grid-cols-1 gap-3">
+          <!-- Global Weights Sliders -->
+          <div>
+            <div class="font-medium text-sm mb-2">Global Weights (drag to adjust, sum ~100)</div>
+            <div id="weights-sliders" class="space-y-2"></div>
+            <div class="text-[10px] text-emerald-300 mt-1">Total: <span id="weights-total">100</span></div>
+          </div>
+
+          <!-- Radar Chart -->
+          <div>
+            <canvas id="principles-radar" width="300" height="200"></canvas>
+            <div class="text-center text-[10px] text-slate-400">Weighted priorities visual (updates live)</div>
+          </div>
+
+          <!-- Editable Principles + Comments -->
+          <div>
+            <div class="font-medium text-sm mb-2">Platform Principles (edit comments; they become "rules" for the system)</div>
+            <div id="principles-list" class="space-y-2 text-sm"></div>
+          </div>
+
+          <button onclick="applyPrinciples()" 
+                  class="w-full py-3 bg-emerald-600 active:bg-emerald-500 rounded-3xl font-semibold text-sm flex items-center justify-center gap-x-2">
+            <i class="fa-solid fa-magic"></i> <span>APPLY PRINCIPLES (re-rank Approvals + update recommendations)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROVALS TAB (new: split On-site vs Outbound) -->
+    <div id="approvals" class="tab-content px-4 hidden">
+      <div class="font-semibold text-lg mb-2">Pending Approvals</div>
+      <div class="text-xs text-slate-300 mb-3">From approval_queue.json. Click to view in outreach viewer. Use Principles Web above to re-prioritize.</div>
+
+      <!-- Sub-tabs for On-site vs Outbound -->
+      <div class="flex gap-2 mb-3">
+        <button onclick="showApprovalSubtab('pending')" class="subtab-btn active px-3 py-1 text-xs rounded-full bg-slate-700" id="subtab-pending">Pending Approvals</button>
+        <button onclick="showApprovalSubtab('actions')" class="subtab-btn px-3 py-1 text-xs rounded-full bg-slate-800" id="subtab-actions">Required Actions (e.g. Posting)</button>
+      </div>
+
+      <div id="approvals-pending" class="approval-subtab">
+        <div id="pending-list" class="space-y-2"></div>
+      </div>
+      <div id="approvals-actions" class="approval-subtab hidden">
+        <div id="actions-list" class="space-y-2"></div>
+        <div class="mt-3 text-xs text-emerald-300">Tip: Use Guided Funnel in Ready Posts for step-by-step review, feedback, and copy-paste of posts/outreach.</div>
+      </div>
+    </div>
+
+    <!-- Bottom action bar -->
+    <div class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-[#1e2937] border-t border-slate-600 px-4 py-3 flex items-center gap-x-2 z-50">
+      <button onclick="openOutreachFunnel()" 
+              class="flex-1 bg-indigo-600 active:bg-indigo-500 text-white font-semibold py-3 rounded-3xl text-sm flex items-center justify-center gap-x-2 shadow">
+        <i class="fa-solid fa-list-ol"></i>
+        <span>GUIDED FUNNEL • REVIEW + COPY</span>
+      </button>
+      
+      <button onclick="window.open('https://nnlevy.github.io/portfolio-outreach-viewer/?id=portfolio-20260619-0708', '_blank')" 
+              class="flex-1 bg-slate-700 active:bg-slate-600 text-white font-semibold py-3 rounded-3xl text-sm flex items-center justify-center gap-x-2">
+        <i class="fa-solid fa-external-link-alt"></i>
+        <span>OPEN PROGRESS ID</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toast-text">Copied to clipboard</span>
+  </div>
+
+  <!-- GUIDED OUTREACH FUNNEL MODAL (replaces bulk copy-all) -->
+  <div id="funnel-modal" class="fixed inset-0 bg-black/90 z-[110] hidden flex items-end justify-center" onclick="if (event.target.id === 'funnel-modal') closeFunnel()">
+    <div onclick="event.stopImmediatePropagation()" class="w-full max-w-[480px] bg-[#1e2937] rounded-t-3xl p-4 max-h-[92dvh] overflow-auto border-t border-slate-600">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="font-bold text-lg">Guided Outreach Funnel</div>
+          <div id="funnel-progress" class="text-xs text-emerald-400">Step 1 of 5 • Review → Note feedback → Copy for outreach</div>
+        </div>
+        <button onclick="closeFunnel()" class="text-3xl leading-none text-slate-400 hover:text-white px-2">×</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="h-1.5 bg-slate-800 rounded-full mb-4 overflow-hidden">
+        <div id="funnel-bar" class="h-1.5 bg-emerald-500 rounded-full transition-all" style="width: 20%"></div>
+      </div>
+
+      <div id="funnel-post-title" class="font-semibold text-base mb-1 text-emerald-300"></div>
+      <div id="funnel-post-text" class="bg-[#0f172a] border border-slate-700 p-3 rounded-2xl text-sm leading-snug whitespace-pre-line max-h-[38vh] overflow-auto mb-4"></div>
+
+      <div class="mb-4">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <div class="text-slate-400 font-medium">Your feedback / notes (review & share)</div>
+          <button onclick="saveFunnelNote()" class="text-emerald-400 text-xs px-2 py-0.5 rounded bg-emerald-900/30">Save note</button>
+        </div>
+        <textarea id="funnel-note" oninput="autoSaveNote()" class="w-full bg-[#0f172a] border border-slate-600 text-sm rounded-2xl p-3 h-16 resize-y" placeholder="What do you think? Tweak? Ready to post? Any issues?"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <button onclick="copyFunnelFor('linkedin')" 
+                class="bg-[#0a66c2] active:bg-[#004182] text-white text-sm font-semibold py-3 rounded-3xl flex items-center justify-center gap-x-2">
+          <i class="fa-brands fa-linkedin"></i>
+          <span>COPY FOR LI</span>
+        </button>
+        <button onclick="copyFunnelFor('x')" 
+                class="bg-black active:bg-zinc-800 text-white text-sm font-semibold py-3 rounded-3xl flex items-center justify-center gap-x-2 border border-white/30">
+          <i class="fa-brands fa-x-twitter"></i>
+          <span>COPY FOR X</span>
+        </button>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="prevFunnelStep()" 
+                class="flex-1 bg-slate-700 active:bg-slate-600 py-3 rounded-3xl text-sm font-semibold">← Back</button>
+        <button id="funnel-next-btn" onclick="nextFunnelStep()" 
+                class="flex-1 bg-emerald-600 active:bg-emerald-500 py-3 rounded-3xl text-sm font-semibold">Mark reviewed + Next →</button>
+      </div>
+
+      <div class="text-[10px] text-center text-slate-500 mt-3">One step at a time: Review the post • Add your feedback • Copy for outreach • Proceed</div>
+    </div>
+  </div>
+
+  <!-- PERSISTENT VOICE MODE MODAL -->
+  <div id="voice-modal" class="fixed inset-0 bg-black/95 z-[120] hidden flex items-end justify-center" onclick="if (event.target.id === 'voice-modal') closeVoiceMode()">
+    <div onclick="event.stopImmediatePropagation()" class="w-full max-w-[480px] bg-[#1e2937] rounded-t-3xl p-4 max-h-[95dvh] flex flex-col border-t border-slate-600">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <div class="font-bold text-lg flex items-center gap-2">
+            <i class="fa-solid fa-microphone text-emerald-400"></i> 
+            Persistent Voice Mode
+          </div>
+          <div id="voice-status" class="text-xs text-emerald-400">Persistent listening starts automatically. Speak naturally for ongoing convos. Tap mic button or say "pause" to control.</div>
+        </div>
+        <button onclick="closeVoiceMode()" class="text-3xl leading-none text-slate-400">×</button>
+      </div>
+
+      <!-- Conversation history -->
+      <div id="voice-history" class="flex-1 overflow-auto bg-[#0f172a] border border-slate-700 rounded-2xl p-3 mb-3 text-sm space-y-2 min-h-[200px]">
+        <div class="text-slate-400 text-xs">Persistent voice auto-starts listening. Say "approvals status", "review queue with me", "update delight weight to 40", "post to LI", or "stop listening".</div>
+      </div>
+
+      <!-- Controls -->
+      <div class="space-y-2">
+        <div class="flex gap-2">
+          <button id="voice-mic-btn" onclick="toggleVoiceListening()" 
+                  class="flex-1 bg-emerald-600 active:bg-emerald-500 text-white font-semibold py-4 rounded-3xl text-base flex items-center justify-center gap-x-3">
+            <i class="fa-solid fa-microphone fa-2x"></i>
+            <span id="voice-mic-label">Start Listening</span>
+          </button>
+          <button onclick="endVoiceSession()" class="px-4 bg-slate-700 active:bg-slate-600 text-white font-semibold py-4 rounded-3xl text-sm">
+            End
+          </button>
+        </div>
+
+        <!-- Text fallback -->
+        <div class="flex gap-2">
+          <input id="voice-text-input" placeholder="Or type prompt here..." class="flex-1 bg-[#0f172a] border border-slate-600 rounded-2xl px-4 py-2 text-sm" onkeydown="if(event.key==='Enter') sendVoiceTextInput()">
+          <button onclick="sendVoiceTextInput()" class="px-4 bg-slate-700 active:bg-slate-600 rounded-2xl text-sm font-semibold">Send</button>
+        </div>
+        <div class="text-[10px] text-center text-slate-500">Persistent mode: auto-continues after reply (no taps). Full state each turn. "stop listening" or tap pause. Cloud backup on quizbiz.org/voice (always up if Mac down). Close anytime.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tailwind script
+    function initTailwind() {
+      document.documentElement.style.setProperty('--accent', '#10b981');
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      const content = document.getElementById(tab);
+      if (content) content.classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-slate-700', 'text-white'));
+      const btn = document.getElementById('tab-' + tab);
+      if (btn) btn.classList.add('active', 'bg-slate-700', 'text-white');
+
+      if (tab === 'approvals') {
+        showApprovalSubtab('pending');
+      }
+    }
+
+    function copyToClipboard(text, message = 'Copied to clipboard') {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(message);
+      }).catch(() => {
+        // Fallback for older iOS
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast(message);
+      });
+    }
+
+    function copyPost(index, platform) {
+      const containers = document.querySelectorAll('#materials .material-text');
+      let text = containers[index].innerText.trim();
+      
+      if (platform === 'linkedin') {
+        text = text + '\n\n— Posted via Domain OS control panel';
+      } else if (platform === 'x') {
+        text = text.replace(/\n\n/g, '\n') + ' #WaterShortcut';
+      }
+      
+      copyToClipboard(text, `${platform.toUpperCase()} post copied — ready to paste`);
+    }
+
+    function copyAllTodayPosts() {
+      const allPosts = [];
+      document.querySelectorAll('#materials .material-text').forEach((el, i) => {
+        allPosts.push(`POST ${i+1}:\n${el.innerText.trim()}\n\n---\n`);
+      });
+      
+      const combined = "WATERSHORTCUT — TODAY'S READY POSTS (Jun 19, 2026)\n\n" + allPosts.join('\n');
+      copyToClipboard(combined, 'All 5 posts copied as one block');
+    }
+
+    function copyRecentLogs() {
+      const logText = `Full 75 re-run log excerpt - Jun 19 2026 11:08
+
+AdSense pull: ok=True 7d=$0.0 imps=0 (watershortcut.com primary)
+Audited 76 domains. High delight: 5, marketing_ready: 1
+[76/76] watershortcut.com: delight=52 load=False errs=158 issues=3 offered_len=399
+Updated live_domains.txt + LATEST.md + health AdSense section
+Bottleneck instructor auto-triggered → portfolio-20260619-0708
+Sent via openclaw agent
+Adjusted 4 queue items + added 0 delight gates.
+Viewer refreshed for health items.`;
+
+      copyToClipboard(logText, 'Recent log block copied');
+    }
+
+    // === NEW: Guided One-Step-at-a-Time Outreach Funnel ===
+    let funnelStep = 0;
+    let funnelPosts = [];
+    let funnelNotes = {};
+
+    function openOutreachFunnel() {
+      const modal = document.getElementById('funnel-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Load current posts from DOM (works with static or future live data)
+      funnelPosts = [];
+      document.querySelectorAll('#materials .material-text').forEach((el, idx) => {
+        const card = el.closest('.post-card');
+        if (!card) return;
+        const locEl = card.querySelector('.text-emerald-400');
+        const titleEl = card.querySelector('.text-sm.font-semibold');
+        funnelPosts.push({
+          id: idx,
+          location: locEl ? locEl.textContent.trim() : 'POST ' + (idx + 1),
+          title: titleEl ? titleEl.textContent.trim() : 'Post ' + (idx + 1),
+          text: el.innerText.trim()
+        });
+      });
+
+      if (funnelPosts.length === 0) {
+        showToast('No posts found');
+        closeFunnel();
+        return;
+      }
+
+      // load notes
+      const key = 'wsFunnelNotes-2026-06-19';
+      const saved = localStorage.getItem(key);
+      funnelNotes = saved ? JSON.parse(saved) : {};
+
+      funnelStep = 0;
+      updateFunnelUI();
+    }
+
+    function updateFunnelUI() {
+      if (!funnelPosts[funnelStep]) return;
+      const post = funnelPosts[funnelStep];
+
+      document.getElementById('funnel-progress').textContent = 
+        `Step ${funnelStep + 1} of ${funnelPosts.length} • ${post.location}`;
+
+      document.getElementById('funnel-post-title').textContent = post.title;
+      document.getElementById('funnel-post-text').textContent = post.text;
+
+      const noteEl = document.getElementById('funnel-note');
+      noteEl.value = funnelNotes[post.id] || '';
+
+      const pct = Math.round(((funnelStep + 1) / funnelPosts.length) * 100);
+      document.getElementById('funnel-bar').style.width = pct + '%';
+
+      const nextBtn = document.getElementById('funnel-next-btn');
+      if (funnelStep === funnelPosts.length - 1) {
+        nextBtn.textContent = 'Finish Funnel → Copy All Notes';
+        nextBtn.onclick = finishFunnel;
+      } else {
+        nextBtn.textContent = 'Mark reviewed + Next →';
+        nextBtn.onclick = nextFunnelStep;
+      }
+    }
+
+    function autoSaveNote() {
+      // live save as user types
+      if (!funnelPosts[funnelStep]) return;
+      const note = document.getElementById('funnel-note').value;
+      funnelNotes[funnelPosts[funnelStep].id] = note;
+      const key = 'wsFunnelNotes-2026-06-19';
+      localStorage.setItem(key, JSON.stringify(funnelNotes));
+    }
+
+    function saveFunnelNote() {
+      if (!funnelPosts[funnelStep]) return;
+      autoSaveNote();
+      const key = 'wsFunnelNotes-2026-06-19';
+      localStorage.setItem(key, JSON.stringify(funnelNotes));
+      showToast('Feedback saved locally for this post');
+    }
+
+    function nextFunnelStep() {
+      saveFunnelNote();
+      if (funnelStep < funnelPosts.length - 1) {
+        funnelStep++;
+        updateFunnelUI();
+      }
+    }
+
+    function prevFunnelStep() {
+      saveFunnelNote();
+      if (funnelStep > 0) {
+        funnelStep--;
+        updateFunnelUI();
+      }
+    }
+
+    function copyFunnelFor(platform) {
+      if (!funnelPosts[funnelStep]) return;
+      const post = funnelPosts[funnelStep];
+      let text = post.text;
+
+      if (platform === 'linkedin') {
+        text = text + '\n\n— Posted via Domain OS guided funnel';
+      } else {
+        text = text.replace(/\n\n/g, '\n') + ' #WaterShortcut';
+      }
+
+      copyToClipboard(text, `Post ${funnelStep+1} copied for ${platform.toUpperCase()}`);
+    }
+
+    function finishFunnel() {
+      saveFunnelNote();
+      const key = 'wsFunnelNotes-2026-06-19';
+      localStorage.setItem(key, JSON.stringify(funnelNotes));
+
+      let summary = "WATERSHORTCUT GUIDED FUNNEL — FEEDBACK & OUTREACH NOTES (Jun 19, 2026)\n\n";
+      funnelPosts.forEach((p, i) => {
+        const note = funnelNotes[p.id] || '(no feedback noted)';
+        summary += `POST ${i+1} — ${p.location}\n${p.title}\n`;
+        summary += `Feedback: ${note}\n\n`;
+      });
+      summary += "All posts reviewed one-by-one. Notes saved locally. Use for your outreach planning.";
+
+      copyToClipboard(summary, 'All feedback + notes copied — ready to review or share');
+
+      setTimeout(() => {
+        closeFunnel();
+        showToast('Funnel complete! Notes copied for review.');
+      }, 600);
+    }
+
+    function closeFunnel() {
+      const modal = document.getElementById('funnel-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    // === Grok Build Prompt Launcher ===
+    function focusGrokPrompt() {
+      const input = document.getElementById('grok-prompt');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function launchGrokPrompt() {
+      const input = document.getElementById('grok-prompt');
+      if (!input || !input.value.trim()) {
+        showToast('Type a prompt for Grok Build first');
+        return;
+      }
+      const prompt = input.value.trim();
+      const fullMsg = `GROK BUILD PROMPT (from Domain OS mobile dashboard): ${prompt}\n\nCurrent context: Principles Web weights active, Guided Funnel for 5 watershortcut posts (review + per-post feedback notes), Approvals queue (AdSense items now correctly under On-Site with value-add descriptions), live local state from readiness/queue/principles. Please process this instruction, update state/files if needed, and reply via text or confirm actions.`;
+
+      copyToClipboard(fullMsg, 'Grok prompt copied — paste into grok-text.sh or your text thread to Grok');
+
+      // Log it in the monitor area for visibility
+      logGrokPrompt(prompt);
+
+      input.value = '';
+    }
+
+    function logGrokPrompt(prompt) {
+      const logContainer = document.querySelector('#monitor .space-y-2');
+      if (!logContainer) return;
+      const entry = document.createElement('div');
+      entry.className = 'flex gap-3 bg-[#0f172a] p-2.5 rounded-xl text-xs border border-purple-900/50';
+      entry.innerHTML = `
+        <div class="w-5 text-purple-400 mt-0.5"><i class="fa-solid fa-rocket"></i></div>
+        <div class="flex-1">
+          <div class="font-medium">Grok Build prompt launched</div>
+          <div class="text-slate-400">${prompt.substring(0, 90)}${prompt.length > 90 ? '...' : ''}</div>
+          <div class="text-[10px] text-emerald-300 mt-0.5">(copied — ready to send via text)</div>
+        </div>
+      `;
+      logContainer.prepend(entry);
+      // Auto-remove after a bit so it doesn't clutter
+      setTimeout(() => {
+        if (entry && entry.parentNode) entry.parentNode.removeChild(entry);
+      }, 45000);
+    }
+
+    // === PERSISTENT VOICE MODE ===
+    let voiceHistory = [];
+    let recognition = null;
+    let isListening = false;
+    let voiceSessionActive = false;
+    let persistentListening = false;
+
+    function openVoiceMode() {
+      const modal = document.getElementById('voice-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      voiceSessionActive = true;
+      persistentListening = true;
+      document.getElementById('voice-status').textContent = 'Persistent Voice • Auto-listening for ongoing conversation. Speak naturally (driving-safe). Tap mic to pause/resume. Close with \u00d7.';
+      // Initialize recognition if available
+      if (!recognition && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event) => {
+          // Handle any final results (supports continuous multi-utterance)
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const res = event.results[i];
+            if (res.isFinal) {
+              const transcript = (res[0]?.transcript || '').trim();
+              if (transcript) {
+                sendVoiceTranscript(transcript);
+              }
+            }
+          }
+          // Do not force-stop isListening here; continuous mode keeps mic open
+          updateMicButton();
+        };
+        recognition.onerror = (e) => {
+          console.error('Speech recognition error', e);
+          isListening = false;
+          updateMicButton();
+          // Attempt recovery restart for persistent if wanted
+          if (voiceSessionActive && persistentListening) {
+            setTimeout(() => {
+              if (voiceSessionActive && persistentListening && !isListening) {
+                try { recognition && recognition.start(); isListening = true; updateMicButton(); } catch (err) {}
+              }
+            }, 800);
+          } else {
+            showToast('Voice input error - use text input instead');
+          }
+        };
+        recognition.onend = () => {
+          isListening = false;
+          updateMicButton();
+          // Auto-recover persistent listening (e.g. after temp stop or silence edge)
+          if (voiceSessionActive && persistentListening) {
+            setTimeout(() => {
+              if (voiceSessionActive && persistentListening && !isListening && recognition) {
+                try {
+                  recognition.start();
+                  isListening = true;
+                  updateMicButton();
+                } catch (err) {}
+              }
+            }, 350);
+          }
+        };
+      }
+      // Add initial greeting if empty
+      const hist = document.getElementById('voice-history');
+      if (hist && hist.children.length <= 1) {
+        addVoiceMessage('assistant', 'Persistent voice ready. Full dashboard state loaded. Speak commands, approvals, updates, or questions. I will reply by voice and keep listening for the next turn. Say "stop listening" to pause.');
+      }
+      // Auto-start persistent listening for hands-free driving use (no click-per-turn)
+      setTimeout(() => {
+        if (voiceSessionActive && persistentListening && recognition && !isListening) {
+          try {
+            recognition.start();
+            isListening = true;
+            updateMicButton();
+            const st = document.getElementById('voice-status');
+            if (st) st.textContent = 'Listening continuously \u2022 Speak your next instruction. Responses auto-spoken. Tap button or say "pause" to stop.';
+          } catch (e) {}
+        }
+      }, 450);
+    }
+
+    function closeVoiceMode() {
+      const modal = document.getElementById('voice-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+      persistentListening = false;
+      stopListening();
+      voiceSessionActive = false;
+      // Clear any pending TTS
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+    }
+
+    function updateMicButton() {
+      const btn = document.getElementById('voice-mic-btn');
+      const label = document.getElementById('voice-mic-label');
+      if (!btn || !label) return;
+      if (persistentListening) {
+        if (isListening) {
+          btn.className = 'flex-1 bg-red-600 active:bg-red-500 text-white font-semibold py-4 rounded-3xl text-base flex items-center justify-center gap-x-3';
+          label.textContent = 'Listening (tap to pause)';
+        } else {
+          btn.className = 'flex-1 bg-amber-600 active:bg-amber-500 text-white font-semibold py-4 rounded-3xl text-base flex items-center justify-center gap-x-3';
+          label.textContent = 'Paused (tap to resume)';
+        }
+      } else if (isListening) {
+        btn.className = 'flex-1 bg-red-600 active:bg-red-500 text-white font-semibold py-4 rounded-3xl text-base flex items-center justify-center gap-x-3';
+        label.textContent = 'Listening... (tap to stop)';
+      } else {
+        btn.className = 'flex-1 bg-emerald-600 active:bg-emerald-500 text-white font-semibold py-4 rounded-3xl text-base flex items-center justify-center gap-x-3';
+        label.textContent = 'Tap to Speak';
+      }
+    }
+
+    function toggleVoiceListening() {
+      if (!recognition) {
+        showToast('Speech recognition not available in this browser. Use the text input.');
+        return;
+      }
+      // Toggle persistent listening session (for ongoing driving conversation)
+      persistentListening = !persistentListening;
+      if (persistentListening) {
+        startListening();
+        const st = document.getElementById('voice-status');
+        if (st) st.textContent = 'Persistent listening active \u2022 Speak freely. Auto-continues after each reply.';
+      } else {
+        stopListening();
+        const st = document.getElementById('voice-status');
+        if (st) st.textContent = 'Listening paused. Tap button or say "resume listening" to continue.';
+      }
+    }
+
+    function startListening() {
+      if (!recognition) return;
+      if (isListening) return;
+      try {
+        recognition.start();
+        isListening = true;
+        updateMicButton();
+        if (!persistentListening) {
+          showToast('Listening... speak your instruction or question');
+        }
+      } catch (e) {
+        console.error(e);
+        isListening = false;
+        updateMicButton();
+        showToast('Could not start voice input');
+      }
+    }
+
+    function stopListening() {
+      if (recognition && isListening) {
+        try { recognition.stop(); } catch (e) {}
+      }
+      isListening = false;
+      updateMicButton();
+    }
+
+    function addVoiceMessage(role, text) {
+      const hist = document.getElementById('voice-history');
+      if (!hist) return;
+      const div = document.createElement('div');
+      div.className = role === 'user' ? 'bg-emerald-900/30 p-2 rounded-2xl ml-8' : 'bg-slate-800 p-2 rounded-2xl mr-8';
+      div.innerHTML = `
+        <div class="text-[10px] font-semibold ${role === 'user' ? 'text-emerald-300' : 'text-slate-400'} mb-0.5">${role === 'user' ? 'You' : 'OpenClaw (Voice)'}</div>
+        <div class="text-sm">${text}</div>
+      `;
+      hist.appendChild(div);
+      hist.scrollTop = hist.scrollHeight;
+      voiceHistory.push({role, text});
+      // Keep history reasonable
+      if (voiceHistory.length > 12) {
+        voiceHistory = voiceHistory.slice(-10);
+        // trim DOM too
+        while (hist.children.length > 12) hist.removeChild(hist.children[0]);
+      }
+    }
+
+    async function sendVoiceTranscript(transcript) {
+      addVoiceMessage('user', transcript);
+
+      // Intercept voice control commands for hands-free use (driving)
+      const lower = transcript.toLowerCase();
+      if (lower.includes('stop listening') || lower.includes('pause voice') || lower.includes('pause listening') || lower.includes('end listening')) {
+        persistentListening = false;
+        stopListening();
+        addVoiceMessage('assistant', 'Persistent listening paused. Tap the mic button or say "start listening" or "resume" to continue.');
+        const st = document.getElementById('voice-status');
+        if (st) st.textContent = 'Listening paused. Say "resume listening" or tap mic.';
+        return;
+      }
+      if (lower.includes('resume listening') || lower.includes('start listening') || lower.includes('continue listening')) {
+        if (voiceSessionActive) {
+          persistentListening = true;
+          setTimeout(() => startListening(), 150);
+          const st = document.getElementById('voice-status');
+          if (st) st.textContent = 'Persistent listening resumed. Speak your next command.';
+          return; // handled locally; still allow backend if wanted but skip for UX
+        }
+      }
+      if (lower.includes('close voice') || lower.includes('end voice mode') || lower.includes('exit voice')) {
+        addVoiceMessage('assistant', 'Closing voice mode.');
+        setTimeout(() => closeVoiceMode(), 650);
+        return;
+      }
+
+      const status = document.getElementById('voice-status');
+      const origStatus = status ? status.textContent : '';
+      if (status) status.textContent = 'Thinking with full dashboard context...';
+
+      // Pause mic during think + speak to prevent echo of own voice / assistant reply
+      const wasListening = isListening;
+      if (isListening) {
+        try { recognition && recognition.stop(); } catch (e) {}
+        isListening = false;
+        updateMicButton();
+      }
+
+      const CLOUD = 'https://quizbiz.org/api/voice';
+      const VTOKEN = '20fb0f0deb5cf4db395e08103785bfc0aede87bb904e8e0c41b5334989ffeff2';
+      let data;
+      try {
+        const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 9000);
+        const res = await fetch('/api/voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript, history: voiceHistory.slice(-6) }),
+          signal: ctrl.signal
+        });
+        clearTimeout(t);
+        data = await res.json();
+        if (!data || !data.ok) throw new Error('local bad');
+      } catch (localErr) {
+        // Fallback to quizbiz.org cloud backup (Mac unavailable or slow). Always works.
+        try {
+          const r2 = await fetch(CLOUD, { method:'POST', headers:{'Content-Type':'application/json', 'x-voice-token': VTOKEN}, body: JSON.stringify({transcript, history: voiceHistory.slice(-6)}) });
+          data = await r2.json();
+          const st = document.getElementById('voice-status');
+          if (st) st.textContent = 'Using cloud backup (quizbiz.org) • Grok powered • Mac independent';
+        } catch (cloudErr) {
+          addVoiceMessage('assistant', 'Both local and cloud voice unavailable right now.');
+          return;
+        }
+      }
+      if (data.ok && data.reply) {
+          addVoiceMessage('assistant', data.reply);
+          // Speak it, then auto-resume persistent listening (key for no-click ongoing convo)
+          if ('speechSynthesis' in window) {
+            const utter = new SpeechSynthesisUtterance(data.reply);
+            utter.rate = 0.95;
+            utter.pitch = 1.0;
+            utter.onend = () => {
+              // Resume persistent listening after reply is fully spoken (driving flow)
+              if (voiceSessionActive && persistentListening) {
+                setTimeout(() => {
+                  if (voiceSessionActive && persistentListening && !isListening) {
+                    startListening();
+                  }
+                }, 450);
+              }
+            };
+            window.speechSynthesis.speak(utter);
+          } else if (voiceSessionActive && persistentListening) {
+            // No TTS available, still resume mic quickly
+            setTimeout(() => { if (voiceSessionActive && persistentListening) startListening(); }, 300);
+          }
+        } else {
+          const err = data.error || 'No reply';
+          addVoiceMessage('assistant', `Sorry, error: ${err}`);
+          // Still resume mic on error for persistent
+          if (voiceSessionActive && persistentListening) {
+            setTimeout(() => { if (voiceSessionActive && persistentListening) startListening(); }, 600);
+          }
+        }
+      } catch (e) {
+        addVoiceMessage('assistant', 'Connection error to voice backend. Check server. (Is the relay running at :8788 and server.py serving /api/voice with auth?)');
+        if (voiceSessionActive && persistentListening) {
+          setTimeout(() => { if (voiceSessionActive && persistentListening) startListening(); }, 900);
+        }
+      } finally {
+        if (status) status.textContent = origStatus;
+      }
+    }
+
+    function sendVoiceTextInput() {
+      const input = document.getElementById('voice-text-input');
+      if (!input || !input.value.trim()) return;
+      const text = input.value.trim();
+      input.value = '';
+      sendVoiceTranscript(text);
+    }
+
+    function endVoiceSession() {
+      persistentListening = false;
+      stopListening();
+      voiceHistory = [];
+      const hist = document.getElementById('voice-history');
+      if (hist) hist.innerHTML = '<div class="text-slate-400 text-xs">Voice session ended. Re-open to start fresh.</div>';
+      closeVoiceMode();
+      showToast('Voice session ended');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-text').innerText = message;
+      toast.style.display = 'flex';
+      
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2200);
+    }
+
+    function refreshData() {
+      const btns = document.querySelectorAll('button');
+      btns.forEach(b => b.disabled = true);
+      
+      setTimeout(() => {
+        showToast('In production: Pull latest from readiness.json + log');
+        btns.forEach(b => b.disabled = false);
+        
+        // Demo: flash the stats
+        document.querySelectorAll('.big-stat').forEach(el => {
+          el.style.transition = 'all 0.2s';
+          el.style.color = '#10b981';
+          setTimeout(() => {
+            el.style.color = '';
+          }, 800);
+        });
+      }, 650);
+    }
+
+    async function loadLiveData() {
+      // Try to load live data from local server APIs (when tunneled)
+      try {
+        const readinessRes = await fetch('/api/readiness');
+        if (readinessRes.ok) {
+          const readiness = await readinessRes.json();
+          updateStatsFromReadiness(readiness);
+        }
+
+        const logsRes = await fetch('/api/logs');
+        if (logsRes.ok) {
+          const logsData = await logsRes.json();
+          updateLogs(logsData.lines || []);
+        }
+
+        const healthRes = await fetch('/api/health-summary');
+        if (healthRes.ok) {
+          const h = await healthRes.json();
+          // Could update a summary area if needed
+        }
+      } catch (e) {
+        console.log('Live API not available (using static snapshot data). Run the server + tunnel for live updates from this computer.');
+      }
+    }
+
+    function updateStatsFromReadiness(r) {
+      if (!r || !r.summary) return;
+      const s = r.summary;
+      // Update some stats if elements exist (basic example)
+      console.log('Live readiness loaded:', s);
+      // In a fuller version we would update DOM elements here
+    }
+
+    function updateLogs(lines) {
+      const container = document.querySelector('#monitor .log-line');
+      if (!container || !lines.length) return;
+      container.innerHTML = '';
+      lines.slice(-8).forEach(line => {
+        const div = document.createElement('div');
+        div.textContent = line;
+        if (line.includes('Audited') || line.includes('Sent')) div.style.color = '#4ade80';
+        container.appendChild(div);
+      });
+    }
+
+    // === NEW: Principles Web + Approvals Tabs Logic ===
+
+    let currentPrinciples = null;
+    let currentQueue = null;
+    let radarChart = null;
+
+    async function loadPrinciplesAndQueue() {
+      try {
+        const [pRes, qRes] = await Promise.all([
+          fetch('/api/principles'),
+          fetch('/api/queue')
+        ]);
+        if (pRes.ok) currentPrinciples = await pRes.json();
+        if (qRes.ok) currentQueue = await qRes.json();
+
+        if (currentPrinciples) {
+          renderWeightsSliders();
+          renderPrinciplesList();
+          updateRadar();
+        }
+        if (currentQueue) {
+          renderApprovals(currentQueue);
+        }
+      } catch (e) {
+        console.log('Using fallback sample data for Principles/Queue');
+        currentPrinciples = {
+          global_weights: {delight: 35, revenue: 25, traffic_outbound: 20, content_iteration: 15, adsense_focus: 5},
+          principles: [
+            {id:"p1", name:"Delight First", weight:35, comment:"Only push revenue asks for domains with delight >=65."},
+            {id:"p2", name:"Content Drives Traffic", weight:20, comment:"Daily relevant posts (watershortcut model) over generic."}
+          ]
+        };
+        currentQueue = {queue: [
+          {id:"q1", domain:"affordablehome.us", type:"revenue_ask", title:"Revenue push for affordablehome", priority:95, short_desc:"High delight - ready for parallel revenue ask"},
+          {id:"q2", domain:"watershortcut.com", type:"ad_settings", title:"Enable AdSense + tools monetization", priority:81, short_desc:"Wire monetization infra so the high-traffic revenue domain can start earning from AdSense and tools"},
+          {id:"q3", domain:"10-7.org", type:"delight_fix", title:"Improve next steps UX", priority:60, short_desc:"Low delight gate - quick on-site fixes to boost user experience"},
+          {id:"q4", domain:"watershortcut.com", type:"outbound_post", title:"Post today's drought content", priority:75, short_desc:"5 ready posts for LI/X outreach to drive traffic and signups"}
+        ]};
+        renderWeightsSliders();
+        renderPrinciplesList();
+        updateRadar();
+        renderApprovals(currentQueue);
+      }
+    }
+
+    function renderWeightsSliders() {
+      const container = document.getElementById('weights-sliders');
+      if (!container || !currentPrinciples) return;
+      container.innerHTML = '';
+      const w = currentPrinciples.global_weights;
+      Object.keys(w).forEach(key => {
+        const val = w[key];
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 text-xs';
+        div.innerHTML = `
+          <div class="w-28 capitalize">${key.replace('_',' ')}</div>
+          <input type="range" min="0" max="50" step="5" value="${val}" class="flex-1" 
+                 oninput="updateWeight('${key}', this.value, true)">
+          <div class="w-8 text-right font-mono">${val}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function updateWeight(key, val, fromSlider=false) {
+      if (!currentPrinciples) return;
+      currentPrinciples.global_weights[key] = parseInt(val);
+      const total = Object.values(currentPrinciples.global_weights).reduce((a,b)=>a+b,0);
+      const totalEl = document.getElementById('weights-total');
+      if (totalEl) totalEl.textContent = total;
+      if (fromSlider) updateRadar();
+    }
+
+    function renderPrinciplesList() {
+      const container = document.getElementById('principles-list');
+      if (!container || !currentPrinciples) return;
+      container.innerHTML = '';
+      currentPrinciples.principles.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'bg-[#0f172a] p-2 rounded-xl border border-slate-700';
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <input value="${p.name}" class="bg-transparent font-medium text-sm flex-1" onblur="updatePrinciple(${idx}, 'name', this.value)">
+            <span class="text-[10px] text-slate-400">w=${p.weight}</span>
+          </div>
+          <textarea class="w-full mt-1 text-xs bg-slate-900 p-1 rounded" rows="2" placeholder="Add principle comment..." onblur="updatePrinciple(${idx}, 'comment', this.value)">${p.comment || ''}</textarea>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function updatePrinciple(idx, field, val) {
+      if (!currentPrinciples) return;
+      currentPrinciples.principles[idx][field] = val;
+      savePrinciples();
+    }
+
+    function updateRadar() {
+      const canvas = document.getElementById('principles-radar');
+      if (!canvas || !currentPrinciples) return;
+
+      const w = currentPrinciples.global_weights;
+      const labels = Object.keys(w).map(k => k.replace('_',' '));
+      const data = Object.values(w);
+
+      if (radarChart) radarChart.destroy();
+
+      radarChart = new Chart(canvas, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Current Platform Weights',
+            data: data,
+            fill: true,
+            backgroundColor: 'rgba(52, 211, 153, 0.2)',
+            borderColor: 'rgb(52, 211, 153)',
+            pointBackgroundColor: 'rgb(52, 211, 153)',
+          }]
+        },
+        options: {
+          scales: { r: { min: 0, max: 50, ticks: { stepSize: 10, color: '#64748b' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    async function savePrinciples() {
+      if (!currentPrinciples) return;
+      try {
+        await fetch('/api/principles', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(currentPrinciples)
+        });
+        showToast('Principles saved - platform will apply');
+        updateRadar();
+      } catch(e) {
+        localStorage.setItem('domain-os-principles', JSON.stringify(currentPrinciples));
+        showToast('Saved locally');
+      }
+    }
+
+    function applyPrinciples() {
+      if (!currentPrinciples || !currentQueue) {
+        showToast('Load data first');
+        return;
+      }
+      const w = currentPrinciples.global_weights;
+      currentQueue.queue.forEach(item => {
+        let score = item.priority || 50;
+        if (item.type.includes('delight') || item.type.includes('fix')) score += (w.delight || 0) * 0.5;
+        if (item.type.includes('revenue') || item.type.includes('ad')) score += (w.revenue || 0) * 0.6;
+        if (item.type.includes('post') || item.type.includes('outbound')) score += (w.traffic_outbound || 0) * 0.7;
+        item.computed_score = Math.round(score);
+      });
+      currentQueue.queue.sort((a,b) => (b.computed_score||0) - (a.computed_score||0));
+      renderApprovals(currentQueue);
+      showToast('Principles applied - Approvals re-ranked');
+    }
+
+    function renderApprovals(queueData) {
+      const pendingContainer = document.getElementById('pending-list');
+      const actionsContainer = document.getElementById('actions-list');
+      if (!pendingContainer || !actionsContainer) return;
+
+      pendingContainer.innerHTML = '';
+      actionsContainer.innerHTML = '';
+
+      const items = (queueData.queue || []).slice();
+      items.forEach(item => {
+        // Clear split:
+        // Pending Approvals = things needing review/decision (ad_settings, revenue_ask, delight_fix, etc.)
+        // Required Actions = things to execute (posts, outreach, posting content)
+        const isRequiredAction = item.type.includes('post') || item.type.includes('outbound');
+        const container = isRequiredAction ? actionsContainer : pendingContainer;
+
+        const div = document.createElement('div');
+        div.className = 'bg-[#1e2937] p-2.5 rounded-xl text-xs border border-slate-700';
+        const viewerLink = item.id ? `https://nnlevy.github.io/portfolio-outreach-viewer/?id=${item.id}` : '#';
+
+        // Friendly value-add focused description (not raw technical)
+        let displayDesc = item.short_desc || item.title || '';
+        const typeLabel = item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        if (item.type.includes('ad_settings')) {
+          displayDesc = item.short_desc || `Enable AdSense + monetization tools on ${item.domain} so the revenue domain can start generating real income`;
+        } else if (item.type.includes('revenue_ask')) {
+          displayDesc = item.short_desc || `Parallel revenue ask for ${item.domain} leveraging portfolio learnings`;
+        } else if (item.type.includes('post')) {
+          displayDesc = item.short_desc || `Execute posting/outreach for ${item.domain}`;
+        }
+
+        div.innerHTML = `
+          <div class="flex justify-between">
+            <div class="font-medium">${item.domain} <span class="text-[10px] text-slate-400">(${typeLabel})</span></div>
+            <div class="text-emerald-300">pri ${item.priority || item.computed_score || ''}</div>
+          </div>
+          <div class="text-slate-300 mt-0.5">${displayDesc}</div>
+          <div class="mt-1 flex gap-2">
+            <a href="${viewerLink}" target="_blank" class="text-emerald-400 underline text-[10px]">View in Outreach</a>
+            <button onclick="addCommentToPrinciple('${item.domain}')" class="text-[10px] text-amber-300">Add Principle Comment</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      if (!pendingContainer.hasChildNodes()) pendingContainer.innerHTML = '<div class="text-xs text-slate-400">No pending approvals.</div>';
+      if (!actionsContainer.hasChildNodes()) actionsContainer.innerHTML = '<div class="text-xs text-slate-400">No required actions (see Guided Funnel in Ready Posts for posting).</div>';
+    }
+
+    function showApprovalSubtab(which) {
+      document.querySelectorAll('.approval-subtab').forEach(el => el.classList.add('hidden'));
+      const el = document.getElementById('approvals-' + which);
+      if (el) el.classList.remove('hidden');
+
+      document.querySelectorAll('.subtab-btn').forEach(btn => btn.classList.remove('active', 'bg-slate-700'));
+      const btn = document.getElementById('subtab-' + which);
+      if (btn) btn.classList.add('active', 'bg-slate-700');
+    }
+
+    // Update initial call in showTab for approvals
+    // (handled below in showTab)
+
+    function addCommentToPrinciple(domain) {
+      const comment = prompt(`Add principle for ${domain}:`);
+      if (!comment || !currentPrinciples) return;
+      currentPrinciples.principles.push({id: 'dyn-' + Date.now(), name: `Focus: ${domain}`, weight: 10, comment});
+      savePrinciples();
+      renderPrinciplesList();
+      showToast('Added - Apply Principles to re-rank');
+    }
+
+    async function enhancedInit() {
+      initTailwind();
+      document.getElementById('monitor').classList.remove('hidden');
+      document.getElementById('tab-monitor').classList.add('active', 'bg-slate-700', 'text-white');
+
+      loadLiveData();
+      await loadPrinciplesAndQueue();
+
+      if (window.innerWidth > 600) {
+        console.log('%c[Domain OS] Principles Web + split Approvals ready.', 'color:#64748b');
+      }
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.style.minHeight = '32px';
+        btn.style.minWidth = '44px';
+      });
+
+      // Auto-launch the persistent voice mode overlay modal on dashboard load.
+      // This puts the always-listening voice UI front-and-center (closable) for driving / hands-free ongoing conversations.
+      // The mic icon in the top nav can be used to re-open if you close it.
+      setTimeout(() => {
+        try { openVoiceMode(); } catch (e) { console.warn('auto voice open failed', e); }
+      }, 720);
+    }
+
+    // Boot
+    window.onload = enhancedInit;
+    
+    // Expose helpers
+    window.DomainOS = {
+      copyAll: () => copyAllTodayPosts(),
+      showMaterials: () => showTab('materials'),
+      applyPrinciples: () => applyPrinciples(),
+      loadPrinciples: () => loadPrinciplesAndQueue()
+    };
+  </script>
+</body>
+</html>

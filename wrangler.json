@@ -13,5 +13,9 @@
       "binding": "QUIZBIZ_LEADS",
       "id": "9dc0866b87814f399bc1bfe44c3337fd"
     }
-  ]
+  ],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
 }

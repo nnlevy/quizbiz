@@ -26,3 +26,14 @@ dist-ssr
 
 # Wrangler deploy cache
 .wrangler
+
+# added by portfolio git hygiene
+node_modules/
+
+dist/
+
+.env
+.env.local
+
+.wrangler/
+.wrangler-state/
