@@ -786,6 +786,15 @@ Make them specific, non-generic, immediately usable after approval. Prioritize e
         } else if (env.AI) {
           const ai = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', { prompt: genPrompt + '\nReturn only the JSON array.', max_tokens: 550 });
           try { pieces = JSON.parse((ai.response || '[]').replace(/```/g,'').trim()); } catch(e){}
+        } else {
+          // Fallback stub for testing the pusher/approved_content flow when no LLM key/AI bound at runtime
+          // (known issue: XAI_API_KEY secret listed but not appearing in env for this worker/script; re-put + deploy or set in dashboard)
+          pieces = [{
+            channel: 'linkedin_post',
+            text: 'Stub approved content for ' + targetDomain + ' (test pusher flow). High-delight practical post per principles. Real results from our queue.',
+            cta: 'reply TOOL for access',
+            why_attention: 'Builds delight leading to traffic and revenue per weights. (test)'
+          }];
         }
 
         if (pieces && pieces.length) {
@@ -806,6 +815,7 @@ Make them specific, non-generic, immediately usable after approval. Prioritize e
           });
           if (cq.length > 80) cq = cq.slice(0,80);
           await env.QUIZBIZ_LEADS.put(cqKey, JSON.stringify(cq));
+          await env.QUIZBIZ_LEADS.put('dashboard:last_updated', new Date().toISOString());
           reply += ` (generated ${pieces.length} attention assets for ${targetDomain} — queued in content queue. Say "list content" or use /cloud-center to review/approve.)`;
         }
       }
@@ -947,6 +957,12 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/$/, '') || '/';
 
+    // NOTE: There is significant duplication in handler blocks below (early voice-token paths vs later dashboard-auth paths).
+    // This is legacy from incremental "early handlers" additions for routing reliability around assets/SPA fallthroughs.
+    // Early blocks (voice token) take precedence for pusher/voice/content. Later blocks provide dashboard fallbacks.
+    // To consolidate long-term: move all API logic to top, use shared auth helper, extract to src/worker/voice-content.js etc.
+    // For now, guards and order ensure pusher, generate, approve, and state sync work. Audit for drift on changes.
+
     // Early handlers for our cloud dashboard / voice / portfolio APIs to ensure JSON returns (before marketing HTML fallthroughs)
     if (pathname === '/api/portfolio-domains' || pathname === '/portfolio-domains') {
       const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
@@ -958,16 +974,21 @@ export default {
     if (pathname === '/api/content-queue' || pathname === '/content-queue') {
       const token = request.headers.get('x-voice-token') || url.searchParams.get('token') || '';
       if (token !== VOICE_BACKUP_TOKEN) return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
-      const cq = await env.QUIZBIZ_LEADS.get('attention:content_queue', 'json') || [];
+      let cq = await env.QUIZBIZ_LEADS.get('attention:content_queue', 'json') || [];
       if (request.method === 'POST') {
         try {
           const body = await request.json();
           if (body.action === 'approve' && body.id) {
             const item = cq.find(i => i.id === body.id);
             if (item) { item.status = 'approved'; item.approved_at = new Date().toISOString(); }
+          } else if ((body.action === 'delete' || body.action === 'consume') && body.id) {
+            cq = cq.filter(i => i.id !== body.id);
+          } else if (body.action === 'clear') {
+            cq = [];
           }
           await env.QUIZBIZ_LEADS.put('attention:content_queue', JSON.stringify(cq));
-          return jsonResponse({ ok: true, updated: body.id });
+          await env.QUIZBIZ_LEADS.put('dashboard:last_updated', new Date().toISOString());
+          return jsonResponse({ ok: true, updated: body.id || body.action });
         } catch(e) { return jsonResponse({ok:false, error:String(e)},400); }
       }
       const statusParam = url.searchParams.get('status') || 'pending_approval';
