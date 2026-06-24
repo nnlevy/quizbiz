@@ -19,6 +19,14 @@ This document inventories the WaterShortcut app surfaces, components, and data f
 - **Brand/content copy**: `src/copy.ts` (most UI strings and policy text).
 - **Ads + analytics config**: `src/config/adsense.ts`, `src/config/analytics.ts`.
 
+### Growth / portfolio integration (hub submissions surfacing)
+- Proxy route `/api/growth/contacts/recent` fetches from growth.business (its /api/recent-contacts which queries shared D1 leads + chatbot_conversations for app_id='growth.business' contacts from forms + AI chat on the hub).
+- Logs to local D1 growth_events (event_type "growth_contact", platform "growth.business", meta with samples) to integrate into quizbiz growth system (shares, referrals, admin summary, attribution).
+- React Dashboard.tsx includes "Portfolio Access Requests (from growth.business)" section (polls proxy, renders list with name/email/outcome/unit/kind/date for ops/portfolio visibility).
+- This fulfills cross-hub lead/contact surfacing in quizbiz dashboard without duplicating capture. See GROWTH_TRACKING.md for details.
+- GA: consent-gated (G-... id), events include growth social + now growth_contact for cross-domain visitor/lead audit (marquee on hub uses custom + GA).
+- No direct D1 cross for leads (separate DBs), but KV shared for growth counters; services (AI/billing) shared. Use portfolio-qmd for state, gstack /browse for QA.
+
 ---
 
 ## 2) Route map (what renders where)

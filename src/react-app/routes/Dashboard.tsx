@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { usePageMeta } from "../hooks/usePageMeta";
 import { RouterLink } from "./router";
@@ -49,6 +49,14 @@ const Dashboard = () => {
   const [plan, setPlan] = useState(getSavingsPlan());
   const badges = useMemo(() => getBadges(), []);
   const latestAlerts = history[0]?.alerts ?? [];
+  const [portfolioLeads, setPortfolioLeads] = useState<any[]>([]);
+  useEffect(() => {
+    // Pull growth.business contact/access request submissions so they surface here (fixes the integration gap).
+    fetch('/api/growth/contacts/recent?limit=8')
+      .then(r => r.json().catch(() => ({})))
+      .then((d: any) => setPortfolioLeads(Array.isArray(d?.data?.items) ? d.data.items : (d?.items || [])))
+      .catch(() => setPortfolioLeads([]));
+  }, []);
   const sampleHistory = [
     {
       id: "sample-history-june",
@@ -167,6 +175,27 @@ const Dashboard = () => {
         <p className="eyebrow">Dashboard</p>
         <h1 id="dashboard-title">Welcome{user ? `, ${user.name}` : ""}.</h1>
         <p>Track your analysis history, alerts, goals, and community tips in one place.</p>
+      </div>
+
+      {/* Portfolio leads / access requests from growth.business (wired via shared D1 leads + chatbot_conversations with app_id filter; growth exposes /api/recent-contacts normalized from the real sinks; this polls and surfaces in a quizbiz dashboard view for unified internal visibility). */}
+      <div className="ws-card" style={{marginTop: 12}}>
+        <h3 style={{marginBottom: 6}}>Portfolio Access Requests (from growth.business)</h3>
+        <p className="ws-subtitle" style={{fontSize: '12px'}}>Form + AI-chat submissions from the hub (contact page, matcher flows, unit CTAs) appear here for ops/portfolio oversight. Data from shared D1 (leads/chatbot_conversations app_id=growth.business) via growth /api/recent-contacts.</p>
+        {portfolioLeads.length ? (
+          <ul style={{fontSize: '13px', marginTop: 8}}>
+            {portfolioLeads.slice(0, 8).map((l: any, i: number) => (
+              <li key={i} style={{padding: '4px 0', borderBottom: '1px solid #eee'}}>
+                <strong>{l.name || l.email || 'lead'}</strong>
+                {l.email && l.name ? ` <${l.email}>` : ''}
+                {' — '}
+                {l.outcome || l.company || 'access request'}
+                {l.unit ? ` [${l.unit}]` : ''}
+                {l.kind ? ` (${l.kind})` : ''}
+                <span style={{color:'#888', fontSize:10, marginLeft: 6}}>{new Date(l.ts || Date.now()).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="ws-subtitle" style={{fontSize: '12px'}}>No recent submissions yet (or fetch blocked). Submit the form or use the AI chat on growth.business/contact (or unit CTAs) to test end-to-end.</p>}
       </div>
 
       {!user && (

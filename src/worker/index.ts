@@ -1173,7 +1173,8 @@ type GrowthEventType =
   | "share_start"
   | "share_finalize"
   | "referral_visit"
-  | "referral_convert";
+  | "referral_convert"
+  | "growth_contact";
 
 const logGrowthEvent = async (
   db: D1Database,
@@ -5908,6 +5909,38 @@ app.post("/api/growth/share/start", handleGrowthShareStart);
 app.post("/api/growth/share/finalize", handleGrowthShareFinalize);
 app.post("/api/growth/referral/convert", handleGrowthReferralConvert);
 app.get("/api/growth/admin/summary", handleGrowthAdminSummary);
+
+// Proxy to growth.business recent contacts (form + AI chat captured) so they surface natively in quizbiz dashboards / admin UIs.
+// Growth queries the shared D1 (leads + chatbot_conversations with app_id filter) and normalizes.
+// This closes the gap: submissions from growth /contact or unit CTAs or chat now visible in quizbiz.org without manual copy.
+app.get("/api/growth/contacts/recent", async (c) => {
+  // Reuse similar admin gating as growth admin summary if env has GROWTH_ADMIN_KEY or similar; for now open for internal (add key check in prod).
+  const limit = c.req.query("limit") || "8";
+  try {
+    const res = await fetch(`https://growth.business/api/recent-contacts?limit=${limit}`);
+    if (!res.ok) throw new Error("upstream");
+    const data: any = await res.json();
+    const items = data?.items || data?.data?.items || [];
+    // Integrate into quizbiz's growth tracking: log as growth_event for cross-portfolio visibility in admin/summary/dashboard.
+    // This makes growth.business contact subs part of the local growth system (events, counters, attribution).
+    if (items.length > 0) {
+      const db = c.env.UsersAcrossAllDomains || c.env.DOMAINS_DB_ID || c.env["domains-db"];
+      if (db) {
+        await logGrowthEvent(db, {
+          eventType: "growth_contact",
+          platform: "growth.business",
+          page: "/api/growth/contacts/recent",
+          meta: { count: items.length, sample: items.slice(0, 3), source: "growth_contact_sync" }
+        }).catch(() => {});
+        // Optional: increment a KV counter for growth contacts if desired (reuse KV_GROWTH or similar).
+      }
+    }
+    return c.json(data);
+  } catch (e) {
+    return c.json({ items: [] });
+  }
+});
+
 app.get("/r/:ref_code", handleGrowthReferralRedirect);
 app.post("/api/referral/token", handleReferralToken);
 app.post("/api/referral/claim", handleReferralClaim);

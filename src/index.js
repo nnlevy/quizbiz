@@ -742,8 +742,40 @@ async function handleVoiceApi(request, env) {
     try {
       const lt = (transcript || '').toLowerCase();
       if (lt.includes('generate') || lt.includes('create post') || lt.includes('write content') || lt.includes('lead magnet') || lt.includes('content for')) {
-        const targetDomain = (transcript.match(/for\s+([a-z0-9.-]+\.[a-z]{2,})/i) || [,'watershortcut.com'])[1];
+        // Improved domain parsing to support any of the 70+ portfolio domains, "portfolio", "high-delight", lists, etc.
+        let targets = [];
+        const re = /for\s+([a-z0-9.-]+\.[a-z]{2,})/gi;
+        let m;
+        while ((m = re.exec(transcript)) !== null) {
+          targets.push(m[1].toLowerCase());
+        }
+        const portfolioMode = targets.length === 0 ||
+                              lt.includes('portfolio') ||
+                              lt.includes('all high') ||
+                              lt.includes('high-delight') ||
+                              lt.includes('high delight') ||
+                              lt.includes('every domain') ||
+                              lt.includes('all domains');
+        let targetDomain = targets[0] || 'watershortcut.com';
+        if (portfolioMode) {
+          // Select top domains from pushed readiness (delight_score prioritized)
+          let doms = [];
+          if (readiness && Array.isArray(readiness.domains)) {
+            doms = readiness.domains;
+          } else if (readiness && readiness.domains && typeof readiness.domains === 'object') {
+            doms = Object.keys(readiness.domains).map(k => ({domain: k}));
+          }
+          if (doms.length && typeof doms[0] === 'object' && doms[0].delight_score != null) {
+            doms = [...doms].sort((a, b) => (b.delight_score || 0) - (a.delight_score || 0));
+          }
+          targets = doms.slice(0, 4).map(d => (typeof d === 'string' ? d : d.domain || d).toLowerCase()).filter(Boolean);
+          if (targets.length === 0) targets = [targetDomain];
+          targetDomain = targets[0];
+        } else if (targets.length > 1) {
+          targetDomain = targets[0];
+        }
         const goal = lt.includes('lead') ? 'leads' : (lt.includes('revenue') ? 'revenue' : 'attention');
+        const displayTargets = targets.length > 1 ? targets.join(', ') : targetDomain;
 
         const genPrompt = `You are generating high-signal attention content for Nir's domain portfolio (full-time job constraint: low effort to review/post, high ROI). Fully portfolio-wide: use readiness (~76 domains) to expand to "all high-delight" or similar when appropriate.
 
@@ -755,11 +787,11 @@ Live context (queue value props): ${JSON.stringify((queue.queue||[]).slice(0,4).
 
 Recent activity: ${( (await env.QUIZBIZ_LEADS.get('voice:command_log','json')) || [] ).slice(0,2).map(e=>e.transcript||'').join(' | ').slice(0,150)}.
 
-Task: Produce ${goal === 'leads' ? 3 : 2} distinct assets for ${targetDomain} (or expand to  similar high-priority domains from readiness/queue if "portfolio" or "all" implied) focused on "${goal}".
+Task: Produce ${goal === 'leads' ? 3 : 2} distinct assets for ${displayTargets} (or expand to similar high-priority domains from the readiness list if "portfolio", "all", or "high-delight" implied or requested) focused on "${goal}".
 - Mix channels: linkedin_post, x_post, sms_sequence (2-4 messages, opt-in compliant), email, tool_or_quiz_idea.
 - Each: platform-optimized text, value-first, principles tone, 1 clear low-friction CTA.
 - For SMS: include HELP/STOP language.
-- Output ONLY JSON array: [{ "channel": "...", "text": "...", "cta": "...", "why_attention": "1 sentence tied to principles (delight/traffic/revenue)" }].
+- Output ONLY JSON array. When expanding across multiple domains (portfolio mode), INCLUDE a "domain" field per object so the system knows which domain it targets: [{ "domain": "the.exact.domain.com", "channel": "...", "text": "...", "cta": "...", "why_attention": "1 sentence tied to principles (delight/traffic/revenue)" }]. For single domain, domain field is optional.
 
 Make them specific, non-generic, immediately usable after approval. Prioritize evergreen + repurposable. Use per-domain learnings if available.`;
 
@@ -801,9 +833,11 @@ Make them specific, non-generic, immediately usable after approval. Prioritize e
           const cqKey = 'attention:content_queue';
           let cq = await env.QUIZBIZ_LEADS.get(cqKey, 'json') || [];
           pieces.forEach(p => {
+            // Use domain from LLM output (when portfolio/expand) or the parsed target
+            const thisDomain = (p.domain && typeof p.domain === 'string' ? p.domain.toLowerCase() : targetDomain);
             cq.unshift({
               id: 'c-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
-              domain: targetDomain,
+              domain: thisDomain,
               channel: p.channel || 'linkedin',
               text: p.text || p,
               cta: p.cta || '',
@@ -816,7 +850,7 @@ Make them specific, non-generic, immediately usable after approval. Prioritize e
           if (cq.length > 80) cq = cq.slice(0,80);
           await env.QUIZBIZ_LEADS.put(cqKey, JSON.stringify(cq));
           await env.QUIZBIZ_LEADS.put('dashboard:last_updated', new Date().toISOString());
-          reply += ` (generated ${pieces.length} attention assets for ${targetDomain} — queued in content queue. Say "list content" or use /cloud-center to review/approve.)`;
+          reply += ` (generated ${pieces.length} attention assets for ${displayTargets || targetDomain} — queued in content queue. Say "list content" or use /cloud-center to review/approve.)`;
         }
       }
     } catch (genErr) {
