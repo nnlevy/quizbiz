@@ -2931,7 +2931,7 @@ function renderBillAnalyzer(): string {
       </form>
       <div id="bill-status" class="callout" aria-live="polite"></div>
       <div class="inline-list">
-        <a class="btn secondary" id="demo" href="#demo">${escapeHtml(copy.analyze.uploadAltDemo)}</a>
+        <a class="btn secondary" href="#demo">${escapeHtml(copy.analyze.uploadAltDemo)}</a>
         <a class="btn secondary" href="/guides/water-bill">See bill basics</a>
       </div>
     </section>
